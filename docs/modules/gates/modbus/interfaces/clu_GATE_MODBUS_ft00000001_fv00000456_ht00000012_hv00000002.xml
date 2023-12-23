@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<CLU className="GATE" firmwareType="00000001" firmwareVersion="00000456" hardwareType="00000012" hardwareVersion="00000002" typeName="CLU_GATE_MODBUS">
+	<!--hwType=0x12(18), hwVer=0x1(1), fwType=0x1(1), fwApiVer=0x44c(1100)-->
+	<interface>
+		<features>
+			<feature get="true" index="0" name="Uptime" set="false" type="num" unit="s">
+				<hint lang="pl" value="Czas pracy urządzenia od ostatniego resetu (w sekundach)"/>
+				<hint lang="en" value="Time of device operation since last reset (in seconds)"/>
+				<hint lang="de" value="Arbeitszeit des Geräts seit dem letzten Reset (in Sekunden)"/>
+			    <desc resKey="clu_uptime"/>
+            </feature>
+			<feature default="1000" get="true" index="1" name="ClientReportInterval" range="1000-10000" set="true" type="num" unit="ms">
+				<hint lang="pl" value="Okres raportowania o zmianach cech"/>
+				<hint lang="en" value="Characteristics change report period"/>
+				<hint lang="de" value="Zeitspanne, in der über Eigenschaftsänderungen berichtet wird"/>
+                <desc resKey="clu_clientreportinterval"/>
+            </feature>
+			<feature get="true" index="5" name="Date" set="false" type="str">
+				<hint lang="pl" value="Zwraca aktualną datę"/>
+				<hint lang="en" value="Returns the current date"/>
+				<hint lang="de" value="Gibt das aktuelle Datum zurück"/>
+			    <desc resKey="clu_date"/>
+            </feature>
+			<feature get="true" index="6" name="Time" set="false" type="str">
+				<hint lang="pl" value="Zwraca aktualny czas (hh:mm:ss)"/>
+				<hint lang="en" value="Returns the current time (hh:mm:ss)"/>
+				<hint lang="de" value="Aktuelle Zeit (hh:mm:ss)"/>
+			    <desc resKey="clu_time"/>
+            </feature>	
+			<feature get="true" index="13" name="LocalTime" set="false" type="num" unit="s">
+				<hint lang="pl" value="Zwraca aktualny znacznik czasu"/>
+				<hint lang="en" value="Returns the current time"/>
+				<hint lang="de" value="Aktueller Timestamp"/>
+			    <desc resKey="clu_localtime"/>
+            </feature>
+			<feature default="0" enum="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21" get="true" index="14" name="TimeZone" set="true" type="num">
+				<enum name="Europe/Warsaw" resKey="clu_timezone_enum_europewarsaw" value="0"/>
+				<enum name="Europe/London" resKey="clu_timezone_enum_europelondon" value="1"/>
+				<enum name="Europe/Moscow" resKey="clu_timezone_enum_europemoscow" value="2"/>
+				<enum name="Europe/Istanbul" resKey="clu_timezone_enum_europeistanbul" value="3"/>
+				<enum name="Europe/Athens" resKey="clu_timezone_enum_europeathens" value="4"/>
+				<enum name="Asia/Dubai" resKey="clu_timezone_enum_asiadubai" value="5"/>
+				<enum name="Asia/Jakarta" resKey="clu_timezone_enum_asiajakarta" value="6"/>
+				<enum name="Asia/HongKong" resKey="clu_timezone_enum_asiahongkong" value="7"/>
+				<enum name="Australia/Sydney" resKey="clu_timezone_enum_australiasydney" value="8"/>
+				<enum name="Australia/Perth" resKey="clu_timezone_enum_australiaperth" value="9"/>
+				<enum name="Australia/Brisbane" resKey="clu_timezone_enum_australiabrisbane" value="10"/>
+				<enum name="NewZeland/Auckland" resKey="clu_timezone_enum_newzelandauckland" value="11"/>
+				<enum name="USA/Hawaii" resKey="clu_timezone_enum_usahawaii" value="12"/>
+				<enum name="USA/Alaska" resKey="clu_timezone_enum_usaalaska" value="13"/>
+				<enum name="USA/CentralTime" resKey="clu_timezone_enum_usacentraltime" value="14"/>
+				<enum name="USA/EasternTime" resKey="clu_timezone_enum_usaeasterntime" value="15"/>
+				<enum name="USA/AtlanticTime" resKey="clu_timezone_enum_usaatlantictime" value="16"/>
+				<enum name="America/Brazil" resKey="clu_timezone_enum_americabrazil" value="17"/>
+				<enum name="America/Colombia" resKey="clu_timezone_enum_americacolombia" value="18"/>
+				<enum name="America/Argentina" resKey="clu_timezone_enum_americaargentina" value="19"/>
+				<enum name="America/CentralAmerica" resKey="clu_timezone_enum_americacentralamerica" value="20"/>
+				<enum name="Pacific Time" resKey="clu_timezone_enum_pacifictime" value="21"/>
+				
+				<hint lang="pl" value="Strefa czasowa"/>  
+				<hint lang="en" value="Time zone"/>  
+				<hint lang="de" value="Zeitzone"/>
+			    <desc resKey="clu_timezone"/>
+            </feature>
+			<feature get="true" index="15" name="UnixTime" set="false" type="num" unit="s">
+				<hint lang="pl" value="Zwraca aktualny uniksowy znacznik czasu"/>
+				<hint lang="en" value="Returns the current Unix time"/>
+				<hint lang="de" value="Aktueller Unix-Timestamp"/>
+			    <desc resKey="clu_unixtime"/>
+            </feature>
+<!--
+			<feature name="BuildTime" index="16" type="str" get="true" set="false" >
+				<hint lang="pl" value="Zwraca czas kompilacji firmwre"/>
+				<hint lang="en" value="Returns the firmware build time"/>
+				<hint lang="de" value="Returns the firmware build time"/>
+			</feature>
+-->
+			<feature get="true" index="17" name="FirmwareVersion" set="false" type="str">
+				<hint lang="pl" value="Wersja oprogramowania Gate"/>
+				<hint lang="en" value="Gate firmware version"/>
+				<hint lang="de" value="Softwareversion Gate"/>
+			    <desc resKey="clu_firmwareversion"/>
+            </feature>	
+			<feature default="0" get="true" index="18" name="UseCloud" set="true" type="confirmation" unit="bool">  
+				<hint lang="pl" value="Określa czy Gate łączy się do chmury"/>  
+				<hint lang="en" value="Specifies whether Gate connects to the cloud"/> 
+				<hint lang="de" value="Gibt an, ob die Gate eine Verbindung zur Cloud herstellt"/>
+			    <desc resKey="clu_usecloud_1"/>
+            </feature>
+			<feature default="0" get="true" index="19" name="CloudConnection" set="false" type="confirmation" unit="bool">
+				<hint lang="pl" value="Określa status połączenia Gate z chmurą"/>  
+				<hint lang="en" value="Specifies whether Gate is connected to the cloud"/>  
+				<hint lang="de" value="Gibt an, ob die Gate mit der Cloud verbunden ist"/>
+			    <desc resKey="clu_cloudconnection_1"/>
+            </feature>
+			<feature default="5000" get="true" index="20" name="NTPTimeout" range="1000-10000" set="true" type="num" unit="ms">
+				<hint lang="pl" value="Timeout NTP"/>
+				<hint lang="en" value="NTP Timeout"/>
+				<hint lang="de" value="NTP-Zeitüberschreitung"/>
+                <desc resKey="clu_ntptimeout"/>
+            </feature>
+			<feature default="1" get="true" index="21" name="UseNTP" set="true" type="confirmation" unit="bool">  
+				<hint lang="pl" value="Określa czy Gate używa NTP"/>  
+				<hint lang="en" value="Specifies whether Gate uses NTP"/> 
+				<hint lang="de" value="Gibt an, ob GATE NTP verwendet"/>
+			    <desc resKey="clu_usentp"/>
+            </feature>
+			<feature default="8.8.8.8" get="true" index="2" name="PrimaryDNS" set="true" type="str" unit="string">
+				<hint lang="pl" value="Preferowany serwer DNS"/>
+				<hint lang="en" value="Preferred DNS server"/>
+				<hint lang="de" value="Bevorzugter DNS-Server"/>
+			    <desc resKey="clu_primarydns"/>
+            </feature>
+			<feature default="8.8.4.4" get="true" index="3" name="SecondaryDNS" set="true" type="str" unit="string">
+				<hint lang="pl" value="Alternatywny serwer DNS"/>
+				<hint lang="en" value="Alternate (secondary) DNS server"/>
+				<hint lang="de" value="Alternativer DNS-Server"/>
+			    <desc resKey="clu_secondarydns"/>
+            </feature>
+		</features>	
+		<methods>
+			<method call="execute" index="2" name="SetDateTime" return="void">
+				<param name="LocalTimestamp" type="timestamp"/>
+				<hint lang="pl" value="Ustawia datę i czas"/>
+				<hint lang="en" value="Sets date and time"/>
+				<hint lang="de" value="Stellt Datum und Zeit ein"/>
+                <desc resKey="clu_setdatetime"/>
+            </method>
+			<method call="execute" index="7" name="StartConsole" return="void">
+				<hint lang="pl" value="Uruchamia konsolę Lua"/>
+				<hint lang="en" value="Starts Lua console"/>
+				<hint lang="de" value="Startet die Lua-Konsole"/>
+			    <desc resKey="clu_startconsole"/>
+            </method>
+			<method call="execute" index="8" name="StartConsoleOnReboot" return="void">
+				<hint lang="pl" value="Uruchamia konsolę Lua przy ponownym uruchomieniu"/>
+				<hint lang="en" value="Starts Lua console on next boot"/>
+				<hint lang="de" value="Startet die Lua-Konsole beim nächsten Start"/>
+			    <desc resKey="clu_startconsoleonreboot"/>
+            </method>
+<!--
+			<method name="FactoryReset" call="execute" return="void" index="9">
+				<hint lang="pl" value="Reset fabrycznych ustawień"/>
+				<hint lang="en" value="Factory reset"/>
+			</method>
+-->
+			<method call="set" index="1" name="SetClientReportInterval" return="void">
+				<param default="0" name="ClientReportInterval" range="1000-10000" type="num" unit="ms"/>
+				<hint lang="pl" value="Ustawia okres raportowania o zmianach cech"/>
+				<hint lang="en" value="Sets the characteristics change report period"/>
+				<hint lang="de" value="Bestimmt die Zeitspanne, in der über Eigenschaftsänderungen berichtet wird"/>
+                <desc resKey="clu_setclientreportinterval"/>
+            </method>
+			<method call="set" index="2" name="SetPrimaryDNS" return="void" unit="string">
+				<param name="IP" type="num"/>
+				<hint lang="pl" value="Ustawia cechę PrimaryDNS"/>
+				<hint lang="en" value="Sets the PrimaryDNS feature"/>
+				<hint lang="de" value="Legt die PrimaryDNS-Funktion fest"/>
+        	    <desc resKey="clu_setprimarydns"/>
+            </method>
+			<method call="set" index="3" name="SetSecondaryDNS" return="void" unit="string">
+				<param name="IP" type="num"/>
+				<hint lang="pl" value="Ustawia cechę SecondaryDNS"/>
+				<hint lang="en" value="Sets the SecondaryDNS feature"/>
+				<hint lang="de" value="Legt die SecondaryDNS-Funktion fest"/>
+        	    <desc resKey="clu_setsecondarydns"/>
+            </method>
+		</methods>
+		<events>
+			<event address="0" name="OnInit">
+				<hint lang="pl" value="Zdarzenie wywoływane jednorazowo w momencie inicjalizacji urządzenia"/>
+				<hint lang="en" value="Event occurring once during device initialization"/>
+				<hint lang="de" value="Ereignis, das einmalig aufgerufen wird, sobald das Gerät aktiviert wird"/>
+                <desc resKey="clu_oninit"/>
+            </event>
+		</events>
+	</interface>
+	<objects>
+		<object maxInstances="-1" name="Modbus" version="2"/>
+		<object maxInstances="-1" name="ModbusValue" version="1"/>
+	</objects>
+	<modulesVersionConstraints>
+	</modulesVersionConstraints>
+	<options>
+		<option name="maxIOMs" value="64"/>
+		<option name="FeatureToGetActualTimeOnClu" value="LocalTime"/>
+		<option name="GettingTimeType" value="LOCAL"/>
+		<option name="MethodToSetActualTimeOnClu" value="SetDateTime"/>
+		<option name="SettingTimeType" value="LOCAL"/>
+		<option name="cipher" value="true"/>
+		<option name="accept_tftp" value="true"/>
+		<option name="accept_udp" value="true"/>
+		<option name="accept_tcp" value="false"/>
+		<option name="accept_wifi" value="false"/>
+		<option name="maxObjects" value="400"/>
+		<option name="maxTfBusModules" value="0"/>
+		<option name="maxZwaveModules" value="0"/>
+	</options>
+</CLU>

@@ -1,0 +1,40 @@
+a:\> dir
+TEST                0 12-05-2023 16:28:30      A TEST
+EMERGNCY.LUA      113 12-04-2023 16:29:22      A EMERGNCY.LUA
+CLOUD-~1.PEM      227 12-04-2023 16:29:24      A CLOUD-PRIVATE.PEM
+CLOUD-~1.CSR      444 12-04-2023 16:29:24      A CLOUD-PUBLIC.CSR
+CONFIG~1.JSO      322 12-05-2023 08:24:40      A CONFIG.JSON
+CONFIG.TXT         98 12-05-2023 16:11:58      A CONFIG.TXT
+SETTINGS.USR        0 12-04-2023 16:31:42      A SETTINGS.USR
+MAIN.LUA          226 12-05-2023 14:47:32      A MAIN.LUA
+OM.LUA           7203 12-05-2023 14:47:32      A OM.LUA
+USER.LUA            0 12-05-2023 14:47:32      A USER.LUA
+a:\> mem
+	System allocator:
+Allocator size 626688 B
+Max allocated: 118672 B -> 18 %
+Current usage: 104704 B -> 16 %
+---------------------------------
+	FLASH disk:
+Disk free space: 933888 B
+---------------------------------
+a:\> mount
+Disc mfs_ram: and part m: created
+a:\> ipconfig staticip 10.72.144.1 255.255.0.0 10.72.72.1
+Static ip bind successful.
+a:\> ipconfig
+Eth#: 0
+Link: on
+Bind: staticip
+MAC : 80:34:XX:XX:XX:XX
+IP  : 10.72.144.1
+MASK: 255.255.0.0
+GATE: 10.72.72.1
+DNS1: 8.8.8.8
+Link status task stopped
+a:\> tftpd start
+TFTP Server Started.
+a:\> test
+Z-Wave OK
+a:\> version
+5.12.01-2330-0-g293758f9

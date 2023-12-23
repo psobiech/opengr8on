@@ -1,0 +1,79 @@
+ === MII registers ===
+	CR = 0x3100
+	SR = 0x782D
+	IDR1 = 0x0007
+	IDR2 = 0xC0D1
+	ANAR = 0x0DE1
+	ANLPAR = 0xDDE1
+	ANER = 0x0009
+	ANNPTR = 0xFFFF
+	ICR = 0x0040
+	PSR = 0x0002
+	PCR = 0x00E1
+
+
+Parameters loaded from Flash.
+
+************************************************
+ FNET Bootloader
+************************************************
+ FNET TCP/IP Stack for CLU-MCU-DIN-Rev0.3
+ Version 1.0.1
+ Built 2013-04-29 12:21
+ Copyright 2005-2013 by Freescale Semiconductor
+ GNU LGPLv3
+************************************************
+ Interface        : eth0
+ IP address       : 10.72.144.1 (set manually)
+ Subnet mask      : 255.255.0.0
+ Gateway          : 10.72.72.1
+ MAC address      : 80:34:XX:XX:XX:XX
+ Link status      : connected
+ TX Packets       : 4
+ RX Packets       : 0
+ Free Heap        : 14096
+ TELNET server    : disabled
+ TFTP server      : disabled
+
+ Enter 'help' for command list.
+************************************************
+
+Press any key to stop (go):   0
+[TFBUS] TFBus: "Reset" (7) command.
+ Przywrocony zapamietany klucz AES:
+ Przywrocony zapamietany IV:
+Generuje klucz secret key:   stary klucz:
+  NOWY klucz:
+OK
+[LUA_TASK] -- Start Lua Task ---
+[LUA_TASK] Execute LUA script: a:\main.lua
+[TFBUS] Sending Force Ask to TF-BUS module: 255
+[TFBUS] Requested ident of local address 255 -  Returning DUMMY (empty)
+WAR: TFBus: Sending Replay to local module 0. data: 32554... (length=4)
+[TFBUS] Requested ident of local address 255 -  Returning DUMMY (empty)
+WAR: TFBus: Sending Replay to local module 0. data: 32554... (length=4)
+[TFBUS] Requested ident of local address 255 -  Returning DUMMY (empty)
+WAR: TFBus: Sending Replay to local module 0. data: 32554... (length=4)
+[TFBUS] Requested ident of local address 255 -  Returning DUMMY (empty)
+WAR: TFBus: Sending Replay to local module 0. data: 32554... (length=4)
+[TFBUS] Requested ident of local address 255 -  Returning DUMMY (empty)
+WAR: TFBus: Sending Replay to local module 0. data: 32554... (length=4)
+[TFBUS] Requested ident of local address 255 -  Returning DUMMY (empty)
+WAR: TFBus: Sending Replay to local module 0. data: 32554... (length=4)
+Try to reconnect module SN: 25XXXXXXX
+
+[TFBUS] TFBus: FrameAction for module 25XXXXXXX ignored (Lua not ready)
+WAR: RS485 Killed
+WAR: RS485 Killed
+Kill done.
+hub discovery state: 1W done, DALI start
+WAR: RS485 Killed
+WAR: RS485 Killed
+MEASURE TASK CREATED
+Module: 25XXXXXXX, Version v6.3.7
+[SYSTEM] Reset reason 0x100: Software
+
+RTC: 2023-12-05  17:12:20
+Login:
+Generate config file
+Get time from NTP Server

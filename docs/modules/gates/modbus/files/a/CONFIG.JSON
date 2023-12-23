@@ -1,0 +1,11 @@
+{
+  "sn": 50XXXXXXX,
+  "mac": "1c:9d:XX:XX:XX:XX",
+  "hwType": 18,
+  "hwVer": 2,
+  "fwType": 1,
+  "fwApiVer": 1110,
+  "fwVer": "1.1.10-2140",
+  "tfbusDevices": [],
+  "zwaveDevices": []
+}

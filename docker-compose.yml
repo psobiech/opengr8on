@@ -1,0 +1,19 @@
+version: "2.3"
+
+services:
+  opengr8on:
+    image: ghcr.io/psobiech/opengr8on:latest
+    command: wlp7s0
+    restart: unless-stopped
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+    build:
+      target: app-runtime
+    network_mode: "host"
+    ports:
+      - "1234:1234"
+    volumes:
+      - type: bind
+        source: ./runtime
+        target: /opt/docker/runtime

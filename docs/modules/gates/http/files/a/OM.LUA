@@ -1,0 +1,41 @@
+-- FwType 00000003
+-- FwVersion 00000456
+-- HwType 00000012
+-- HwVersion 00000002
+
+CLU52XXXXXXX = GATE:new(5000, 0xA489004, 0xFFFF0000, 0xA484801, "", "")
+-- NAME_CLU CLUHTTP=CLU50XXXXXXX
+
+CLU2XXXXXXXX = OBJECT:new(1, 0xA489001, "CLU2XXXXXXXX")
+CLU50XXXXXXX = OBJECT:new(1, 0xA489008, "CLU50XXXXXXX")
+
+
+-- MODULES
+
+-- IO_MODULES
+
+
+function setVar(name, value)
+	_G[name] = value
+end
+
+function getVar(name)
+	return _G[name]
+end
+
+
+
+function OnInit()
+
+-- INIT_CLU_OBJECTS
+CLU50XXXXXXX:set(1, 1000)
+CLU50XXXXXXX:set(14, 0)
+CLU50XXXXXXX:set(18, 0)
+CLU50XXXXXXX:set(20, 5000)
+CLU50XXXXXXX:set(21, 1)
+CLU50XXXXXXX:set(2, "8.8.8.8")
+CLU50XXXXXXX:set(3, "8.8.4.4")
+
+end
+
+CLU50XXXXXXX:add_event(0, OnInit)

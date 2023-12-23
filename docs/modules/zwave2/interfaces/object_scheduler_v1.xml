@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<object class="16" name="Scheduler" version="1">
+	<features>
+		<feature get="true" index="0" name="Data" set="true" type="str">
+			<hint lang="pl" value="Ciąg znaków definiujący harmonogram zmian wartości"/>
+			<hint lang="en" value="String defining value changes schedule (see: Data format)"/>
+		    <desc resKey="scheduler_data"/>
+        </feature>
+		<feature get="true" index="1" name="State" set="false" type="num">
+			<hint lang="pl" value="Stan działania harmonogramu: 1 - harmonogram aktywny, 0 - harmonogram nieaktywny"/>
+			<hint lang="en" value="Schedule work status: 1 (active) or 0 (not active)"/>
+		    <desc resKey="scheduler_state"/>
+        </feature>
+		<feature get="true" index="2" name="Value" set="false" type="num">
+			<hint lang="pl" value="Wartość wyjściowa zmieniana co 15 minut zgodnie z rozkładem"/>
+			<hint lang="en" value="Output value, changed every 15 minutes according to the schedule"/>
+		    <desc resKey="scheduler_value"/>
+        </feature>
+		<feature default="0" get="true" index="3" name="Min" set="true" type="num">
+			<hint lang="pl" value="Minimalna wartość dla ustawienia zakresu wartości interfejsu graficznego"/>
+			<hint lang="en" value="Minimum value for setting graphic interface value range"/>
+		    <desc resKey="scheduler_min"/>
+        </feature>
+		<feature default="1" get="true" index="4" name="Max" set="true" type="num">
+			<hint lang="pl" value="Maksymalna wartość dla ustawienia zakresu wartości interfejsu graficznego"/>
+			<hint lang="en" value="Maximum value for setting graphic interface value range"/>
+		    <desc resKey="scheduler_max"/>
+        </feature>
+	</features>
+	<methods>
+		<method call="execute" index="0" name="Start" return="void">
+			<hint lang="pl" value="Przełączenie w stan aktywny (State=1)"/>
+			<hint lang="en" value="Switching to active state (State=1)"/>
+		    <desc resKey="scheduler_start"/>
+        </method>
+		<method call="execute" index="1" name="Stop" return="void">
+			<hint lang="pl" value="Przełączenie w stan zatrzymania (State=0)"/>
+			<hint lang="en" value="Switching to paused state (State=0)"/>
+		    <desc resKey="scheduler_stop"/>
+        </method>
+		<method call="set" get="true" index="0" name="SetData" return="void" set="true">
+			<param name="Data" type="str"/>
+			<hint lang="pl" value="Ustawienie tygodniowego harmonogramu"/>
+			<hint lang="en" value="Setting weekly schedule"/>
+		    <desc resKey="scheduler_setdata"/>
+        </method>
+		<method call="set" get="true" index="3" name="SetMin" return="void" set="true" visible="false">
+			<param name="Min" type="num"/>
+			<hint lang="pl" value="Ustawienie minimalnej wartości dla zakresu wartości interfejsu graficznego"/>
+			<hint lang="en" value="Setting the minimum value for the value range of the graphical interface"/>
+		    <desc resKey="scheduler_setmin"/>
+        </method>
+		<method call="set" get="true" index="4" name="SetMax" return="void" set="true" visible="false">
+			<param name="Max" type="num"/>
+			<hint lang="pl" value="Ustawienie maksymalnej wartości dla zakresu wartości interfejsu graficznego"/>
+			<hint lang="en" value="Set the maximum value for the value range of the graphical interface"/>
+		    <desc resKey="scheduler_setmax"/>
+        </method>
+	</methods>
+	<events>
+		<event address="0" name="OnHarmonogram">
+			<hint lang="pl" value="Zdarzenie wywoływane w momencie zmiany wartości cechy Value"/>
+			<hint lang="en" value="Events since change of `Value` feature"/>
+		    <desc resKey="scheduler_onharmonogram"/>
+        </event>
+		<event address="1" name="OnStart">
+			<hint lang="pl" value="Zdarzenie wywoływane przy wznowieniu pracy"/>
+			<hint lang="en" value="Events since restarting work"/>
+		    <desc resKey="scheduler_onstart"/>
+        </event>
+		<event address="2" name="OnStop">
+			<hint lang="pl" value="Zdarzenie wywoływane przy zatrzymaniu pracy"/>
+			<hint lang="en" value="Events since stopping work"/>
+		    <desc resKey="scheduler_onstop"/>
+        </event>
+	</events>
+</object>

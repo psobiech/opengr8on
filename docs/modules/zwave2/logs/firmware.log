@@ -1,0 +1,95 @@
+ === MII registers ===
+	CR = 0x3100
+	SR = 0x782D
+	IDR1 = 0x0007
+	IDR2 = 0xC0D1
+	ANAR = 0x0DE1
+	ANLPAR = 0xDDE1
+	ANER = 0x0009
+	ANNPTR = 0xFFFF
+	ICR = 0x0040
+	PSR = 0x0002
+	PCR = 0x00E1
+
+
+Parameters loaded from Flash.
+
+************************************************
+ FNET Bootloader
+************************************************
+ FNET TCP/IP Stack for CLU-MCU-DIN-Rev0.3
+ Version 1.0.1
+ Built 2013-04-29 12:21
+ Copyright 2005-2013 by Freescale Semiconductor
+ GNU LGPLv3
+************************************************
+ Interface        : eth0
+ IP address       : 10.72.144.1 (set manually)
+ Subnet mask      : 255.255.0.0
+ Gateway          : 10.72.72.1
+ MAC address      : 80:34:XX:XX:XX:XX
+ Link status      : connected
+ TX Packets       : 4
+ RX Packets       : 0
+ Free Heap        : 14096
+ TELNET server    : disabled
+ TFTP server      : disabled
+
+ Enter 'help' for command list.
+************************************************
+
+Press any key to stop (script):   0
+
+telnet; tftps;
+************************************************
+  Telnet server started.
+  Use: telnet 10.72.144.1
+************************************************
+************************************************
+  TFTP server (10.72.144.1) started.
+************************************************
+BOOT>
+BOOT> get
+ ip      : 10.72.144.1
+ netmask : 255.255.0.0
+ gateway : 10.72.72.1
+ mac     : 80:34:XX:XX:XX:XX
+ boot    : script
+ delay   : 0
+ script  : telnet; tftps;
+ raw     : 0xC000
+ tftp    : 192.168.1.123
+ image   : firmware.bin
+ type    : raw
+ go      : 0xCDC1
+BOOT> set boot go
+ boot    : go
+BOOT> save
+Parameters saved
+BOOT> get
+ ip      : 10.72.144.1
+ netmask : 255.255.0.0
+ gateway : 10.72.72.1
+ mac     : 80:34:XX:XX:XX:XX
+ boot    : go
+ delay   : 0
+ script  : telnet; tftps;
+ raw     : 0xC000
+ tftp    : 192.168.1.123
+ image   : firmware.bin
+ type    : raw
+ go      : 0xCDC1
+BOOT> info
+ Interface        : eth0
+ IP address       : 10.72.144.1 (set manually)
+ Subnet mask      : 255.255.0.0
+ Gateway          : 10.72.72.1
+ MAC address      : 80:34:XX:XX:XX:XX
+ Link status      : connected
+ TX Packets       : 193
+ RX Packets       : 184
+ Free Heap        : 13184
+ TELNET server    : enabled
+ TFTP server      : enabled
+BOOT> reset
+Connection closed by foreign host.
