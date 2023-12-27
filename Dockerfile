@@ -33,7 +33,7 @@ COPY vclu vclu
 
 RUN mvn package
 
-FROM eclipse-temurin:21 AS jre-build
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21 AS jre-build
 
 RUN mkdir -p /opt/build
 WORKDIR /opt/build
@@ -49,7 +49,7 @@ RUN $JAVA_HOME/bin/jlink \
          --compress=2 \
          --output /opt/build/jre
 
-FROM debian:buster-slim AS app-runtime
+FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS app-runtime
 
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
