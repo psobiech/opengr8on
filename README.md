@@ -20,8 +20,12 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 
 ## Local
 > mvn package
-> 
+>
 > java -jar vclu/target/vclu.jar eth0
+> 
+> or
+> 
+> java -jar vclu/target/vclu.jar 192.168.31.44
 
 ## Docker
 
@@ -35,7 +39,7 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 
 1. Copy [clu_VIRTUAL_ft00000001_fv001_htaa55aa55_hv00000001.xml](runtime%2Fdevice-interfaces%2Fclu_VIRTUAL_ft00000001_fv001_htaa55aa55_hv00000001.xml) to `$OM_DIR/configuration/com.grenton.om/device-interfaces/clu_VIRTUAL_ft00000001_fv001_htaa55aa55_hv00000001.xml`
 1. Restart/Launch OM
-1. Run Virtual CLU (eg. `docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0` - assuming eth0 is your network interface name)
+1. Run Virtual CLU (eg. `docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0` - assuming eth0 is your network interface name - you can specify also local IP address)
 1. Start OM Discovery
 1. When prompted for KEY type: `00000000`
 ![vclu_sn.png](docs%2Fimg%2Fvclu_sn.png)
@@ -47,17 +51,16 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 What works:
 - Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
 - Communication between CLU and CLU (accessing variables from other CLUs)
+- Works with Raspberry PI4 (using docker image)
 
 Does not work:
 - No virtual objects are implemented yet
-- VCLU does not preserve keys on restarts (requires discovery every time, unless you use the hardcoded defaults)
 - If discovery is interrupted, VCLU requires restart (some key management issue?)
 - Only tested under Linux
 - No error handling - LUA errors sometimes are silently dropped
 
 TODOs:
 - most of the code requires refactoring
-- support binding via IP instead of network interface name
 
 # Licenses
 TFTP (tfp/ directory) is licensed under Apache 2.0 (as it is a copy of commons-net implementation)
