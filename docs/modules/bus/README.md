@@ -1,6 +1,6 @@
 # Bus Module Hardware
 
-The module actually consists only of a protection diode, capacitor and connectors...
+The module actually consists only of a protection diode, PTC thermistor and connectors...
 
 # Datasheets
 [0923150432.pdf](datasheets%2F0923150432.pdf)
