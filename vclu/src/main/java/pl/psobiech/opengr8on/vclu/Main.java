@@ -21,44 +21,63 @@ package pl.psobiech.opengr8on.vclu;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.apache.commons.codec.binary.Base64;
+import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.client.device.CLUDeviceConfig;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
-import pl.psobiech.opengr8on.util.RandomUtil;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        final Path rootDirectory = Paths.get("./runtime/root/a").toAbsolutePath();
-        FileUtil.mkdir(rootDirectory);
+        final Path rootDirectory = Paths.get("./runtime/root").toAbsolutePath();
+
+        final Path aDriveDirectory = rootDirectory.resolve("a");
+        FileUtil.mkdir(aDriveDirectory);
+
+        final CluKeys cluKeys = ObjectMapperFactory.JSON.readerFor(CluKeys.class)
+                                                        .readValue(rootDirectory.resolve("keys.json").toFile());
+
+        final CipherKey projectCipherKey = new CipherKey(
+            cluKeys.key(), cluKeys.iv()
+        );
+
+        final CLUDeviceConfig configJson = ObjectMapperFactory.JSON.readerFor(CLUDeviceConfig.class)
+                                                                   .readValue(aDriveDirectory.resolve(CLUFiles.CONFIG_JSON.getFileName()).toFile());
 
         for (NetworkInterfaceDto localIPv4NetworkInterface : IPv4AddressUtil.getLocalIPv4NetworkInterfaces()) {
             System.out.println(localIPv4NetworkInterface);
         }
 
-        final NetworkInterfaceDto networkInterface = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(args[args.length - 1]).get();
+        if (args.length < 1) {
+            throw new UnexpectedException("Missing argument: Network Interface Name or IP Address");
+        }
 
-        final CipherKey projectCipherKey = new CipherKey(
-            Base64.decodeBase64("mVHTJ/sJd9qTzE1nfLrKxA=="),
-            Base64.decodeBase64("gOYp2Y1wrPT63icsX90aCA==")
-        );
-
-        // TODO: load from config
+        final String networkInterfaceNameOrIpAddress = args[args.length - 1];
+        final NetworkInterfaceDto networkInterface = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(networkInterfaceNameOrIpAddress)
+                                                                    .or(() ->
+                                                                        IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
+                                                                    )
+                                                                    .get();
         final CLUDevice cluDevice = new CLUDevice(
-            0L, "0eaa55aa55aa",
+            configJson.getSerialNumber(), configJson.getMacAddress(),
             networkInterface.getAddress(),
-            CipherTypeEnum.PROJECT, RandomUtil.bytes(16), "00000000".getBytes()
+            CipherTypeEnum.PROJECT, cluKeys.defaultIV(), cluKeys.pin()
         );
 
-        try (Server server = new Server(networkInterface, rootDirectory, projectCipherKey, cluDevice)) {
+        try (Server server = new Server(networkInterface, aDriveDirectory, projectCipherKey, cluDevice)) {
             server.listen();
 
             while (!Thread.interrupted()) {
                 Thread.yield();
             }
         }
+    }
+
+    public record CluKeys(byte[] key, byte[] iv, byte[] defaultIV, byte[] pin) {
     }
 }

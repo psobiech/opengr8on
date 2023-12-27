@@ -41,7 +41,7 @@ public class CLUDevice {
 
     private final byte[] privateKey;
 
-    private final CipherKey cipherKey;
+    private CipherKey cipherKey;
 
     public CLUDevice(Inet4Address address, CipherTypeEnum cipherType) {
         this(
@@ -114,6 +114,10 @@ public class CLUDevice {
         return address;
     }
 
+    public void setAddress(Inet4Address address) {
+        this.address = address;
+    }
+
     public CipherTypeEnum getCipherType() {
         return cipherType;
     }
@@ -130,8 +134,8 @@ public class CLUDevice {
         return cipherKey;
     }
 
-    public void setAddress(Inet4Address address) {
-        this.address = address;
+    public void setCipherKey(CipherKey cipherKey) {
+        this.cipherKey = cipherKey;
     }
 
     @Override

@@ -37,13 +37,11 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.commands.ErrorCommand;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
+import pl.psobiech.opengr8on.client.commands.ErrorCommand;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.client.commands.ResetCommand;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand;
@@ -51,14 +49,18 @@ import pl.psobiech.opengr8on.client.commands.SetKeyCommand;
 import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer;
+import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.LuaServer.LuaThreadWrapper;
+import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 
 public class Server implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -73,7 +75,7 @@ public class Server implements AutoCloseable {
 
     protected final NetworkInterfaceDto networkInterface;
 
-    private final Path rootDirectory;
+    private final Path aDriveDirectory;
 
     private final CLUDevice cluDevice;
 
@@ -91,14 +93,14 @@ public class Server implements AutoCloseable {
 
     private CipherKey currentCipherKey;
 
-    public Server(NetworkInterfaceDto networkInterface, Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
+    public Server(NetworkInterfaceDto networkInterface, Path aDriveDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
         this.networkInterface = networkInterface;
-        this.rootDirectory = rootDirectory;
+        this.aDriveDirectory = aDriveDirectory;
 
         this.currentCipherKey = projectCipherKey;
         this.cluDevice = cluDevice;
 
-        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, currentCipherKey);
+        this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
 
         try {
             this.tftpServer = new TFTPServer(
@@ -108,7 +110,7 @@ public class Server implements AutoCloseable {
 
             this.broadcastSocket = SocketUtil.udp(
                 IPv4AddressUtil.parseIPv4("255.255.255.255"),
-//                 networkInterface.getBroadcastAddress(),
+                //                 networkInterface.getBroadcastAddress(),
                 Client.COMMAND_PORT
             );
             this.socket = SocketUtil.udp(networkInterface.getAddress(), Client.COMMAND_PORT);
@@ -123,7 +125,7 @@ public class Server implements AutoCloseable {
 
         try {
             this.tftpServer.start(
-                rootDirectory.toFile()
+                aDriveDirectory.toFile()
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -206,6 +208,11 @@ public class Server implements AutoCloseable {
             final byte[] hash = DiscoverCLUsCommand.hash(currentCipherKey.decrypt(encrypted)
                                                                          .orElse(RandomUtil.bytes(Command.RANDOM_SIZE)));
 
+            cluDevice.setCipherKey(
+                cluDevice.getCipherKey()
+                         .withIV(RandomUtil.bytes(16))
+            );
+
             currentCipherKey = cluDevice.getCipherKey();
             broadcastCipherKey = cluDevice.getCipherKey();
 
@@ -284,11 +291,11 @@ public class Server implements AutoCloseable {
             final byte[] iv = request.getIV();
 
             final CipherKey newCipherKey = new CipherKey(key, iv);
+            updateCipherKey(newCipherKey);
             //if (newCipherKey.decrypt(encrypted).isEmpty()) {
             //    return sendError();
             //}
 
-            currentCipherKey = newCipherKey;
             broadcastCipherKey = CipherKey.DEFAULT_BROADCAST;
 
             return Optional.of(
@@ -300,6 +307,23 @@ public class Server implements AutoCloseable {
         }
 
         return sendError();
+    }
+
+    private void updateCipherKey(CipherKey newCipherKey) {
+        currentCipherKey = newCipherKey;
+
+        try {
+            ObjectMapperFactory.JSON.writerFor(CluKeys.class)
+                                    .writeValue(
+                                        aDriveDirectory.resolve("../keys.json").toFile(),
+                                        new CluKeys(
+                                            currentCipherKey.getSecretKey(), currentCipherKey.getIV(),
+                                            cluDevice.getIv(), cluDevice.getPrivateKey()
+                                        )
+                                    );
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
+        }
     }
 
     private Optional<Pair<CipherKey, Command>> onResetCommand(Payload payload) {
@@ -316,7 +340,7 @@ public class Server implements AutoCloseable {
                 LOGGER.error(e.getMessage(), e);
             }
 
-            this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, currentCipherKey);
+            this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
 
             return Optional.of(
                 ImmutablePair.of(
