@@ -32,6 +32,8 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 > docker build . --target app-runtime -t vclu:latest
 >
 > docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime vclu:latest eth0
+>
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime vclu:latest 192.168.31.44
 
 ## Quickstart
 
@@ -51,13 +53,11 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 What works:
 - Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
 - Communication between CLU and CLU (accessing variables from other CLUs)
-- Works with Raspberry PI4 (using docker image)
+- Tested under linux/amd64 and linux/arm64 on pi4
 
 Does not work:
 - No virtual objects are implemented yet
-- If discovery is interrupted, VCLU requires restart (some key management issue?)
-- Only tested under Linux
-- No error handling - LUA errors sometimes are silently dropped
+- If discovery is interrupted, VCLU application requires restart (some key management issue?)
 
 TODOs:
 - most of the code requires refactoring

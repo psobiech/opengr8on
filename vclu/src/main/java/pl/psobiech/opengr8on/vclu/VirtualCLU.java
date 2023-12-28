@@ -33,6 +33,8 @@ import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.luaj.vm2.LuaValue.valueOf;
+
 public class VirtualCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualCLU.class);
 
@@ -92,18 +94,18 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             0,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 TimeUnit.MILLISECONDS.toSeconds(
                     runtimeBean.getUptime()
                 )
             )
         );
 
-        VirtualCLU.this.vars.put(2, LuaValue.valueOf(1));
+        VirtualCLU.this.vars.put(2, valueOf(1));
 
         features.put(
             5,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             )
@@ -111,7 +113,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             6,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
             )
@@ -119,7 +121,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             7,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .getDayOfMonth()
             )
@@ -127,7 +129,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             8,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .getMonthValue()
             )
@@ -135,7 +137,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             9,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .getYear()
             )
@@ -143,7 +145,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             10,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .getDayOfWeek()
                     .getValue()
@@ -152,7 +154,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             11,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .getHour()
             )
@@ -160,7 +162,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             12,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 getCurrentDateTime()
                     .getMinute()
             )
@@ -168,7 +170,7 @@ public class VirtualCLU extends VirtualObject {
 
         features.put(
             13,
-            () -> LuaValue.valueOf(
+            () -> valueOf(
                 Instant.now().getEpochSecond()
             )
         );

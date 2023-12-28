@@ -49,10 +49,6 @@ public class Main {
         final CLUDeviceConfig configJson = ObjectMapperFactory.JSON.readerFor(CLUDeviceConfig.class)
                                                                    .readValue(aDriveDirectory.resolve(CLUFiles.CONFIG_JSON.getFileName()).toFile());
 
-        for (NetworkInterfaceDto localIPv4NetworkInterface : IPv4AddressUtil.getLocalIPv4NetworkInterfaces()) {
-            System.out.println(localIPv4NetworkInterface);
-        }
-
         if (args.length < 1) {
             throw new UnexpectedException("Missing argument: Network Interface Name or IP Address");
         }

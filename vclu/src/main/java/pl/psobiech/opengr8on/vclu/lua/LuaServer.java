@@ -1,5 +1,5 @@
 /*
- * OpenGr8on, open source extensions to systems based on Grenton devices
+ * OpenGr8ton, open source extensions to systems based on Grenton devices
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.lua;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -53,11 +53,15 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
-import pl.psobiech.opengr8on.vclu.lua.LuaFunction;
-import pl.psobiech.opengr8on.vclu.lua.LuaNoArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.LuaThreeArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.LuaTwoArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.LuaVarArgFunction;
+import pl.psobiech.opengr8on.vclu.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgConsumer;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgConsumer;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgConsumer;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgFunction;
 
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripToEmpty;
@@ -66,8 +70,24 @@ import static org.apache.commons.lang3.StringUtils.stripToNull;
 public class LuaServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(LuaServer.class);
 
+    private static final String JAR_PATH_SEPARATOR = Pattern.quote("!");
+
+    private static final Map<String, FileSystem> JAR_FILE_SYSTEMS = new HashMap<>();
+
     private LuaServer() {
         // NOP
+    }
+
+    public static LibFunction wrap(Logger logger, LuaNoArgConsumer luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaThreeArgConsumer luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaVarArgConsumer luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaVarArgFunction luaFunction) {
@@ -96,7 +116,7 @@ public class LuaServer {
             cluDevice, cipherKey
         );
 
-        Globals globals = new Globals();
+        final Globals globals = new Globals();
         LoadState.install(globals);
         LuaC.install(globals);
 
@@ -110,7 +130,7 @@ public class LuaServer {
         //globals.load(new JseIoLib());
         globals.load(new JseOsLib());
         //globals.load(new LuajavaLib());
-        globals.load(new CluLuaApi(virtualSystem, globals));
+        globals.load(new LuaApiLib(LOGGER, virtualSystem, globals));
 
         globals.finder = fileName -> {
             try {
@@ -119,11 +139,9 @@ public class LuaServer {
                     throw new UnexpectedException("Attempt to access external directory");
                 }
 
-                return Files.newInputStream(
-                    filePath
-                );
+                return Files.newInputStream(filePath);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UnexpectedException(e);
             }
         };
 
@@ -145,8 +163,6 @@ public class LuaServer {
         return globals.load(script, name)
                       .call();
     }
-
-    private static final String JAR_PATH_SEPARATOR = Pattern.quote("!");
 
     private static Path classPath(URI uri) {
         final String resourceUriPath = getResourceUriPath(uri);
@@ -177,16 +193,14 @@ public class LuaServer {
         }
     }
 
-    private static final Map<String, FileSystem> jarFileSystems = new HashMap<>();
-
     private static FileSystem getOrCreateJarFileSystemFor(String jarPath) {
-        synchronized (jarFileSystems) {
-            return jarFileSystems.computeIfAbsent(
+        synchronized (JAR_FILE_SYSTEMS) {
+            return JAR_FILE_SYSTEMS.computeIfAbsent(
                 jarPath,
                 ignored -> {
                     try {
                         final URI jarUri = URI.create(jarPath);
-                        System.out.println(jarUri);
+
                         return FileSystems.newFileSystem(jarUri, Collections.emptyMap());
                     } catch (IOException e) {
                         throw new UnexpectedException(e);
@@ -227,10 +241,10 @@ public class LuaServer {
         public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory) {
             super(() -> loadScript(globals, aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName()));
 
-            setDaemon(true);
-
             this.virtualSystem = virtualSystem;
             this.globals = globals;
+
+            setDaemon(true);
         }
 
         public Globals globals() {
@@ -285,7 +299,7 @@ public class LuaServer {
 
         @Override
         public LuaValue call(LuaValue a, LuaValue b, LuaValue c, LuaValue d) {
-            return invoke(LuaValue.varargsOf(new LuaValue[] {a, b, c}, 0, 3));
+            return invoke(LuaValue.varargsOf(new LuaValue[] {a, b, c, d}, 0, 4));
         }
 
         @Override

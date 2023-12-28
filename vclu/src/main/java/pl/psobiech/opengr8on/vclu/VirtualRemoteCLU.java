@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
-import pl.psobiech.opengr8on.vclu.lua.LuaOneArgFunction;
 
 public class VirtualRemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualRemoteCLU.class);
@@ -35,20 +34,17 @@ public class VirtualRemoteCLU extends VirtualObject {
     public VirtualRemoteCLU(String name, Inet4Address address, NetworkInterfaceDto networkInterface, CipherKey cipherKey) {
         super(name);
 
-        funcs.put(0, new LuaOneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                final String script = String.valueOf(arg.checkstring());
+        funcs.put(0, args -> {
+            final String script = String.valueOf(args.checkstring(1));
 
-                try (CLUClient client = new CLUClient(networkInterface, address, cipherKey)) {
-                    final Optional<String> execute = client.execute(script);
-                    if (execute.isPresent()) {
-                        return LuaValue.valueOf(execute.get());
-                    }
+            try (CLUClient client = new CLUClient(networkInterface, address, cipherKey)) {
+                final Optional<String> execute = client.execute(script);
+                if (execute.isPresent()) {
+                    return LuaValue.valueOf(execute.get());
                 }
-
-                return LuaValue.NIL;
             }
+
+            return LuaValue.NIL;
         });
     }
 }

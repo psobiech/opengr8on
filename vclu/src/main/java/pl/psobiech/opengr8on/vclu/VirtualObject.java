@@ -24,8 +24,8 @@ import java.util.Map;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.vclu.lua.LuaNoArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.LuaOneArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaOneArgFunction;
 
 public class VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualObject.class);

@@ -16,11 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua;
+package pl.psobiech.opengr8on.vclu.lua.fn;
 
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 
-public interface LuaFunction {
-    LuaValue invoke(Varargs args);
+public interface LuaNoArgConsumer extends LuaFunction {
+    @Override
+    default LuaValue invoke(Varargs args) {
+        call();
+
+        return LuaValue.NIL;
+    }
+
+    void call();
 }
