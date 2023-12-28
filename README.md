@@ -37,7 +37,7 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 
 * Assuming OM is extracted in $OM_DIR (https://grentonsmarthome.github.io/release-en/om/).
 
-1. Copy [clu_VIRTUAL_ft00000001_fv00000001_ht0055aa55_hv000.xml](runtime%2Fdevice-interfaces%2Fclu_VIRTUAL_ft00000001_fv00000001_ht0055aa55_hv000.xml) to `$OM_DIR/configuration/com.grenton.om/device-interfaces/`
+1. Copy [clu_VIRTUAL_ft00000001_fv00000001_ht0055aa55_hv00000001.xml](runtime%2Fdevice-interfaces%2Fclu_VIRTUAL_ft00000001_fv00000001_ht0055aa55_hv00000001.xml) to `$OM_DIR/configuration/com.grenton.om/device-interfaces/`
 1. Restart/Launch OM or Reload Device Interfaces
 1. Run Virtual CLU (eg. `docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0` - assuming eth0 is your network interface name - you can specify also local IP address)
 1. Start OM Discovery

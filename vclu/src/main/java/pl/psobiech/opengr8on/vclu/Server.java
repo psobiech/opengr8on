@@ -51,6 +51,7 @@ import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer;
 import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer.ServerMode;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
@@ -101,6 +102,7 @@ public class Server implements AutoCloseable {
         this.cluDevice = cluDevice;
 
         this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
+        this.luaThread.start();
 
         try {
             this.tftpServer = new TFTPServer(
@@ -332,15 +334,9 @@ public class Server implements AutoCloseable {
         if (requestOptional.isPresent()) {
             final ResetCommand.Request request = requestOptional.get();
 
-            try {
-                this.luaThread.interrupt();
-
-                this.luaThread.join();
-            } catch (InterruptedException e) {
-                LOGGER.error(e.getMessage(), e);
-            }
-
+            FileUtil.closeQuietly(this.luaThread);
             this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
+            this.luaThread.start();
 
             return Optional.of(
                 ImmutablePair.of(
@@ -466,6 +462,8 @@ public class Server implements AutoCloseable {
         synchronized (this) {
             socket.close();
         }
+
+        luaThread.close();
 
         executorService.shutdown();
     }

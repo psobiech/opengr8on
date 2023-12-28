@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,7 +28,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,19 +36,12 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
-import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaThread;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.CoroutineLib;
-import org.luaj.vm2.lib.LibFunction;
-import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
-import org.luaj.vm2.lib.ThreeArgFunction;
-import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.jse.JseBaseLib;
 import org.luaj.vm2.lib.jse.JseOsLib;
 import org.slf4j.Logger;
@@ -58,7 +51,6 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
-import pl.psobiech.opengr8on.vclu.VirtualSystem.Subscription;
 
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripToEmpty;
@@ -71,10 +63,16 @@ public class LuaServer {
         // NOP
     }
 
-    public static LuaThreadWrapper create(NetworkInterfaceDto networkInterface, Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey) {
-        final VirtualSystem virtualSystem = new VirtualSystem(networkInterface, cluDevice, cipherKey);
+    public static LuaThreadWrapper create(NetworkInterfaceDto networkInterface, Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey) {
+        final VirtualSystem virtualSystem = new VirtualSystem(
+            networkInterface,
+            cluDevice, cipherKey
+        );
 
         Globals globals = new Globals();
+        LoadState.install(globals);
+        LuaC.install(globals);
+
         globals.load(new JseBaseLib());
         globals.load(new PackageLib());
         //globals.load(new Bit32Lib());
@@ -85,221 +83,12 @@ public class LuaServer {
         //globals.load(new JseIoLib());
         globals.load(new JseOsLib());
         //globals.load(new LuajavaLib());
+        globals.load(new CluLuaApi(virtualSystem, globals));
 
-        globals.load(new TwoArgFunction() {
-            public LuaValue call(LuaValue modname, LuaValue env) {
-                final LuaValue library = tableOf();
-
-                library.set("setup", new LibFunction() {
-                    @Override
-                    public LuaValue call() {
-                        virtualSystem.setup();
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("loop", new LibFunction() {
-                    @Override
-                    public LuaValue call() {
-                        virtualSystem.loop();
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("sleep", new OneArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg) {
-                        virtualSystem.sleep(arg.checklong());
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("logDebug", new OneArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg) {
-                        LOGGER.debug(String.valueOf(arg.checkstring()));
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("logInfo", new OneArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg) {
-                        LOGGER.info(String.valueOf(arg.checkstring()));
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("logWarning", new OneArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg) {
-                        LOGGER.warn(String.valueOf(arg.checkstring()));
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("logError", new OneArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg) {
-                        LOGGER.error(String.valueOf(arg.checkstring()));
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("clientRegister", new LibFunction() {
-                    @Override
-                    public LuaValue invoke(Varargs args) {
-                        final LuaValue object = args.arg(4);
-
-                        final ArrayList<Subscription> subscriptions = new ArrayList<>();
-                        if (!object.istable()) {
-                            return LuaValue.valueOf("values:{" + 99 + "}");
-                        }
-                        final LuaTable checktable = object.checktable();
-                        for (LuaValue key : checktable.keys()) {
-                            final LuaValue keyValue = checktable.get(key);
-                            if (!keyValue.istable()) {
-                                return LuaValue.valueOf("values:{" + 99 + "}");
-                            }
-
-                            subscriptions.add(
-                                new Subscription(
-                                    String.valueOf(keyValue.checktable().get(1).checktable().get("name")),
-                                    keyValue.checktable().get(2).checkint()
-                                )
-                            );
-                        }
-
-                        return LuaValue.valueOf(
-                            virtualSystem.clientRegister(
-                                String.valueOf(args.arg1().checkstring()),
-                                args.arg(2).checkint(),
-                                args.arg(3).checkint(),
-                                subscriptions
-                            )
-                        );
-                    }
-                });
-
-                library.set("clientDestroy", new LibFunction() {
-                    @Override
-                    public LuaValue invoke(Varargs args) {
-                        return virtualSystem.clientDestroy(
-                            String.valueOf(args.arg1().checkstring()),
-                            args.arg(2).checkint(),
-                            args.arg(3).checkint()
-                        );
-                    }
-                });
-
-                library.set("fetchValues", new OneArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue object) {
-                        final ArrayList<Subscription> subscriptions = new ArrayList<>();
-                        if (!object.istable()) {
-                            return LuaValue.valueOf("values:{" + 99 + "}");
-                        }
-
-                        final LuaTable checktable = object.checktable();
-                        for (LuaValue key : checktable.keys()) {
-                            final LuaValue keyValue = checktable.get(key);
-                            if (!keyValue.istable()) {
-                                return LuaValue.valueOf("values:{\"" + globals.load("return _G[\"%s\"]".formatted(keyValue)).call() + "\"}");
-                            }
-
-                            subscriptions.add(
-                                new Subscription(
-                                    String.valueOf(keyValue.checktable().get(1).checktable().get("name")),
-                                    keyValue.checktable().get(2).checkint()
-                                )
-                            );
-                        }
-
-                        return LuaValue.valueOf(
-                            "values:" + virtualSystem.fetchValues(
-                                subscriptions
-                            )
-                        );
-                    }
-
-                    @Override
-                    public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                        virtualSystem.getObject(object.checkint()).addEvent(arg1.checkint(), arg2.checkfunction());
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("newObject", new ThreeArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-                        return LuaValue.valueOf(
-                            virtualSystem.newObject(arg1.checkint(), String.valueOf(arg2.checkstring()), arg3.checkint())
-                        );
-                    }
-                });
-
-                library.set("newGate", new ThreeArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-                        return LuaValue.valueOf(
-                            virtualSystem.newGate(arg1.checkint(), String.valueOf(arg2.checkstring()))
-                        );
-                    }
-                });
-
-                library.set("get", new TwoArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue object, LuaValue arg) {
-                        return virtualSystem.getObject(object.checkint()).get(arg.checkint());
-                    }
-                });
-
-                library.set("set", new ThreeArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                        virtualSystem.getObject(object.checkint()).set(arg1.checkint(), arg2);
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                library.set("execute", new ThreeArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                        return virtualSystem.getObject(object.checkint()).execute(arg1.checkint(), arg2);
-                    }
-                });
-
-                library.set("addEvent", new ThreeArgFunction() {
-                    @Override
-                    public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                        virtualSystem.getObject(object.checkint()).addEvent(arg1.checkint(), arg2.checkfunction());
-
-                        return LuaValue.NIL;
-                    }
-                });
-
-                env.set("api", library);
-
-                return library;
-            }
-        });
-
-        LoadState.install(globals);
-        LuaC.install(globals);
-
-        globals.finder = filename -> {
+        globals.finder = fileName -> {
             try {
-                final Path filePath = rootDirectory.resolve(StringUtils.upperCase(filename));
-                if (!filePath.getParent().equals(rootDirectory)) {
+                final Path filePath = aDriveDirectory.resolve(StringUtils.upperCase(fileName));
+                if (!filePath.getParent().equals(aDriveDirectory)) {
                     throw new UnexpectedException("Attempt to access external directory");
                 }
 
@@ -314,7 +103,7 @@ public class LuaServer {
         loadScript(globals, classPath(URI.create("classpath:/INIT.LUA")), "INIT.LUA");
 
         return new LuaThreadWrapper(
-            globals, rootDirectory
+            virtualSystem, globals, aDriveDirectory
         );
     }
 
@@ -401,44 +190,39 @@ public class LuaServer {
         public String toUrlScheme() {
             return lowerCase(name());
         }
-
-        public static SchemeEnum fromUrlScheme(String urlScheme) {
-            if (urlScheme == null) {
-                return FILE;
-            }
-
-            for (SchemeEnum scheme : values()) {
-                if (scheme.toUrlScheme().equals(urlScheme)) {
-                    return scheme;
-                }
-            }
-
-            throw new UnexpectedException(String.format("Unsupported resource scheme: %s", urlScheme));
-        }
     }
 
-    public static class LuaThreadWrapper extends Thread {
+    public static class LuaThreadWrapper extends Thread implements Closeable {
+        private final VirtualSystem virtualSystem;
+
         private final Globals globals;
 
-        public LuaThreadWrapper(Globals globals, Path rootDirectory) {
-            super(() -> {
-                final LuaValue mainChunk = loadScript(globals, rootDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName());
-
-                final LuaThread luaThread = new LuaThread(globals, mainChunk);
-
-                luaThread.resume(LuaValue.NIL);
-            });
+        public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory) {
+            super(() -> loadScript(globals, aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName()));
 
             setDaemon(true);
 
+            this.virtualSystem = virtualSystem;
             this.globals = globals;
-
-            start();
         }
 
         public Globals globals() {
             return globals;
         }
 
+        @Override
+        public void close() {
+            virtualSystem.close();
+
+            interrupt();
+
+            try {
+                join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new UnexpectedException(e);
+            }
+        }
     }
 }

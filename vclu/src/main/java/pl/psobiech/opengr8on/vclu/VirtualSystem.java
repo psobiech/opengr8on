@@ -38,7 +38,7 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
-public class VirtualSystem {
+public class VirtualSystem implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
     private final ScheduledExecutorService executors = Executors.newSingleThreadScheduledExecutor(ThreadUtil.daemonThreadFactory("LuaServer"));
@@ -178,6 +178,17 @@ public class VirtualSystem {
         }
 
         return "{" + ret + "}";
+    }
+
+    @Override
+    public void close() {
+        if (clientReport != null) {
+            clientReport.cancel(true);
+
+            clientReport = null;
+        }
+
+        executors.shutdown();
     }
 
     public record Subscription(String name, int index) {

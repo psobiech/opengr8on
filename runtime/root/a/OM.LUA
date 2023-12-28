@@ -1,7 +1,7 @@
 -- FwType 00000001
 -- FwVersion 00000001
 -- HwType 0055aa55
--- HwVersion 00000000
+-- HwVersion 00000001
 
 CLU0 = OBJECT:new(0, 0xC0A81F27, "CLU0")
 -- NAME_CLU CLU0=CLU0
