@@ -77,7 +77,7 @@ public class VirtualSystem implements AutoCloseable {
         final VirtualObject virtualObject = switch (index) {
             case 0 -> new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress));
             case 1 -> new VirtualRemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
-            case 44 -> new VirtualObject(name);
+            case 44 -> new VirtualStorage(name);
             default -> new VirtualObject(name);
         };
 
@@ -158,26 +158,26 @@ public class VirtualSystem implements AutoCloseable {
     }
 
     public String fetchValues(List<Subscription> subscription) {
-        String ret = "";
+        final StringBuilder sb = new StringBuilder();
         for (Subscription entry : subscription) {
             final String name = entry.name();
-            final Integer index = entry.index();
+            final int index = entry.index();
 
-            if (ret.length() > 0) {
-                ret += ",";
+            if (!sb.isEmpty()) {
+                sb.append(",");
             }
 
             final LuaValue luaValue = getObject(name).get(index);
             if (luaValue.isnumber()) {
-                ret += luaValue.checklong();
+                sb.append(luaValue.checklong());
             } else if (luaValue.isstring()) {
-                ret += "\"" + luaValue + "\"";
+                sb.append("\"").append(luaValue).append("\"");
             } else {
-                ret += String.valueOf(luaValue);
+                sb.append(luaValue);
             }
         }
 
-        return "{" + ret + "}";
+        return "{" + sb + "}";
     }
 
     @Override

@@ -37,8 +37,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.Varargs;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.CoroutineLib;
+import org.luaj.vm2.lib.LibFunction;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
@@ -51,6 +53,11 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.vclu.lua.LuaFunction;
+import pl.psobiech.opengr8on.vclu.lua.LuaNoArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.LuaThreeArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.LuaVarArgFunction;
 
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripToEmpty;
@@ -61,6 +68,26 @@ public class LuaServer {
 
     private LuaServer() {
         // NOP
+    }
+
+    public static LibFunction wrap(Logger logger, LuaVarArgFunction luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaNoArgFunction luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaTwoArgFunction luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaThreeArgFunction luaFunction) {
+        return wrap(logger, (LuaFunction) luaFunction);
+    }
+
+    private static LibFunction wrap(Logger logger, LuaFunction luaFunction) {
+        return new LuaFunctionWrapper(logger, luaFunction);
     }
 
     public static LuaThreadWrapper create(NetworkInterfaceDto networkInterface, Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey) {
@@ -222,6 +249,53 @@ public class LuaServer {
                 Thread.currentThread().interrupt();
 
                 throw new UnexpectedException(e);
+            }
+        }
+    }
+
+    private static class LuaFunctionWrapper extends LibFunction {
+        private final Logger logger;
+
+        private final LuaFunction fn;
+
+        public LuaFunctionWrapper(Logger logger, LuaFunction fn) {
+            this.logger = logger;
+            this.fn = fn;
+        }
+
+        @Override
+        public LuaValue call() {
+            return invoke(LuaValue.NIL);
+        }
+
+        @Override
+        public LuaValue call(LuaValue a) {
+            return invoke(a);
+        }
+
+        @Override
+        public LuaValue call(LuaValue a, LuaValue b) {
+            return invoke(LuaValue.varargsOf(a, b));
+        }
+
+        @Override
+        public LuaValue call(LuaValue a, LuaValue b, LuaValue c) {
+            return invoke(LuaValue.varargsOf(a, b, c));
+        }
+
+        @Override
+        public LuaValue call(LuaValue a, LuaValue b, LuaValue c, LuaValue d) {
+            return invoke(LuaValue.varargsOf(new LuaValue[] {a, b, c}, 0, 3));
+        }
+
+        @Override
+        public LuaValue invoke(Varargs args) {
+            try {
+                return fn.invoke(args);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+
+                throw e;
             }
         }
     }

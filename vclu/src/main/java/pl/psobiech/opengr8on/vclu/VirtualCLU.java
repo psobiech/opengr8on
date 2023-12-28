@@ -19,6 +19,7 @@
 package pl.psobiech.opengr8on.vclu;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.Inet4Address;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.OneArgFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,12 +62,14 @@ public class VirtualCLU extends VirtualObject {
         Map.entry(22, ZoneOffset.UTC)
     );
 
+    private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+
     public VirtualCLU(String name, Inet4Address address) {
         super(name);
 
-        funcs.put(0, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
+        funcs.put(
+            0,
+            arg -> {
                 VirtualCLU.this.vars.put(1, arg);
 
                 if (!arg.isnil()) {
@@ -77,124 +79,114 @@ public class VirtualCLU extends VirtualObject {
 
                 return LuaValue.NIL;
             }
-        });
+        );
 
-        funcs.put(1, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
+        funcs.put(
+            1,
+            arg -> {
                 VirtualCLU.this.vars.put(1, LuaValue.NIL);
 
                 return LuaValue.NIL;
             }
-        });
+        );
 
-        features.put(0, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    TimeUnit.MILLISECONDS.toSeconds(ManagementFactory.getRuntimeMXBean().getUptime())
-                );
-            }
-        });
+        features.put(
+            0,
+            () -> LuaValue.valueOf(
+                TimeUnit.MILLISECONDS.toSeconds(
+                    runtimeBean.getUptime()
+                )
+            )
+        );
 
         VirtualCLU.this.vars.put(2, LuaValue.valueOf(1));
 
-        features.put(5, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                );
-            }
-        });
+        features.put(
+            5,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            )
+        );
 
-        features.put(6, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-                );
-            }
-        });
+        features.put(
+            6,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+            )
+        );
 
-        features.put(7, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .getDayOfMonth()
-                );
-            }
-        });
+        features.put(
+            7,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .getDayOfMonth()
+            )
+        );
 
-        features.put(8, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .getMonthValue()
-                );
-            }
-        });
+        features.put(
+            8,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .getMonthValue()
+            )
+        );
 
-        features.put(9, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .getYear()
-                );
-            }
-        });
+        features.put(
+            9,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .getYear()
+            )
+        );
 
-        features.put(10, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .getDayOfWeek()
-                                 .getValue()
-                );
-            }
-        });
+        features.put(
+            10,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .getDayOfWeek()
+                    .getValue()
+            )
+        );
 
-        features.put(11, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .getHour()
-                );
-            }
-        });
+        features.put(
+            11,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .getHour()
+            )
+        );
 
-        features.put(12, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    ZonedDateTime.now()
-                                 .withZoneSameInstant(TIME_ZONES.get(VirtualCLU.this.vars.get(14).checkint()))
-                                 .getMinute()
-                );
-            }
-        });
+        features.put(
+            12,
+            () -> LuaValue.valueOf(
+                getCurrentDateTime()
+                    .getMinute()
+            )
+        );
 
-        features.put(13, new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                return LuaValue.valueOf(
-                    Instant.now().getEpochSecond()
-                );
-            }
-        });
+        features.put(
+            13,
+            () -> LuaValue.valueOf(
+                Instant.now().getEpochSecond()
+            )
+        );
+    }
+
+    private ZonedDateTime getCurrentDateTime() {
+        final ZoneId zoneId = getCurrentZoneId();
+
+        return ZonedDateTime.now()
+                            .withZoneSameInstant(zoneId);
+    }
+
+    private ZoneId getCurrentZoneId() {
+        final LuaValue zoneIdLuaValue = VirtualCLU.this.vars.get(14);
+        if (!zoneIdLuaValue.isint()) {
+            return ZoneOffset.UTC;
+        }
+
+        return TIME_ZONES.getOrDefault(zoneIdLuaValue.checkint(), ZoneOffset.UTC);
     }
 }

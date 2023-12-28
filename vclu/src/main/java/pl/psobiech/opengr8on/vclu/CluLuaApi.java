@@ -23,10 +23,6 @@ import java.util.ArrayList;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
-import org.luaj.vm2.lib.LibFunction;
-import org.luaj.vm2.lib.OneArgFunction;
-import org.luaj.vm2.lib.ThreeArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,83 +43,88 @@ public class CluLuaApi extends TwoArgFunction {
     public LuaValue call(LuaValue moduleName, LuaValue environment) {
         final LuaValue library = tableOf();
 
-        library.set("setup", new LibFunction() {
-            @Override
-            public LuaValue call() {
+        library.set(
+            "setup",
+            LuaServer.wrap(LOGGER, () -> {
                 virtualSystem.setup();
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
-        library.set("loop", new LibFunction() {
-            @Override
-            public LuaValue call() {
+        library.set(
+            "loop",
+            LuaServer.wrap(LOGGER, () -> {
                 virtualSystem.loop();
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
-        library.set("sleep", new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                virtualSystem.sleep(arg.checklong());
-
-                return LuaValue.NIL;
-            }
-        });
-
-        library.set("logDebug", new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                LOGGER.debug(String.valueOf(arg.checkstring()));
+        library.set(
+            "sleep",
+            LuaServer.wrap(LOGGER, args -> {
+                virtualSystem.sleep(args.checklong(1));
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
-        library.set("logInfo", new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                LOGGER.info(String.valueOf(arg.checkstring()));
-
-                return LuaValue.NIL;
-            }
-        });
-
-        library.set("logWarning", new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                LOGGER.warn(String.valueOf(arg.checkstring()));
+        library.set(
+            "logDebug",
+            LuaServer.wrap(LOGGER, args -> {
+                LOGGER.debug(String.valueOf(args.checkstring(1)));
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
-        library.set("logError", new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                LOGGER.error(String.valueOf(arg.checkstring()));
+        library.set(
+            "logInfo",
+            LuaServer.wrap(LOGGER, args -> {
+                LOGGER.info(String.valueOf(args.checkstring(1)));
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
-        library.set("clientRegister", new LibFunction() {
-            @Override
-            public LuaValue invoke(Varargs args) {
+        library.set(
+            "logWarning",
+            LuaServer.wrap(LOGGER, args -> {
+                LOGGER.warn(String.valueOf(args.checkstring(1)));
+
+                return LuaValue.NIL;
+            })
+        );
+
+        library.set(
+            "logError",
+            LuaServer.wrap(LOGGER, args -> {
+                LOGGER.error(String.valueOf(args.checkstring(1)));
+
+                return LuaValue.NIL;
+            })
+        );
+
+        library.set(
+            "clientRegister",
+            LuaServer.wrap(LOGGER, args -> {
                 final LuaValue object = args.arg(4);
 
                 final ArrayList<Subscription> subscriptions = new ArrayList<>();
                 if (!object.istable()) {
-                    return LuaValue.valueOf("values:{" + 99 + "}");
+                    LOGGER.warn("Unknown clientRegister format: " + args);
+
+                    return LuaValue.valueOf("values:nil");
                 }
-                final LuaTable checktable = object.checktable();
-                for (LuaValue key : checktable.keys()) {
-                    final LuaValue keyValue = checktable.get(key);
+
+                final LuaTable table = object.checktable();
+                for (LuaValue key : table.keys()) {
+                    final LuaValue keyValue = table.get(key);
                     if (!keyValue.istable()) {
-                        return LuaValue.valueOf("values:{" + 99 + "}");
+                        LOGGER.warn("Unknown clientRegister format: " + keyValue);
+
+                        continue;
                     }
 
                     subscriptions.add(
@@ -142,33 +143,39 @@ public class CluLuaApi extends TwoArgFunction {
                         subscriptions
                     )
                 );
-            }
-        });
+            })
+        );
 
-        library.set("clientDestroy", new LibFunction() {
-            @Override
-            public LuaValue invoke(Varargs args) {
-                return virtualSystem.clientDestroy(
-                    String.valueOf(args.arg1().checkstring()),
-                    args.arg(2).checkint(),
-                    args.arg(3).checkint()
-                );
-            }
-        });
+        library.set(
+            "clientDestroy",
+            LuaServer.wrap(LOGGER, args -> virtualSystem.clientDestroy(
+                String.valueOf(args.checkstring(1)),
+                args.checkint(2),
+                args.checkint(3)
+            ))
+        );
 
-        library.set("fetchValues", new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue object) {
+        library.set(
+            "fetchValues",
+            LuaServer.wrap(LOGGER, args -> {
                 final ArrayList<Subscription> subscriptions = new ArrayList<>();
-                if (!object.istable()) {
-                    return LuaValue.valueOf("values:{" + 99 + "}");
+                if (!args.istable(1)) {
+                    LOGGER.warn("Unknown fetchValues format: " + args);
+
+                    return LuaValue.valueOf("values:nil");
                 }
 
-                final LuaTable checktable = object.checktable();
-                for (LuaValue key : checktable.keys()) {
-                    final LuaValue keyValue = checktable.get(key);
+                final LuaTable table = args.checktable(1);
+                for (LuaValue key : table.keys()) {
+                    final LuaValue keyValue = table.get(key);
                     if (!keyValue.istable()) {
-                        return valueOf("values:{\"" + globals.load("return _G[\"%s\"]".formatted(keyValue)).call() + "\"}");
+                        return valueOf(
+                            "values:{\"%s\"}"
+                                .formatted(
+                                    globals.load("return _G[\"%s\"]".formatted(keyValue))
+                                           .call()
+                                )
+                        );
                     }
 
                     subscriptions.add(
@@ -184,65 +191,50 @@ public class CluLuaApi extends TwoArgFunction {
                         subscriptions
                     )
                 );
-            }
+            })
+        );
 
-            @Override
-            public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                virtualSystem.getObject(object.checkint()).addEvent(arg1.checkint(), arg2.checkfunction());
+        library.set(
+            "newObject",
+            LuaServer.wrap(LOGGER, (arg1, arg2, arg3) -> valueOf(
+                virtualSystem.newObject(arg1.checkint(), String.valueOf(arg2.checkstring()), arg3.checkint())
+            ))
+        );
 
-                return LuaValue.NIL;
-            }
-        });
+        library.set(
+            "newGate",
+            LuaServer.wrap(LOGGER, (arg1, arg2, arg3) -> valueOf(
+                virtualSystem.newGate(arg1.checkint(), String.valueOf(arg2.checkstring()))
+            ))
+        );
 
-        library.set("newObject", new ThreeArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-                return valueOf(
-                    virtualSystem.newObject(arg1.checkint(), String.valueOf(arg2.checkstring()), arg3.checkint())
-                );
-            }
-        });
+        library.set(
+            "get",
+            LuaServer.wrap(LOGGER, (arg1, arg2) -> virtualSystem.getObject(arg1.checkint()).get(arg2.checkint()))
+        );
 
-        library.set("newGate", new ThreeArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-                return valueOf(
-                    virtualSystem.newGate(arg1.checkint(), String.valueOf(arg2.checkstring()))
-                );
-            }
-        });
-
-        library.set("get", new TwoArgFunction() {
-            @Override
-            public LuaValue call(LuaValue object, LuaValue arg) {
-                return virtualSystem.getObject(object.checkint()).get(arg.checkint());
-            }
-        });
-
-        library.set("set", new ThreeArgFunction() {
-            @Override
-            public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                virtualSystem.getObject(object.checkint()).set(arg1.checkint(), arg2);
+        library.set(
+            "set",
+            LuaServer.wrap(LOGGER, (arg1, arg2, arg3) -> {
+                virtualSystem.getObject(arg1.checkint()).set(arg2.checkint(), arg3);
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
-        library.set("execute", new ThreeArgFunction() {
-            @Override
-            public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                return virtualSystem.getObject(object.checkint()).execute(arg1.checkint(), arg2);
-            }
-        });
+        library.set(
+            "execute",
+            LuaServer.wrap(LOGGER, (arg1, arg2, arg3) -> virtualSystem.getObject(arg1.checkint()).execute(arg2.checkint(), arg3))
+        );
 
-        library.set("addEvent", new ThreeArgFunction() {
-            @Override
-            public LuaValue call(LuaValue object, LuaValue arg1, LuaValue arg2) {
-                virtualSystem.getObject(object.checkint()).addEvent(arg1.checkint(), arg2.checkfunction());
+        library.set(
+            "addEvent",
+            LuaServer.wrap(LOGGER, (arg1, arg2, arg3) -> {
+                virtualSystem.getObject(arg1.checkint()).addEvent(arg2.checkint(), arg3.checkfunction());
 
                 return LuaValue.NIL;
-            }
-        });
+            })
+        );
 
         environment.set("api", library);
 

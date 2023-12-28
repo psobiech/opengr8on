@@ -21,10 +21,11 @@ package pl.psobiech.opengr8on.vclu;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.vclu.lua.LuaNoArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.LuaOneArgFunction;
 
 public class VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualObject.class);
@@ -33,11 +34,11 @@ public class VirtualObject {
 
     protected final Map<Integer, LuaValue> vars = new HashMap<>();
 
-    protected final Map<Integer, LuaFunction> features = new HashMap<>();
+    protected final Map<Integer, LuaNoArgFunction> features = new HashMap<>();
 
-    protected final Map<Integer, LuaFunction> funcs = new HashMap<>();
+    protected final Map<Integer, LuaOneArgFunction> funcs = new HashMap<>();
 
-    protected final Map<Integer, LuaFunction> events = new HashMap<>();
+    protected final Map<Integer, org.luaj.vm2.LuaFunction> events = new HashMap<>();
 
     public VirtualObject(String name) {
         this.name = name;
@@ -49,7 +50,7 @@ public class VirtualObject {
             return luaValue;
         }
 
-        final LuaFunction luaFunction = features.get(index);
+        final LuaNoArgFunction luaFunction = features.get(index);
         if (luaFunction != null) {
             return luaFunction.call();
         }
@@ -62,7 +63,7 @@ public class VirtualObject {
     }
 
     public LuaValue execute(int index, LuaValue luaValue) {
-        final LuaFunction luaFunction = funcs.get(index);
+        final LuaOneArgFunction luaFunction = funcs.get(index);
         if (luaFunction != null) {
             return luaFunction.call(luaValue);
         }
@@ -72,7 +73,7 @@ public class VirtualObject {
         return LuaValue.NIL;
     }
 
-    public void addEvent(int index, LuaFunction luaValue) {
+    public void addEvent(int index, org.luaj.vm2.LuaFunction luaValue) {
         events.put(index, luaValue);
     }
 }

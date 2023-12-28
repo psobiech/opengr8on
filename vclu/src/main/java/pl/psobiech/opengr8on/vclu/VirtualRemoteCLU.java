@@ -22,12 +22,12 @@ import java.net.Inet4Address;
 import java.util.Optional;
 
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.OneArgFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.vclu.lua.LuaOneArgFunction;
 
 public class VirtualRemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualRemoteCLU.class);
@@ -35,7 +35,7 @@ public class VirtualRemoteCLU extends VirtualObject {
     public VirtualRemoteCLU(String name, Inet4Address address, NetworkInterfaceDto networkInterface, CipherKey cipherKey) {
         super(name);
 
-        funcs.put(0, new OneArgFunction() {
+        funcs.put(0, new LuaOneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
                 final String script = String.valueOf(arg.checkstring());
