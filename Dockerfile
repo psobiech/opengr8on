@@ -10,7 +10,7 @@ RUN apt update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-FROM app-builder AS app-build
+FROM app-builder AS app-deps
 
 COPY tftp/pom.xml tftp/
 COPY common/pom.xml common/
@@ -22,8 +22,10 @@ COPY pom.xml .
 COPY vclu/assembly/jar-with-dependencies.xml vclu/assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
-#RUN mvn dependency:go-offline
-RUN mvn install
+#RUN mvn -B dependency:go-offline
+RUN mvn -B install
+
+FROM app-deps AS app-build
 
 COPY tftp tftp
 COPY common common
@@ -31,7 +33,7 @@ COPY lib lib
 COPY client client
 COPY vclu vclu
 
-RUN mvn package
+RUN mvn -B package
 
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21 AS jre-build
 
@@ -54,12 +56,12 @@ FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS app-runtime
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 
-RUN mkdir -p /opt/docker
+RUN mkdir -p /opt/docker/runtime
 WORKDIR /opt/docker
 
 COPY --from=jre-build /opt/build/jre $JAVA_HOME
 COPY --from=app-build /opt/build/vclu/target/vclu.jar /opt/docker
-COPY runtime .
+#COPY runtime .
 
 ENTRYPOINT [ \
   "java", \

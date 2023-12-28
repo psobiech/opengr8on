@@ -51,8 +51,8 @@ function SYSTEM:Wait(milliseconds)
   api.sleep(milliseconds)
 end
 
-function SYSTEM:clientRegister(a, b, c, d)
-  return api.clientRegister(a, b, c, d)
+function SYSTEM:clientRegister(remoteAddress, a, b, c, d)
+  return api.clientRegister(remoteAddress, a, b, c, d)
 end
 
 function SYSTEM:clientDestroy(a, b, c)

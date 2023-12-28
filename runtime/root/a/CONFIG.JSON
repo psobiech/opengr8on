@@ -1,12 +1,12 @@
 {
-	"sn":	0,
-	"mac":	"0e:aa:55:aa:55:aa",
-	"hwType":	5614165,
-	"hwVer":	1,
-	"fwType":	1,
-	"fwApiVer":	1,
-	"fwVer":	"0.0.0-ALPHA",
-	"status":	"OK",
-	"tfbusDevices":	[],
-	"zwaveDevices":	[]
+  "sn": 0,
+  "mac": "0e:aa:55:aa:55:aa",
+  "hwType": 19,
+  "hwVer": 1,
+  "fwType": 3,
+  "fwApiVer": 11163050,
+  "fwVer": "0.0.0-VIRTUAL",
+  "status": "OK",
+  "tfbusDevices": [],
+  "zwaveDevices": []
 }

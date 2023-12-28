@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import java.net.Inet4Address;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class VirtualSystem implements AutoCloseable {
 
     private final Map<String, VirtualObject> objectsByName = new HashMap<>();
 
-    private ScheduledFuture<?> clientReport = null;
+    private ScheduledFuture<?> clientReportFuture = null;
 
     private int objectIdGenerator = 0;
 
@@ -124,17 +125,26 @@ public class VirtualSystem implements AutoCloseable {
         }
     }
 
-    public String clientRegister(String address, int port, int sessionId, List<Subscription> subscription) {
-        if (clientReport != null) {
-            clientReport.cancel(true);
+    public String clientRegister(String remoteAddress, String address, int port, int sessionId, List<Subscription> subscription) {
+        if (clientReportFuture != null) {
+            clientReportFuture.cancel(true);
         }
-        System.out.println(address);
-        clientReport = executors.scheduleAtFixedRate(
+
+        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(address);
+        final Inet4Address remoteIpAddress = IPv4AddressUtil.parseIPv4(remoteAddress);
+
+        clientReportFuture = executors.scheduleAtFixedRate(
             () -> {
                 try {
                     final String valuesAsString = "clientReport:" + sessionId + ":" + fetchValues(subscription);
 
-                    try (CLUClient client = new CLUClient(networkInterface, IPv4AddressUtil.parseIPv4(address), cipherKey, port)) {
+                    try (CLUClient client = new CLUClient(networkInterface, ipAddress, cipherKey, port)) {
+                        client.clientReport(valuesAsString);
+                    }
+
+                    // when having docker network interfaces,
+                    // OM often picks incorrect/unreachable local address
+                    try (CLUClient client = new CLUClient(networkInterface, remoteIpAddress, cipherKey, port)) {
                         client.clientReport(valuesAsString);
                     }
                 } catch (Exception e) {
@@ -148,11 +158,11 @@ public class VirtualSystem implements AutoCloseable {
     }
 
     public LuaValue clientDestroy(String ipAddress, int port, int sessionId) {
-        if (clientReport != null) {
-            clientReport.cancel(true);
+        if (clientReportFuture != null) {
+            clientReportFuture.cancel(true);
         }
 
-        clientReport = null;
+        clientReportFuture = null;
 
         return LuaValue.valueOf(sessionId);
     }
@@ -182,10 +192,10 @@ public class VirtualSystem implements AutoCloseable {
 
     @Override
     public void close() {
-        if (clientReport != null) {
-            clientReport.cancel(true);
+        if (clientReportFuture != null) {
+            clientReportFuture.cancel(true);
 
-            clientReport = null;
+            clientReportFuture = null;
         }
 
         executors.shutdown();

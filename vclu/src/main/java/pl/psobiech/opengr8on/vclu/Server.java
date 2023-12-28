@@ -359,8 +359,17 @@ public class Server implements AutoCloseable {
 
             final LuaValue luaValue;
             try {
+                final String clientRegisterPrefix = "SYSTEM:clientRegister(";
+
+                String script = request.getScript();
+                if (script.startsWith(clientRegisterPrefix)) {
+                    final String remoteAddress = payload.address().getHostAddress();
+
+                    script = clientRegisterPrefix + "\"" + remoteAddress + "\", " + script.substring(clientRegisterPrefix.length());
+                }
+
                 luaValue = luaThread.globals()
-                                    .load("return %s".formatted(request.getScript()))
+                                    .load("return %s".formatted(script))
                                     .call();
             } catch (LuaError e) {
                 LOGGER.error(e.getMessage(), e);

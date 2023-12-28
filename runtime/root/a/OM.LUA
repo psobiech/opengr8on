@@ -1,7 +1,10 @@
--- FwType 00000001
--- FwVersion 00000001
--- HwType 0055aa55
+-- FwType 00000003
+-- FwVersion 00aa55aa
+-- HwType 00000013
 -- HwVersion 00000001
+
+--STORAGE
+STO99999 = OBJECT:new(44, "STO99999")
 
 CLU0 = OBJECT:new(0, 0xC0A81F27, "CLU0")
 -- NAME_CLU CLU0=CLU0

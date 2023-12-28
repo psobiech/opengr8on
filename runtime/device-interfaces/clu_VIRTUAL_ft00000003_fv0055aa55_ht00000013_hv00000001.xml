@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<CLU firmwareType="00000001" firmwareVersion="00000001" hardwareType="0055aa55" hardwareVersion="00000001" typeName="CLU_VIRTUAL_OPENGR8ON">
-  <!--hwType=0x55aa55(5614165), hwVer=0x1(1), fwType=0x1(1), fwApiVer=0x1(1)-->
+<CLU firmwareType="00000003" firmwareVersion="00aa55aa" hardwareType="00000013" hardwareVersion="00000000" typeName="CLU_VIRTUAL_OPENGR8ON">
+  <!--hwType=0x13(19), hwVer=0x0(0), fwType=0x3(3), fwApiVer=0x00aa55aa(11163050)-->
   <interface>
     <features>
       <feature get="true" index="0" name="Uptime" set="false" type="num" unit="s">
@@ -161,9 +161,9 @@
   <options>
     <option name="maxIOMs" value="64"/>
     <option name="FeatureToGetActualTimeOnClu" value="LocalTime"/>
-    <option name="GettingTimeType" value="LOCAL"/>
+    <option name="GettingTimeType" value="UNIX"/>
     <option name="MethodToSetActualTimeOnClu" value="SetDateTime"/>
-    <option name="SettingTimeType" value="LOCAL"/>
+    <option name="SettingTimeType" value="UNIX"/>
     <option name="cipher" value="true"/>
     <option name="accept_tftp" value="true"/>
     <option name="accept_udp" value="true"/>

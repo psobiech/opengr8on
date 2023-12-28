@@ -109,7 +109,7 @@ public class CluLuaApi extends TwoArgFunction {
         library.set(
             "clientRegister",
             LuaServer.wrap(LOGGER, args -> {
-                final LuaValue object = args.arg(4);
+                final LuaValue object = args.arg(5);
 
                 final ArrayList<Subscription> subscriptions = new ArrayList<>();
                 if (!object.istable()) {
@@ -137,9 +137,10 @@ public class CluLuaApi extends TwoArgFunction {
 
                 return valueOf(
                     virtualSystem.clientRegister(
-                        String.valueOf(args.arg1().checkstring()),
-                        args.arg(2).checkint(),
+                        String.valueOf(args.arg(1).checkstring()),
+                        String.valueOf(args.arg(2).checkstring()),
                         args.arg(3).checkint(),
+                        args.arg(4).checkint(),
                         subscriptions
                     )
                 );
