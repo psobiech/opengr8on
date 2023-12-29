@@ -1,6 +1,6 @@
 # Generate Certificates
 
-```
+```bash
 mkdir -p mqtt/config mqtt/data mqtt/log
 cd mqtt
 git clone https://github.com/fcgdam/easy-ca.git
@@ -15,7 +15,8 @@ cd ../config/certs
 # Configure mosquitto
 
 ## ./mqtt/config/mosquitto.conf
-```
+
+```properties
 persistence true
 persistence_location /mosquitto/data/
 log_dest stdout
@@ -43,7 +44,8 @@ tls_version tlsv1.2
 ```
 
 ## ./mqtt/docker-compose.yml
-```
+
+```dockerfile
 version: '3.8'
 
 services:
@@ -65,7 +67,8 @@ networks:
 ```
 
 ## Run MQTT broker
-```
+
+```bash
 ❯ docker-compose up
 [+] Running 1/0
  ✔ Container mqtt-mosquitto-1  Created                                                              0.0s 
@@ -80,16 +83,29 @@ mosquitto-1  | 1703839960: mosquitto version 2.0.18 running
 
 ## Test MQTT
 
-```
+```bash
 mosquitto_pub --cafile ./mqtt/config/certs/ca/ca.crt -h localhost -t "topic" -m "message" -p 8883 -d --cert ./mqtt/config/certs/certs/user1.client.crt --key ./mqtt/config/certs/private/user1.client.key
 ```
 
 # Configure VCLU
+
 Copy certificates and CLU private key into CLU runtime directory
-```
+
+```bash
 cp ./mqtt/config/certs/ca/ca.crt ./runtime/root/a/MQTT-ROOT.CRT``
 cp ./mqtt/config/certs/certs/clu0.client.crt ./runtime/root/a/MQTT-PUBLIC.CRT
 cp ./mqtt/config/certs/private/clu0.client.key ./runtime/root/a/MQTT-PRIVATE.PEM
 ```
 
 Run VCLU and enable UseMQTT in OM.
+
+## MqttSubscription
+
+Example onMessage script:
+```lua
+-- read current message message
+CLU0->AddToLog(CLU0->mqttTopic->Message)
+
+-- unblock next message
+CLU0->mqttTopic->NextMessage()
+```

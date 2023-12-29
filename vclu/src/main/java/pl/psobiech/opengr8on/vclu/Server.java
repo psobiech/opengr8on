@@ -61,9 +61,9 @@ import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer.LuaThreadWrapper;
-import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 
 public class Server implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -361,25 +361,25 @@ public class Server implements Closeable {
         if (requestOptional.isPresent()) {
             final LuaScriptCommand.Request request = requestOptional.get();
 
-            final LuaValue luaValue;
+            // when having docker network interfaces,
+            // OM often picks incorrect/unreachable local address,
+            // so we need to also save real remote address from udp packet
+            String script = request.getScript();
+            if (script.startsWith(CLIENT_REGISTER_METHOD_PREFIX)) {
+                final String remoteAddress = payload.address().getHostAddress();
+
+                script = CLIENT_REGISTER_METHOD_PREFIX + "\"" + remoteAddress + "\", " + script.substring(CLIENT_REGISTER_METHOD_PREFIX.length());
+            }
+
+            LuaValue luaValue;
             try {
-                // when having docker network interfaces,
-                // OM often picks incorrect/unreachable local address,
-                // so we need to also save real remote address from udp packet
-                String script = request.getScript();
-                if (script.startsWith(CLIENT_REGISTER_METHOD_PREFIX)) {
-                    final String remoteAddress = payload.address().getHostAddress();
-
-                    script = CLIENT_REGISTER_METHOD_PREFIX + "\"" + remoteAddress + "\", " + script.substring(CLIENT_REGISTER_METHOD_PREFIX.length());
-                }
-
                 luaValue = luaThread.globals()
                                     .load("return %s".formatted(script))
                                     .call();
             } catch (LuaError e) {
                 LOGGER.error(e.getMessage(), e);
 
-                return sendError();
+                luaValue = LuaValue.NIL;
             }
 
             String returnValue;

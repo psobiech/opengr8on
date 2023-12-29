@@ -94,10 +94,9 @@ function OBJECT:new(idx, a, b, c)
     self['name'] = a
     self['_id'] = api.newObject(idx, a, 0)
   else
-    self['parent'] = a
-    self['name'] = c
+    self['name'] = a
 
-    self['_id'] = api.newObject(idx, c, 0)
+    self['_id'] = api.newObject(idx, a, 0)
   end
 
   return self

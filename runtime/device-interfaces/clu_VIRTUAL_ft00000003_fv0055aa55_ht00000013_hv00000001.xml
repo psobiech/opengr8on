@@ -162,12 +162,13 @@
     </events>
   </interface>
   <objects>
+    <object maxInstances="-1" name="MqttSubscription" version="1"/>
     <!--    <object maxInstances="-1" name="Timer" version="1"/>-->
     <!--    <object maxInstances="-1" name="Calendar" version="1"/>-->
-    <!--    <object maxInstances="64" name="Scheduler" version="1"/>-->
-    <!--    <object maxInstances="64" name="SunriseSunsetCalendar" version="3"/>-->
-    <!--    <object maxInstances="64" name="PresenceSensor" version="2"/>-->
-    <!--    <object maxInstances="64" name="EventScheduler" version="1"/>-->
+    <!--    <object maxInstances="-1" name="Scheduler" version="1"/>-->
+    <!--    <object maxInstances="-1" name="SunriseSunsetCalendar" version="3"/>-->
+    <!--    <object maxInstances="-1" name="PresenceSensor" version="2"/>-->
+    <!--    <object maxInstances="-1" name="EventScheduler" version="1"/>-->
     <!--    <object maxInstances="-1" name="HttpListener" version="2"/>-->
     <!--    <object maxInstances="-1" name="HttpRequest" version="2"/>-->
   </objects>
@@ -183,7 +184,7 @@
     <option name="accept_tftp" value="true"/>
     <option name="accept_udp" value="true"/>
     <option name="accept_tcp" value="false"/>
-    <option name="maxObjects" value="9999"/>
+    <option name="maxObjects" value="400"/>
     <option name="maxTfBusModules" value="0"/>
     <option name="maxZwaveModules" value="0"/>
   </options>

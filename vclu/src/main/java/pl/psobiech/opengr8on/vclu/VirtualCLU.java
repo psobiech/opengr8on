@@ -28,6 +28,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -89,6 +91,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final ScheduledExecutorService executorService;
 
+    private final List<MqttSubscription> mqttSubscriptions = new LinkedList<>();
+
     private volatile ZonedDateTime currentDateTime;
 
     private MqttClient mqttClient;
@@ -118,17 +122,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 return VirtualCLU.this.featureValues.get(21);
             }
 
-            final boolean mqttEnable = (arg1.isboolean() && arg1.checkboolean()) || (arg1.isint() && arg1.checkint() != 0);
-            final boolean mqttAlreadyEnabled = mqttClient != null;
-            if (mqttEnable ^ mqttAlreadyEnabled) {
-                disableMqtt();
-
-                if (mqttEnable) {
-                    enableMqtt();
-                }
-            }
-
-            return LuaValue.valueOf(mqttEnable);
+            // Sometimes OM uses true/false and sometimes 0/1
+            return LuaValue.valueOf(
+                (arg1.isboolean() && arg1.checkboolean()) || (arg1.isint() && arg1.checkint() != 0)
+            );
         });
         featureFunctions.put(22, arg1 -> { // clu_mqttconnection
             return LuaValue.valueOf(
@@ -158,6 +155,19 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         VirtualCLU.this.featureValues.put(2, valueOf(1)); // clu_state
 
         triggerEvent(0); // clu_oninit
+    }
+
+    @Override
+    public void loop() {
+        final boolean mqttEnable = VirtualCLU.this.featureValues.get(21).checkboolean();
+        final boolean mqttAlreadyEnabled = mqttClient != null;
+        if (mqttEnable ^ mqttAlreadyEnabled) {
+            disableMqtt();
+
+            if (mqttEnable) {
+                enableMqtt();
+            }
+        }
     }
 
     private LuaNumber getUptime(LuaValue arg1) {
@@ -296,6 +306,12 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
                     LOGGER.info("MQTT messageArrived: {} / {}", topic, message);
+
+                    for (MqttSubscription mqttSubscription : mqttSubscriptions) {
+                        if (topic.startsWith(mqttSubscription.getTopic())) {
+                            mqttSubscription.enqueueMessage(message.getId(), message.getPayload());
+                        }
+                    }
                 }
 
                 @Override
@@ -317,10 +333,21 @@ public class VirtualCLU extends VirtualObject implements Closeable {
             );
 
             mqttClient.connect(options);
-            mqttClient.subscribe("topic", 0);
+
+            for (MqttSubscription mqttSubscription : mqttSubscriptions) {
+                try {
+                    mqttClient.subscribe(mqttSubscription.getTopic());
+                } catch (MqttException e) {
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
         } catch (MqttException e) {
             throw new UnexpectedException(e);
         }
+    }
+
+    public void addMqttSubscription(MqttSubscription mqttSubscription) {
+        mqttSubscriptions.add(mqttSubscription);
     }
 
     @Override

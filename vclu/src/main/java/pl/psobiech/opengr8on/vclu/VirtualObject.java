@@ -20,6 +20,7 @@ package pl.psobiech.opengr8on.vclu;
 
 import java.io.Closeable;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
 
 import org.luaj.vm2.LuaFunction;
@@ -33,13 +34,13 @@ public class VirtualObject implements Closeable {
 
     protected final String name;
 
-    protected final Map<Integer, LuaValue> featureValues = new HashMap<>();
+    protected final Map<Integer, LuaValue> featureValues = new Hashtable<>();
 
-    protected final Map<Integer, LuaOneArgFunction> featureFunctions = new HashMap<>();
+    protected final Map<Integer, LuaOneArgFunction> featureFunctions = new Hashtable<>();
 
-    protected final Map<Integer, LuaOneArgFunction> methodFunctions = new HashMap<>();
+    protected final Map<Integer, LuaOneArgFunction> methodFunctions = new Hashtable<>();
 
-    protected final Map<Integer, org.luaj.vm2.LuaFunction> eventFunctions = new HashMap<>();
+    protected final Map<Integer, org.luaj.vm2.LuaFunction> eventFunctions = new Hashtable<>();
 
     public VirtualObject(String name) {
         this.name = name;

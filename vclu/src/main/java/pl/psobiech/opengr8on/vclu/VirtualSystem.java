@@ -58,6 +58,8 @@ public class VirtualSystem implements Closeable {
 
     private final Map<String, VirtualObject> objectsByName = new HashMap<>();
 
+    private VirtualCLU currentClu = null;
+
     private ScheduledFuture<?> clientReportFuture = null;
 
     private int objectIdGenerator = 0;
@@ -81,9 +83,15 @@ public class VirtualSystem implements Closeable {
         final int objectId = objectIdGenerator++;
 
         final VirtualObject virtualObject = switch (index) {
-            case 0 -> new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory);
+            case 0 -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
             case 1 -> new VirtualRemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
             case 44 -> new VirtualStorage(name);
+            case 300 -> {
+                final MqttSubscription mqttSubscription = new MqttSubscription(name);
+                currentClu.addMqttSubscription(mqttSubscription);
+
+                yield mqttSubscription;
+            }
             default -> new VirtualObject(name);
         };
 
@@ -162,10 +170,12 @@ public class VirtualSystem implements Closeable {
                         client.clientReport(valuesAsString);
                     }
 
-                    // when having docker network interfaces,
-                    // OM often picks incorrect/unreachable local address
-                    try (CLUClient client = new CLUClient(networkInterface, remoteIpAddress, cipherKey, port)) {
-                        client.clientReport(valuesAsString);
+                    if (!ipAddress.equals(remoteIpAddress)) {
+                        // when having docker network interfaces,
+                        // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
+                        try (CLUClient client = new CLUClient(networkInterface, remoteIpAddress, cipherKey, port)) {
+                            client.clientReport(valuesAsString);
+                        }
                     }
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage(), e);

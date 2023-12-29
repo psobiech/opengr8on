@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<object class="300" name="MqttSubscription" version="1">
+  <features>
+    <feature get="true" index="0" name="Topic" set="true" type="str" unit="string">
+      <hint lang="pl" value="Topic"/>
+      <hint lang="en" value="Topic"/>
+      <desc resKey="mqttsubscription_topic"/>
+    </feature>
+    <feature get="true" index="1" name="Message" set="false" type="str" unit="string">
+      <hint lang="pl" value="Zawartość wiadomości MQTT"/>
+      <hint lang="en" value="The content of MQTT message"/>
+      <desc resKey="mqttsubscription_message"/>
+    </feature>
+  </features>
+  <methods>
+    <method call="set" index="0" name="SetTopic" return="void">
+      <param name="Topic" type="str" unit="string"/>
+      <hint lang="pl" value="Zmienia topic"/>
+      <hint lang="en" value="Changes topic"/>
+      <desc resKey="mqttsubscription_settopic"/>
+    </method>
+    <method call="execute" index="0" name="NextMessage" return="void">
+      <hint lang="pl" value="Oznacza wiadomość jako otrzymaną"/>
+      <hint lang="en" value="Marks message as received"/>
+      <desc resKey="mqttsubscription_nextmessage"/>
+    </method>
+  </methods>
+  <events>
+    <event address="0" name="OnMessage">
+      <hint lang="pl" value="Zdarzenie wywoływane w momencie otrzymania wiadomości"/>
+      <hint lang="en" value="Event occurring when the message is received"/>
+      <desc resKey="mqttsubscription_onmessage"/>
+    </event>
+  </events>
+</object>
