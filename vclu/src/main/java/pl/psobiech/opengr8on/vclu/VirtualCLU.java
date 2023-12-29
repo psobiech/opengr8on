@@ -23,6 +23,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.Inet4Address;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -38,7 +39,6 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaString;
@@ -141,7 +141,14 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
         currentDateTime = getCurrentDateTime();
         executorService.scheduleAtFixedRate(
-            () -> currentDateTime = getCurrentDateTime(),
+            () -> {
+                final ZonedDateTime lastDateTime = currentDateTime;
+                currentDateTime = getCurrentDateTime();
+
+                if (Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= 60) {
+                    triggerEvent(13); // clu_ontimechange
+                }
+            },
             1, 1, TimeUnit.SECONDS
         );
     }
@@ -150,10 +157,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     public void setup() {
         VirtualCLU.this.featureValues.put(2, valueOf(1)); // clu_state
 
-        final LuaFunction luaFunction = eventFunctions.get(0); // clu_oninit
-        if (luaFunction != null) {
-            luaFunction.call();
-        }
+        triggerEvent(0); // clu_oninit
     }
 
     private LuaNumber getUptime(LuaValue arg1) {

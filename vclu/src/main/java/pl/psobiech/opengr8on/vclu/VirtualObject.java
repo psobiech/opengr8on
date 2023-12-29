@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,41 +61,58 @@ public class VirtualObject implements Closeable {
 
     public LuaValue get(int index) {
         final LuaOneArgFunction luaFunction = featureFunctions.get(index);
-        if (luaFunction != null) {
-            final LuaValue returnValue = luaFunction.call(LuaValue.NIL);
-            featureValues.put(index, returnValue);
-
-            return returnValue;
+        if (luaFunction == null) {
+            return featureValues.getOrDefault(index, LuaValue.NIL);
         }
 
-        return featureValues.getOrDefault(index, LuaValue.NIL);
+        final LuaValue returnValue = luaFunction.call(LuaValue.NIL);
+        featureValues.put(index, returnValue);
+
+        return returnValue;
     }
 
     public void set(int index, LuaValue luaValue) {
         final LuaOneArgFunction luaFunction = featureFunctions.get(index);
         if (luaFunction == null) {
             featureValues.put(index, luaValue);
-        } else {
-            featureValues.put(
-                index,
-                luaFunction.call(luaValue)
-            );
+
+            return;
         }
+
+        featureValues.put(
+            index,
+            luaFunction.call(luaValue)
+        );
     }
 
     public LuaValue execute(int index, LuaValue luaValue) {
         final LuaOneArgFunction luaFunction = methodFunctions.get(index);
-        if (luaFunction != null) {
-            return luaFunction.call(luaValue);
+        if (luaFunction == null) {
+            LOGGER.warn("Not implemented: " + name + ":execute(" + index + ")");
+
+            return LuaValue.NIL;
         }
 
-        LOGGER.warn("Not implemented: " + name + ":execute(" + index + ")");
-
-        return LuaValue.NIL;
+        return luaFunction.call(luaValue);
     }
 
-    public void addEvent(int index, org.luaj.vm2.LuaFunction luaValue) {
-        eventFunctions.put(index, luaValue);
+    public void triggerEvent(int address) {
+        final LuaFunction luaFunction = eventFunctions.get(address);
+        if (luaFunction == null) {
+            LOGGER.warn("Not implemented: " + name + ":addEvent(" + address + ")");
+
+            return;
+        }
+
+        try {
+            luaFunction.call();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    public void addEvent(int index, org.luaj.vm2.LuaFunction luaFunction) {
+        eventFunctions.put(index, luaFunction);
     }
 
     @Override
