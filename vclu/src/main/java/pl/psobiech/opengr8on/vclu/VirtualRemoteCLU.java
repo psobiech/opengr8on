@@ -34,7 +34,7 @@ public class VirtualRemoteCLU extends VirtualObject {
     public VirtualRemoteCLU(String name, Inet4Address address, NetworkInterfaceDto networkInterface, CipherKey cipherKey) {
         super(name);
 
-        funcs.put(0, args -> {
+        methodFunctions.put(0, args -> {
             final String script = String.valueOf(args.checkstring(1));
 
             try (CLUClient client = new CLUClient(networkInterface, address, cipherKey)) {

@@ -34,18 +34,32 @@ public class VirtualObject implements Closeable {
 
     protected final Map<Integer, LuaValue> featureValues = new HashMap<>();
 
-    protected final Map<Integer, LuaOneArgFunction> features = new HashMap<>();
+    protected final Map<Integer, LuaOneArgFunction> featureFunctions = new HashMap<>();
 
-    protected final Map<Integer, LuaOneArgFunction> funcs = new HashMap<>();
+    protected final Map<Integer, LuaOneArgFunction> methodFunctions = new HashMap<>();
 
-    protected final Map<Integer, org.luaj.vm2.LuaFunction> events = new HashMap<>();
+    protected final Map<Integer, org.luaj.vm2.LuaFunction> eventFunctions = new HashMap<>();
 
     public VirtualObject(String name) {
         this.name = name;
     }
 
+    /**
+     * Method executed once
+     */
+    public void setup() {
+        // NOP
+    }
+
+    /**
+     * Method executed every some time
+     */
+    public void loop() {
+        // NOP
+    }
+
     public LuaValue get(int index) {
-        final LuaOneArgFunction luaFunction = features.get(index);
+        final LuaOneArgFunction luaFunction = featureFunctions.get(index);
         if (luaFunction != null) {
             final LuaValue returnValue = luaFunction.call(LuaValue.NIL);
             featureValues.put(index, returnValue);
@@ -57,16 +71,19 @@ public class VirtualObject implements Closeable {
     }
 
     public void set(int index, LuaValue luaValue) {
-        featureValues.put(index, luaValue);
-
-        final LuaOneArgFunction luaFunction = features.get(index);
-        if (luaFunction != null) {
-            luaFunction.call(luaValue);
+        final LuaOneArgFunction luaFunction = featureFunctions.get(index);
+        if (luaFunction == null) {
+            featureValues.put(index, luaValue);
+        } else {
+            featureValues.put(
+                index,
+                luaFunction.call(luaValue)
+            );
         }
     }
 
     public LuaValue execute(int index, LuaValue luaValue) {
-        final LuaOneArgFunction luaFunction = funcs.get(index);
+        final LuaOneArgFunction luaFunction = methodFunctions.get(index);
         if (luaFunction != null) {
             return luaFunction.call(luaValue);
         }
@@ -77,7 +94,7 @@ public class VirtualObject implements Closeable {
     }
 
     public void addEvent(int index, org.luaj.vm2.LuaFunction luaValue) {
-        events.put(index, luaValue);
+        eventFunctions.put(index, luaValue);
     }
 
     @Override

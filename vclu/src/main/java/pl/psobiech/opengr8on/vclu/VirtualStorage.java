@@ -29,7 +29,7 @@ public class VirtualStorage extends VirtualObject {
     public VirtualStorage(String name) {
         super(name);
 
-        funcs.put(4, arg1 -> {
+        methodFunctions.put(4, arg1 -> {
             final LuaString persistentVariableName = arg1.checkstring();
 
             //TODO: make variable persistent across restarts

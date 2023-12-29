@@ -37,30 +37,28 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.bouncycastle.util.io.pem.PemReader;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.RandomUtil;
 
 public class TlsUtil {
     static SSLSocketFactory getSocketFactory(Path caCrtFile, Path crtFile, Path keyFile) {
         try {
             final KeyStore caKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             caKeyStore.load(null, null);
-            caKeyStore.setCertificateEntry("ca-certificate", readCertificate(caCrtFile));
+            caKeyStore.setCertificateEntry("certificate", readCertificate(caCrtFile));
 
             final X509Certificate clientCertificate = readCertificate(crtFile);
 
             final KeyStore clientKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             clientKeyStore.load(null, null);
             clientKeyStore.setCertificateEntry("certificate", clientCertificate);
-            clientKeyStore.setKeyEntry("private-key", readPrivateKey(keyFile), null, new java.security.cert.Certificate[] {clientCertificate});
+            clientKeyStore.setKeyEntry("key", readPrivateKey(keyFile), null, new java.security.cert.Certificate[] {clientCertificate});
 
             final KeyManagerFactory clientKeyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             clientKeyManagerFactory.init(clientKeyStore, null);
@@ -69,7 +67,7 @@ public class TlsUtil {
             caTrustManagerFactory.init(caKeyStore);
 
             final SSLContext context = SSLContext.getInstance("TLSv1.2");
-            context.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), null);
+            context.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.random(true));
 
             return context.getSocketFactory();
         } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {

@@ -112,15 +112,20 @@
         <hint lang="de" value="Zeitzone"/>
         <desc resKey="clu_timezone"/>
       </feature>
-      <feature get="true" index="20" name="MQTTHost" set="true" type="str" default="ssl://localhost:8883">
-        <hint lang="pl" value="Nazwa hosta i port serwera MQTT"/>
-        <hint lang="en" value="Hostname and port of an MQTT server"/>
-        <desc resKey="clu_mqtthost"/>
+      <feature get="true" index="20" name="MQTTUrl" set="true" type="str" default="ssl://localhost:8883">
+        <hint lang="pl" value="Url serwera MQTT"/>
+        <hint lang="en" value="Url of an MQTT server"/>
+        <desc resKey="clu_mqtturl"/>
       </feature>
       <feature get="true" index="21" name="UseMQTT" set="true" type="confirmation" unit="bool" default="false">
         <hint lang="pl" value="Określa czy CLU łączy się do serwera MQTT"/>
         <hint lang="en" value="Specifies if CLU should connect to the MQTT server"/>
         <desc resKey="clu_usemqtt"/>
+      </feature>
+      <feature default="0" get="true" index="22" name="MQTTConnection" set="false" type="confirmation" unit="bool">
+        <hint lang="pl" value="Określa status połączenia CLU z serwerem MQTT"/>
+        <hint lang="en" value="Specifies whether CLU is connected to the MQTT server"/>
+        <desc resKey="clu_mqttconnection"/>
       </feature>
     </features>
     <methods>
@@ -144,15 +149,6 @@
         <hint lang="en" value="Event occurring once during device initialization"/>
         <hint lang="de" value="Ereignis, das einmalig aufgerufen wird, sobald das Gerät aktiviert wird"/>
         <desc resKey="clu_oninit"/>
-      </event>
-      <event address="13" name="OnTimeChange">
-        <hint lang="pl"
-          value="Zdarzenie wywoływane po zmianie czasu o wartość większą niż ± 60 sekund. Możliwe przypadki:&#13;- wywołanie metody SetDateTime&#13;- aktualizacja czasu z serwera NTP&#13;- zmiana czasu lokalnego letni/zimowy"/>
-        <hint lang="en"
-          value="The event is raised after the time has changed by more than ± 60 seconds. Possible cases:&#13;- calling the SetDateTime method&#13;- updating the time from the NTP server&#13;- changing the local time summer / winter"/>
-        <hint lang="de"
-          value="Das Ereignis wird ausgelöst, nachdem sich die Zeit um mehr als ± 60 Sekunden geändert hat. Mögliche Fälle:&#13;- Aufruf der Methode SetDateTime&#13;- Aktualisierung der Uhrzeit vom NTP-Server&#13;- Änderung der Ortszeit Sommer / Winter"/>
-        <desc resKey="clu_ontimechange"/>
       </event>
     </events>
   </interface>

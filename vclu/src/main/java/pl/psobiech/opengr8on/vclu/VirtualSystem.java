@@ -29,7 +29,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,15 +109,30 @@ public class VirtualSystem implements Closeable {
 
     public void setup() {
         for (VirtualObject value : objects.values()) {
-            final LuaFunction luaFunction = value.events.get(0);
-            if (luaFunction != null) {
-                luaFunction.call();
+            try {
+                value.setup();
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
             }
         }
     }
 
     public void loop() {
-        sleep(100);
+        final long startTime = System.nanoTime();
+        for (VirtualObject value : objects.values()) {
+            try {
+                value.loop();
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+
+        // best effort to run every second
+        sleep(Math.max(
+                0,
+                1000 - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
+            )
+        );
     }
 
     public void sleep(long millis) {
@@ -184,7 +198,9 @@ public class VirtualSystem implements Closeable {
             }
 
             final LuaValue luaValue = getObject(name).get(index);
-            if (luaValue.isnumber()) {
+            if (luaValue == null || luaValue.isnil()) {
+                sb.append("nil");
+            } else if (luaValue.isnumber()) {
                 sb.append(luaValue.checklong());
             } else if (luaValue.isstring()) {
                 sb.append("\"").append(luaValue).append("\"");

@@ -23,12 +23,13 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.Inet4Address;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -37,6 +38,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaString;
@@ -46,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 
 import static org.luaj.vm2.LuaValue.valueOf;
 
@@ -84,30 +87,73 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
 
-    private MqttClient client;
+    private final ScheduledExecutorService executorService;
+
+    private volatile ZonedDateTime currentDateTime;
+
+    private MqttClient mqttClient;
 
     public VirtualCLU(String name, Inet4Address address, Path aDriveDirectory) {
         super(name);
 
+        this.executorService = Executors.newScheduledThreadPool(1, ThreadUtil.daemonThreadFactory("cluObject_" + name));
+
         this.aDriveDirectory = aDriveDirectory;
 
-        features.put(0, this::getUptime); // clu_uptime
-        VirtualCLU.this.featureValues.put(2, valueOf(1)); // clu_state
-        features.put(5, this::getCurrentDateAsString); // clu_date
-        features.put(6, this::getCurrentTimeAsString); // clu_time
-        features.put(7, this::getCurrentDayOfMonth); // clu_day
-        features.put(8, this::getCurrentMonth); // clu_month
-        features.put(9, this::getCurrentYear); // clu_year
-        features.put(10, this::getCurrentDayOfWeek); // clu_dayofweek
-        features.put(11, this::getCurrentHour); // clu_hour
-        features.put(12, this::getCurrentMinute); // clu_minute
-        features.put(13, VirtualCLU::getCurrentEpochSeconds); // clu_localtime
+        featureFunctions.put(0, this::getUptime); // clu_uptime
+        VirtualCLU.this.featureValues.put(2, valueOf(0)); // clu_state
+        featureFunctions.put(5, this::getCurrentDateAsString); // clu_date
+        featureFunctions.put(6, this::getCurrentTimeAsString); // clu_time
+        featureFunctions.put(7, this::getCurrentDayOfMonth); // clu_day
+        featureFunctions.put(8, this::getCurrentMonth); // clu_month
+        featureFunctions.put(9, this::getCurrentYear); // clu_year
+        featureFunctions.put(10, this::getCurrentDayOfWeek); // clu_dayofweek
+        featureFunctions.put(11, this::getCurrentHour); // clu_hour
+        featureFunctions.put(12, this::getCurrentMinute); // clu_minute
+        featureFunctions.put(13, this::getCurrentEpochSeconds); // clu_localtime
         VirtualCLU.this.featureValues.put(14, valueOf(UTC_TIMEZONE_ID)); // clu_timezone
-        VirtualCLU.this.featureValues.put(20, valueOf("ssl://localhost:8883")); // clu_mqtthost
-        features.put(21, this::useMqtt); // clu_usemqtt
+        VirtualCLU.this.featureValues.put(20, valueOf("ssl://localhost:8883")); // clu_mqtturl
+        featureFunctions.put(21, arg1 -> { // clu_usemqtt
+            if (arg1.isnil()) {
+                return VirtualCLU.this.featureValues.get(21);
+            }
 
-        funcs.put(0, this::addToLog); // clu_addtolog
-        funcs.put(1, this::clearLog); // clu_clearlog
+            final boolean mqttEnable = (arg1.isboolean() && arg1.checkboolean()) || (arg1.isint() && arg1.checkint() != 0);
+            final boolean mqttAlreadyEnabled = mqttClient != null;
+            if (mqttEnable ^ mqttAlreadyEnabled) {
+                disableMqtt();
+
+                if (mqttEnable) {
+                    enableMqtt();
+                }
+            }
+
+            return LuaValue.valueOf(mqttEnable);
+        });
+        featureFunctions.put(22, arg1 -> { // clu_mqttconnection
+            return LuaValue.valueOf(
+                mqttClient != null && mqttClient.isConnected()
+            );
+        });
+
+        methodFunctions.put(0, this::addToLog); // clu_addtolog
+        methodFunctions.put(1, this::clearLog); // clu_clearlog
+
+        currentDateTime = getCurrentDateTime();
+        executorService.scheduleAtFixedRate(
+            () -> currentDateTime = getCurrentDateTime(),
+            1, 1, TimeUnit.SECONDS
+        );
+    }
+
+    @Override
+    public void setup() {
+        VirtualCLU.this.featureValues.put(2, valueOf(1)); // clu_state
+
+        final LuaFunction luaFunction = eventFunctions.get(0); // clu_oninit
+        if (luaFunction != null) {
+            luaFunction.call();
+        }
     }
 
     private LuaNumber getUptime(LuaValue arg1) {
@@ -120,22 +166,58 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private LuaString getCurrentDateAsString(LuaValue arg1) {
         return valueOf(
-            getCurrentDateTime()
+            currentDateTime
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         );
     }
 
     private LuaString getCurrentTimeAsString(LuaValue arg1) {
         return valueOf(
-            getCurrentDateTime()
+            currentDateTime
                 .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
         );
     }
 
     private LuaInteger getCurrentDayOfMonth(LuaValue arg1) {
         return valueOf(
-            getCurrentDateTime()
+            currentDateTime
                 .getDayOfMonth()
+        );
+    }
+
+    private LuaInteger getCurrentMonth(LuaValue arg1) {
+        return valueOf(
+            currentDateTime
+                .getMonthValue()
+        );
+    }
+
+    private LuaInteger getCurrentYear(LuaValue arg1) {
+        return valueOf(
+            currentDateTime
+                .getYear()
+        );
+    }
+
+    private LuaInteger getCurrentDayOfWeek(LuaValue arg1) {
+        return valueOf(
+            currentDateTime
+                .getDayOfWeek()
+                .getValue()
+        );
+    }
+
+    private LuaInteger getCurrentHour(LuaValue arg1) {
+        return valueOf(
+            currentDateTime
+                .getHour()
+        );
+    }
+
+    private LuaInteger getCurrentMinute(LuaValue arg1) {
+        return valueOf(
+            currentDateTime
+                .getMinute()
         );
     }
 
@@ -155,45 +237,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return TIME_ZONES.getOrDefault(zoneIdLuaValue.checkint(), ZoneOffset.UTC);
     }
 
-    private LuaInteger getCurrentMonth(LuaValue arg1) {
+    private LuaNumber getCurrentEpochSeconds(LuaValue arg1) {
         return valueOf(
-            getCurrentDateTime()
-                .getMonthValue()
-        );
-    }
-
-    private LuaInteger getCurrentYear(LuaValue arg1) {
-        return valueOf(
-            getCurrentDateTime()
-                .getYear()
-        );
-    }
-
-    private LuaInteger getCurrentDayOfWeek(LuaValue arg1) {
-        return valueOf(
-            getCurrentDateTime()
-                .getDayOfWeek()
-                .getValue()
-        );
-    }
-
-    private LuaInteger getCurrentHour(LuaValue arg1) {
-        return valueOf(
-            getCurrentDateTime()
-                .getHour()
-        );
-    }
-
-    private LuaInteger getCurrentMinute(LuaValue arg1) {
-        return valueOf(
-            getCurrentDateTime()
-                .getMinute()
-        );
-    }
-
-    private static LuaNumber getCurrentEpochSeconds(LuaValue arg1) {
-        return valueOf(
-            Instant.now().getEpochSecond()
+            currentDateTime.toInstant()
+                           .getEpochSecond()
         );
     }
 
@@ -214,38 +261,29 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return LuaValue.NIL;
     }
 
-    private LuaValue useMqtt(LuaValue arg1) {
-        if (arg1.isnil()) {
-            // TODO: better handle :get() requests
-            return featureValues.get(21);
-        }
-
-        // TODO: manage the client connection and topics
-        // TODO: expose some LUA API to publish/subscribe
-
-        // false is boolean
-        if (arg1.isboolean() && !arg1.checkboolean()) {
-            return LuaValue.NIL;
-        }
-
-        // true is 1
-        if (arg1.isint() && arg1.checkint() == 0) {
-            return LuaValue.NIL;
-        }
-
-        final String mqttHostname = String.valueOf(VirtualCLU.this.featureValues.get(20).checkstring());
-
-        try {
-            LOGGER.info("Connecting to MQTT on: {}", mqttHostname);
-
-            if (client != null) {
-                client.disconnect();
-                client.close();
+    private void disableMqtt() {
+        if (mqttClient != null) {
+            try {
+                mqttClient.disconnect();
+            } catch (MqttException e) {
+                throw new UnexpectedException(e);
             }
 
-            client = new MqttClient(mqttHostname, name, null);
+            FileUtil.closeQuietly(mqttClient);
+        }
 
-            client.setCallback(new MqttCallback() {
+        mqttClient = null;
+    }
+
+    private void enableMqtt() {
+        // TODO: manage the client connection and topics
+        // TODO: expose some LUA API to publish/subscribe
+        final String mqttUrl = String.valueOf(VirtualCLU.this.featureValues.get(20).checkstring());
+
+        try {
+            LOGGER.info("Connecting to MQTT on: {}", mqttUrl);
+            mqttClient = new MqttClient(mqttUrl, name, null);
+            mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable throwable) {
                     LOGGER.error("MQTT connectionLost", throwable);
@@ -264,6 +302,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
             final MqttConnectOptions options = new MqttConnectOptions();
             options.setConnectionTimeout(60);
+            options.setAutomaticReconnect(true);
             options.setKeepAliveInterval(60);
             options.setSocketFactory(
                 TlsUtil.getSocketFactory(
@@ -272,27 +311,28 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                     aDriveDirectory.resolve(CLUFiles.MQTT_PRIVATE_PEM.getFileName())
                 )
             );
-            client.connect(options);
-            client.subscribe("topic", 0);
+
+            mqttClient.connect(options);
+            mqttClient.subscribe("topic", 0);
         } catch (MqttException e) {
             throw new UnexpectedException(e);
         }
-
-        return LuaValue.NIL;
     }
 
     @Override
     public void close() {
         super.close();
 
-        if (client != null) {
+        executorService.shutdown();
+
+        if (mqttClient != null) {
             try {
-                client.disconnect();
+                mqttClient.disconnect();
             } catch (MqttException e) {
                 LOGGER.warn(e.getMessage(), e);
             }
         }
 
-        FileUtil.closeQuietly(client);
+        FileUtil.closeQuietly(mqttClient);
     }
 }
