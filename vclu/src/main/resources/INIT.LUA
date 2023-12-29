@@ -63,12 +63,16 @@ function SYSTEM:fetchValues(d)
   return api.fetchValues(d)
 end
 
-function SYSTEM:mqttRegister()
-  print("SYSTEM", ":mqttRegister")
+function SYSTEM:mqttRegister(...)
+  print(...)
+
+  api.logInfo(...)
 end
 
-function SYSTEM:mqttDestroy()
-  print("SYSTEM", ":mqttDestroy")
+function SYSTEM:mqttDestroy(...)
+  print(...)
+
+  api.logInfo(...)
 end
 
 --

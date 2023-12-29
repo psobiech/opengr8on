@@ -18,7 +18,6 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -204,20 +203,20 @@ public final class FileUtil {
         }
     }
 
-    public static void closeQuietly(Closeable... closeables) {
-        for (Closeable closeable : closeables) {
+    public static void closeQuietly(AutoCloseable... closeables) {
+        for (AutoCloseable closeable : closeables) {
             closeQuietly(closeable);
         }
     }
 
-    public static void closeQuietly(Closeable closeable) {
+    public static void closeQuietly(AutoCloseable closeable) {
         if (closeable == null) {
             return;
         }
 
         try {
             closeable.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.warn(e.getMessage(), e);
         }
     }

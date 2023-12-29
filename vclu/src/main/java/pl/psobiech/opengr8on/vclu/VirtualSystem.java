@@ -18,7 +18,9 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import java.io.Closeable;
 import java.net.Inet4Address;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,14 +37,17 @@ import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
-public class VirtualSystem implements AutoCloseable {
+public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
     private final ScheduledExecutorService executors = Executors.newSingleThreadScheduledExecutor(ThreadUtil.daemonThreadFactory("LuaServer"));
+
+    private final Path aDriveDirectory;
 
     private final NetworkInterfaceDto networkInterface;
 
@@ -58,7 +63,8 @@ public class VirtualSystem implements AutoCloseable {
 
     private int objectIdGenerator = 0;
 
-    public VirtualSystem(NetworkInterfaceDto networkInterface, CLUDevice device, CipherKey cipherKey) {
+    public VirtualSystem(Path aDriveDirectory, NetworkInterfaceDto networkInterface, CLUDevice device, CipherKey cipherKey) {
+        this.aDriveDirectory = aDriveDirectory;
         this.networkInterface = networkInterface;
         this.device = device;
         this.cipherKey = cipherKey;
@@ -76,7 +82,7 @@ public class VirtualSystem implements AutoCloseable {
         final int objectId = objectIdGenerator++;
 
         final VirtualObject virtualObject = switch (index) {
-            case 0 -> new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress));
+            case 0 -> new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory);
             case 1 -> new VirtualRemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
             case 44 -> new VirtualStorage(name);
             default -> new VirtualObject(name);
@@ -199,6 +205,10 @@ public class VirtualSystem implements AutoCloseable {
         }
 
         executors.shutdown();
+
+        for (VirtualObject object : objects.values()) {
+            FileUtil.closeQuietly(object);
+        }
     }
 
     public record Subscription(String name, int index) {

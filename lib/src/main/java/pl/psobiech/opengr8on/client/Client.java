@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.client;
 
+import java.io.Closeable;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
 import java.time.Duration;
@@ -50,7 +51,7 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
-public class Client implements AutoCloseable {
+public class Client implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
 
     public static final int COMMAND_PORT = 1234;

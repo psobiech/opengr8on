@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
@@ -64,7 +65,7 @@ import pl.psobiech.opengr8on.vclu.lua.LuaServer;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer.LuaThreadWrapper;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 
-public class Server implements AutoCloseable {
+public class Server implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     private static final String CLIENT_REGISTER_METHOD_PREFIX = "SYSTEM:clientRegister(";

@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.client;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,7 +51,7 @@ import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.Util;
 
-public class CLUClient extends Client implements AutoCloseable {
+public class CLUClient extends Client implements Closeable {
     private static Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
 
     private static final String TFTP_NOT_FOUND_ERROR_CODE = "Error code %d".formatted(TFTPErrorPacket.FILE_NOT_FOUND);
@@ -280,7 +281,7 @@ public class CLUClient extends Client implements AutoCloseable {
         }
     }
 
-    public static class TFTPClient extends pl.psobiech.opengr8on.org.apache.commons.net.TFTPClient implements AutoCloseable {
+    public static class TFTPClient extends pl.psobiech.opengr8on.org.apache.commons.net.TFTPClient implements Closeable {
         // NOP
     }
 }

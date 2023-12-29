@@ -18,23 +18,23 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaOneArgFunction;
 
-public class VirtualObject {
+public class VirtualObject implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualObject.class);
 
     protected final String name;
 
-    protected final Map<Integer, LuaValue> vars = new HashMap<>();
+    protected final Map<Integer, LuaValue> featureValues = new HashMap<>();
 
-    protected final Map<Integer, LuaNoArgFunction> features = new HashMap<>();
+    protected final Map<Integer, LuaOneArgFunction> features = new HashMap<>();
 
     protected final Map<Integer, LuaOneArgFunction> funcs = new HashMap<>();
 
@@ -45,21 +45,24 @@ public class VirtualObject {
     }
 
     public LuaValue get(int index) {
-        final LuaValue luaValue = vars.get(index);
-        if (luaValue != null) {
-            return luaValue;
-        }
-
-        final LuaNoArgFunction luaFunction = features.get(index);
+        final LuaOneArgFunction luaFunction = features.get(index);
         if (luaFunction != null) {
-            return luaFunction.call();
+            final LuaValue returnValue = luaFunction.call(LuaValue.NIL);
+            featureValues.put(index, returnValue);
+
+            return returnValue;
         }
 
-        return LuaValue.NIL;
+        return featureValues.getOrDefault(index, LuaValue.NIL);
     }
 
     public void set(int index, LuaValue luaValue) {
-        vars.put(index, luaValue);
+        featureValues.put(index, luaValue);
+
+        final LuaOneArgFunction luaFunction = features.get(index);
+        if (luaFunction != null) {
+            luaFunction.call(luaValue);
+        }
     }
 
     public LuaValue execute(int index, LuaValue luaValue) {
@@ -75,5 +78,10 @@ public class VirtualObject {
 
     public void addEvent(int index, org.luaj.vm2.LuaFunction luaValue) {
         events.put(index, luaValue);
+    }
+
+    @Override
+    public void close() {
+        // NOP
     }
 }

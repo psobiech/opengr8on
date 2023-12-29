@@ -22,9 +22,9 @@
     </encoder>
   </appender>
 
-  <logger name="pl.psobiech" level="TRACE"/>
+  <logger name="pl.psobiech" level="DEBUG"/>
   <logger name="pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry" level="DEBUG"/>
-  <logger name="pl.psobiech.opengr8on.client" level="TRACE"/>
+  <logger name="pl.psobiech.opengr8on.client" level="DEBUG"/>
 
   <root level="WARN">
     <appender-ref ref="STDOUT"/>

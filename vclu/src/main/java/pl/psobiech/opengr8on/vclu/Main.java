@@ -69,7 +69,7 @@ public class Main {
             server.listen();
 
             while (!Thread.interrupted()) {
-                Thread.yield();
+                Thread.sleep(100L);
             }
         }
     }

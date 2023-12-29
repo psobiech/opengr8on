@@ -13,9 +13,6 @@ Unless expressly stated otherwise, the person who associated a work with this de
 # Requirements
 Java 21
 
-# TFTP
-It seems that the CLU FTP server is not RFC compliant, this is why we forked the commons-net TFTP library to revert the fix from commons-net (https://issues.apache.org/jira/browse/NET-414), that is breaking compatibility with CLUs.
-
 # Virtual CLU
 
 ## Local
@@ -29,26 +26,26 @@ It seems that the CLU FTP server is not RFC compliant, this is why we forked the
 
 ## Docker
 
-> docker build . --target app-runtime -t vclu:latest
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
 >
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime vclu:latest eth0
->
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime vclu:latest 192.168.31.44
+> or
+> 
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest 192.168.31.44
 
 ## Quickstart
 
-* Assuming OM is extracted in $OM_DIR (https://grentonsmarthome.github.io/release-en/om/).
+* Assuming OM is extracted in $OM_HOME (https://grentonsmarthome.github.io/release-en/om/).
 
-1. Copy [clu_VIRTUAL_ft00000003_fv0055aa55_ht00000013_hv00000001.xml](runtime%2Fdevice-interfaces%2Fclu_VIRTUAL_ft00000003_fv0055aa55_ht00000013_hv00000001.xml) to `$OM_DIR/configuration/com.grenton.om/device-interfaces/`
+1. Copy [clu_VIRTUAL_ft00000003_fv0055aa55_ht00000013_hv00000001.xml](runtime%2Fdevice-interfaces%2Fclu_VIRTUAL_ft00000003_fv0055aa55_ht00000013_hv00000001.xml) to `$OM_HOME/configuration/com.grenton.om/device-interfaces/`
 1. Restart/Launch OM or Reload Device Interfaces
+1. Clone ./runtime directory from this repository
 1. Run Virtual CLU (eg. `docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0` - assuming eth0 is your network interface name - you can specify also local IP address)
 1. Start OM Discovery
 1. When prompted for KEY type: `00000000`
 ![vclu_sn.png](docs%2Fimg%2Fvclu_sn.png)
-1. Virtual CLU should be available like normal CLU: 
+1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address, but they can be ignored for now): 
 ![vclu_discover.png](docs%2Fimg%2Fvclu_discover.png)
 ![vclu_features.png](docs%2Fimg%2Fvclu_features.png)
-
 
 What works:
 - Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
@@ -57,10 +54,19 @@ What works:
 
 Does not work:
 - No virtual objects are implemented yet
-- If discovery is interrupted, VCLU application requires restart (some key management issue?)
+- Persistent storage
+- If discovery is interrupted, VCLU application requires restart (some key management issue? TBD)
 
 TODOs:
 - most of the code requires refactoring
+- integrate with MQTT
+- create fortified mode (when CLU does not accept new keys or commands using default keys)
+
+# MQTT
+[MQTT.md](MQTT.md)
+
+# TFTP
+It seems that the CLU FTP server is not RFC compliant, this is why we forked the commons-net TFTP library to revert the fix from commons-net (https://issues.apache.org/jira/browse/NET-414), that is breaking compatibility with CLUs.
 
 # Licenses
 TFTP (tfp/ directory) is licensed under Apache 2.0 (as it is a copy of commons-net implementation)

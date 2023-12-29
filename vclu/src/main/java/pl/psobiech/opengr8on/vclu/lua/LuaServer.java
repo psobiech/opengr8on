@@ -112,6 +112,7 @@ public class LuaServer {
 
     public static LuaThreadWrapper create(NetworkInterfaceDto networkInterface, Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey) {
         final VirtualSystem virtualSystem = new VirtualSystem(
+            aDriveDirectory,
             networkInterface,
             cluDevice, cipherKey
         );
@@ -239,7 +240,13 @@ public class LuaServer {
         private final Globals globals;
 
         public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory) {
-            super(() -> loadScript(globals, aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName()));
+            super(() -> {
+                try {
+                    loadScript(globals, aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName());
+                } catch (Exception e) {
+                    LOGGER.error(e.getMessage(), e);
+                }
+            });
 
             this.virtualSystem = virtualSystem;
             this.globals = globals;

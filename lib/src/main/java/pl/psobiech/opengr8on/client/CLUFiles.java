@@ -42,7 +42,12 @@ public enum CLUFiles {
     CLOUD_PUBLIC_CRT("a", "CLOUD-PUBLIC.CRT"),
     CLOUD_ROOT_PEM("a", "CLOUD-ROOT.PEM"),
     //
-    //INIT_LUA("a", "INIT.LUA"),
+    MQTT_PRIVATE_PEM("a", "MQTT-PRIVATE.PEM"),
+    MQTT_PUBLIC_CRT("a", "MQTT-PUBLIC.CRT"),
+    MQTT_ROOT_PEM("a", "MQTT-ROOT.CRT"),
+    //
+    INIT_LUA("a", "INIT.LUA"),
+    //
     //LOADALL_SO("a", "loadall.so"),
     //WATCHDOG_LOG("a", "watchdog.log"),
     ;
