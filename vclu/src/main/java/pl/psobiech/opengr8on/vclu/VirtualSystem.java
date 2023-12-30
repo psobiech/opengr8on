@@ -42,9 +42,10 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
-import pl.psobiech.opengr8on.vclu.objects.Timer;
-import pl.psobiech.opengr8on.vclu.objects.Storage;
 import pl.psobiech.opengr8on.vclu.objects.RemoteCLU;
+import pl.psobiech.opengr8on.vclu.objects.Storage;
+import pl.psobiech.opengr8on.vclu.objects.Timer;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
@@ -194,16 +195,9 @@ public class VirtualSystem implements Closeable {
                 sb.append(",");
             }
 
-            final LuaValue luaValue = getObject(name).get(index);
-            if (luaValue == null || luaValue.isnil()) {
-                sb.append("nil");
-            } else if (luaValue.isnumber()) {
-                sb.append(luaValue.checklong());
-            } else if (luaValue.isstring()) {
-                sb.append("\"").append(luaValue).append("\"");
-            } else {
-                sb.append(luaValue);
-            }
+            sb.append(LuaUtil.toString(
+                getObject(name).get(index)
+            ));
         }
 
         return "{" + sb + "}";

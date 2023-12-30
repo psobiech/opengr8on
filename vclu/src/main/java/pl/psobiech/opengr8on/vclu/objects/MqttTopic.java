@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.vclu.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.VirtualObject;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class MqttTopic extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttTopic.class);
@@ -49,10 +50,10 @@ public class MqttTopic extends VirtualObject {
         this.currentClu = currentClu;
         currentClu.addMqttSubscription(this);
 
-        register(Methods.SUBSCRIBE, this::subscribe); // mqttsubscription_subscribe
-        register(Methods.UNSUBSCRIBE, this::unsubscribe); // mqttsubscription_unsubscribe
-        register(Methods.NEXT_MESSAGE, this::onNextMessage); // mqttsubscription_nextmessage
-        register(Methods.PUBLISH, this::publish); // mqttsubscription_publish
+        register(Methods.SUBSCRIBE, this::subscribe);
+        register(Methods.UNSUBSCRIBE, this::unsubscribe);
+        register(Methods.NEXT_MESSAGE, this::onNextMessage);
+        register(Methods.PUBLISH, this::publish);
     }
 
     @Override
@@ -109,14 +110,12 @@ public class MqttTopic extends VirtualObject {
             return LuaValue.FALSE;
         }
 
-        final LuaValue message = clearMessage();
-
+        final String message = clearMessage();
         try {
             mqttClient.publish(
                 topic,
                 new MqttMessage(
-                    String.valueOf(message)
-                          .getBytes(StandardCharsets.UTF_8)
+                    message.getBytes(StandardCharsets.UTF_8)
                 )
             );
 
@@ -150,7 +149,7 @@ public class MqttTopic extends VirtualObject {
     }
 
     public String getTopic() {
-        return String.valueOf(get(Features.TOPIC).checkstring());
+        return get(Features.TOPIC).checkjstring();
     }
 
     public Set<String> getTopicFilters() {
@@ -165,8 +164,8 @@ public class MqttTopic extends VirtualObject {
 
     @Override
     public void loop() {
-        final LuaValue currentPayload = getMessage();
-        if (currentPayload == null || String.valueOf(currentPayload).isEmpty()) {
+        final String currentPayload = getMessage();
+        if (currentPayload == null || currentPayload.isEmpty()) {
             final Entry<String, byte[]> entry = messageQueue.poll();
             if (entry != null) {
                 final String key = entry.getKey();
@@ -180,12 +179,12 @@ public class MqttTopic extends VirtualObject {
         }
     }
 
-    private LuaValue getMessage() {
-        return get(Features.MESSAGE);
+    private String getMessage() {
+        return LuaUtil.stringify(get(Features.MESSAGE));
     }
 
-    private LuaValue clearMessage() {
-        return clear(Features.MESSAGE);
+    private String clearMessage() {
+        return LuaUtil.stringify(clear(Features.MESSAGE));
     }
 
     private enum Features implements IFeature {

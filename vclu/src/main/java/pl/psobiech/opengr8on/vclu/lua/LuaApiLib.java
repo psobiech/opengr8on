@@ -84,19 +84,19 @@ public class LuaApiLib extends TwoArgFunction {
     }
 
     public void logDebug(Varargs args) {
-        logger.debug(String.valueOf(args.checkstring(1)));
+        logger.debug(args.checkjstring(1));
     }
 
     public void logInfo(Varargs args) {
-        logger.info(String.valueOf(args.checkstring(1)));
+        logger.info(args.checkjstring(1));
     }
 
     public void logWarning(Varargs args) {
-        logger.warn(String.valueOf(args.checkstring(1)));
+        logger.warn(args.checkjstring(1));
     }
 
     public void logError(Varargs args) {
-        logger.error(String.valueOf(args.checkstring(1)));
+        logger.error(args.checkjstring(1));
     }
 
     public LuaValue clientRegister(Varargs args) {
@@ -120,7 +120,7 @@ public class LuaApiLib extends TwoArgFunction {
 
             subscriptions.add(
                 new Subscription(
-                    String.valueOf(keyValue.checktable().get(1).checktable().get("name")),
+                    keyValue.checktable().get(1).checktable().get("name").checkjstring(),
                     keyValue.checktable().get(2).checkint()
                 )
             );
@@ -128,10 +128,10 @@ public class LuaApiLib extends TwoArgFunction {
 
         return LuaValue.valueOf(
             virtualSystem.clientRegister(
-                String.valueOf(args.arg(1).checkstring()),
-                String.valueOf(args.arg(2).checkstring()),
-                args.arg(3).checkint(),
-                args.arg(4).checkint(),
+                args.checkjstring(1),
+                args.checkjstring(2),
+                args.checkint(3),
+                args.checkint(4),
                 subscriptions
             )
         );
@@ -139,7 +139,7 @@ public class LuaApiLib extends TwoArgFunction {
 
     public LuaValue clientDestroy(Varargs args) {
         return virtualSystem.clientDestroy(
-            String.valueOf(args.checkstring(1)),
+            args.checkjstring(1),
             args.checkint(2),
             args.checkint(3)
         );
@@ -168,7 +168,7 @@ public class LuaApiLib extends TwoArgFunction {
 
             subscriptions.add(
                 new Subscription(
-                    String.valueOf(keyValue.checktable().get(1).checktable().get("name")),
+                    keyValue.checktable().get(1).checktable().get("name").checkjstring(),
                     keyValue.checktable().get(2).checkint()
                 )
             );
@@ -180,32 +180,32 @@ public class LuaApiLib extends TwoArgFunction {
     }
 
     public void newObject(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.newObject(arg1.checkint(), String.valueOf(arg2.checkstring()), arg3.checkint());
+        virtualSystem.newObject(arg1.checkint(), arg2.checkjstring(), arg3.checkint());
     }
 
     public void newGate(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.newGate(arg1.checkint(), String.valueOf(arg2.checkstring()));
+        virtualSystem.newGate(arg1.checkint(), arg2.checkjstring());
     }
 
     public LuaValue _get(LuaValue arg1, LuaValue arg2) {
-        return virtualSystem.getObject(String.valueOf(arg1.checkstring()))
+        return virtualSystem.getObject(arg1.checkjstring())
                             .get(arg2.checkint());
     }
 
     public LuaValue _set(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.getObject(String.valueOf(arg1.checkstring()))
+        virtualSystem.getObject(arg1.checkjstring())
                      .set(arg2.checkint(), arg3);
 
         return LuaValue.NIL;
     }
 
     public LuaValue execute(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        return virtualSystem.getObject(String.valueOf(arg1.checkstring()))
+        return virtualSystem.getObject(arg1.checkjstring())
                             .execute(arg2.checkint(), arg3);
     }
 
     public void addEvent(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.getObject(String.valueOf(arg1.checkstring()))
+        virtualSystem.getObject(arg1.checkjstring())
                      .addEventHandler(arg2.checkint(), arg3.checkfunction());
     }
 }

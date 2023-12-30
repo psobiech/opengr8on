@@ -272,8 +272,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         set(Features.LOG, arg);
 
         if (!arg.isnil()) {
-            final String logValue = String.valueOf(arg.checkstring());
-            LOGGER.info(name + ": " + logValue);
+            LOGGER.info(name + ": " + arg.checkjstring());
         }
 
         return LuaValue.NIL;
@@ -302,7 +301,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     private void enableMqtt() {
         // TODO: manage the client connection and topics
         // TODO: expose some LUA API to publish/subscribe
-        final String mqttUrl = String.valueOf(get(Features.MQTT_URL).checkstring());
+        final String mqttUrl = get(Features.MQTT_URL).checkjstring();
 
         final URI mqttUri = URI.create(mqttUrl);
 

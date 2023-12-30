@@ -36,7 +36,7 @@ public class RemoteCLU extends VirtualObject {
         super(name);
 
         register(Methods.EXECUTE, args -> {
-            final String script = String.valueOf(args.checkstring(1));
+            final String script = args.checkjstring(1);
 
             try (CLUClient client = new CLUClient(networkInterface, address, cipherKey)) {
                 final Optional<String> execute = client.execute(script);

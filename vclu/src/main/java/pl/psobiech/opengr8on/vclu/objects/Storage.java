@@ -18,7 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.objects;
 
-import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,7 @@ public class Storage extends VirtualObject {
         super(name);
 
         register(Methods.STORE, arg1 -> {
-            final LuaString persistentVariableName = arg1.checkstring();
+            final String persistentVariableName = arg1.checkjstring();
 
             //TODO: make variable persistent across restarts
 

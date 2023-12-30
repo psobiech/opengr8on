@@ -66,6 +66,7 @@ import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer.LuaThreadWrapper;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class Server implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -419,20 +420,13 @@ public class Server implements Closeable {
                 luaValue = LuaValue.NIL;
             }
 
-            String returnValue;
-            if (luaValue.isstring()) {
-                returnValue = String.valueOf(luaValue);
-            } else {
-                returnValue = "nil";
-            }
-
             return Optional.of(
                 ImmutablePair.of(
                     currentCipherKey,
                     LuaScriptCommand.response(
                         cluDevice.getAddress(),
                         request.getSessionId(),
-                        returnValue
+                        LuaUtil.stringify(luaValue)
                     )
                 )
             );
