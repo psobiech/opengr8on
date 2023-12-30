@@ -38,6 +38,7 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.client.Command;
@@ -106,8 +107,7 @@ public class Server implements Closeable {
         this.currentCipherKey = projectCipherKey;
         this.cluDevice = cluDevice;
 
-        this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
-        this.luaThread.start();
+        restartLuaThread();
 
         try {
             this.tftpServer = new TFTPServer(
@@ -339,42 +339,7 @@ public class Server implements Closeable {
         if (requestOptional.isPresent()) {
             final ResetCommand.Request request = requestOptional.get();
 
-            LOGGER.info("Performing VCLU restart");
-            FileUtil.closeQuietly(this.luaThread);
-            this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
-            this.luaThread.start();
-
-            LuaError lastException;
-            int retries = 8;
-            do {
-                try {
-                    this.luaThread.globals()
-                                  .load("return %s".formatted(LuaScriptCommand.CHECK_ALIVE))
-                                  .call();
-
-                    lastException = null;
-
-                    break;
-                } catch (LuaError e) {
-                    lastException = e;
-
-                    try {
-                        Thread.sleep(100L);
-                    } catch (InterruptedException e2) {
-                        Thread.currentThread().interrupt();
-
-                        throw new UncheckedInterruptedException(e2);
-                    }
-                }
-            } while (retries-- > 0);
-
-            if (lastException != null) {
-                LOGGER.error(lastException.getMessage(), lastException);
-            }
-
-            if (!luaThread.isAlive()) {
-                LOGGER.info("Could not start VCLU...");
-            }
+            restartLuaThread();
 
             return Optional.of(
                 ImmutablePair.of(
@@ -387,6 +352,44 @@ public class Server implements Closeable {
         }
 
         return sendError();
+    }
+
+    private void restartLuaThread() {
+        LOGGER.info("VCLU is starting...");
+        FileUtil.closeQuietly(this.luaThread);
+
+        this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey, CLUFiles.MAIN_LUA);
+        this.luaThread.start();
+
+        LuaError lastException;
+        int retries = 8;
+        do {
+            try {
+                this.luaThread.globals()
+                              .load("return %s".formatted(LuaScriptCommand.CHECK_ALIVE))
+                              .call();
+
+                return;
+            } catch (LuaError e) {
+                lastException = e;
+
+                try {
+                    Thread.sleep(100L);
+                } catch (InterruptedException e2) {
+                    Thread.currentThread().interrupt();
+
+                    throw new UncheckedInterruptedException(e2);
+                }
+            }
+        } while (retries-- > 0);
+
+        LOGGER.error("Could not start VCLU...", lastException);
+
+        LOGGER.info("Entering VCLU emergency mode!");
+        FileUtil.closeQuietly(this.luaThread);
+
+        this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey, CLUFiles.EMERGNCY_LUA);
+        this.luaThread.start();
     }
 
     private Optional<Pair<CipherKey, Command>> onLuaScriptCommand(Payload payload) {

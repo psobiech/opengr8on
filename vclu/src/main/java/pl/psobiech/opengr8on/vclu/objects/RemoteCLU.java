@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.objects;
 
 import java.net.Inet4Address;
 import java.util.Optional;
@@ -27,11 +27,12 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.vclu.VirtualObject;
 
-public class VirtualRemoteCLU extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VirtualRemoteCLU.class);
+public class RemoteCLU extends VirtualObject {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
 
-    public VirtualRemoteCLU(String name, Inet4Address address, NetworkInterfaceDto networkInterface, CipherKey cipherKey) {
+    public RemoteCLU(String name, Inet4Address address, NetworkInterfaceDto networkInterface, CipherKey cipherKey) {
         super(name);
 
         register(Methods.EXECUTE, args -> {

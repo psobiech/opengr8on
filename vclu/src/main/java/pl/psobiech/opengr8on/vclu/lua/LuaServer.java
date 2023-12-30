@@ -112,7 +112,9 @@ public class LuaServer {
         return new LuaFunctionWrapper(logger, luaFunction);
     }
 
-    public static LuaThreadWrapper create(NetworkInterfaceDto networkInterface, Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey) {
+    public static LuaThreadWrapper create(
+        NetworkInterfaceDto networkInterface, Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
+    ) {
         final VirtualSystem virtualSystem = new VirtualSystem(
             aDriveDirectory,
             networkInterface,
@@ -148,10 +150,10 @@ public class LuaServer {
             }
         };
 
-        loadScript(globals, classPath(URI.create("classpath:/INIT.LUA")), "INIT.LUA");
+        loadScript(globals, classPath(URI.create("classpath:/" + CLUFiles.INIT_LUA.getFileName())), CLUFiles.INIT_LUA.getFileName());
 
         return new LuaThreadWrapper(
-            virtualSystem, globals, aDriveDirectory
+            virtualSystem, globals, aDriveDirectory, cluFile
         );
     }
 
@@ -241,10 +243,10 @@ public class LuaServer {
 
         private final Globals globals;
 
-        public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory) {
+        public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory, CLUFiles cluFile) {
             super(() -> {
                 try {
-                    loadScript(globals, aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName());
+                    loadScript(globals, aDriveDirectory.resolve(cluFile.getFileName()), cluFile.getFileName());
                 } catch (LuaError e) {
                     if (e.getCause() instanceof UncheckedInterruptedException) {
                         return;

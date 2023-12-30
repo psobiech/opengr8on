@@ -71,17 +71,21 @@ public class VirtualObject implements Closeable {
     public LuaValue get(int index) {
         final LuaOneArgFunction luaFunction = featureFunctions.get(index);
         if (luaFunction == null) {
-            return featureValues.getOrDefault(index, LuaValue.NIL);
+            return getValue(index);
         }
 
         final LuaValue returnValue = luaFunction.call(LuaValue.NIL);
-        featureValues.put(index, returnValue);
+        setValue(index, returnValue);
 
         return returnValue;
     }
 
     public LuaValue getValue(IFeature feature) {
-        return featureValues.getOrDefault(feature.index(), LuaValue.NIL);
+        return getValue(feature.index());
+    }
+
+    public LuaValue getValue(int index) {
+        return featureValues.getOrDefault(index, LuaValue.NIL);
     }
 
     public LuaValue clear(IFeature feature) {
@@ -95,15 +99,20 @@ public class VirtualObject implements Closeable {
     public void set(int index, LuaValue luaValue) {
         final LuaOneArgFunction luaFunction = featureFunctions.get(index);
         if (luaFunction == null) {
-            featureValues.put(index, luaValue);
+            setValue(index, luaValue);
 
             return;
         }
 
-        featureValues.put(
-            index,
-            luaFunction.call(luaValue)
-        );
+        setValue(index, luaFunction.call(luaValue));
+    }
+
+    public void setValue(IFeature feature, LuaValue luaValue) {
+        setValue(feature.index(), luaValue);
+    }
+
+    public void setValue(int index, LuaValue luaValue) {
+        featureValues.put(index, luaValue);
     }
 
     public void register(IMethod feature, LuaOneArgFunction fn) {

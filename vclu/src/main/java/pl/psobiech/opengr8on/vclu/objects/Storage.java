@@ -16,17 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.objects;
 
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.vclu.VirtualObject;
 
-public class VirtualStorage extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VirtualStorage.class);
+public class Storage extends VirtualObject {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Storage.class);
 
-    public VirtualStorage(String name) {
+    public Storage(String name) {
         super(name);
 
         register(Methods.STORE, arg1 -> {
