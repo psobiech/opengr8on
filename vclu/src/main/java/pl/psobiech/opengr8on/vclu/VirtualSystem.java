@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
@@ -147,7 +147,7 @@ public class VirtualSystem implements Closeable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new UnexpectedException(e);
+            throw new UncheckedInterruptedException(e);
         }
     }
 

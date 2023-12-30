@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
+import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.compiler.LuaC;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.vclu.VirtualSystem;
@@ -243,6 +245,12 @@ public class LuaServer {
             super(() -> {
                 try {
                     loadScript(globals, aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()), CLUFiles.MAIN_LUA.getFileName());
+                } catch (LuaError e) {
+                    if (e.getCause() instanceof UncheckedInterruptedException) {
+                        return;
+                    }
+
+                    LOGGER.error(e.getMessage(), e);
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage(), e);
                 }
@@ -313,6 +321,10 @@ public class LuaServer {
         public LuaValue invoke(Varargs args) {
             try {
                 return fn.invoke(args);
+            } catch (UncheckedInterruptedException e) {
+                logger.trace(e.getMessage(), e);
+
+                throw e;
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
 

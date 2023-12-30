@@ -49,6 +49,7 @@ import pl.psobiech.opengr8on.client.commands.SetIpCommand;
 import pl.psobiech.opengr8on.client.commands.SetKeyCommand;
 import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer;
 import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer.ServerMode;
@@ -338,9 +339,42 @@ public class Server implements Closeable {
         if (requestOptional.isPresent()) {
             final ResetCommand.Request request = requestOptional.get();
 
+            LOGGER.info("Performing VCLU restart");
             FileUtil.closeQuietly(this.luaThread);
             this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey);
             this.luaThread.start();
+
+            LuaError lastException;
+            int retries = 8;
+            do {
+                try {
+                    this.luaThread.globals()
+                                  .load("return %s".formatted(LuaScriptCommand.CHECK_ALIVE))
+                                  .call();
+
+                    lastException = null;
+
+                    break;
+                } catch (LuaError e) {
+                    lastException = e;
+
+                    try {
+                        Thread.sleep(100L);
+                    } catch (InterruptedException e2) {
+                        Thread.currentThread().interrupt();
+
+                        throw new UncheckedInterruptedException(e2);
+                    }
+                }
+            } while (retries-- > 0);
+
+            if (lastException != null) {
+                LOGGER.error(lastException.getMessage(), lastException);
+            }
+
+            if (!luaThread.isAlive()) {
+                LOGGER.info("Could not start VCLU...");
+            }
 
             return Optional.of(
                 ImmutablePair.of(
