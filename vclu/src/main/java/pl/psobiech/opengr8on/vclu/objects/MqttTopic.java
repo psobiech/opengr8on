@@ -109,7 +109,7 @@ public class MqttTopic extends VirtualObject {
             return LuaValue.FALSE;
         }
 
-        final LuaValue message = featureValues.remove(1); // mqttsubscription_message
+        final LuaValue message = removeMessage();
 
         try {
             mqttClient.publish(
@@ -158,14 +158,14 @@ public class MqttTopic extends VirtualObject {
     }
 
     private LuaValue onNextMessage(LuaValue arg1) {
-        featureValues.remove(1); // mqttsubscription_message
+        removeMessage();
 
         return LuaValue.NIL;
     }
 
     @Override
     public void loop() {
-        final LuaValue currentPayload = featureValues.get(1); // mqttsubscription_message
+        final LuaValue currentPayload = getMessage();
         if (currentPayload == null || String.valueOf(currentPayload).isEmpty()) {
             final Entry<String, byte[]> entry = messageQueue.poll();
             if (entry != null) {
@@ -178,6 +178,14 @@ public class MqttTopic extends VirtualObject {
                 triggerEvent(1); // mqttsubscription_onmessage
             }
         }
+    }
+
+    private LuaValue getMessage() {
+        return featureValues.get(1); // mqttsubscription_message
+    }
+
+    private LuaValue removeMessage() {
+        return featureValues.remove(1); // mqttsubscription_message
     }
 
     @Override
