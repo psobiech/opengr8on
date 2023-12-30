@@ -1,5 +1,5 @@
 /*
- * OpenGr8ton, open source extensions to systems based on Grenton devices
+ * OpenGr8on, open source extensions to systems based on Grenton devices
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
