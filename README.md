@@ -1,4 +1,6 @@
-[![Maven](https://github.com/psobiech/opengr8on/actions/workflows/maven.yml/badge.svg)](https://github.com/psobiech/opengr8on/actions/workflows/maven.yml)
+[![Maven Test](https://github.com/psobiech/opengr8on/actions/workflows/mavenTest.yml/badge.svg)](https://github.com/psobiech/opengr8on/actions/workflows/mavenTest.yml)
+[![Maven Deploy](https://github.com/psobiech/opengr8on/actions/workflows/mavenDeploy.yml/badge.svg)](https://github.com/psobiech/opengr8on/actions/workflows/mavenDeploy.yml)
+[![Docker Deploy](https://github.com/psobiech/opengr8on/actions/workflows/dockerDeploy.yml/badge.svg)](https://github.com/psobiech/opengr8on/actions/workflows/dockerDeploy.yml)
 
 # Disclaimer
 
