@@ -47,6 +47,10 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.RandomUtil;
 
 public class TlsUtil {
+    static {
+        // System.setProperty("javax.net.debug", "all");
+    }
+
     static SSLSocketFactory getSocketFactory(Path caCrtFile, Path crtFile, Path keyFile) {
         try {
             final KeyStore caKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -54,7 +58,6 @@ public class TlsUtil {
             caKeyStore.setCertificateEntry("certificate", readCertificate(caCrtFile));
 
             final X509Certificate clientCertificate = readCertificate(crtFile);
-
             final KeyStore clientKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             clientKeyStore.load(null, null);
             clientKeyStore.setCertificateEntry("certificate", clientCertificate);
@@ -86,11 +89,20 @@ public class TlsUtil {
 
     private static PrivateKey readPrivateKey(Path path) {
         try {
-            return (PrivateKey) KeyFactory.getInstance("RSA")
-                                          .generatePrivate(new PKCS8EncodedKeySpec(
-                                              readPem(path)
-                                          ));
-        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            return KeyFactory.getInstance("RSA")
+                             .generatePrivate(new PKCS8EncodedKeySpec(
+                                 readPem(path)
+                             ));
+        } catch (InvalidKeySpecException e) {
+            try {
+                return KeyFactory.getInstance("ECDSA")
+                                 .generatePrivate(new PKCS8EncodedKeySpec(
+                                     readPem(path)
+                                 ));
+            } catch (InvalidKeySpecException | NoSuchAlgorithmException e2) {
+                throw new UnexpectedException(e);
+            }
+        } catch (NoSuchAlgorithmException e) {
             throw new UnexpectedException(e);
         }
     }

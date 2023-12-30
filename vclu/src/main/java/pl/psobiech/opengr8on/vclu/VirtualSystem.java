@@ -40,6 +40,7 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
@@ -83,15 +84,11 @@ public class VirtualSystem implements Closeable {
         final int objectId = objectIdGenerator++;
 
         final VirtualObject virtualObject = switch (index) {
+            // TODO: temporaily we depend that the main CLU is initialized first-ish
             case 0 -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
             case 1 -> new VirtualRemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
             case 44 -> new VirtualStorage(name);
-            case 300 -> {
-                final MqttSubscription mqttSubscription = new MqttSubscription(name);
-                currentClu.addMqttSubscription(mqttSubscription);
-
-                yield mqttSubscription;
-            }
+            case 999 -> new MqttTopic(name, currentClu);
             default -> new VirtualObject(name);
         };
 
@@ -106,6 +103,7 @@ public class VirtualSystem implements Closeable {
 
         final VirtualObject virtualObject = switch (index) {
             case 121 -> new VirtualGate(name);
+            case 999 -> new MqttTopic(name, currentClu);
             default -> new VirtualObject(name);
         };
 

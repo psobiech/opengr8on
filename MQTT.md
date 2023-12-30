@@ -4,7 +4,6 @@ The broker should be compatible with Tasmota32 https://tasmota.github.io/docs/TL
 
 ```bash
 git clone git@github.com:OpenVPN/easy-rsa.git
-cd easyrsa3
 ```
 
 ## ./easy-rsa/easyrsa3/vars
@@ -33,6 +32,8 @@ set_var EASYRSA_CERT_EXPIRE	3650
 ```
 
 ```bash
+cd easyrsa3
+
 ./easyrsa init-pki
 ./easyrsa build-ca
 
@@ -60,7 +61,7 @@ cp ./easy-rsa/easyrsa3/pki/private/localhost.key ./mqtt/config/certs/
 
 ## ./mqtt/config/mosquitto.conf
 
-```toml
+```properties
 persistence true
 persistence_location /mosquitto/data/
 log_dest stdout
@@ -145,13 +146,30 @@ cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM
 
 Run VCLU and enable UseMQTT in OM.
 
-## MqttSubscription
+## MqttTopic
+Example onInit script:
+```lua
+-- subscribe to the topic
+CLU1703856280877->myTopic->SetTopic("topic")
+CLU1703856280877->myTopic->Subscribe()
+```
+
+Example publish:
+```lua
+-- publish the same message to some other topic
+CLU1703856280877->myTopic->SetTopic("topic")
+CLU1703856280877->myTopic->Publish()
+```
 
 Example onMessage script:
 ```lua
 -- read current message message
-CLU0->AddToLog(CLU0->mqttTopic->Message)
+CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Message)
+
+-- publish the same message to some other topic
+CLU1703856280877->myTopic->SetTopic("innytopic")
+CLU1703856280877->myTopic->Publish()
 
 -- unblock next message in the queue
-CLU0->mqttTopic->NextMessage()
+CLU1703856280877->myTopic->NextMessage()
 ```

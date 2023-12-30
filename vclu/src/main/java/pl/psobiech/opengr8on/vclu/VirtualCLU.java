@@ -51,6 +51,7 @@ import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 
 import static org.luaj.vm2.LuaValue.valueOf;
 
@@ -91,7 +92,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final ScheduledExecutorService executorService;
 
-    private final List<MqttSubscription> mqttSubscriptions = new LinkedList<>();
+    private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
     private volatile ZonedDateTime currentDateTime;
 
@@ -307,10 +308,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 public void messageArrived(String topic, MqttMessage message) {
                     LOGGER.info("MQTT messageArrived: {} / {}", topic, message);
 
-                    for (MqttSubscription mqttSubscription : mqttSubscriptions) {
-                        if (topic.startsWith(mqttSubscription.getTopic())) {
-                            mqttSubscription.enqueueMessage(message.getId(), message.getPayload());
-                        }
+                    for (MqttTopic mqttTopic : mqttTopics) {
+                        mqttTopic.onMessage(topic, message.getId(), message.getPayload());
                     }
                 }
 
@@ -334,20 +333,20 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
             mqttClient.connect(options);
 
-            for (MqttSubscription mqttSubscription : mqttSubscriptions) {
-                try {
-                    mqttClient.subscribe(mqttSubscription.getTopic());
-                } catch (MqttException e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
+            for (MqttTopic mqttTopic : mqttTopics) {
+                mqttClient.subscribe(mqttTopic.getTopicFilters().toArray(String[]::new));
             }
         } catch (MqttException e) {
             throw new UnexpectedException(e);
         }
     }
 
-    public void addMqttSubscription(MqttSubscription mqttSubscription) {
-        mqttSubscriptions.add(mqttSubscription);
+    public void addMqttSubscription(MqttTopic mqttTopic) {
+        mqttTopics.add(mqttTopic);
+    }
+
+    public MqttClient getMqttClient() {
+        return mqttClient;
     }
 
     @Override
