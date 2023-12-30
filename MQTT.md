@@ -1,13 +1,20 @@
 # Configure VCLU
 
+## Plain text
+
+Configure MQTTUrl, eg. tcp://user:pass@localhost:1883
+
+## TLS enabled
+
 Copy certificates and CLU private key into CLU runtime directory
 
 ```bash
-cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/root/a/MQTT-ROOT.CRT``
-cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/root/a/MQTT-PUBLIC.CRT
-cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM
+cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/root/a/MQTT-ROOT.CRT
+cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/root/a/MQTT-PUBLIC.CRT # required only if using client certificate authentication
+cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM # required only if using client certificate authentication
 ```
 
+Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 if using client certificate)
 Run VCLU and enable UseMQTT in OM.
 
 ## MqttTopic
@@ -109,6 +116,11 @@ persistence_location /mosquitto/data/
 log_dest stdout
 
 per_listener_settings true
+
+# Plain MQTT
+#listener 1883
+#allow_anonymous false
+#password_file /mosquitto/config/passwd
 
 # MQTT over TLS/SSL
 listener 8883

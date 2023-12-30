@@ -23,6 +23,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.Inet4Address;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -340,13 +341,16 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 }
             }
 
-            options.setSocketFactory(
-                TlsUtil.getSocketFactory(
-                    aDriveDirectory.resolve(CLUFiles.MQTT_ROOT_PEM.getFileName()),
-                    aDriveDirectory.resolve(CLUFiles.MQTT_PUBLIC_CRT.getFileName()),
-                    aDriveDirectory.resolve(CLUFiles.MQTT_PRIVATE_PEM.getFileName())
-                )
-            );
+            final Path caCertificatePath = aDriveDirectory.resolve(CLUFiles.MQTT_ROOT_PEM.getFileName());
+            if (Files.exists(caCertificatePath)) {
+                options.setSocketFactory(
+                    TlsUtil.getSocketFactory(
+                        caCertificatePath,
+                        aDriveDirectory.resolve(CLUFiles.MQTT_PUBLIC_CRT.getFileName()),
+                        aDriveDirectory.resolve(CLUFiles.MQTT_PRIVATE_PEM.getFileName())
+                    )
+                );
+            }
 
             mqttClient.connect(options);
             LOGGER.info("Connected to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId());

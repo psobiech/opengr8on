@@ -51,18 +51,18 @@ public class TlsUtil {
         // System.setProperty("javax.net.debug", "all");
     }
 
-    static SSLSocketFactory getSocketFactory(Path caCrtFile, Path crtFile, Path keyFile) {
+    static SSLSocketFactory getSocketFactory(Path caCertificatePath, Path clientCertificatePath, Path clientKeyPath) {
         try {
             final KeyStore caKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             caKeyStore.load(null, null);
-            caKeyStore.setCertificateEntry("certificate", readCertificate(caCrtFile));
+            caKeyStore.setCertificateEntry("certificate", readCertificate(caCertificatePath));
 
             final KeyStore clientKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             clientKeyStore.load(null, null);
-            if (Files.exists(crtFile) && Files.exists(keyFile)) {
-                final X509Certificate clientCertificate = readCertificate(crtFile);
+            if (Files.exists(clientCertificatePath) && Files.exists(clientKeyPath)) {
+                final X509Certificate clientCertificate = readCertificate(clientCertificatePath);
                 clientKeyStore.setCertificateEntry("certificate", clientCertificate);
-                clientKeyStore.setKeyEntry("key", readPrivateKey(keyFile), null, new java.security.cert.Certificate[] {clientCertificate});
+                clientKeyStore.setKeyEntry("key", readPrivateKey(clientKeyPath), null, new java.security.cert.Certificate[] {clientCertificate});
             }
 
             final KeyManagerFactory clientKeyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
