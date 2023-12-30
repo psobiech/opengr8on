@@ -1,22 +1,66 @@
 # Generate Certificates
 
+The broker should be compatible with Tasmota32 https://tasmota.github.io/docs/TLS/#tls-secured-mqtt
+
 ```bash
-mkdir -p mqtt/config mqtt/data mqtt/log
-cd mqtt
-git clone https://github.com/fcgdam/easy-ca.git
-cd easy-ca
-./create-root-ca -d ../config/certs
-cd ../config/certs
-./bin/create-server -s localhost #or specify your MQTT hostname
-./bin/create-client -c clu0 -n clu0
-./bin/create-client -c user1 -n user1
+git clone git@github.com:OpenVPN/easy-rsa.git
+cd easyrsa3
+```
+
+## ./easy-rsa/easyrsa3/vars
+```bash
+set_var EASYRSA_REQ_COUNTRY   "US"
+set_var EASYRSA_REQ_PROVINCE  "California"
+set_var EASYRSA_REQ_CITY      "San Francisco"
+set_var EASYRSA_REQ_ORG       "Copyleft Certificate Co"
+set_var EASYRSA_REQ_EMAIL     "me@example.net"
+set_var EASYRSA_REQ_OU        "My Organizational Unit"
+
+set_var EASYRSA_NO_PASS	1
+
+set_var EASYRSA_KEY_SIZE	2048
+set_var EASYRSA_DIGEST		"sha256"
+
+# for TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 / ECDHE-RSA-AES128-GCM-SHA256
+set_var EASYRSA_ALGO		rsa
+
+# for TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 / ECDHE-ECDSA-AES128-GCM-SHA256
+#set_var EASYRSA_ALGO		ec
+#set_var EASYRSA_CURVE		secp521r1
+
+set_var EASYRSA_CA_EXPIRE	3650
+set_var EASYRSA_CERT_EXPIRE	3650
+```
+
+```bash
+./easyrsa init-pki
+./easyrsa build-ca
+
+# change subject to your mqtt broker hostname
+./easyrsa gen-req localhost
+./easyrsa sign-req server localhost
+
+# vclu certificate 
+./easyrsa gen-req clu0
+./easyrsa sign-req client clu0
+
+# example user certificate
+./easyrsa gen-req user0
+./easyrsa sign-req client user0
 ```
 
 # Configure mosquitto
 
+```bash
+mkdir -p ./mqtt/config/certs ./mqtt/data ./mqtt/log
+cp ./easy-rsa/easyrsa3/pki/ca.crt ./mqtt/config/certs/
+cp ./easy-rsa/easyrsa3/pki/issued/localhost.crt ./mqtt/config/certs/
+cp ./easy-rsa/easyrsa3/pki/private/localhost.key ./mqtt/config/certs/
+```
+
 ## ./mqtt/config/mosquitto.conf
 
-```properties
+```toml
 persistence true
 persistence_location /mosquitto/data/
 log_dest stdout
@@ -25,27 +69,29 @@ per_listener_settings true
 
 # MQTT over TLS/SSL
 listener 8883
-cafile /mosquitto/config/certs/ca/ca.crt
-certfile /mosquitto/config/certs/certs/localhost.server.crt
-keyfile /mosquitto/config/certs/private/localhost.server.key
+cafile /mosquitto/config/certs/ca.crt
+certfile /mosquitto/config/certs/localhost.crt
+keyfile /mosquitto/config/certs/localhost.key
 require_certificate true
 allow_anonymous false
-tls_version tlsv1.2 
+tls_version tlsv1.2
+ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
 
 # WebSockets over TLS/SSL
 listener 9883
 protocol websockets
-cafile /mosquitto/config/certs/ca/ca.crt
-certfile /mosquitto/config/certs/certs/localhost.server.crt
-keyfile /mosquitto/config/certs/private/localhost.server.key
+cafile /mosquitto/config/certs/ca.crt
+certfile /mosquitto/config/certs/localhost.crt
+keyfile /mosquitto/config/certs/localhost.key
 require_certificate true
 allow_anonymous false
-tls_version tlsv1.2 
+tls_version tlsv1.2
+ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
 ```
 
 ## ./mqtt/docker-compose.yml
 
-```dockerfile
+```yaml
 version: '3.8'
 
 services:
@@ -84,7 +130,7 @@ mosquitto-1  | 1703839960: mosquitto version 2.0.18 running
 ## Test MQTT
 
 ```bash
-mosquitto_pub --cafile ./mqtt/config/certs/ca/ca.crt -h localhost -t "topic" -m "message" -p 8883 -d --cert ./mqtt/config/certs/certs/user1.client.crt --key ./mqtt/config/certs/private/user1.client.key
+mosquitto_pub --cafile ./easy-rsa/easyrsa3/pki/ca.crt -h localhost -t "topic" -m "test_message" -p 8883 -d --cert ./easy-rsa/easyrsa3/pki/issued/user0.crt --key ./easy-rsa/easyrsa3/pki/private/user0.key
 ```
 
 # Configure VCLU
@@ -92,9 +138,9 @@ mosquitto_pub --cafile ./mqtt/config/certs/ca/ca.crt -h localhost -t "topic" -m 
 Copy certificates and CLU private key into CLU runtime directory
 
 ```bash
-cp ./mqtt/config/certs/ca/ca.crt ./runtime/root/a/MQTT-ROOT.CRT``
-cp ./mqtt/config/certs/certs/clu0.client.crt ./runtime/root/a/MQTT-PUBLIC.CRT
-cp ./mqtt/config/certs/private/clu0.client.key ./runtime/root/a/MQTT-PRIVATE.PEM
+cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/root/a/MQTT-ROOT.CRT``
+cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/root/a/MQTT-PUBLIC.CRT
+cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM
 ```
 
 Run VCLU and enable UseMQTT in OM.
@@ -106,6 +152,6 @@ Example onMessage script:
 -- read current message message
 CLU0->AddToLog(CLU0->mqttTopic->Message)
 
--- unblock next message
+-- unblock next message in the queue
 CLU0->mqttTopic->NextMessage()
 ```
