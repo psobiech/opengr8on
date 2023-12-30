@@ -41,6 +41,7 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.objects.Timer;
 
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
@@ -80,13 +81,15 @@ public class VirtualSystem implements Closeable {
         return objectsByName.get(name);
     }
 
+    @SuppressWarnings("resource")
     public int newObject(int index, String name, int ipAddress) {
         final int objectId = objectIdGenerator++;
 
         final VirtualObject virtualObject = switch (index) {
-            // TODO: temporaily we depend that the main CLU is initialized first-ish
+            // TODO: temporarily we depend that the main CLU is initialized first-ish
             case 0 -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
             case 1 -> new VirtualRemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
+            case 6 -> new Timer(name);
             case 44 -> new VirtualStorage(name);
             case 999 -> new MqttTopic(name, currentClu);
             default -> new VirtualObject(name);

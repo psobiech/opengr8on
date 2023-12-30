@@ -163,7 +163,7 @@
   </interface>
   <objects>
     <object maxInstances="-1" name="MqttTopic" version="1"/>
-    <!--    <object maxInstances="-1" name="Timer" version="1"/>-->
+    <object maxInstances="-1" name="Timer" version="1"/>
     <!--    <object maxInstances="-1" name="Calendar" version="1"/>-->
     <!--    <object maxInstances="-1" name="Scheduler" version="1"/>-->
     <!--    <object maxInstances="-1" name="SunriseSunsetCalendar" version="3"/>-->

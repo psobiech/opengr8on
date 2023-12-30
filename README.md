@@ -55,13 +55,12 @@ What works:
 - Tested under linux/amd64 and linux/arm64 on pi4
 
 Does not work:
-- No virtual objects are implemented yet
+- Only some virtual objects are implemented
 - Persistent storage
 - If discovery is interrupted, VCLU application requires restart (some key management issue? TBD)
 
 TODOs:
 - most of the code requires refactoring
-- integrate with MQTT
 - create fortified mode (when CLU does not accept new keys or commands using default keys)
 
 # MQTT
