@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.Inet4Address;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -31,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +53,7 @@ import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 
 import static org.luaj.vm2.LuaValue.valueOf;
@@ -295,8 +298,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         // TODO: expose some LUA API to publish/subscribe
         final String mqttUrl = String.valueOf(featureValues.get(20).checkstring());
 
+        final URI mqttUri = URI.create(mqttUrl);
+
         try {
-            LOGGER.info("Connecting to MQTT on: {}", mqttUrl);
             mqttClient = new MqttClient(mqttUrl, name, null);
             mqttClient.setCallback(new MqttCallback() {
                 @Override
@@ -321,8 +325,21 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
             final MqttConnectOptions options = new MqttConnectOptions();
             options.setConnectionTimeout(60);
-            options.setAutomaticReconnect(true);
             options.setKeepAliveInterval(60);
+            options.setAutomaticReconnect(true);
+            options.setCleanSession(false);
+
+            final String userInfo = mqttUri.getUserInfo();
+            if (userInfo != null) {
+                final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
+                if (userInfoPartsOptional.isPresent()) {
+                    final String[] userInfoParts = userInfoPartsOptional.get();
+
+                    options.setUserName(userInfoParts[0]);
+                    options.setPassword(userInfoParts[1].toCharArray());
+                }
+            }
+
             options.setSocketFactory(
                 TlsUtil.getSocketFactory(
                     aDriveDirectory.resolve(CLUFiles.MQTT_ROOT_PEM.getFileName()),
@@ -332,6 +349,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
             );
 
             mqttClient.connect(options);
+            LOGGER.info("Connected to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId());
 
             for (MqttTopic mqttTopic : mqttTopics) {
                 mqttClient.subscribe(mqttTopic.getTopicFilters().toArray(String[]::new));

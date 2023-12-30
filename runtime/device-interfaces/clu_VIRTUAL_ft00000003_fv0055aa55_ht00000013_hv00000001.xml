@@ -112,7 +112,7 @@
         <hint lang="de" value="Zeitzone"/>
         <desc resKey="clu_timezone"/>
       </feature>
-      <feature get="true" index="20" name="MQTTUrl" set="true" type="str" default="ssl://localhost:8883">
+      <feature get="true" index="20" name="MQTTUrl" set="true" type="str" default="ssl://user:pass@localhost:8883">
         <hint lang="pl" value="Url serwera MQTT"/>
         <hint lang="en" value="Url of an MQTT server"/>
         <desc resKey="clu_mqtturl"/>

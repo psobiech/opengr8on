@@ -57,11 +57,13 @@ public class TlsUtil {
             caKeyStore.load(null, null);
             caKeyStore.setCertificateEntry("certificate", readCertificate(caCrtFile));
 
-            final X509Certificate clientCertificate = readCertificate(crtFile);
             final KeyStore clientKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             clientKeyStore.load(null, null);
-            clientKeyStore.setCertificateEntry("certificate", clientCertificate);
-            clientKeyStore.setKeyEntry("key", readPrivateKey(keyFile), null, new java.security.cert.Certificate[] {clientCertificate});
+            if (Files.exists(crtFile) && Files.exists(keyFile)) {
+                final X509Certificate clientCertificate = readCertificate(crtFile);
+                clientKeyStore.setCertificateEntry("certificate", clientCertificate);
+                clientKeyStore.setKeyEntry("key", readPrivateKey(keyFile), null, new java.security.cert.Certificate[] {clientCertificate});
+            }
 
             final KeyManagerFactory clientKeyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             clientKeyManagerFactory.init(clientKeyStore, null);
@@ -88,17 +90,17 @@ public class TlsUtil {
     }
 
     private static PrivateKey readPrivateKey(Path path) {
+        final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(
+            readPem(path)
+        );
+
         try {
             return KeyFactory.getInstance("RSA")
-                             .generatePrivate(new PKCS8EncodedKeySpec(
-                                 readPem(path)
-                             ));
+                             .generatePrivate(encodedKeySpec);
         } catch (InvalidKeySpecException e) {
             try {
                 return KeyFactory.getInstance("ECDSA")
-                                 .generatePrivate(new PKCS8EncodedKeySpec(
-                                     readPem(path)
-                                 ));
+                                 .generatePrivate(encodedKeySpec);
             } catch (InvalidKeySpecException | NoSuchAlgorithmException e2) {
                 throw new UnexpectedException(e);
             }

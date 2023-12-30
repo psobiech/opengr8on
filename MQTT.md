@@ -1,6 +1,48 @@
-# Generate Certificates
+# Configure VCLU
+
+Copy certificates and CLU private key into CLU runtime directory
+
+```bash
+cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/root/a/MQTT-ROOT.CRT``
+cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/root/a/MQTT-PUBLIC.CRT
+cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM
+```
+
+Run VCLU and enable UseMQTT in OM.
+
+## MqttTopic
+Example onInit script:
+```lua
+-- subscribe to the topic
+CLU1703856280877->myTopic->SetTopic("topic")
+CLU1703856280877->myTopic->Subscribe()
+```
+
+Example publish:
+```lua
+-- publish the same message to some other topic
+CLU1703856280877->myTopic->SetTopic("topic")
+CLU1703856280877->myTopic->Publish()
+```
+
+Example onMessage script:
+```lua
+-- read current message message
+CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Message)
+
+-- publish the same message to some other topic
+CLU1703856280877->myTopic->SetTopic("innytopic")
+CLU1703856280877->myTopic->Publish()
+
+-- unblock next message in the queue
+CLU1703856280877->myTopic->NextMessage()
+```
+
+# Configure MQTT broker
 
 The broker should be compatible with Tasmota32 https://tasmota.github.io/docs/TLS/#tls-secured-mqtt
+
+## Generate Certificates
 
 ```bash
 git clone git@github.com:OpenVPN/easy-rsa.git
@@ -73,8 +115,9 @@ listener 8883
 cafile /mosquitto/config/certs/ca.crt
 certfile /mosquitto/config/certs/localhost.crt
 keyfile /mosquitto/config/certs/localhost.key
-require_certificate true
 allow_anonymous false
+require_certificate false
+#password_file /mosquitto/config/passwd
 tls_version tlsv1.2
 ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
 
@@ -84,8 +127,9 @@ protocol websockets
 cafile /mosquitto/config/certs/ca.crt
 certfile /mosquitto/config/certs/localhost.crt
 keyfile /mosquitto/config/certs/localhost.key
-require_certificate true
 allow_anonymous false
+require_certificate false
+#password_file /mosquitto/config/passwd
 tls_version tlsv1.2
 ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
 ```
@@ -132,44 +176,4 @@ mosquitto-1  | 1703839960: mosquitto version 2.0.18 running
 
 ```bash
 mosquitto_pub --cafile ./easy-rsa/easyrsa3/pki/ca.crt -h localhost -t "topic" -m "test_message" -p 8883 -d --cert ./easy-rsa/easyrsa3/pki/issued/user0.crt --key ./easy-rsa/easyrsa3/pki/private/user0.key
-```
-
-# Configure VCLU
-
-Copy certificates and CLU private key into CLU runtime directory
-
-```bash
-cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/root/a/MQTT-ROOT.CRT``
-cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/root/a/MQTT-PUBLIC.CRT
-cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM
-```
-
-Run VCLU and enable UseMQTT in OM.
-
-## MqttTopic
-Example onInit script:
-```lua
--- subscribe to the topic
-CLU1703856280877->myTopic->SetTopic("topic")
-CLU1703856280877->myTopic->Subscribe()
-```
-
-Example publish:
-```lua
--- publish the same message to some other topic
-CLU1703856280877->myTopic->SetTopic("topic")
-CLU1703856280877->myTopic->Publish()
-```
-
-Example onMessage script:
-```lua
--- read current message message
-CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Message)
-
--- publish the same message to some other topic
-CLU1703856280877->myTopic->SetTopic("innytopic")
-CLU1703856280877->myTopic->Publish()
-
--- unblock next message in the queue
-CLU1703856280877->myTopic->NextMessage()
 ```
