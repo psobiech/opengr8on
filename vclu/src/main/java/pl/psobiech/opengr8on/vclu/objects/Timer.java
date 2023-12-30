@@ -64,6 +64,7 @@ public class Timer extends VirtualObject {
     private LuaValue onStop(LuaValue luaValue) {
         state = State.STOPPED;
 
+        counter.set(0);
         triggerEvent(Events.STOP);
 
         return LuaValue.NIL;
@@ -85,14 +86,13 @@ public class Timer extends VirtualObject {
 
         final long now = System.nanoTime();
         final long delta = now - lastLoopTime;
-        final long value = counter.addAndGet(-delta);
         lastLoopTime = now;
 
+        final long value = counter.addAndGet(-delta);
         if (value <= 0) {
             if (get(Features.MODE).checkint() == 1) {
-                counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
+                counter.addAndGet(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
             } else {
-                counter.set(0);
                 onStop(LuaValue.NIL);
             }
 

@@ -122,10 +122,10 @@ public class VirtualSystem implements Closeable {
             }
         }
 
-        // best effort to run every second
+        // best effort to run every 100ms
         sleep(Math.max(
                 0,
-                1000 - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
+                100 - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             )
         );
     }
