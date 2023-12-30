@@ -19,7 +19,6 @@
 package pl.psobiech.opengr8on.vclu;
 
 import java.io.Closeable;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
@@ -34,13 +33,13 @@ public class VirtualObject implements Closeable {
 
     protected final String name;
 
-    protected final Map<Integer, LuaValue> featureValues = new Hashtable<>();
+    private final Map<Integer, LuaValue> featureValues = new Hashtable<>();
 
-    protected final Map<Integer, LuaOneArgFunction> featureFunctions = new Hashtable<>();
+    private final Map<Integer, LuaOneArgFunction> featureFunctions = new Hashtable<>();
 
-    protected final Map<Integer, LuaOneArgFunction> methodFunctions = new Hashtable<>();
+    private final Map<Integer, LuaOneArgFunction> methodFunctions = new Hashtable<>();
 
-    protected final Map<Integer, org.luaj.vm2.LuaFunction> eventFunctions = new Hashtable<>();
+    private final Map<Integer, org.luaj.vm2.LuaFunction> eventFunctions = new Hashtable<>();
 
     public VirtualObject(String name) {
         this.name = name;
@@ -60,6 +59,15 @@ public class VirtualObject implements Closeable {
         // NOP
     }
 
+    public void register(IFeature feature, LuaOneArgFunction fn) {
+        int index = feature.index();
+        featureFunctions.put(index, fn);
+    }
+
+    public LuaValue get(IFeature feature) {
+        return get(feature.index());
+    }
+
     public LuaValue get(int index) {
         final LuaOneArgFunction luaFunction = featureFunctions.get(index);
         if (luaFunction == null) {
@@ -70,6 +78,18 @@ public class VirtualObject implements Closeable {
         featureValues.put(index, returnValue);
 
         return returnValue;
+    }
+
+    public LuaValue getValue(IFeature feature) {
+        return featureValues.getOrDefault(feature.index(), LuaValue.NIL);
+    }
+
+    public LuaValue clear(IFeature feature) {
+        return featureValues.remove(feature.index());
+    }
+
+    public void set(IFeature feature, LuaValue luaValue) {
+        set(feature.index(), luaValue);
     }
 
     public void set(int index, LuaValue luaValue) {
@@ -86,6 +106,14 @@ public class VirtualObject implements Closeable {
         );
     }
 
+    public void register(IMethod feature, LuaOneArgFunction fn) {
+        methodFunctions.put(feature.index(), fn);
+    }
+
+    public LuaValue execute(IMethod method, LuaValue luaValue) {
+        return execute(method.index(), luaValue);
+    }
+
     public LuaValue execute(int index, LuaValue luaValue) {
         final LuaOneArgFunction luaFunction = methodFunctions.get(index);
         if (luaFunction == null) {
@@ -97,7 +125,8 @@ public class VirtualObject implements Closeable {
         return luaFunction.call(luaValue);
     }
 
-    public void triggerEvent(int address) {
+    public void triggerEvent(IEvent event) {
+        int address = event.address();
         final LuaFunction luaFunction = eventFunctions.get(address);
         if (luaFunction == null) {
             LOGGER.warn("Not implemented: " + name + ":addEvent(" + address + ")");
@@ -112,12 +141,28 @@ public class VirtualObject implements Closeable {
         }
     }
 
-    public void addEvent(int index, org.luaj.vm2.LuaFunction luaFunction) {
-        eventFunctions.put(index, luaFunction);
+    public void addEventHandler(IEvent event, org.luaj.vm2.LuaFunction luaFunction) {
+        eventFunctions.put(event.address(), luaFunction);
+    }
+
+    public void addEventHandler(int address, org.luaj.vm2.LuaFunction luaFunction) {
+        eventFunctions.put(address, luaFunction);
     }
 
     @Override
     public void close() {
         // NOP
+    }
+
+    public interface IFeature {
+        int index();
+    }
+
+    public interface IMethod {
+        int index();
+    }
+
+    public interface IEvent {
+        int address();
     }
 }

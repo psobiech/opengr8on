@@ -49,15 +49,15 @@ public class MqttTopic extends VirtualObject {
         this.currentClu = currentClu;
         currentClu.addMqttSubscription(this);
 
-        methodFunctions.put(0, this::subscribe); // mqttsubscription_subscribe
-        methodFunctions.put(1, this::unsubscribe); // mqttsubscription_unsubscribe
-        methodFunctions.put(2, this::onNextMessage); // mqttsubscription_nextmessage
-        methodFunctions.put(10, this::publish); // mqttsubscription_publish
+        register(Methods.SUBSCRIBE, this::subscribe); // mqttsubscription_subscribe
+        register(Methods.UNSUBSCRIBE, this::unsubscribe); // mqttsubscription_unsubscribe
+        register(Methods.NEXT_MESSAGE, this::onNextMessage); // mqttsubscription_nextmessage
+        register(Methods.PUBLISH, this::publish); // mqttsubscription_publish
     }
 
     @Override
     public void setup() {
-        triggerEvent(0); // mqttsubscription_oninit
+        triggerEvent(Events.INIT);
     }
 
     private LuaValue subscribe(LuaValue arg1) {
@@ -109,7 +109,7 @@ public class MqttTopic extends VirtualObject {
             return LuaValue.FALSE;
         }
 
-        final LuaValue message = removeMessage();
+        final LuaValue message = clearMessage();
 
         try {
             mqttClient.publish(
@@ -150,7 +150,7 @@ public class MqttTopic extends VirtualObject {
     }
 
     public String getTopic() {
-        return String.valueOf(featureValues.get(0).checkstring());
+        return String.valueOf(get(Features.TOPIC).checkstring());
     }
 
     public Set<String> getTopicFilters() {
@@ -158,7 +158,7 @@ public class MqttTopic extends VirtualObject {
     }
 
     private LuaValue onNextMessage(LuaValue arg1) {
-        removeMessage();
+        clearMessage();
 
         return LuaValue.NIL;
     }
@@ -172,24 +172,75 @@ public class MqttTopic extends VirtualObject {
                 final String key = entry.getKey();
                 final String payload = new String(entry.getValue());
 
-                featureValues.put(0, LuaValue.valueOf(key)); // mqttsubscription_topic
-                featureValues.put(1, LuaValue.valueOf(payload)); // mqttsubscription_message
+                set(Features.TOPIC, LuaValue.valueOf(key));
+                set(Features.MESSAGE, LuaValue.valueOf(payload));
 
-                triggerEvent(1); // mqttsubscription_onmessage
+                triggerEvent(Events.MESSAGE);
             }
         }
     }
 
     private LuaValue getMessage() {
-        return featureValues.get(1); // mqttsubscription_message
+        return get(Features.MESSAGE);
     }
 
-    private LuaValue removeMessage() {
-        return featureValues.remove(1); // mqttsubscription_message
+    private LuaValue clearMessage() {
+        return clear(Features.MESSAGE);
     }
 
-    @Override
-    public void close() {
-        // NOP
+    private enum Features implements IFeature {
+        TOPIC(0),
+        MESSAGE(1),
+        //
+        ;
+
+        private final int index;
+
+        Features(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
+    private enum Methods implements IMethod {
+        SUBSCRIBE(0),
+        UNSUBSCRIBE(1),
+        NEXT_MESSAGE(2),
+        PUBLISH(10),
+        //
+        ;
+
+        private final int index;
+
+        Methods(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
+    private enum Events implements IEvent {
+        INIT(0),
+        MESSAGE(1),
+        //
+        ;
+
+        private final int address;
+
+        Events(int address) {
+            this.address = address;
+        }
+
+        @Override
+        public int address() {
+            return address;
+        }
     }
 }

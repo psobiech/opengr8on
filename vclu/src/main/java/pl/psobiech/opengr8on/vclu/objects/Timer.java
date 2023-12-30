@@ -38,31 +38,25 @@ public class Timer extends VirtualObject {
     public Timer(String name) {
         super(name);
 
-        featureValues.put(0, LuaValue.valueOf(0)); // timer_time_1
-        featureValues.put(1, LuaValue.valueOf(0)); // timer_mode_1
-        featureFunctions.put(2, arg1 -> LuaValue.valueOf(state.ordinal())); // timer_state_1
-        featureFunctions.put(3, arg1 -> LuaValue.valueOf(TimeUnit.NANOSECONDS.toMillis(counter.get()))); // timer_value
+        set(Features.TIME, LuaValue.ZERO);
+        set(Features.MODE, LuaValue.ZERO);
+        register(Features.STATE, arg1 -> LuaValue.valueOf(state.ordinal()));
+        register(Features.VALUE, arg1 -> LuaValue.valueOf(TimeUnit.NANOSECONDS.toMillis(counter.get())));
 
-        methodFunctions.put(0, this::onStart); // timer_start
-        methodFunctions.put(1, this::onStop); // timer_stop
-        methodFunctions.put(2, this::onPause); // timer_pause
-    }
-
-    @Override
-    public void setup() {
-
+        register(Methods.START, this::onStart);
+        register(Methods.STOP, this::onStop);
+        register(Methods.PAUSE, this::onPause);
     }
 
     private LuaValue onStart(LuaValue luaValue) {
         if (state != State.PAUSED) {
-            counter.set(TimeUnit.MILLISECONDS.toNanos(featureValues.get(0).checklong()));
+            counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
         }
 
         lastLoopTime = System.nanoTime();
-
         state = State.COUNTING;
 
-        triggerEvent(1);
+        triggerEvent(Events.START);
 
         return LuaValue.NIL;
     }
@@ -70,7 +64,7 @@ public class Timer extends VirtualObject {
     private LuaValue onStop(LuaValue luaValue) {
         state = State.STOPPED;
 
-        triggerEvent(2);
+        triggerEvent(Events.STOP);
 
         return LuaValue.NIL;
     }
@@ -78,7 +72,7 @@ public class Timer extends VirtualObject {
     private LuaValue onPause(LuaValue luaValue) {
         state = State.PAUSED;
 
-        triggerEvent(3);
+        triggerEvent(Events.PAUSE);
 
         return LuaValue.NIL;
     }
@@ -90,26 +84,20 @@ public class Timer extends VirtualObject {
         }
 
         final long now = System.nanoTime();
-        long delta = now - lastLoopTime;
-
+        final long delta = now - lastLoopTime;
         final long value = counter.addAndGet(-delta);
+        lastLoopTime = now;
+
         if (value <= 0) {
-            if (featureValues.get(1).checkint() == 1) {
-                counter.set(TimeUnit.MILLISECONDS.toNanos(featureValues.get(0).checklong()));
+            if (get(Features.MODE).checkint() == 1) {
+                counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
             } else {
                 counter.set(0);
                 onStop(LuaValue.NIL);
             }
 
-            triggerEvent(0);
+            triggerEvent(Events.TIMER);
         }
-
-        lastLoopTime = now;
-    }
-
-    @Override
-    public void close() {
-        // NOP
     }
 
     private enum State {
@@ -118,5 +106,64 @@ public class Timer extends VirtualObject {
         PAUSED,
         //
         ;
+    }
+
+    private enum Features implements IFeature {
+        TIME(0),
+        MODE(1),
+        STATE(2),
+        VALUE(3),
+        //
+        ;
+
+        private final int index;
+
+        Features(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
+    private enum Methods implements IMethod {
+        START(0),
+        STOP(1),
+        PAUSE(2),
+        //
+        ;
+
+        private final int index;
+
+        Methods(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
+    private enum Events implements IEvent {
+        TIMER(0),
+        START(1),
+        STOP(2),
+        PAUSE(3),
+        //
+        ;
+
+        private final int address;
+
+        Events(int address) {
+            this.address = address;
+        }
+
+        @Override
+        public int address() {
+            return address;
+        }
     }
 }

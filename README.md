@@ -12,9 +12,6 @@ Any product names, logos, brands, and other trademarks or images featured or ref
 
 Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work, and disclaims liability for all uses of the work, to the fullest extent permitted by applicable law.
 
-# Requirements
-Java 21
-
 # Virtual CLU
 
 ## Local

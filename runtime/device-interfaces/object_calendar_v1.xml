@@ -3,7 +3,7 @@
 	<features>
 		<feature get="true" index="0" name="Rule" set="true" type="str" unit="string">
 			<hint lang="pl" value="Reguła kalendarza w formacie CRON lub ERROR w przypadku wprowadzenia błędnej reguły"/>
-			<hint lang="en" value="Calendar rule in CRON format (or 'ERROR' format in the case of entering wrong rule)`SinceLastRun`"/>
+			<hint lang="en" value="Calendar rule in CRON format (or 'ERROR' format in the case of entering wrong rule)"/>
 		    <desc resKey="calendar_rule"/>
         </feature>
 		<feature get="true" index="1" name="SinceLastRun" set="false" type="num" unit="min">

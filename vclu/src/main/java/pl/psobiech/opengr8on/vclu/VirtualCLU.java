@@ -105,26 +105,30 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     public VirtualCLU(String name, Inet4Address address, Path aDriveDirectory) {
         super(name);
 
-        this.executorService = Executors.newScheduledThreadPool(1, ThreadUtil.daemonThreadFactory("cluObject_" + name));
+        this.executorService = Executors.newScheduledThreadPool(
+            1,
+            ThreadUtil.daemonThreadFactory("cluObject_" + name)
+        );
 
         this.aDriveDirectory = aDriveDirectory;
 
-        featureFunctions.put(0, this::getUptime); // clu_uptime
-        featureValues.put(2, valueOf(0)); // clu_state
-        featureFunctions.put(5, this::getCurrentDateAsString); // clu_date
-        featureFunctions.put(6, this::getCurrentTimeAsString); // clu_time
-        featureFunctions.put(7, this::getCurrentDayOfMonth); // clu_day
-        featureFunctions.put(8, this::getCurrentMonth); // clu_month
-        featureFunctions.put(9, this::getCurrentYear); // clu_year
-        featureFunctions.put(10, this::getCurrentDayOfWeek); // clu_dayofweek
-        featureFunctions.put(11, this::getCurrentHour); // clu_hour
-        featureFunctions.put(12, this::getCurrentMinute); // clu_minute
-        featureFunctions.put(13, this::getCurrentEpochSeconds); // clu_localtime
-        featureValues.put(14, valueOf(UTC_TIMEZONE_ID)); // clu_timezone
-        featureValues.put(20, valueOf("ssl://localhost:8883")); // clu_mqtturl
-        featureFunctions.put(21, arg1 -> { // clu_usemqtt
+        register(Features.UPTIME, this::getUptime);
+        set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
+        register(Features.DATE, this::getCurrentDateAsString);
+        register(Features.TIME, this::getCurrentTimeAsString);
+        register(Features.DAY_OF_MONTH, this::getCurrentDayOfMonth);
+        register(Features.MONTH, this::getCurrentMonth);
+        register(Features.YEAR, this::getCurrentYear);
+        register(Features.DAY_OF_WEEK, this::getCurrentDayOfWeek);
+        register(Features.HOUR, this::getCurrentHour);
+        register(Features.MINUTE, this::getCurrentMinute);
+        register(Features.TIMESTAMP, this::getCurrentEpochSeconds);
+        set(Features.TIME_ZONE, valueOf(UTC_TIMEZONE_ID));
+
+        set(Features.MQTT_URL, valueOf("ssl://localhost:8883"));
+        register(Features.USE_MQTT, arg1 -> {
             if (arg1.isnil()) {
-                return featureValues.get(21);
+                return getValue(Features.USE_MQTT);
             }
 
             // Sometimes OM uses true/false and sometimes 0/1
@@ -132,14 +136,14 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 (arg1.isboolean() && arg1.checkboolean()) || (arg1.isint() && arg1.checkint() != 0)
             );
         });
-        featureFunctions.put(22, arg1 -> { // clu_mqttconnection
-            return LuaValue.valueOf(
+        register(Features.MQTT_CONNECTION, arg1 ->
+            LuaValue.valueOf(
                 mqttClient != null && mqttClient.isConnected()
-            );
-        });
+            )
+        );
 
-        methodFunctions.put(0, this::addToLog); // clu_addtolog
-        methodFunctions.put(1, this::clearLog); // clu_clearlog
+        register(Methods.ADD_TO_LOG, this::addToLog);
+        register(Methods.CLEAR_LOG, this::clearLog);
 
         currentDateTime = getCurrentDateTime();
         executorService.scheduleAtFixedRate(
@@ -147,8 +151,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 final ZonedDateTime lastDateTime = currentDateTime;
                 currentDateTime = getCurrentDateTime();
 
-                if (Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= 60) {
-                    triggerEvent(13); // clu_ontimechange
+                if (!currentDateTime.getZone().equals(lastDateTime.getZone())
+                    || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= 60) {
+                    triggerEvent(Events.TIME_CHANGE);
                 }
             },
             1, 1, TimeUnit.SECONDS
@@ -157,14 +162,14 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     @Override
     public void setup() {
-        featureValues.put(2, valueOf(1)); // clu_state
+        set(Features.STATE, LuaValue.valueOf(State.OK.value));
 
-        triggerEvent(0); // clu_oninit
+        triggerEvent(Events.INIT);
     }
 
     @Override
     public void loop() {
-        final boolean mqttEnable = featureValues.get(21).checkboolean();
+        final boolean mqttEnable = get(Features.USE_MQTT).checkboolean();
         final boolean mqttAlreadyEnabled = mqttClient != null;
         if (mqttEnable ^ mqttAlreadyEnabled) {
             disableMqtt();
@@ -248,7 +253,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     }
 
     private ZoneId getCurrentZoneId() {
-        final LuaValue zoneIdLuaValue = featureValues.get(14);
+        final LuaValue zoneIdLuaValue = get(Features.TIME_ZONE);
         if (!zoneIdLuaValue.isint()) {
             return ZoneOffset.UTC;
         }
@@ -264,7 +269,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     }
 
     private LuaValue addToLog(LuaValue arg) {
-        featureValues.put(1, arg);
+        set(Features.LOG, arg);
 
         if (!arg.isnil()) {
             final String logValue = String.valueOf(arg.checkstring());
@@ -275,7 +280,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     }
 
     private LuaValue clearLog(LuaValue arg) {
-        featureValues.put(1, LuaValue.NIL);
+        set(Features.LOG, LuaValue.NIL);
 
         return LuaValue.NIL;
     }
@@ -297,7 +302,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     private void enableMqtt() {
         // TODO: manage the client connection and topics
         // TODO: expose some LUA API to publish/subscribe
-        final String mqttUrl = String.valueOf(featureValues.get(20).checkstring());
+        final String mqttUrl = String.valueOf(get(Features.MQTT_URL).checkstring());
 
         final URI mqttUri = URI.create(mqttUrl);
 
@@ -386,5 +391,91 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         }
 
         FileUtil.closeQuietly(mqttClient);
+    }
+
+    private enum State {
+        STARTING(0),
+        OK(1),
+        ERROR(2),
+        EMERGENCY(4),
+        MONITOR(5),
+        //
+        ;
+
+        private final int value;
+
+        State(int value) {
+            this.value = value;
+        }
+    }
+
+    private enum Features implements IFeature {
+        UPTIME(0),
+        LOG(1),
+        STATE(2),
+        //
+        DATE(5),
+        TIME(6),
+        DAY_OF_MONTH(7),
+        MONTH(8),
+        YEAR(9),
+        DAY_OF_WEEK(10),
+        HOUR(11),
+        MINUTE(12),
+        TIMESTAMP(13),
+        TIME_ZONE(14),
+        //
+        MQTT_URL(20),
+        USE_MQTT(21),
+        MQTT_CONNECTION(22),
+        //
+        ;
+
+        private final int index;
+
+        Features(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
+    private enum Methods implements IMethod {
+        ADD_TO_LOG(0),
+        CLEAR_LOG(1),
+        //
+        ;
+
+        private final int index;
+
+        Methods(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
+    private enum Events implements IEvent {
+        INIT(0),
+        TIME_CHANGE(13),
+        //
+        ;
+
+        private final int address;
+
+        Events(int address) {
+            this.address = address;
+        }
+
+        @Override
+        public int address() {
+            return address;
+        }
     }
 }

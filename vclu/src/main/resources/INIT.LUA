@@ -89,33 +89,34 @@ function OBJECT:new(idx, a, b, c)
   if idx == 0 or idx == 1 then
     self['name'] = b
 
-    self['_id'] = api.newObject(idx, b, a)
+    api.newObject(idx, b, a)
   elseif idx == 44 then
     self['name'] = a
-    self['_id'] = api.newObject(idx, a, 0)
+
+    api.newObject(idx, a, 0)
   else
     self['name'] = a
 
-    self['_id'] = api.newObject(idx, a, 0)
+    api.newObject(idx, a, 0)
   end
 
   return self
 end
 
 function OBJECT:get(idx)
-  return api.get(self['_id'], idx)
+  return api.get(self['name'], idx)
 end
 
 function OBJECT:set(idx, value)
-  api.set(self['_id'], idx, value)
+  api.set(self['name'], idx, value)
 end
 
 function OBJECT:execute(idx, name)
-  return api.execute(self['_id'], idx, name)
+  return api.execute(self['name'], idx, name)
 end
 
 function OBJECT:add_event(idx, fn)
-  api.addEvent(self['_id'], idx, fn)
+  api.addEvent(self['name'], idx, fn)
 end
 
 --
@@ -132,28 +133,28 @@ function GATE:new(idx, a)
   if idx == 121 then
     self['name'] = a
 
-    self['_id'] = api.newGate(idx, a)
+    api.newGate(idx, a)
   else
     self['name'] = a
 
-    self['_id'] = api.newGate(idx, a)
+    api.newGate(idx, a)
   end
 
   return self
 end
 
 function GATE:get(idx)
-  return api.get(self['_id'], idx)
+  return api.get(self['name'], idx)
 end
 
 function GATE:set(idx, value)
-  api.set(self['_id'], idx, value)
+  api.set(self['name'], idx, value)
 end
 
 function GATE:execute(idx, name)
-  return api.execute(self['_id'], idx, name)
+  return api.execute(self['name'], idx, name)
 end
 
 function GATE:add_event(idx, fn)
-  api.addEvent(self['_id'], idx, fn)
+  api.addEvent(self['name'], idx, fn)
 end

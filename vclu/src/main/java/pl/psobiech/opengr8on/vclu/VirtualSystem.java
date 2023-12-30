@@ -40,6 +40,7 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.objects.Timer;
 
@@ -56,15 +57,11 @@ public class VirtualSystem implements Closeable {
 
     private final CipherKey cipherKey;
 
-    private final Map<Integer, VirtualObject> objects = new HashMap<>();
-
     private final Map<String, VirtualObject> objectsByName = new HashMap<>();
 
     private VirtualCLU currentClu = null;
 
     private ScheduledFuture<?> clientReportFuture = null;
-
-    private int objectIdGenerator = 0;
 
     public VirtualSystem(Path aDriveDirectory, NetworkInterfaceDto networkInterface, CLUDevice device, CipherKey cipherKey) {
         this.aDriveDirectory = aDriveDirectory;
@@ -73,18 +70,12 @@ public class VirtualSystem implements Closeable {
         this.cipherKey = cipherKey;
     }
 
-    public VirtualObject getObject(int index) {
-        return objects.get(index);
-    }
-
     public VirtualObject getObject(String name) {
         return objectsByName.get(name);
     }
 
     @SuppressWarnings("resource")
-    public int newObject(int index, String name, int ipAddress) {
-        final int objectId = objectIdGenerator++;
-
+    public void newObject(int index, String name, int ipAddress) {
         final VirtualObject virtualObject = switch (index) {
             // TODO: temporarily we depend that the main CLU is initialized first-ish
             case 0 -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
@@ -95,29 +86,22 @@ public class VirtualSystem implements Closeable {
             default -> new VirtualObject(name);
         };
 
-        objects.put(objectId, virtualObject);
         objectsByName.put(name, virtualObject);
-
-        return objectId;
     }
 
-    public int newGate(int index, String name) {
-        final int objectId = objectIdGenerator++;
-
+    @SuppressWarnings("resource")
+    public void newGate(int index, String name) {
         final VirtualObject virtualObject = switch (index) {
-            case 121 -> new VirtualGate(name);
+            case 121 -> new HttpRequest(name);
             case 999 -> new MqttTopic(name, currentClu);
             default -> new VirtualObject(name);
         };
 
-        objects.put(objectId, virtualObject);
         objectsByName.put(name, virtualObject);
-
-        return objectId;
     }
 
     public void setup() {
-        for (VirtualObject value : objects.values()) {
+        for (VirtualObject value : objectsByName.values()) {
             try {
                 value.setup();
             } catch (Exception e) {
@@ -128,7 +112,7 @@ public class VirtualSystem implements Closeable {
 
     public void loop() {
         final long startTime = System.nanoTime();
-        for (VirtualObject value : objects.values()) {
+        for (VirtualObject value : objectsByName.values()) {
             try {
                 value.loop();
             } catch (Exception e) {
@@ -233,7 +217,7 @@ public class VirtualSystem implements Closeable {
 
         executors.shutdown();
 
-        for (VirtualObject object : objects.values()) {
+        for (VirtualObject object : objectsByName.values()) {
             FileUtil.closeQuietly(object);
         }
     }

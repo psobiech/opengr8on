@@ -170,7 +170,7 @@
     <!--    <object maxInstances="-1" name="PresenceSensor" version="2"/>-->
     <!--    <object maxInstances="-1" name="EventScheduler" version="1"/>-->
     <!--    <object maxInstances="-1" name="HttpListener" version="2"/>-->
-    <!--    <object maxInstances="-1" name="HttpRequest" version="2"/>-->
+    <object maxInstances="-1" name="HttpRequest" version="2"/>
   </objects>
   <modulesVersionConstraints>
   </modulesVersionConstraints>

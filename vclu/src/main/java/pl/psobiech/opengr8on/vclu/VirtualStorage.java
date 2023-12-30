@@ -29,12 +29,29 @@ public class VirtualStorage extends VirtualObject {
     public VirtualStorage(String name) {
         super(name);
 
-        methodFunctions.put(4, arg1 -> {
+        register(Methods.STORE, arg1 -> {
             final LuaString persistentVariableName = arg1.checkstring();
 
             //TODO: make variable persistent across restarts
 
             return LuaValue.NIL;
         });
+    }
+
+    private enum Methods implements IMethod {
+        STORE(4),
+        //
+        ;
+
+        private final int index;
+
+        Methods(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
     }
 }

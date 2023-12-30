@@ -16,40 +16,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.objects;
 
-import java.net.Inet4Address;
-import java.util.Optional;
-
-import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.vclu.VirtualObject;
 
-public class VirtualRemoteCLU extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VirtualRemoteCLU.class);
+public class HttpRequest extends VirtualObject {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequest.class);
 
-    public VirtualRemoteCLU(String name, Inet4Address address, NetworkInterfaceDto networkInterface, CipherKey cipherKey) {
+    public HttpRequest(String name) {
         super(name);
+    }
 
-        register(Methods.EXECUTE, args -> {
-            final String script = String.valueOf(args.checkstring(1));
+    private enum Features implements IFeature {
+        //
+        ;
 
-            try (CLUClient client = new CLUClient(networkInterface, address, cipherKey)) {
-                final Optional<String> execute = client.execute(script);
-                if (execute.isPresent()) {
-                    return LuaValue.valueOf(execute.get());
-                }
-            }
+        private final int index;
 
-            return LuaValue.NIL;
-        });
+        Features(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
     }
 
     private enum Methods implements IMethod {
-        EXECUTE(0),
         //
         ;
 
@@ -62,6 +58,22 @@ public class VirtualRemoteCLU extends VirtualObject {
         @Override
         public int index() {
             return index;
+        }
+    }
+
+    private enum Events implements IEvent {
+        //
+        ;
+
+        private final int address;
+
+        Events(int address) {
+            this.address = address;
+        }
+
+        @Override
+        public int address() {
+            return address;
         }
     }
 }

@@ -179,37 +179,33 @@ public class LuaApiLib extends TwoArgFunction {
         );
     }
 
-    public LuaValue newObject(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        return LuaValue.valueOf(
-            virtualSystem.newObject(arg1.checkint(), String.valueOf(arg2.checkstring()), arg3.checkint())
-        );
+    public void newObject(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
+        virtualSystem.newObject(arg1.checkint(), String.valueOf(arg2.checkstring()), arg3.checkint());
     }
 
-    public LuaValue newGate(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        return LuaValue.valueOf(
-            virtualSystem.newGate(arg1.checkint(), String.valueOf(arg2.checkstring()))
-        );
+    public void newGate(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
+        virtualSystem.newGate(arg1.checkint(), String.valueOf(arg2.checkstring()));
     }
 
     public LuaValue _get(LuaValue arg1, LuaValue arg2) {
-        return virtualSystem.getObject(arg1.checkint())
+        return virtualSystem.getObject(String.valueOf(arg1.checkstring()))
                             .get(arg2.checkint());
     }
 
     public LuaValue _set(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.getObject(arg1.checkint())
+        virtualSystem.getObject(String.valueOf(arg1.checkstring()))
                      .set(arg2.checkint(), arg3);
 
         return LuaValue.NIL;
     }
 
     public LuaValue execute(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        return virtualSystem.getObject(arg1.checkint())
+        return virtualSystem.getObject(String.valueOf(arg1.checkstring()))
                             .execute(arg2.checkint(), arg3);
     }
 
     public void addEvent(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.getObject(arg1.checkint())
-                     .addEvent(arg2.checkint(), arg3.checkfunction());
+        virtualSystem.getObject(String.valueOf(arg1.checkstring()))
+                     .addEventHandler(arg2.checkint(), arg3.checkfunction());
     }
 }
