@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.util;
 
+import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 
 public class LuaUtil {
@@ -40,6 +41,10 @@ public class LuaUtil {
     public static String stringify(LuaValue luaValue) {
         if (luaValue == null || luaValue.isnil()) {
             return "nil";
+        }
+
+        if (luaValue instanceof LuaString) {
+            return luaValue.checkjstring();
         }
 
         if (luaValue.isnumber()) {

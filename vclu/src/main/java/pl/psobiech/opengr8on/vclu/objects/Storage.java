@@ -39,6 +39,7 @@ public class Storage extends VirtualObject {
     }
 
     private enum Methods implements IMethod {
+        ERASE(3),
         STORE(4),
         //
         ;
