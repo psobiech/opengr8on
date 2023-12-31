@@ -30,6 +30,7 @@ import java.net.StandardSocketOptions;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
@@ -63,6 +64,8 @@ public class SocketUtil {
 
         private final NetworkInterface networkInterface;
 
+        private final ReentrantLock socketLock = new ReentrantLock();
+
         private DatagramSocket socket;
 
         public UDPSocket(Inet4Address address, int port, boolean broadcast, NetworkInterface networkInterface) {
@@ -73,53 +76,57 @@ public class SocketUtil {
         }
 
         public void open() {
-            synchronized (this) {
-                try {
-                    this.socket = new DatagramSocket(new InetSocketAddress(address, port));
-                    this.socket.setSoTimeout(DEFAULT_TIMEOUT);
-                    this.socket.setTrafficClass(IPTOS_RELIABILITY);
+            socketLock.lock();
+            try {
+                this.socket = new DatagramSocket(new InetSocketAddress(address, port));
+                this.socket.setSoTimeout(DEFAULT_TIMEOUT);
+                this.socket.setTrafficClass(IPTOS_RELIABILITY);
 
-                    this.socket.setBroadcast(broadcast);
-                    if (broadcast) {
-                        this.socket.setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
-                    }
-                } catch (IOException e) {
-                    throw new UnexpectedException(e);
+                this.socket.setBroadcast(broadcast);
+                if (broadcast) {
+                    this.socket.setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
                 }
+            } catch (IOException e) {
+                throw new UnexpectedException(e);
+            } finally {
+                socketLock.unlock();
             }
         }
 
         public void send(DatagramPacket packet) {
-            synchronized (this) {
-                try {
-                    socket.send(packet);
-                } catch (IOException e) {
-                    throw new UnexpectedException(e);
-                }
+            socketLock.lock();
+            try {
+                socket.send(packet);
+            } catch (IOException e) {
+                throw new UnexpectedException(e);
+            } finally {
+                socketLock.unlock();
             }
         }
 
         public void discard(DatagramPacket packet) {
-            synchronized (this) {
+            socketLock.lock();
+            try {
+                socket.setSoTimeout(1);
+                do {
+                    socket.receive(packet);
+                } while (packet.getLength() > 0 && !Thread.interrupted());
+            } catch (IOException e) {
+                // NOP
+            } finally {
                 try {
-                    socket.setSoTimeout(1);
-                    do {
-                        socket.receive(packet);
-                    } while (packet.getLength() > 0 && !Thread.interrupted());
-                } catch (IOException e) {
+                    socket.setSoTimeout(DEFAULT_TIMEOUT);
+                } catch (SocketException e) {
                     // NOP
-                } finally {
-                    try {
-                        socket.setSoTimeout(DEFAULT_TIMEOUT);
-                    } catch (SocketException e) {
-                        // NOP
-                    }
                 }
+
+                socketLock.unlock();
             }
         }
 
         public Optional<Payload> tryReceive(DatagramPacket packet, Duration timeout) {
-            synchronized (this) {
+            socketLock.lock();
+            try {
                 try {
                     socket.setSoTimeout(Math.toIntExact(timeout.toMillis()));
                     socket.receive(packet);
@@ -139,14 +146,19 @@ public class SocketUtil {
                         )
                     )
                 );
+            } finally {
+                socketLock.unlock();
             }
         }
 
         public void close() {
-            synchronized (this) {
+            socketLock.lock();
+            try {
                 FileUtil.closeQuietly(this.socket);
 
                 this.socket = null;
+            } finally {
+                socketLock.unlock();
             }
         }
     }

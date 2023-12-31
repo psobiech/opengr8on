@@ -33,6 +33,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Future.State;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,6 +65,8 @@ public class Client implements Closeable {
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
 
     protected final NetworkInterfaceDto networkInterface;
+
+    protected final ReentrantLock socketLock = new ReentrantLock();
 
     protected final UDPSocket socket;
 
@@ -122,7 +125,8 @@ public class Client implements Closeable {
         final Queue<Payload> queue = new ArrayBlockingQueue<>(8);
 
         final Future<Void> future = executor.submit(() -> {
-            synchronized (socket) {
+            socketLock.lock();
+            try {
                 send(uuid, requestCipherKey, ipAddress, command.asByteArray());
 
                 Duration threadTimeout = timeout;
@@ -146,6 +150,8 @@ public class Client implements Closeable {
                 } while (threadTimeout.isPositive() && results.size() < limit && !Thread.interrupted());
 
                 return null;
+            } finally {
+                socketLock.unlock();
             }
         });
 
@@ -194,13 +200,17 @@ public class Client implements Closeable {
         //                .formatted(uuid, Payload.of(ipAddress, port, encryptedRequest), cipherKey)
         //        );
 
-        synchronized (socket) {
+        socketLock.lock();
+        try {
             socket.discard(responsePacket);
 
             final DatagramPacket requestPacket = new DatagramPacket(encryptedRequest, encryptedRequest.length);
             requestPacket.setAddress(requestPayload.address());
             requestPacket.setPort(requestPayload.port());
+
             socket.send(requestPacket);
+        } finally {
+            socketLock.unlock();
         }
     }
 
@@ -248,12 +258,16 @@ public class Client implements Closeable {
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         executor.shutdown();
 
-        synchronized (socket) {
+        socketLock.lock();
+        try {
             socket.close();
+        } finally {
+            socketLock.unlock();
         }
+
     }
 
     public static String uuid(Command command) {

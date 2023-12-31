@@ -325,19 +325,15 @@ public class Main {
                                    final CLUDevice device = client.getCluDevice();
                                    final Inet4Address deviceAddress = device.getAddress();
 
-                                   final Inet4Address nextAddress;
-                                   synchronized (usedAddresses) {
-                                       // temporary hack, we expect the lowest ip to be last
-                                       final Inet4Address lastAddress = usedAddresses.getLast();
+                                   // temporary hack, we expect the lowest ip to be last
+                                   final Inet4Address lastAddress = usedAddresses.getLast();
+                                   final Inet4Address nextAddress = networkInterface.nextAvailable(
+                                                                                        lastAddress, Duration.ofMillis(4_000),
+                                                                                        deviceAddress, usedAddresses
+                                                                                    )
+                                                                                    .get();
 
-                                       nextAddress = networkInterface.nextAvailable(
-                                                                         lastAddress, Duration.ofMillis(4_000),
-                                                                         deviceAddress, usedAddresses
-                                                                     )
-                                                                     .get();
-
-                                       usedAddresses.add(nextAddress);
-                                   }
+                                   usedAddresses.add(nextAddress);
 
                                    client.setCipherKey(projectCipherKey)
                                          .get();

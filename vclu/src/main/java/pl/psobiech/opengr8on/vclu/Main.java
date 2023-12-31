@@ -33,6 +33,10 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 
 public class Main {
+    static {
+        System.setProperty("jdk.tracePinnedThreads", "full/short");
+    }
+
     public static void main(String[] args) throws Exception {
         final Path rootDirectory = Paths.get("./runtime/root").toAbsolutePath();
 

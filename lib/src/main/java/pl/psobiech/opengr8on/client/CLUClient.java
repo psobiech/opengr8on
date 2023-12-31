@@ -29,11 +29,10 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPErrorPacket;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPPacketIOException;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.client.commands.ResetCommand;
 import pl.psobiech.opengr8on.client.commands.ResetCommand.Response;
@@ -44,6 +43,8 @@ import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.org.apache.commons.net.TFTP;
+import pl.psobiech.opengr8on.org.apache.commons.net.TFTPErrorPacket;
+import pl.psobiech.opengr8on.org.apache.commons.net.TFTPPacketIOException;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.RandomUtil;
@@ -61,6 +62,8 @@ public class CLUClient extends Client implements Closeable {
     private static final Duration DEFAULT_TIMEOUT_DURATION = Duration.ofMillis(SocketUtil.DEFAULT_TIMEOUT);
 
     private final CLUDevice cluDevice;
+
+    private final ReentrantLock tftpClientLock = new ReentrantLock();
 
     private final TFTPClient tftpClient;
 
@@ -196,61 +199,63 @@ public class CLUClient extends Client implements Closeable {
     }
 
     public void uploadFile(Path file, String location) {
-        synchronized (tftpClient) {
-            try (
-                tftpClient;
-                InputStream inputStream = Files.newInputStream(file)
-            ) {
-                tftpClient.open();
+        tftpClientLock.lock();
+        try (
+            tftpClient;
+            InputStream inputStream = Files.newInputStream(file)
+        ) {
+            tftpClient.open();
 
-                tftpClient.sendFile(
-                    location, TFTP.BINARY_MODE,
-                    inputStream,
-                    cluDevice.getAddress(), TFTP_PORT
-                );
-            } catch (IOException e) {
-                throw new UnexpectedException(e);
-            }
+            tftpClient.sendFile(
+                location, TFTP.BINARY_MODE,
+                inputStream,
+                cluDevice.getAddress(), TFTP_PORT
+            );
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
+        } finally {
+            tftpClientLock.unlock();
         }
     }
 
     public Optional<Path> downloadFile(String location, Path file) {
-        synchronized (tftpClient) {
-            try (
-                tftpClient;
-                OutputStream outputStream = Files.newOutputStream(file)
-            ) {
-                tftpClient.open();
+        tftpClientLock.lock();
+        try (
+            tftpClient;
+            OutputStream outputStream = Files.newOutputStream(file)
+        ) {
+            tftpClient.open();
 
-                tftpClient.receiveFile(
-                    location, TFTP.BINARY_MODE,
-                    outputStream,
-                    cluDevice.getAddress(), TFTP_PORT
-                );
+            tftpClient.receiveFile(
+                location, TFTP.BINARY_MODE,
+                outputStream,
+                cluDevice.getAddress(), TFTP_PORT
+            );
 
-                return Optional.of(file);
-            } catch (IOException e) {
-                final boolean fileNotFound;
-                if (e instanceof TFTPPacketIOException) {
-                    fileNotFound = ((TFTPPacketIOException) e).getErrorPacketCode() == TFTPErrorPacket.FILE_NOT_FOUND;
-                } else {
-                    final String message = e.getMessage();
+            return Optional.of(file);
+        } catch (IOException e) {
+            final boolean fileNotFound;
+            if (e instanceof TFTPPacketIOException) {
+                fileNotFound = ((TFTPPacketIOException) e).getErrorPacketCode() == TFTPErrorPacket.FILE_NOT_FOUND;
+            } else {
+                final String message = e.getMessage();
 
-                    fileNotFound = (message != null && message.startsWith(TFTP_NOT_FOUND_ERROR_CODE));
-                }
-
-                if (fileNotFound) {
-                    try {
-                        Files.deleteIfExists(file);
-                    } catch (IOException e2) {
-                        LOGGER.warn(e2.getMessage(), e2);
-                    }
-
-                    return Optional.empty();
-                }
-
-                throw new UnexpectedException(e);
+                fileNotFound = (message != null && message.startsWith(TFTP_NOT_FOUND_ERROR_CODE));
             }
+
+            if (fileNotFound) {
+                try {
+                    Files.deleteIfExists(file);
+                } catch (IOException e2) {
+                    LOGGER.warn(e2.getMessage(), e2);
+                }
+
+                return Optional.empty();
+            }
+
+            throw new UnexpectedException(e);
+        } finally {
+            tftpClientLock.unlock();
         }
     }
 
@@ -258,8 +263,11 @@ public class CLUClient extends Client implements Closeable {
         final LuaScriptCommand.Response response = LuaScriptCommand.response(cluDevice.getAddress(), HexUtil.asInt(RandomUtil.hexString(8)), value);
         final String uuid = response.uuid(UUID.randomUUID());
 
-        synchronized (socket) {
+        socketLock.lock();
+        try {
             send(uuid, cipherKey, cluDevice.getAddress(), response.asByteArray());
+        } finally {
+            socketLock.unlock();
         }
     }
 
@@ -270,7 +278,8 @@ public class CLUClient extends Client implements Closeable {
     public Optional<Payload> request(CipherKey responseCipherKey, Command command, Duration timeout) {
         final String uuid = uuid(command);
 
-        synchronized (socket) {
+        socketLock.lock();
+        try {
             send(uuid, cipherKey, cluDevice.getAddress(), command.asByteArray());
 
             return Util.repeatUntilTimeout(
@@ -278,6 +287,8 @@ public class CLUClient extends Client implements Closeable {
                 duration ->
                     awaitResponsePayload(uuid, responseCipherKey, duration)
             );
+        } finally {
+            socketLock.unlock();
         }
     }
 

@@ -32,6 +32,7 @@ import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.io.FromNetASCIIOutputStream;
@@ -58,6 +59,8 @@ import org.slf4j.LoggerFactory;
  */
 public class TFTPServer implements Runnable, AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
+
+    private final ReentrantLock transfersLock = new ReentrantLock();
 
     private final HashSet<TFTPTransfer> transfers = new HashSet<>();
 
@@ -166,14 +169,17 @@ public class TFTPServer implements Runnable, AutoCloseable {
     public void close() {
         shutdownServer = true;
 
-        synchronized (transfers) {
+        transfersLock.lock();
+        try {
             transfers.forEach(TFTPTransfer::close);
+        } finally {
+            transfersLock.unlock();
         }
 
         try {
             serverTftp.close();
-        } catch (final RuntimeException e) {
-            // noop
+        } catch (RuntimeException e) {
+            // NOP
         }
 
         if (serverThread != null) {
@@ -250,9 +256,9 @@ public class TFTPServer implements Runnable, AutoCloseable {
             serverTftp.open(port, localAddress);
         }
 
-        serverThread = new Thread(this);
-        serverThread.setDaemon(true);
-        serverThread.start();
+        serverThread = Thread.ofVirtual()
+                             .name("TFTPServer")
+                             .start(this);
     }
 
     /*
@@ -271,13 +277,16 @@ public class TFTPServer implements Runnable, AutoCloseable {
                 tftpPacket = serverTftp.receive();
 
                 final TFTPTransfer tt = new TFTPTransfer(tftpPacket);
-                synchronized (transfers) {
+                transfersLock.lock();
+                try {
                     transfers.add(tt);
+                } finally {
+                    transfersLock.unlock();
                 }
 
-                final Thread thread = new Thread(tt);
-                thread.setDaemon(true);
-                thread.start();
+                Thread.ofVirtual()
+                      .name("Transfer")
+                      .start(tt);
             }
         } catch (Exception e) {
             if (!shutdownServer) {
@@ -381,8 +390,12 @@ public class TFTPServer implements Runnable, AutoCloseable {
                 } catch (final Exception e) {
                     // noop
                 }
-                synchronized (transfers) {
+
+                transfersLock.lock();
+                try {
                     transfers.remove(this);
+                } finally {
+                    transfersLock.unlock();
                 }
             }
         }

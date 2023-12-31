@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -87,6 +88,8 @@ public class Server implements Closeable {
     private final CLUDevice cluDevice;
 
     protected final UDPSocket broadcastSocket;
+
+    protected final ReentrantLock socketLock = new ReentrantLock();
 
     protected final UDPSocket socket;
 
@@ -484,7 +487,8 @@ public class Server implements Closeable {
         //                .formatted(uuid, Payload.of(ipAddress, port, encryptedRequest), cipherKey)
         //        );
 
-        synchronized (this) {
+        socketLock.lock();
+        try {
             requestPacket.setData(encryptedRequest);
             requestPacket.setAddress(requestPayload.address());
             requestPacket.setPort(requestPayload.port());
@@ -492,6 +496,8 @@ public class Server implements Closeable {
             socket.send(requestPacket);
 
             requestPacket.setData(EMPTY_BUFFER);
+        } finally {
+            socketLock.unlock();
         }
     }
 
@@ -499,13 +505,14 @@ public class Server implements Closeable {
     public void close() {
         tftpServer.close();
 
-        synchronized (this) {
-            broadcastSocket.close();
+        socketLock.lock();
+        try {
+            socket.close();
+        } finally {
+            socketLock.unlock();
         }
 
-        synchronized (this) {
-            socket.close();
-        }
+        broadcastSocket.close();
 
         luaThread.close();
 

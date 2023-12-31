@@ -289,8 +289,7 @@ public final class FileUtil {
             final Path absolutePath = path.toAbsolutePath();
             final String absolutePathAsString = absolutePath.toString();
 
-            final UnexpectedException
-                stacktrace =
+            final UnexpectedException stacktrace =
                 new UnexpectedException("Temporary Path went out of scope, and the file was not removed: " + absolutePathAsString);
             synchronized (stacktraces) {
                 stacktraces.put(absolutePathAsString, stacktrace);
