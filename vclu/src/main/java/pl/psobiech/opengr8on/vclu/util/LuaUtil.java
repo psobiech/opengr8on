@@ -26,6 +26,16 @@ public class LuaUtil {
         // NOP
     }
 
+    public static boolean trueish(LuaValue luaValue) {
+        if (luaValue == null || luaValue.isnil()) {
+            return false;
+        }
+
+        return (luaValue.isboolean() && luaValue.checkboolean())
+            || (luaValue.isnumber() && luaValue.checklong() != 0)
+            || (luaValue.isstring() && Boolean.parseBoolean(luaValue.checkjstring()))
+    }
+
     public static String toString(LuaValue luaValue) {
         if (luaValue == null || luaValue.isnil()) {
             return "nil";

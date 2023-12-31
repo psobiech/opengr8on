@@ -56,6 +56,7 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import static org.luaj.vm2.LuaValue.valueOf;
 
@@ -133,7 +134,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
             // Sometimes OM uses true/false and sometimes 0/1
             return LuaValue.valueOf(
-                (arg1.isboolean() && arg1.checkboolean()) || (arg1.isint() && arg1.checkint() != 0)
+                LuaUtil.trueish(arg1)
             );
         });
         register(Features.MQTT_CONNECTION, arg1 ->
