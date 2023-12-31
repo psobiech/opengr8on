@@ -60,13 +60,15 @@
   </dependencies>
 
   <build>
+    <finalName>vclu</finalName>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <finalName>vclu</finalName>
-          <appendAssemblyId>false</appendAssemblyId>
+          <appendAssemblyId>true</appendAssemblyId>
           <descriptors>
             <descriptor>assembly/jar-with-dependencies.xml</descriptor>
           </descriptors>

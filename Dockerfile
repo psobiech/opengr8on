@@ -23,7 +23,7 @@ COPY vclu/assembly/jar-with-dependencies.xml vclu/assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
 #RUN mvn -B dependency:go-offline
-RUN mvn -B package -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM app-deps AS app-build
 
@@ -33,7 +33,7 @@ COPY lib lib
 COPY client client
 COPY vclu vclu
 
-RUN mvn -B package -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21 AS jre-build
 
@@ -60,7 +60,7 @@ RUN mkdir -p /opt/docker/runtime
 WORKDIR /opt/docker
 
 COPY --from=jre-build /opt/build/jre $JAVA_HOME
-COPY --from=app-build /opt/build/vclu/target/vclu.jar /opt/docker
+COPY --from=app-build /opt/build/vclu/target/vclu-jar-with-dependencies.jar /opt/docker/vclu.jar
 #COPY runtime .
 
 ENTRYPOINT [ \
