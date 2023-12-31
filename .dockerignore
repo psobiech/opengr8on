@@ -28,6 +28,7 @@ replay_pid*
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -62,3 +63,10 @@ build/
 !**/src/main/**/target/
 !**/src/test/**/target/
 target
+
+### GitHub ###
+.github/
+
+### Docs ###
+docs/
+*.md
