@@ -18,13 +18,12 @@
 
 package pl.psobiech.opengr8on.util;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.function.BiFunction;
 
 public class ThreadUtil {
-    private static final ThreadFactory DEFAULT_DAEMON_FACTORY = daemonThreadFactory("default");
-
-    private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory(false, "shutdownHooks", Thread::new);
+    private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks");
 
     private ThreadUtil() {
         // NOP
@@ -36,26 +35,25 @@ public class ThreadUtil {
         );
     }
 
-    public static Thread newDaemonThread(Runnable runnable) {
-        return DEFAULT_DAEMON_FACTORY.newThread(runnable);
+    public static ScheduledExecutorService executor(String name) {
+        return Executors.newScheduledThreadPool(
+            1,
+            daemonThreadFactory(name)
+        );
     }
 
     public static ThreadFactory daemonThreadFactory(String groupName) {
-        return daemonThreadFactory(groupName, Thread::new);
+        return Thread.ofVirtual()
+                     .name(groupName)
+                     .inheritInheritableThreadLocals(true)
+                     .factory();
     }
 
-    public static ThreadFactory daemonThreadFactory(String groupName, BiFunction<ThreadGroup, Runnable, Thread> supplier) {
-        return threadFactory(true, groupName, supplier);
-    }
-
-    public static ThreadFactory threadFactory(boolean daemon, String groupName, BiFunction<ThreadGroup, Runnable, Thread> supplier) {
-        final ThreadGroup threadGroup = new ThreadGroup(groupName);
-
-        return runnable -> {
-            final Thread thread = supplier.apply(threadGroup, runnable);
-            thread.setDaemon(daemon);
-
-            return thread;
-        };
+    public static ThreadFactory threadFactory(String groupName) {
+        return Thread.ofPlatform()
+                     .name(groupName)
+                     .daemon(false)
+                     .inheritInheritableThreadLocals(true)
+                     .factory();
     }
 }

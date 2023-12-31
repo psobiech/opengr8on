@@ -31,7 +31,6 @@ import java.util.Spliterators.AbstractSpliterator;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Future.State;
 import java.util.function.Consumer;
@@ -41,14 +40,14 @@ import java.util.stream.StreamSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.util.SocketUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.Payload;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.RandomUtil;
+import pl.psobiech.opengr8on.util.SocketUtil;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
 public class Client implements Closeable {
@@ -68,7 +67,7 @@ public class Client implements Closeable {
 
     protected final UDPSocket socket;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(ThreadUtil.daemonThreadFactory("cluClient"));
+    private final ExecutorService executor = ThreadUtil.executor("cluClient");
 
     public Client(NetworkInterfaceDto networkInterface) {
         this(networkInterface, COMMAND_PORT);

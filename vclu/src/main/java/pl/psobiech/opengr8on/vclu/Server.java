@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -93,7 +92,7 @@ public class Server implements Closeable {
 
     private final TFTPServer tftpServer;
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1, ThreadUtil.daemonThreadFactory("cluServer"));
+    private final ScheduledExecutorService executorService = ThreadUtil.executor("cluServer");
 
     private LuaThreadWrapper luaThread;
 

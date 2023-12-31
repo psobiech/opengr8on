@@ -21,6 +21,7 @@ package pl.psobiech.opengr8on.vclu;
 import java.io.Closeable;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Optional;
 
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
@@ -165,13 +166,46 @@ public class VirtualObject implements Closeable {
 
     public interface IFeature {
         int index();
+
+        static <E extends Enum<? extends IFeature>> Optional<E> byIndex(int index, Class<E> clazz) {
+            for (E enumConstant : clazz.getEnumConstants()) {
+                final IFeature feature = (IFeature) enumConstant;
+                if (index == feature.index()) {
+                    return Optional.of(enumConstant);
+                }
+            }
+
+            return Optional.empty();
+        }
     }
 
     public interface IMethod {
         int index();
+
+        static <E extends Enum<? extends IMethod>> Optional<E> byIndex(int index, Class<E> clazz) {
+            for (E enumConstant : clazz.getEnumConstants()) {
+                final IMethod feature = (IMethod) enumConstant;
+                if (index == feature.index()) {
+                    return Optional.of(enumConstant);
+                }
+            }
+
+            return Optional.empty();
+        }
     }
 
     public interface IEvent {
         int address();
+
+        static <E extends Enum<? extends IEvent>> Optional<E> byAddress(int address, Class<E> clazz) {
+            for (E enumConstant : clazz.getEnumConstants()) {
+                final IEvent feature = (IEvent) enumConstant;
+                if (address == feature.address()) {
+                    return Optional.of(enumConstant);
+                }
+            }
+
+            return Optional.empty();
+        }
     }
 }

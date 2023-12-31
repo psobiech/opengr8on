@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +49,7 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
-    private final ScheduledExecutorService executors = Executors.newSingleThreadScheduledExecutor(ThreadUtil.daemonThreadFactory("LuaServer"));
+    private final ScheduledExecutorService executors = ThreadUtil.executor("LuaServer");
 
     private final Path aDriveDirectory;
 

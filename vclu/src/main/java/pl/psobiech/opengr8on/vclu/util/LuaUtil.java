@@ -18,12 +18,49 @@
 
 package pl.psobiech.opengr8on.vclu.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
 public class LuaUtil {
     private LuaUtil() {
         // NOP
+    }
+
+    public static Map<String, String> tableStringString(LuaValue luaValue) {
+        if (luaValue == null || luaValue.isnil()) {
+            return Map.of();
+        }
+
+        if (luaValue.isstring() && luaValue.checkjstring().isEmpty()) {
+            return Map.of();
+        }
+
+        final Map<String, String> map = new HashMap<>();
+        final LuaTable table = luaValue.checktable();
+        for (LuaValue key : table.keys()) {
+            final LuaValue value = table.get(key);
+
+            map.put(key.checkjstring(), value.checkjstring());
+        }
+
+        return map;
+    }
+
+    public static Map<LuaValue, LuaValue> table(LuaValue object) {
+        final Map<LuaValue, LuaValue> map = new HashMap<>();
+
+        final LuaTable table = object.checktable();
+        for (LuaValue key : table.keys()) {
+            final LuaValue value = table.get(key);
+
+            map.put(key, value);
+        }
+
+        return map;
     }
 
     public static boolean trueish(LuaValue luaValue) {

@@ -34,7 +34,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -106,10 +105,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     public VirtualCLU(String name, Inet4Address address, Path aDriveDirectory) {
         super(name);
 
-        this.executorService = Executors.newScheduledThreadPool(
-            1,
-            ThreadUtil.daemonThreadFactory("cluObject_" + name)
-        );
+        this.executorService = ThreadUtil.executor(name);
 
         this.aDriveDirectory = aDriveDirectory;
 
