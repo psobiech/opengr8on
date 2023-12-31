@@ -238,44 +238,53 @@ public class LuaServer {
         }
     }
 
-    public static class LuaThreadWrapper extends Thread implements Closeable {
+    public static class LuaThreadWrapper implements Closeable {
         private final VirtualSystem virtualSystem;
 
         private final Globals globals;
 
-        public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory, CLUFiles cluFile) {
-            super(() -> {
-                try {
-                    loadScript(globals, aDriveDirectory.resolve(cluFile.getFileName()), cluFile.getFileName());
-                } catch (LuaError e) {
-                    if (e.getCause() instanceof UncheckedInterruptedException) {
-                        return;
-                    }
+        private final Thread thread;
 
-                    LOGGER.error(e.getMessage(), e);
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-            });
+        public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory, CLUFiles cluFile) {
+            this.thread = Thread.ofVirtual()
+                                .name("LuaThreadWrapper")
+                                .inheritInheritableThreadLocals(true)
+                                .unstarted(
+                                    () -> {
+                                        try {
+                                            loadScript(globals, aDriveDirectory.resolve(cluFile.getFileName()), cluFile.getFileName());
+                                        } catch (LuaError e) {
+                                            if (e.getCause() instanceof UncheckedInterruptedException) {
+                                                return;
+                                            }
+
+                                            LOGGER.error(e.getMessage(), e);
+                                        } catch (Exception e) {
+                                            LOGGER.error(e.getMessage(), e);
+                                        }
+                                    }
+                                );
 
             this.virtualSystem = virtualSystem;
             this.globals = globals;
-
-            setDaemon(true);
         }
 
         public Globals globals() {
             return globals;
         }
 
+        public void start() {
+            thread.start();
+        }
+
         @Override
         public void close() {
             virtualSystem.close();
 
-            interrupt();
+            thread.interrupt();
 
             try {
-                join();
+                thread.join();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 

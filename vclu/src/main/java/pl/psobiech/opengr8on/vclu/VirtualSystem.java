@@ -120,6 +120,8 @@ public class VirtualSystem implements Closeable {
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
             }
+
+            Thread.yield();
         }
 
         // best effort to run every 100ms
