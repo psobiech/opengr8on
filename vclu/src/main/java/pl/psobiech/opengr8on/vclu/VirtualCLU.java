@@ -315,7 +315,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    LOGGER.info("MQTT messageArrived: {} / {}", topic, message);
+                    LOGGER.trace("MQTT messageArrived: {} / {}", topic, message);
 
                     for (MqttTopic mqttTopic : mqttTopics) {
                         mqttTopic.onMessage(topic, message.getId(), message.getPayload());
@@ -356,12 +356,23 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 );
             }
 
-            mqttClient.connect(options);
-            LOGGER.info("Connected to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId());
+            executorService.schedule(() -> {
+                    try {
+                        mqttClient.connect(options);
+                        LOGGER.info("Connected to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId());
 
-            for (MqttTopic mqttTopic : mqttTopics) {
-                mqttClient.subscribe(mqttTopic.getTopicFilters().toArray(String[]::new));
-            }
+                        for (MqttTopic mqttTopic : mqttTopics) {
+                            mqttClient.subscribe(
+                                mqttTopic.getTopicFilters()
+                                         .toArray(String[]::new)
+                            );
+                        }
+                    } catch (MqttException e) {
+                        throw new UnexpectedException(e);
+                    }
+                },
+                0, TimeUnit.SECONDS
+            );
         } catch (MqttException e) {
             throw new UnexpectedException(e);
         }

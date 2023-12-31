@@ -49,6 +49,10 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
+    private static final long LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(64);
+
+    private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
+
     private final ScheduledExecutorService executors = ThreadUtil.executor("LuaServer");
 
     private final Path aDriveDirectory;
@@ -124,17 +128,25 @@ public class VirtualSystem implements Closeable {
             Thread.yield();
         }
 
-        // best effort to run every 100ms
-        sleep(Math.max(
-                0,
-                100 - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
-            )
-        );
+        // best effort to run loop with fixed rate
+        final long timeLeft = LOOP_TIME_NANOS - (System.nanoTime() - startTime);
+        if (timeLeft < 0) {
+            LOGGER.warn("Exceeded loop time by {}ms", -TimeUnit.NANOSECONDS.toMillis(timeLeft));
+        }
+
+        sleepNanos(Math.max(0, timeLeft));
     }
 
     public void sleep(long millis) {
+        sleepNanos(TimeUnit.MILLISECONDS.toNanos(millis));
+    }
+
+    public void sleepNanos(long nanoSeconds) {
+        final long millis = nanoSeconds / NANOS_IN_MILLISECOND;
+        final int nanos = (int) (nanoSeconds % NANOS_IN_MILLISECOND);
+
         try {
-            Thread.sleep(millis);
+            Thread.sleep(millis, nanos);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
