@@ -33,7 +33,7 @@ public class LuaUtil {
 
         return (luaValue.isboolean() && luaValue.checkboolean())
             || (luaValue.isnumber() && luaValue.checklong() != 0)
-            || (luaValue.isstring() && Boolean.parseBoolean(luaValue.checkjstring()))
+            || (luaValue.isstring() && Boolean.parseBoolean(luaValue.checkjstring()));
     }
 
     public static String toString(LuaValue luaValue) {

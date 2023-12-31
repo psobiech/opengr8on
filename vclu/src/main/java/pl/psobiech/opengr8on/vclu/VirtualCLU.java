@@ -347,7 +347,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
             }
 
             final Path caCertificatePath = aDriveDirectory.resolve(CLUFiles.MQTT_ROOT_PEM.getFileName());
-            if (Files.exists(caCertificatePath)) {
+            if (!mqttUri.getScheme().equals("tcp") && Files.exists(caCertificatePath)) {
                 options.setSocketFactory(
                     TlsUtil.getSocketFactory(
                         caCertificatePath,
