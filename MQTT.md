@@ -21,25 +21,22 @@ Run VCLU and enable UseMQTT in OM.
 Example onInit script:
 ```lua
 -- subscribe to the topic (supports MQTT topic patterns)
-CLU1703856280877->myTopic->SetTopic("zigbee2mqtt/#")
-CLU1703856280877->myTopic->Subscribe()
+CLU1703856280877->myTopic->Subscribe("zigbee2mqtt/#")
 ```
 
 Example publish:
 ```lua
--- publish the same message to some other topic
-CLU1703856280877->myTopic->SetTopic("topic")
-CLU1703856280877->myTopic->Publish()
+CLU1703856280877->myTopic->SetMessage("message")
+CLU1703856280877->myTopic->Publish("topic")
 ```
 
 Example onMessage script:
 ```lua
 -- read current message message
-CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Message)
+CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Topic .. ": " .. CLU1703856280877->myTopic->Message)
 
 -- publish the same message to some other topic
-CLU1703856280877->myTopic->SetTopic("innytopic")
-CLU1703856280877->myTopic->Publish()
+CLU1703856280877->myTopic->Publish("innytopic")
 
 -- unblock next message in the queue
 CLU1703856280877->myTopic->NextMessage()

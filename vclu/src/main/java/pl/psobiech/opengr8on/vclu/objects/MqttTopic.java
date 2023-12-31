@@ -63,7 +63,7 @@ public class MqttTopic extends VirtualObject {
 
     private LuaValue subscribe(LuaValue arg1) {
         try {
-            final String topic = getTopic();
+            final String topic = arg1.checkjstring();
 
             topicFilters.add(topic);
             final MqttClient mqttClient = currentClu.getMqttClient();
@@ -81,7 +81,7 @@ public class MqttTopic extends VirtualObject {
 
     private LuaValue unsubscribe(LuaValue arg1) {
         try {
-            final String topic = getTopic();
+            final String topic = arg1.checkjstring();
 
             topicFilters.remove(topic);
             final MqttClient mqttClient = currentClu.getMqttClient();
@@ -103,7 +103,7 @@ public class MqttTopic extends VirtualObject {
             return LuaValue.FALSE;
         }
 
-        final String topic = getTopic();
+        final String topic = arg1.checkjstring();
         if (isSubscribedTo(topic)) {
             LOGGER.warn("Attempt to publish to a topic that we are subscribed to: {}", topic);
 
@@ -148,10 +148,6 @@ public class MqttTopic extends VirtualObject {
         return false;
     }
 
-    public String getTopic() {
-        return get(Features.TOPIC).checkjstring();
-    }
-
     public Set<String> getTopicFilters() {
         return topicFilters;
     }
@@ -182,8 +178,8 @@ public class MqttTopic extends VirtualObject {
         }
     }
 
-    private String clearTopic() {
-        return LuaUtil.stringify(clear(Features.TOPIC));
+    private void clearTopic() {
+        clear(Features.TOPIC);
     }
 
     private String getMessage() {
