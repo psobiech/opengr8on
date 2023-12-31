@@ -27,9 +27,23 @@ public class HttpRequest extends VirtualObject {
 
     public HttpRequest(String name) {
         super(name);
+
     }
 
     private enum Features implements IFeature {
+        HOST(0),
+        PATH(1),
+        QUERY(2),
+        METHOD(3),
+        TIMEOUT(4),
+        REQUEST_TYPE(5),
+        RESPONSE_TYPE(6),
+        REQUEST_HEADERS(7),
+        REQUEST_BODY(8),
+        RESPONSE_HEADERS(9),
+        RESPONSE_BODY(10),
+        STATUS_CODE(11),
+        ACTIVE(12),
         //
         ;
 
@@ -46,6 +60,9 @@ public class HttpRequest extends VirtualObject {
     }
 
     private enum Methods implements IMethod {
+        SEND_REQUEST(0),
+        ABORT_REQUEST(1),
+        CLEAR(2),
         //
         ;
 
@@ -62,6 +79,8 @@ public class HttpRequest extends VirtualObject {
     }
 
     private enum Events implements IEvent {
+        REQUEST_SENT(0),
+        RESPONSE(1)
         //
         ;
 
@@ -74,6 +93,27 @@ public class HttpRequest extends VirtualObject {
         @Override
         public int address() {
             return address;
+        }
+    }
+
+    private enum HttpType {
+        NONE(0),
+        TEXT(1),
+        JSON(2),
+        XML(3),
+        FORM_DATA(4),
+        OTHER(5),
+        //
+        ;
+
+        private final int value;
+
+        HttpType(int value) {
+            this.value = value;
+        }
+
+        public int value() {
+            return value;
         }
     }
 }
