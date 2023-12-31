@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -47,11 +47,27 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.RandomUtil;
 
 public class TlsUtil {
+    private static final CertificateFactory CERTIFICATE_FACTORY;
+
+    private static final KeyFactory RSA_KEY_FACTORY;
+
+    private static final KeyFactory ECDSA_KEY_FACTORY;
+
     static {
         // System.setProperty("javax.net.debug", "all");
+
+        try {
+            CERTIFICATE_FACTORY = CertificateFactory.getInstance("X.509");
+
+            RSA_KEY_FACTORY = KeyFactory.getInstance("RSA");
+            ECDSA_KEY_FACTORY = KeyFactory.getInstance("ECDSA");
+        } catch (NoSuchAlgorithmException | CertificateException e) {
+            throw new UnexpectedException(e);
+        }
+
     }
 
-    static SSLSocketFactory getSocketFactory(Path caCertificatePath, Path clientCertificatePath, Path clientKeyPath) {
+    public static SSLSocketFactory createSocketFactory(Path caCertificatePath, Path clientCertificatePath, Path clientKeyPath) {
         try {
             final KeyStore caKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             caKeyStore.load(null, null);
@@ -71,10 +87,10 @@ public class TlsUtil {
             final TrustManagerFactory caTrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             caTrustManagerFactory.init(caKeyStore);
 
-            final SSLContext context = SSLContext.getInstance("TLSv1.2");
-            context.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.random(true));
+            final SSLContext tlsContext = SSLContext.getInstance("TLSv1.2");
+            tlsContext.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.random(true));
 
-            return context.getSocketFactory();
+            return tlsContext.getSocketFactory();
         } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {
             throw new UnexpectedException(e);
         }
@@ -82,8 +98,7 @@ public class TlsUtil {
 
     private static X509Certificate readCertificate(Path path) {
         try (InputStream inputStream = new ByteArrayInputStream(readPem(path))) {
-            return (X509Certificate) CertificateFactory.getInstance("X.509")
-                                                       .generateCertificate(inputStream);
+            return (X509Certificate) CERTIFICATE_FACTORY.generateCertificate(inputStream);
         } catch (IOException | CertificateException e) {
             throw new UnexpectedException(e);
         }
@@ -95,25 +110,24 @@ public class TlsUtil {
         );
 
         try {
-            return KeyFactory.getInstance("RSA")
-                             .generatePrivate(encodedKeySpec);
+            return RSA_KEY_FACTORY.generatePrivate(encodedKeySpec);
         } catch (InvalidKeySpecException e) {
             try {
-                return KeyFactory.getInstance("ECDSA")
-                                 .generatePrivate(encodedKeySpec);
-            } catch (InvalidKeySpecException | NoSuchAlgorithmException e2) {
-                throw new UnexpectedException(e);
+                // try with EC key factory
+                return ECDSA_KEY_FACTORY.generatePrivate(encodedKeySpec);
+            } catch (InvalidKeySpecException e2) {
+                throw new UnexpectedException("Cannot read as RSA or ECDSA private key", e);
             }
-        } catch (NoSuchAlgorithmException e) {
-            throw new UnexpectedException(e);
         }
     }
 
     private static byte[] readPem(Path path) {
         try (
-            InputStream inputStream = Files.newInputStream(path);
-            InputStreamReader streamReader = new InputStreamReader(inputStream);
-            PemReader pemReader = new PemReader(streamReader);
+            PemReader pemReader = new PemReader(
+                new InputStreamReader(
+                    Files.newInputStream(path)
+                )
+            );
         ) {
             return pemReader.readPemObject().getContent();
         } catch (IOException e) {

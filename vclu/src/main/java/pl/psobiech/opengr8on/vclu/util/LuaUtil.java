@@ -86,8 +86,12 @@ public class LuaUtil {
     }
 
     public static String stringify(LuaValue luaValue) {
+        return stringify(luaValue, null);
+    }
+
+    public static String stringify(LuaValue luaValue, String nilValue) {
         if (luaValue == null || luaValue.isnil()) {
-            return "nil";
+            return nilValue;
         }
 
         if (luaValue instanceof LuaString) {

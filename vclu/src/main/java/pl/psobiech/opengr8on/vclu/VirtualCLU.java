@@ -56,11 +56,14 @@ import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 import static org.luaj.vm2.LuaValue.valueOf;
 
 public class VirtualCLU extends VirtualObject implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualCLU.class);
+
+    private static final String SCHEME_TCP = "tcp";
 
     private static final int UTC_TIMEZONE_ID = 22;
 
@@ -343,9 +346,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
             }
 
             final Path caCertificatePath = aDriveDirectory.resolve(CLUFiles.MQTT_ROOT_PEM.getFileName());
-            if (!mqttUri.getScheme().equals("tcp") && Files.exists(caCertificatePath)) {
+            if (!mqttUri.getScheme().equals(SCHEME_TCP) && Files.exists(caCertificatePath)) {
                 options.setSocketFactory(
-                    TlsUtil.getSocketFactory(
+                    TlsUtil.createSocketFactory(
                         caCertificatePath,
                         aDriveDirectory.resolve(CLUFiles.MQTT_PUBLIC_CRT.getFileName()),
                         aDriveDirectory.resolve(CLUFiles.MQTT_PRIVATE_PEM.getFileName())

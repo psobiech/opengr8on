@@ -157,6 +157,7 @@ public class MqttTopic extends VirtualObject {
     }
 
     private LuaValue onNextMessage(LuaValue arg1) {
+        clearTopic();
         clearMessage();
 
         return LuaValue.NIL;
@@ -172,11 +173,17 @@ public class MqttTopic extends VirtualObject {
                 final String payload = new String(entry.getValue());
 
                 set(Features.TOPIC, LuaValue.valueOf(key));
+
+                // TODO: maybe add feature to parse JSON into LUA table
                 set(Features.MESSAGE, LuaValue.valueOf(payload));
 
                 triggerEvent(Events.MESSAGE);
             }
         }
+    }
+
+    private String clearTopic() {
+        return LuaUtil.stringify(clear(Features.TOPIC));
     }
 
     private String getMessage() {

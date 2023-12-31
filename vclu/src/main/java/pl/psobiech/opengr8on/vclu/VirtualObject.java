@@ -145,6 +145,8 @@ public class VirtualObject implements Closeable {
         }
 
         try {
+            Thread.yield();
+
             luaFunction.call();
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
