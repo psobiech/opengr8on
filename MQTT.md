@@ -20,8 +20,8 @@ Run VCLU and enable UseMQTT in OM.
 ## MqttTopic
 Example onInit script:
 ```lua
--- subscribe to the topic
-CLU1703856280877->myTopic->SetTopic("topic")
+-- subscribe to the topic (supports MQTT topic patterns)
+CLU1703856280877->myTopic->SetTopic("zigbee2mqtt/#")
 CLU1703856280877->myTopic->Subscribe()
 ```
 
