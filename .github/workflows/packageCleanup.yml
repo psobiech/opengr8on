@@ -6,8 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  house-keeping:
-
+  cleanup:
     runs-on: ubuntu-latest
 
     steps:
