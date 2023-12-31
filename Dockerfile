@@ -23,7 +23,7 @@ COPY vclu/assembly/jar-with-dependencies.xml vclu/assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
 #RUN mvn -B dependency:go-offline
-RUN mvn -B install
+RUN mvn -B package -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM app-deps AS app-build
 
@@ -33,7 +33,7 @@ COPY lib lib
 COPY client client
 COPY vclu vclu
 
-RUN mvn -B package
+RUN mvn -B package -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21 AS jre-build
 
