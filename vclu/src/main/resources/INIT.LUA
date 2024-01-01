@@ -151,8 +151,8 @@ function GATE:set(idx, value)
   api.set(self['name'], idx, value)
 end
 
-function GATE:execute(idx, name)
-  return api.execute(self['name'], idx, name)
+function GATE:execute(...)
+  return api.execute(self['name'], ...)
 end
 
 function GATE:add_event(idx, fn)
