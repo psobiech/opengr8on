@@ -97,7 +97,7 @@ public class MqttTopic extends VirtualObject {
         return LuaValue.FALSE;
     }
 
-    private LuaValue publish(LuaValue arg1) {
+    private LuaValue publish(LuaValue arg1, LuaValue arg2) {
         final MqttClient mqttClient = currentClu.getMqttClient();
         if (mqttClient == null) {
             return LuaValue.FALSE;
@@ -110,7 +110,7 @@ public class MqttTopic extends VirtualObject {
             return LuaValue.FALSE;
         }
 
-        final String message = clearMessage();
+        final String message = arg2.checkjstring();
         try {
             mqttClient.publish(
                 topic,
@@ -186,8 +186,8 @@ public class MqttTopic extends VirtualObject {
         return LuaUtil.stringify(get(Features.MESSAGE));
     }
 
-    private String clearMessage() {
-        return LuaUtil.stringify(clear(Features.MESSAGE));
+    private void clearMessage() {
+        clear(Features.MESSAGE);
     }
 
     private enum Features implements IFeature {

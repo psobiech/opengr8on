@@ -25,9 +25,12 @@ import java.util.Optional;
 
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.Varargs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.vclu.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaOneArgFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.LuaTwoArgFunction;
 
 public class VirtualObject implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualObject.class);
@@ -38,9 +41,9 @@ public class VirtualObject implements Closeable {
 
     private final Map<Integer, LuaOneArgFunction> featureFunctions = new Hashtable<>();
 
-    private final Map<Integer, LuaOneArgFunction> methodFunctions = new Hashtable<>();
+    private final Map<Integer, BaseLuaFunction> methodFunctions = new Hashtable<>();
 
-    private final Map<Integer, org.luaj.vm2.LuaFunction> eventFunctions = new Hashtable<>();
+    private final Map<Integer, LuaFunction> eventFunctions = new Hashtable<>();
 
     public VirtualObject(String name) {
         this.name = name;
@@ -120,19 +123,23 @@ public class VirtualObject implements Closeable {
         methodFunctions.put(feature.index(), fn);
     }
 
-    public LuaValue execute(IMethod method, LuaValue luaValue) {
+    public void register(IMethod feature, LuaTwoArgFunction fn) {
+        methodFunctions.put(feature.index(), fn);
+    }
+
+    public LuaValue execute(IMethod method, Varargs luaValue) {
         return execute(method.index(), luaValue);
     }
 
-    public LuaValue execute(int index, LuaValue luaValue) {
-        final LuaOneArgFunction luaFunction = methodFunctions.get(index);
+    public LuaValue execute(int index, Varargs args) {
+        final BaseLuaFunction luaFunction = methodFunctions.get(index);
         if (luaFunction == null) {
             LOGGER.warn("Not implemented: " + name + ":execute(" + index + ")");
 
             return LuaValue.NIL;
         }
 
-        return luaFunction.call(luaValue);
+        return luaFunction.invoke(args);
     }
 
     public void triggerEvent(IEvent event) {
@@ -153,11 +160,11 @@ public class VirtualObject implements Closeable {
         }
     }
 
-    public void addEventHandler(IEvent event, org.luaj.vm2.LuaFunction luaFunction) {
+    public void addEventHandler(IEvent event, LuaFunction luaFunction) {
         eventFunctions.put(event.address(), luaFunction);
     }
 
-    public void addEventHandler(int address, org.luaj.vm2.LuaFunction luaFunction) {
+    public void addEventHandler(int address, LuaFunction luaFunction) {
         eventFunctions.put(address, luaFunction);
     }
 

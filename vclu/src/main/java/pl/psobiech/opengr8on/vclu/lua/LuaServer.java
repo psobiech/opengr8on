@@ -56,7 +56,7 @@ import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.vclu.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaFunction;
+import pl.psobiech.opengr8on.vclu.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgConsumer;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgConsumer;
@@ -81,34 +81,34 @@ public class LuaServer {
     }
 
     public static LibFunction wrap(Logger logger, LuaNoArgConsumer luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaThreeArgConsumer luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaVarArgConsumer luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaVarArgFunction luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaNoArgFunction luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaTwoArgFunction luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
     public static LibFunction wrap(Logger logger, LuaThreeArgFunction luaFunction) {
-        return wrap(logger, (LuaFunction) luaFunction);
+        return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
-    private static LibFunction wrap(Logger logger, LuaFunction luaFunction) {
+    private static LibFunction wrap(Logger logger, BaseLuaFunction luaFunction) {
         return new LuaFunctionWrapper(logger, luaFunction);
     }
 
@@ -296,9 +296,9 @@ public class LuaServer {
     private static class LuaFunctionWrapper extends LibFunction {
         private final Logger logger;
 
-        private final LuaFunction fn;
+        private final BaseLuaFunction fn;
 
-        public LuaFunctionWrapper(Logger logger, LuaFunction fn) {
+        public LuaFunctionWrapper(Logger logger, BaseLuaFunction fn) {
             this.logger = logger;
             this.fn = fn;
         }

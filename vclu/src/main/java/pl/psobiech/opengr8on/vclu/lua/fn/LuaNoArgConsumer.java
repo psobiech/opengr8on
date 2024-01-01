@@ -21,7 +21,7 @@ package pl.psobiech.opengr8on.vclu.lua.fn;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 
-public interface LuaNoArgConsumer extends LuaFunction {
+public interface LuaNoArgConsumer extends BaseLuaFunction {
     @Override
     default LuaValue invoke(Varargs args) {
         call();

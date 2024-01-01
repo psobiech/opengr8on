@@ -199,9 +199,9 @@ public class LuaApiLib extends TwoArgFunction {
         return LuaValue.NIL;
     }
 
-    public LuaValue execute(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        return virtualSystem.getObject(arg1.checkjstring())
-                            .execute(arg2.checkint(), arg3);
+    public LuaValue execute(Varargs args) {
+        return virtualSystem.getObject(args.checkjstring(1))
+                            .execute(args.checkint(2), args.subargs(3));
     }
 
     public void addEvent(LuaValue arg1, LuaValue arg2, LuaValue arg3) {

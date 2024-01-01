@@ -18,16 +18,15 @@ Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 i
 Run VCLU and enable UseMQTT in OM.
 
 ## MqttTopic
-Example onInit script:
+Example publish:
+```lua
+CLU1703856280877->myTopic->Publish("topic", "message")
+```
+
+Example onInit script with auto subscription:
 ```lua
 -- subscribe to the topic (supports MQTT topic patterns)
 CLU1703856280877->myTopic->Subscribe("zigbee2mqtt/#")
-```
-
-Example publish:
-```lua
-CLU1703856280877->myTopic->SetMessage("message")
-CLU1703856280877->myTopic->Publish("topic")
 ```
 
 Example onMessage script:
@@ -36,7 +35,7 @@ Example onMessage script:
 CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Topic .. ": " .. CLU1703856280877->myTopic->Message)
 
 -- publish the same message to some other topic
-CLU1703856280877->myTopic->Publish("innytopic")
+CLU1703856280877->myTopic->Publish("innytopic", CLU1703856280877->myTopic->Message)
 
 -- unblock next message in the queue
 CLU1703856280877->myTopic->NextMessage()

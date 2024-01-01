@@ -111,8 +111,8 @@ function OBJECT:set(idx, value)
   api.set(self['name'], idx, value)
 end
 
-function OBJECT:execute(idx, name)
-  return api.execute(self['name'], idx, name)
+function OBJECT:execute(...)
+  return api.execute(self['name'], ...)
 end
 
 function OBJECT:add_event(idx, fn)
