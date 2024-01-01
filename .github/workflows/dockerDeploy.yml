@@ -22,13 +22,27 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/psobiech/opengr8on
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           target: app-runtime
           platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ghcr.io/psobiech/opengr8on:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/psobiech/opengr8on:latest,${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
