@@ -39,7 +39,7 @@ Just run VCLU docker image (or multiple images on different devices, just adjust
 
 * Assuming OM is extracted in $OM_HOME (https://grentonsmarthome.github.io/release-en/om/).
 
-1. Copy [clu_VIRTUAL_ft00000003_fv0055aa55_ht00000013_hv00000001.xml](runtime%2Fdevice-interfaces%2Fclu_VIRTUAL_ft00000003_fv0055aa55_ht00000013_hv00000001.xml) to `$OM_HOME/configuration/com.grenton.om/device-interfaces/`
+1. Copy all VCLU [device-interfaces](runtime%2Fdevice-interfaces) to `$OM_HOME/configuration/com.grenton.om/device-interfaces/`
 1. Restart/Launch OM or Reload Device Interfaces
 1. Clone ./runtime directory from this repository
 1. Run Virtual CLU (eg. `docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0` - assuming eth0 is your network interface name - you can specify also local IP address)
