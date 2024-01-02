@@ -37,6 +37,12 @@
 
       <unpackOptions>
         <excludes>
+          <exclude>**/*LICENSE*</exclude>
+          <exclude>**/*NOTICE*</exclude>
+          <exclude>**/README*</exclude>
+          <exclude>**/DEPENDENCIES*</exclude>
+          <exclude>about.html</exclude>
+
           <exclude>META-INF/maven/**</exclude>
           <exclude>META-INF/MANIFEST.MF</exclude>
 
