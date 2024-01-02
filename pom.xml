@@ -8,7 +8,7 @@
 
   <groupId>pl.psobiech.opengr8on</groupId>
   <artifactId>parent</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>OpenGr8on Parent</name>
@@ -36,7 +36,7 @@
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <project.version>1.0-SNAPSHOT</project.version>
+    <project.version>1.0.0-SNAPSHOT</project.version>
 
     <jstachio.version>1.3.4</jstachio.version>
 
