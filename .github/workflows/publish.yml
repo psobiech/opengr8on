@@ -5,6 +5,9 @@ on:
     branches: [ "develop" ]
     tags:
       - '*'
+    paths-ignore:
+      - '**/**.md'
+      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,6 +37,21 @@ jobs:
         run: mvn -B deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=INFO
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package runtime
+        run: |
+          zip -r runtime-${{ steps.tag.outputs.tag }}.zip ./runtime
+          cd ./runtime && zip -r ../device-interfaces-${{ steps.tag.outputs.tag }}.zip ./device-interfaces
+      - name: Release
+        if: steps.tag.outputs.tag != ''
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            runtime-${{ steps.tag.outputs.tag }}.zip
+            device-interfaces-${{ steps.tag.outputs.tag }}.zip
+            vclu/target/vclu-jar-with-dependencies.jar
+            client/target/client-jar-with-dependencies.jar
       - name: Submit Dependency Snapshot
         if: github.ref == 'refs/heads/develop'
         uses: advanced-security/maven-dependency-submission-action@v3
