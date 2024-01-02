@@ -24,14 +24,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      - name: Cache local Maven repository
-        uses: actions/cache@v2
-        id: maven-cache
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-deploy-v1-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-deploy-v1-
       - name: Publish packages
         run: mvn -B deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true
         env:
