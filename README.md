@@ -1,4 +1,4 @@
-[![Publish](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml/badge.svg)](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml)
+[![Publish](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml)
 
 # Disclaimer
 

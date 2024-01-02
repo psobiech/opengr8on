@@ -2,13 +2,13 @@ name: Publish
 
 on:
   push:
-    branches: [ "develop", "master" ]
+    branches: [ "develop" ]
     tags:
       - '*'
 
 concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   maven:
@@ -23,17 +23,19 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      - name: Get tag
-        if: startsWith(github.ref, 'refs/tags/')
-        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+      - name: Describe tag
+        id: tag
+        continue-on-error: true
+        run: echo "tag=`echo $(git describe --exact-match --tags --match '[0-9]*.[0-9]*.[0-9]*')`" >> $GITHUB_OUTPUT
       - name: Adjust maven version
-        if: startsWith(github.ref, 'refs/tags/')
-        run: mvn versions:set versions:update-child-modules -DnewVersion=${{ steps.vars.outputs.tag }} -DprocessAllModules
+        if: steps.tag.outputs.tag != ''
+        run: mvn versions:set versions:update-child-modules -DnewVersion=${{ steps.tag.outputs.tag }} -DprocessAllModules
       - name: Deploy
         run: mvn -B deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=INFO
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Submit Dependency Snapshot
+        if: github.ref == 'refs/heads/develop'
         uses: advanced-security/maven-dependency-submission-action@v3
   docker:
     runs-on: ubuntu-latest
@@ -42,6 +44,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Describe tag
+        id: tag
+        continue-on-error: true
+        run: echo "tag=`echo $(git describe --exact-match --tags --match '[0-9]*.[0-9]*.[0-9]*')`" >> $GITHUB_OUTPUT
+      - name: Check if master
+        id: master_check
+        run: echo "master_head=`echo $(git branch --points-at HEAD --format='%(refname)' | grep master)`" >> $GITHUB_OUTPUT
+      - name: Check if develop
+        id: develop_check
+        run: echo "develop_head=`echo $(git branch --points-at HEAD --format='%(refname)' | grep develop)`" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -59,12 +71,12 @@ jobs:
           images: |
             ghcr.io/psobiech/opengr8on
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=edge,branch=develop
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/0.') }}
-            type=pep440,priority=899,pattern={{version}}
+            type=raw,value=latest,enable=${{ contains(steps.master_check.outputs.master_head, 'refs/heads/master') }}
+            type=raw,value=edge,enable=${{ contains(steps.develop_check.outputs.develop_head, 'refs/heads/develop') }}
+            type=semver,pattern={{version}},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
+            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/0.') }},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
+            type=pep440,priority=899,pattern={{version}},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
             type=ref,event=branch
             type=ref,event=pr
             type=schedule
