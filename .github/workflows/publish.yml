@@ -72,10 +72,12 @@ jobs:
             ghcr.io/psobiech/opengr8on
           tags: |
             type=raw,value=latest,enable=${{ contains(steps.master_check.outputs.master_head, 'refs/heads/master') }}
+            type=raw,value=master,enable=${{ contains(steps.master_check.outputs.master_head, 'refs/heads/master') }}
             type=raw,value=edge,enable=${{ contains(steps.develop_check.outputs.develop_head, 'refs/heads/develop') }}
+            type=raw,value=develop,enable=${{ contains(steps.develop_check.outputs.develop_head, 'refs/heads/develop') }}
             type=semver,pattern={{version}},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/0.') }},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
+            type=semver,pattern={{major}},enable=${{ !startsWith(steps.tag.outputs.tag, '0.') }},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
             type=pep440,priority=899,pattern={{version}},value=${{ steps.tag.outputs.tag }},enable=${{ steps.tag.outputs.tag != '' }}
             type=ref,event=branch
             type=ref,event=pr
