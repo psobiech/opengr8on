@@ -20,23 +20,27 @@ As of now, the VCLU is complete enough to be able to check out how the Grenton s
 Just run VCLU docker image (or multiple images on different devices, just adjust the serial numbers) in the same network as computer running Grenton Object
 Manager (https://grentonsmarthome.github.io/release-en/om/).
 
-## Local
+What works:
+- Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
+- Communication between CLU and CLU (accessing variables from other CLUs) - even physical ones
+- Tested under linux/amd64 and linux/arm64 (on Raspberry PI4)
 
-> mvn package
->
-> java -jar vclu/target/vclu.jar eth0
->
-> or
->
-> java -jar vclu/target/vclu.jar 192.168.31.44
+Does not work:
+- If discovery is interrupted, VCLU application requires restart (some key management issue? TBD)
 
-## Docker
+TODOs:
+- implement missing objects
+- persistent storage
+- create fortified mode (when CLU does not accept new keys or commands using default keys)
 
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
->
-> or
->
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest 192.168.31.44
+## Virtual Objects
+
+### MqttTopic
+[MQTT.md](MQTT.md)
+
+### Timer
+
+### HttpRequest
 
 ## Quickstart
 
@@ -54,26 +58,25 @@ Manager (https://grentonsmarthome.github.io/release-en/om/).
    ![vclu_discover.png](docs%2Fimg%2Fvclu_discover.png)
    ![vclu_features.png](docs%2Fimg%2Fvclu_features.png)
 
-What works:
+# Build
 
-- Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
-- Communication between CLU and CLU (accessing variables from other CLUs)
-- Tested under linux/amd64 and linux/arm64 on pi4
+## Local
 
-Does not work:
+> mvn package
 
-- Only some virtual objects are implemented
-- Persistent storage
-- If discovery is interrupted, VCLU application requires restart (some key management issue? TBD)
+> java -jar vclu/target/vclu.jar eth0
 
-TODOs:
+or
 
-- most of the code requires refactoring
-- create fortified mode (when CLU does not accept new keys or commands using default keys)
+> java -jar vclu/target/vclu.jar 192.168.31.44
 
-# MQTT
+## Docker
 
-[MQTT.md](MQTT.md)
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
+
+or
+
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest 192.168.31.44
 
 # Licenses
 
