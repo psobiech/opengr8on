@@ -398,7 +398,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     public void close() {
         super.close();
 
-        executorService.shutdown();
+        executorService.shutdownNow();
 
         if (mqttClient != null) {
             try {

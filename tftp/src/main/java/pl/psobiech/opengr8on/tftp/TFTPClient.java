@@ -19,7 +19,6 @@
 package pl.psobiech.opengr8on.tftp;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -58,7 +57,7 @@ public class TFTPClient implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
-        executorService.shutdown();
+    public void close() {
+        executorService.shutdownNow();
     }
 }

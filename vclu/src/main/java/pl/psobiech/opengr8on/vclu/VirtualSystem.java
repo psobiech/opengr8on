@@ -224,7 +224,7 @@ public class VirtualSystem implements Closeable {
             clientReportFuture = null;
         }
 
-        executors.shutdown();
+        executors.shutdownNow();
 
         for (VirtualObject object : objectsByName.values()) {
             FileUtil.closeQuietly(object);

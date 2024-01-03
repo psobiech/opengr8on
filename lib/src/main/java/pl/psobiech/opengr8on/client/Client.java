@@ -261,7 +261,7 @@ public class Client implements Closeable {
 
     @Override
     public void close() {
-        executor.shutdown();
+        executor.shutdownNow();
 
         socketLock.lock();
         try {

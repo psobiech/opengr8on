@@ -510,7 +510,9 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
-        tftpServerFuture.cancel(true);
+        if (tftpServerFuture != null) {
+            tftpServerFuture.cancel(true);
+        }
 
         socketLock.lock();
         try {
@@ -523,6 +525,6 @@ public class Server implements Closeable {
 
         luaThread.close();
 
-        executorService.shutdown();
+        executorService.shutdownNow();
     }
 }

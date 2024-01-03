@@ -265,7 +265,7 @@ public class HttpRequest extends VirtualObject {
             responseFuture.cancel(true);
         }
 
-        executors.shutdown();
+        executors.shutdownNow();
     }
 
     private enum HttpType {
