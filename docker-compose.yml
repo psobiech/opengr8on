@@ -5,7 +5,7 @@ services:
     image: ghcr.io/psobiech/opengr8on:latest
     command: wlp7s0
     restart: unless-stopped
-    read_only: false
+    read_only: true
     security_opt:
       - no-new-privileges:true
     build:
@@ -15,3 +15,5 @@ services:
       - type: bind
         source: ./runtime
         target: /opt/docker/runtime
+      - type: tmpfs
+        target: /tmp
