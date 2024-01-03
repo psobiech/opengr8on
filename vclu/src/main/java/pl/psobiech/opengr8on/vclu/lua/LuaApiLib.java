@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -21,6 +21,7 @@ package pl.psobiech.opengr8on.vclu.lua;
 import java.util.ArrayList;
 
 import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
@@ -61,8 +62,8 @@ public class LuaApiLib extends TwoArgFunction {
         library.set("newObject", LuaServer.wrap(logger, this::newObject));
         library.set("newGate", LuaServer.wrap(logger, this::newGate));
 
-        library.set("get", LuaServer.wrap(logger, this::_get));
-        library.set("set", LuaServer.wrap(logger, this::_set));
+        library.set("get", LuaServer.wrap(logger, this::getObjectValue));
+        library.set("set", LuaServer.wrap(logger, this::setObjectValue));
         library.set("execute", LuaServer.wrap(logger, this::execute));
         library.set("addEvent", LuaServer.wrap(logger, this::addEvent));
 
@@ -100,13 +101,17 @@ public class LuaApiLib extends TwoArgFunction {
     }
 
     public LuaValue clientRegister(Varargs args) {
+        final String remoteAddress = args.checkjstring(1);
+        final String address = args.checkjstring(2);
+        final int port = args.checkint(3);
+        final int sessionId = args.checkint(4);
         final LuaValue object = args.arg(5);
 
         final ArrayList<Subscription> subscriptions = new ArrayList<>();
         if (!object.istable()) {
             logger.warn("Unknown clientRegister format: " + args);
 
-            return LuaValue.valueOf("values:nil");
+            return LuaValue.valueOf("clientReport:" + sessionId + ":nil");
         }
 
         final LuaTable table = object.checktable();
@@ -128,20 +133,21 @@ public class LuaApiLib extends TwoArgFunction {
 
         return LuaValue.valueOf(
             virtualSystem.clientRegister(
-                args.checkjstring(1),
-                args.checkjstring(2),
-                args.checkint(3),
-                args.checkint(4),
+                remoteAddress, address, port,
+                sessionId,
                 subscriptions
             )
         );
     }
 
     public LuaValue clientDestroy(Varargs args) {
+        final String address = args.checkjstring(1);
+        final int port = args.checkint(2);
+        final int sessionId = args.checkint(3);
+
         return virtualSystem.clientDestroy(
-            args.checkjstring(1),
-            args.checkint(2),
-            args.checkint(3)
+            address, port,
+            sessionId
         );
     }
 
@@ -187,12 +193,12 @@ public class LuaApiLib extends TwoArgFunction {
         virtualSystem.newGate(arg1.checkint(), arg2.checkjstring());
     }
 
-    public LuaValue _get(LuaValue arg1, LuaValue arg2) {
+    public LuaValue getObjectValue(LuaValue arg1, LuaValue arg2) {
         return virtualSystem.getObject(arg1.checkjstring())
                             .get(arg2.checkint());
     }
 
-    public LuaValue _set(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
+    public LuaValue setObjectValue(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
         virtualSystem.getObject(arg1.checkjstring())
                      .set(arg2.checkint(), arg3);
 
@@ -200,12 +206,20 @@ public class LuaApiLib extends TwoArgFunction {
     }
 
     public LuaValue execute(Varargs args) {
-        return virtualSystem.getObject(args.checkjstring(1))
-                            .execute(args.checkint(2), args.subargs(3));
+        final String objectName = args.checkjstring(1);
+        final int index = args.checkint(2);
+        final Varargs otherArgs = args.subargs(3);
+
+        return virtualSystem.getObject(objectName)
+                            .execute(index, otherArgs);
     }
 
     public void addEvent(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
-        virtualSystem.getObject(arg1.checkjstring())
-                     .addEventHandler(arg2.checkint(), arg3.checkfunction());
+        final String objectName = arg1.checkjstring();
+        final int address = arg2.checkint();
+        final LuaFunction function = arg3.checkfunction();
+
+        virtualSystem.getObject(objectName)
+                     .addEventHandler(address, function);
     }
 }

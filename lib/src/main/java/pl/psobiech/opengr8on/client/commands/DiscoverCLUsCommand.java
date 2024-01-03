@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -26,14 +26,18 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Command;
-import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
-import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.Util;
 
 public class DiscoverCLUsCommand {
+    private static final int HASH_MOD_A = 0x0D;
+
+    private static final int HASH_MOD_B = 0x13;
+
     private DiscoverCLUsCommand() {
         // NOP
     }
@@ -142,7 +146,7 @@ public class DiscoverCLUsCommand {
             return false;
         }
 
-        if (buffer[32] != ':'
+        if (buffer[Command.RANDOM_ENCRYPTED_SIZE] != ':'
             || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE] != ':'
             || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Response.COMMAND.length()] != ':') {
             return false;
@@ -177,8 +181,8 @@ public class DiscoverCLUsCommand {
 
         int previousValue = (result[0] = (byte) (buffer[0] ^ buffer[buffer.length - 1]));
         for (int i = 1; i < buffer.length; i++) {
-            final int a = previousValue % 0x0D;
-            final int b = buffer[i] % 0x13;
+            final int a = previousValue % HASH_MOD_A;
+            final int b = buffer[i] % HASH_MOD_B;
 
             previousValue = (result[i] = (byte) ((a + 1) * (b + 1)));
         }
@@ -197,7 +201,7 @@ public class DiscoverCLUsCommand {
 
         private Request(byte[] encrypted, byte[] iv, Inet4Address ipAddress) {
             this.encrypted = encrypted;
-            this.iv = iv;
+            this.iv        = iv;
             this.ipAddress = ipAddress;
         }
 
@@ -254,7 +258,7 @@ public class DiscoverCLUsCommand {
                 ":",
                 COMMAND,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), 8, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_SIZE, '0'),
                 ":",
                 macAddress
             );

@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -27,6 +27,8 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -52,8 +54,8 @@ import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPServer.ServerMode;
+import pl.psobiech.opengr8on.tftp.TFTPServer;
+import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
@@ -77,13 +79,21 @@ public class Server implements Closeable {
 
     private static final byte[] EMPTY_BUFFER = new byte[0];
 
+    private static final int TIMEOUT_BROADCAST_MILLIS = 1000;
+
+    private static final int TIMEOUT_MILLIS = 1000;
+
+    private static final int RESTART_RETRIES = 8;
+
+    private static final long RETRY_DELAY = 100L;
+
     private final DatagramPacket requestPacket = new DatagramPacket(EMPTY_BUFFER, 0);
 
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
 
     protected final NetworkInterfaceDto networkInterface;
 
-    private final Path aDriveDirectory;
+    private final Path rootDirectory;
 
     private final CLUDevice cluDevice;
 
@@ -93,8 +103,6 @@ public class Server implements Closeable {
 
     protected final UDPSocket socket;
 
-    private final TFTPServer tftpServer;
-
     private final ScheduledExecutorService executorService = ThreadUtil.executor("cluServer");
 
     private LuaThreadWrapper luaThread;
@@ -103,50 +111,36 @@ public class Server implements Closeable {
 
     private CipherKey currentCipherKey;
 
-    public Server(NetworkInterfaceDto networkInterface, Path aDriveDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
+    private Future<Void> tftpServerFuture;
+
+    public Server(NetworkInterfaceDto networkInterface, Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
         this.networkInterface = networkInterface;
-        this.aDriveDirectory = aDriveDirectory;
+        this.rootDirectory    = rootDirectory;
 
         this.currentCipherKey = projectCipherKey;
-        this.cluDevice = cluDevice;
+        this.cluDevice        = cluDevice;
 
         restartLuaThread();
 
-        try {
-            this.tftpServer = new TFTPServer(
-                Client.TFTP_PORT, networkInterface.getAddress(),
-                ServerMode.GET_AND_REPLACE
-            );
+        this.broadcastSocket = SocketUtil.udp(
+            IPv4AddressUtil.parseIPv4("255.255.255.255"),
+            //                 networkInterface.getBroadcastAddress(),
+            Client.COMMAND_PORT
+        );
 
-            this.broadcastSocket = SocketUtil.udp(
-                IPv4AddressUtil.parseIPv4("255.255.255.255"),
-                //                 networkInterface.getBroadcastAddress(),
-                Client.COMMAND_PORT
-            );
-            this.socket = SocketUtil.udp(networkInterface.getAddress(), Client.COMMAND_PORT);
-        } catch (IOException e) {
-            throw new UnexpectedException(e);
-        }
+        this.socket = SocketUtil.udp(networkInterface.getAddress(), Client.COMMAND_PORT);
     }
 
-    public void listen() {
+    public void listen() throws InterruptedException {
         socket.open();
         broadcastSocket.open();
-
-        try {
-            this.tftpServer.start(
-                aDriveDirectory.toFile()
-            );
-        } catch (IOException e) {
-            throw new UnexpectedException(e);
-        }
 
         executorService
             .scheduleAtFixedRate(() -> {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
-                        awaitRequestPayload(String.valueOf(uuid), broadcastSocket, broadcastCipherKey, Duration.ofMillis(1000))
+                        awaitRequestPayload(String.valueOf(uuid), broadcastSocket, broadcastCipherKey, Duration.ofMillis(TIMEOUT_BROADCAST_MILLIS))
                             .flatMap(payload ->
                                 onBroadcastCommand(payload)
                                     .map(pair ->
@@ -162,7 +156,7 @@ public class Server implements Closeable {
                         LOGGER.error(e.getMessage(), e);
                     }
                 },
-                1000, 1000, TimeUnit.MILLISECONDS
+                TIMEOUT_BROADCAST_MILLIS, TIMEOUT_BROADCAST_MILLIS, TimeUnit.MILLISECONDS
             );
 
         executorService
@@ -170,7 +164,7 @@ public class Server implements Closeable {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
-                        awaitRequestPayload(String.valueOf(uuid), socket, currentCipherKey, Duration.ofMillis(100))
+                        awaitRequestPayload(String.valueOf(uuid), socket, currentCipherKey, Duration.ofMillis(TIMEOUT_MILLIS))
                             .flatMap(payload ->
                                 onCommand(payload)
                                     .map(pair ->
@@ -186,8 +180,11 @@ public class Server implements Closeable {
                         LOGGER.error(e.getMessage(), e);
                     }
                 },
-                1000, 100, TimeUnit.MILLISECONDS
+                TIMEOUT_BROADCAST_MILLIS, TIMEOUT_MILLIS, TimeUnit.MILLISECONDS
             );
+
+        // sleep until interrupted
+        new CountDownLatch(1).await();
     }
 
     private void respond(UUID uuid, Payload requestPayload, CipherKey cipherKey, Command command) {
@@ -220,7 +217,7 @@ public class Server implements Closeable {
 
             cluDevice.setCipherKey(
                 cluDevice.getCipherKey()
-                         .withIV(RandomUtil.bytes(16))
+                         .withIV(RandomUtil.bytes(Command.IV_SIZE))
             );
 
             currentCipherKey = cluDevice.getCipherKey();
@@ -296,13 +293,13 @@ public class Server implements Closeable {
         if (requestOptional.isPresent()) {
             final SetKeyCommand.Request request = requestOptional.get();
 
-            //final byte[] encrypted = request.getEncrypted(); // Real CLU sends only dummy data
+            // final byte[] encrypted = request.getEncrypted(); // Real CLU sends only dummy data
             final byte[] key = request.getKey();
             final byte[] iv = request.getIV();
 
             final CipherKey newCipherKey = new CipherKey(key, iv);
             updateCipherKey(newCipherKey);
-            //if (newCipherKey.decrypt(encrypted).isEmpty()) {
+            // if (newCipherKey.decrypt(encrypted).isEmpty()) {
             //    return sendError();
             //}
 
@@ -325,7 +322,7 @@ public class Server implements Closeable {
         try {
             ObjectMapperFactory.JSON.writerFor(CluKeys.class)
                                     .writeValue(
-                                        aDriveDirectory.resolve("../keys.json").toFile(),
+                                        rootDirectory.resolve("../keys.json").toFile(),
                                         new CluKeys(
                                             currentCipherKey.getSecretKey(), currentCipherKey.getIV(),
                                             cluDevice.getIv(), cluDevice.getPrivateKey()
@@ -361,11 +358,11 @@ public class Server implements Closeable {
         LOGGER.info("VCLU is starting...");
         FileUtil.closeQuietly(this.luaThread);
 
-        this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey, CLUFiles.MAIN_LUA);
+        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, currentCipherKey, CLUFiles.MAIN_LUA);
         this.luaThread.start();
 
         LuaError lastException;
-        int retries = 8;
+        int retries = RESTART_RETRIES;
         do {
             try {
                 this.luaThread.globals()
@@ -377,7 +374,7 @@ public class Server implements Closeable {
                 lastException = e;
 
                 try {
-                    Thread.sleep(100L);
+                    Thread.sleep(RETRY_DELAY);
                 } catch (InterruptedException e2) {
                     Thread.currentThread().interrupt();
 
@@ -391,7 +388,7 @@ public class Server implements Closeable {
         LOGGER.info("Entering VCLU emergency mode!");
         FileUtil.closeQuietly(this.luaThread);
 
-        this.luaThread = LuaServer.create(networkInterface, aDriveDirectory, cluDevice, currentCipherKey, CLUFiles.EMERGNCY_LUA);
+        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, currentCipherKey, CLUFiles.EMERGNCY_LUA);
         this.luaThread.start();
     }
 
@@ -441,6 +438,16 @@ public class Server implements Closeable {
         final byte[] buffer = payload.buffer();
         final Optional<StartTFTPdCommand.Request> requestOptional = StartTFTPdCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
+            if (tftpServerFuture == null) {
+                try {
+                    tftpServerFuture = TFTPServer.create(
+                        networkInterface.getNetworkInterface(), rootDirectory, Client.TFTP_PORT, ServerMode.GET_AND_REPLACE
+                    );
+                } catch (Exception e) {
+                    throw new UnexpectedException(e);
+                }
+            }
+
             return Optional.of(
                 ImmutablePair.of(
                     currentCipherKey,
@@ -503,7 +510,7 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
-        tftpServer.close();
+        tftpServerFuture.cancel(true);
 
         socketLock.lock();
         try {

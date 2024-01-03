@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -235,10 +235,10 @@ class DiscoverCLUsTest {
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer = new byte[100];
-        buffer[Command.RANDOM_ENCRYPTED_SIZE] = ':';
-        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE] = ':';
-        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length()] = ':';
+        buffer                                                                                                                          = new byte[100];
+        buffer[Command.RANDOM_ENCRYPTED_SIZE]                                                                                           = ':';
+        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE]                                                                     = ':';
+        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length()]                                      = ':';
         buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE] = ':';
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(buffer).isPresent());
 
@@ -247,10 +247,10 @@ class DiscoverCLUsTest {
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer = new byte[100];
-        buffer[Command.RANDOM_ENCRYPTED_SIZE] = ':';
-        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE] = ':';
-        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Response.COMMAND.length()] = ':';
+        buffer                                                                                                                           = new byte[100];
+        buffer[Command.RANDOM_ENCRYPTED_SIZE]                                                                                            = ':';
+        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE]                                                                      = ':';
+        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Response.COMMAND.length()]                                      = ':';
         buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE] = ':';
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(buffer).isPresent());
     }

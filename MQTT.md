@@ -18,18 +18,22 @@ Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 i
 Run VCLU and enable UseMQTT in OM.
 
 ## MqttTopic
+
 Example publish:
+
 ```lua
 CLU1703856280877->myTopic->Publish("topic", "message")
 ```
 
 Example onInit script with auto subscription:
+
 ```lua
 -- subscribe to the topic (supports MQTT topic patterns)
 CLU1703856280877->myTopic->Subscribe("zigbee2mqtt/#")
 ```
 
 Example onMessage script:
+
 ```lua
 -- read current message message
 CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Topic .. ": " .. CLU1703856280877->myTopic->Message)
@@ -52,6 +56,7 @@ git clone git@github.com:OpenVPN/easy-rsa.git
 ```
 
 ## ./easy-rsa/easyrsa3/vars
+
 ```bash
 set_var EASYRSA_REQ_COUNTRY   "US"
 set_var EASYRSA_REQ_PROVINCE  "California"

@@ -1,177 +1,195 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ~ OpenGr8on, open source extensions to systems based on Grenton devices
+  ~ Copyright (C) 2023 Piotr Sobiech
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <object class="14" name="PIDcontroller" version="1">
-	<features>
-		<feature get="true" index="0" name="ControlOut" set="false" type="num">
-			<hint lang="pl" value="Wartość wyjścia sterującego (binarna, przełączana w cyklu określonym przez SwitchTime)"/>
-			<hint lang="en" value="Value of relay output (binary, switched in cycle defined by `SwitchTime` and `DutyCycle`)"/>
-		    <desc resKey="pidcontroller_controlout"/>
-        </feature>
-		<feature get="true" index="1" name="State" set="false" type="num">
-			<hint lang="pl" value="Stan działania regulatora: 1 - aktywny, 0 - nieaktywny"/>
-			<hint lang="en" value="Controller work status: 1 (active) or 0 (not active)"/>
-		    <desc resKey="pidcontroller_state"/>
-        </feature>
-		<feature get="true" index="2" name="SetPoint" set="true" type="num">
-			<hint lang="pl" value="Wejście regulatora - wartość docelowa"/>
-			<hint lang="en" value="Controller input – target value"/>
-		    <desc resKey="pidcontroller_setpoint"/>
-        </feature>
-		<feature get="true" index="3" name="Kp" set="false" type="num">
-			<hint lang="pl" value="Wzmocnienie członu proporcjonalnego regulatora PID"/>
-			<hint lang="en" value="Strengthening of PID controller proportional element"/>
-		    <desc resKey="pidcontroller_kp"/>
-        </feature>
-		<feature get="true" index="4" name="Ki" set="false" type="num">
-			<hint lang="pl" value="Wzmocnienie członu całkującego regulatora PID"/>
-			<hint lang="en" value="Strengthening of PID controller integrating element"/>
-		    <desc resKey="pidcontroller_ki"/>
-        </feature>
-		<feature get="true" index="5" name="Kd" set="false" type="num">
-			<hint lang="pl" value="Wzmocnienie członu różniczkującego regulatora PID"/>
-			<hint lang="en" value="Strengthening of PID controller differentiating element"/>
-		    <desc resKey="pidcontroller_kd"/>
-        </feature>
-		<feature get="true" index="6" name="SwitchTime" set="false" type="num">
-			<hint lang="pl" value="Czas przełączenia"/>
-			<hint lang="en" value="Time of switching"/>
-		    <desc resKey="pidcontroller_switchtime"/>
-        </feature>
-		<feature default="0.01" get="true" index="7" name="Alpha" set="true" type="num">
-			<hint lang="pl" value="Parametr alpha w algorytmie Kaczmarza (zabezpieczenie przed dzieleniem przez 0)"/>
-			<hint lang="en" value="Parameter α in Kaczmarz algorithm (protection against denominator zeroing)"/>
-		    <desc resKey="pidcontroller_alpha"/>
-        </feature>
-		<feature default="0.1" get="true" index="8" name="Gamma" set="true" type="num">
-			<hint lang="pl" value="Parametr gamma w algorytmie Kaczmarza (dynamika zmian oszacowania a i b)"/>
-			<hint lang="en" value="Parametr γ in Kaczmarz algorithm (dynamics of a and b estimation changes)"/>
-		    <desc resKey="pidcontroller_gamma"/>
-        </feature>
-		<feature default="2" enum="1,2" get="true" index="9" name="Mode" set="true" type="num">
-			<enum name="Normal - PID" resKey="pidcontroller_mode_enum_normalpid" value="1"/>
-			<enum name="Auto - Kaczmarz" resKey="pidcontroller_mode_enum_autokaczmarz" value="2"/>
-			<hint lang="pl" value="Tryb pracy regulatora: 1 - ręczny PID, 2 - automatyczny algorytm Kaczmarza/"/>
-			<hint lang="en" value="Controller work mode: 1 – 'manual' PID or 2 - automatic Kaczmarz algorithm"/>
-		    <desc resKey="pidcontroller_mode"/>
-        </feature>
-		<feature get="true" index="10" name="A" set="false" type="num">
-			<hint lang="pl" value="Parametr a w algorytmie Kaczmarza"/>
-			<hint lang="en" value="Parameter a in Kaczmarz algorithm"/>
-		    <desc resKey="pidcontroller_a"/>
-        </feature>
-		<feature get="true" index="11" name="B" set="false" type="num">
-			<hint lang="pl" value="Parametr b w algorytmie Kaczmarza"/>
-			<hint lang="en" value="Parameter b in Kaczmarz algorithm"/>
-		    <desc resKey="pidcontroller_b"/>
-        </feature>
-	</features>
-	<methods>
-		<method call="execute" index="0" name="Source" return="void">
-			<param name="Value" type="num"/>
-			<hint lang="pl" value="Podanie nowej wartości wejścia dla sterownika (pętla sprzężenia zwrotnego)"/>
-			<hint lang="en" value="Entering new value of input for driver (feedback loop)"/>
-		    <desc resKey="pidcontroller_source"/>
-        </method>
-		<method call="execute" index="1" name="Start" return="void">
-			<hint lang="pl" value="Przełącza w stan aktywny (State=1)"/>
-			<hint lang="en" value="Switching to active mode (`State`=1)"/>
-		    <desc resKey="pidcontroller_start"/>
-        </method>
-		<method call="execute" index="2" name="Stop" return="void">
-			<hint lang="pl" value="Przełącza w stan zatrzymania (State=0)"/>
-			<hint lang="en" value="Stopping work (`State`=0)"/>
-		    <desc resKey="pidcontroller_stop"/>
-        </method>
-		<method call="set" index="2" name="SetPoint" return="void" type="num">
-			<param name="Value" type="num"/>
-			<hint lang="pl" value="Ustawia wartość regulatora - wartość docelowa"/>
-			<hint lang="en" value="Setting the target value of the regulator"/>
-		    <desc resKey="pidcontroller_setpoint_1"/>
-        </method>
-		<method call="set" index="3" name="SetKp" return="void" type="num">
-			<param name="Kp" type="num"/>
-			<hint lang="pl" value="Ustawia wartość wzmocnienia członu proporcjonalnego regulatora PID"/>
-			<hint lang="en" value="Setting the proportional gain value"/>
-		    <desc resKey="pidcontroller_setkp"/>
-        </method>
-		<method call="set" index="4" name="SetKi" return="void" type="num">
-			<param name="Ki" type="num"/>
-			<hint lang="pl" value="Ustawia wartość wzmocnienia członu całkującego regulatora PID"/>
-			<hint lang="en" value="Setting the gain value of the integrator"/>
-		    <desc resKey="pidcontroller_setki"/>
-        </method>
-		<method call="set" index="5" name="SetKd" return="void" type="num">
-			<param name="Kd" type="num"/>
-			<hint lang="pl" value="Ustawia wartość wzmocnienia członu różniczkującego regulatora PID"/>
-			<hint lang="en" value="Setting the gain value of the differentiator"/>
-		    <desc resKey="pidcontroller_setkd"/>
-        </method>
-		<method call="set" index="6" name="SetSwitchTime" return="void" type="num">
-			<param name="SwitchTime" type="num"/>
-			<hint lang="pl" value="Ustawia czas przełączania"/>
-			<hint lang="en" value="Setting the switching time"/>
-		    <desc resKey="pidcontroller_setswitchtime"/>
-        </method>
-		<method call="set" index="7" name="SetAlpha" return="void" type="num">
-			<param name="Alpha" type="num"/>
-			<hint lang="pl" value="Ustawia parametr alpha w algorytmie Kaczmarza (zabezpieczenie przed zerowaniem mianownika)"/>
-			<hint lang="en" value="Setting the Alpha parameter in the Kaczmarz algorithm, protecting against zeroing the denominator"/>
-		    <desc resKey="pidcontroller_setalpha"/>
-        </method>
-		<method call="set" index="8" name="SetGamma" return="void" type="num">
-			<param name="Gamma" type="num"/>
-			<hint lang="pl" value="Ustawia parametr gamma w algorytmie Kaczmarza (dynamika zmian oszacowania a i b)"/>
-			<hint lang="en" value="Setting the Gamma parameter in the Kaczmarz algorithm"/>
-		    <desc resKey="pidcontroller_setgamma"/>
-        </method>
-		<method call="set" index="9" name="SetMode" return="void" type="num">
-			<param name="Mode" type="num"/>
-			<hint lang="pl" value="Ustawia tryb pracy regulatora: ręczny PID lub automatyczny algorytm Kaczmarza"/>
-			<hint lang="en" value="Setting the controller's operating mode - manual PID (Normal PID) or automatic algorithm of Kaczmarz (Auto-Kaczmarz)"/>
-		    <desc resKey="pidcontroller_setmode"/>
-        </method>
-		<method call="set" index="10" name="SetA" return="void" type="num">
-			<param name="A" type="num"/>
-			<hint lang="pl" value="Ustawia parametr a w algorytmie Kaczmarza"/>
-			<hint lang="en" value="Setting parameter a in the Kaczmarz algorithm"/>
-		    <desc resKey="pidcontroller_seta"/>
-        </method>
-		<method call="set" index="11" name="SetB" return="void" type="num">
-			<param name="B" type="num"/>
-			<hint lang="pl" value="Ustawia parametr b w algorytmie Kaczmarza"/>
-			<hint lang="en" value="Setting parameter b in the Kaczmarz algorithm"/>
-		    <desc resKey="pidcontroller_setb"/>
-        </method>
-		<!--
-		<method name="DEBUG_save" call="execute" return="void" index="4" >
-			<hint lang="pl" value=""/>
-		</method>
-		-->
-	</methods>
-	<events>
-		<event address="0" name="OnChange">
-			<hint lang="pl" value="Zdarzenie wywoływane w momencie zmiany wartości cechy ControlOut"/>
-			<hint lang="en" value="An event dispatched when the value of the `Control Out`"/>
-		    <desc resKey="pidcontroller_onchange"/>
-        </event>	
-		<event address="1" name="OnStart">
-			<hint lang="pl" value="Zdarzenie wywoływane w momencie zmiany wartości ControlOut"/>
-			<hint lang="en" value="Events since change of ControlOut feature value"/>
-		    <desc resKey="pidcontroller_onstart"/>
-        </event>
-		<event address="2" name="OnStop">
-			<hint lang="pl" value="Zdarzenie wywoływane przy zablokowaniu pracy"/>
-			<hint lang="en" value="Events since stopping work"/>
-		    <desc resKey="pidcontroller_onstop"/>
-        </event>
-		<event address="4" name="OnOutOn">
-			<hint lang="pl" value="Zdarzenie wywoływane w momencie przełączenia wartości cechy ControlOut na 1"/>
-			<hint lang="en" value="An event dispatched when the value of the `ControlOut` property is switched to 1"/>
-		    <desc resKey="pidcontroller_onouton"/>
-        </event>
-		<event address="5" name="OnOutOff">
-			<hint lang="pl" value="Zdarzenie wywoływane w momencie przełączenia wartości cechy ControlOut na 0"/>
-			<hint lang="en" value="An event dispatched when the value of the `ControlOut` property is changed to 0"/>
-		    <desc resKey="pidcontroller_onoutoff"/>
-        </event>
-	</events>
+  <features>
+    <feature get="true" index="0" name="ControlOut" set="false" type="num">
+      <hint lang="pl" value="Wartość wyjścia sterującego (binarna, przełączana w cyklu określonym przez SwitchTime)"/>
+      <hint lang="en" value="Value of relay output (binary, switched in cycle defined by `SwitchTime` and `DutyCycle`)"/>
+      <desc resKey="pidcontroller_controlout"/>
+    </feature>
+    <feature get="true" index="1" name="State" set="false" type="num">
+      <hint lang="pl" value="Stan działania regulatora: 1 - aktywny, 0 - nieaktywny"/>
+      <hint lang="en" value="Controller work status: 1 (active) or 0 (not active)"/>
+      <desc resKey="pidcontroller_state"/>
+    </feature>
+    <feature get="true" index="2" name="SetPoint" set="true" type="num">
+      <hint lang="pl" value="Wejście regulatora - wartość docelowa"/>
+      <hint lang="en" value="Controller input – target value"/>
+      <desc resKey="pidcontroller_setpoint"/>
+    </feature>
+    <feature get="true" index="3" name="Kp" set="false" type="num">
+      <hint lang="pl" value="Wzmocnienie członu proporcjonalnego regulatora PID"/>
+      <hint lang="en" value="Strengthening of PID controller proportional element"/>
+      <desc resKey="pidcontroller_kp"/>
+    </feature>
+    <feature get="true" index="4" name="Ki" set="false" type="num">
+      <hint lang="pl" value="Wzmocnienie członu całkującego regulatora PID"/>
+      <hint lang="en" value="Strengthening of PID controller integrating element"/>
+      <desc resKey="pidcontroller_ki"/>
+    </feature>
+    <feature get="true" index="5" name="Kd" set="false" type="num">
+      <hint lang="pl" value="Wzmocnienie członu różniczkującego regulatora PID"/>
+      <hint lang="en" value="Strengthening of PID controller differentiating element"/>
+      <desc resKey="pidcontroller_kd"/>
+    </feature>
+    <feature get="true" index="6" name="SwitchTime" set="false" type="num">
+      <hint lang="pl" value="Czas przełączenia"/>
+      <hint lang="en" value="Time of switching"/>
+      <desc resKey="pidcontroller_switchtime"/>
+    </feature>
+    <feature default="0.01" get="true" index="7" name="Alpha" set="true" type="num">
+      <hint lang="pl" value="Parametr alpha w algorytmie Kaczmarza (zabezpieczenie przed dzieleniem przez 0)"/>
+      <hint lang="en" value="Parameter α in Kaczmarz algorithm (protection against denominator zeroing)"/>
+      <desc resKey="pidcontroller_alpha"/>
+    </feature>
+    <feature default="0.1" get="true" index="8" name="Gamma" set="true" type="num">
+      <hint lang="pl" value="Parametr gamma w algorytmie Kaczmarza (dynamika zmian oszacowania a i b)"/>
+      <hint lang="en" value="Parametr γ in Kaczmarz algorithm (dynamics of a and b estimation changes)"/>
+      <desc resKey="pidcontroller_gamma"/>
+    </feature>
+    <feature default="2" enum="1,2" get="true" index="9" name="Mode" set="true" type="num">
+      <enum name="Normal - PID" resKey="pidcontroller_mode_enum_normalpid" value="1"/>
+      <enum name="Auto - Kaczmarz" resKey="pidcontroller_mode_enum_autokaczmarz" value="2"/>
+      <hint lang="pl" value="Tryb pracy regulatora: 1 - ręczny PID, 2 - automatyczny algorytm Kaczmarza/"/>
+      <hint lang="en" value="Controller work mode: 1 – 'manual' PID or 2 - automatic Kaczmarz algorithm"/>
+      <desc resKey="pidcontroller_mode"/>
+    </feature>
+    <feature get="true" index="10" name="A" set="false" type="num">
+      <hint lang="pl" value="Parametr a w algorytmie Kaczmarza"/>
+      <hint lang="en" value="Parameter a in Kaczmarz algorithm"/>
+      <desc resKey="pidcontroller_a"/>
+    </feature>
+    <feature get="true" index="11" name="B" set="false" type="num">
+      <hint lang="pl" value="Parametr b w algorytmie Kaczmarza"/>
+      <hint lang="en" value="Parameter b in Kaczmarz algorithm"/>
+      <desc resKey="pidcontroller_b"/>
+    </feature>
+  </features>
+  <methods>
+    <method call="execute" index="0" name="Source" return="void">
+      <param name="Value" type="num"/>
+      <hint lang="pl" value="Podanie nowej wartości wejścia dla sterownika (pętla sprzężenia zwrotnego)"/>
+      <hint lang="en" value="Entering new value of input for driver (feedback loop)"/>
+      <desc resKey="pidcontroller_source"/>
+    </method>
+    <method call="execute" index="1" name="Start" return="void">
+      <hint lang="pl" value="Przełącza w stan aktywny (State=1)"/>
+      <hint lang="en" value="Switching to active mode (`State`=1)"/>
+      <desc resKey="pidcontroller_start"/>
+    </method>
+    <method call="execute" index="2" name="Stop" return="void">
+      <hint lang="pl" value="Przełącza w stan zatrzymania (State=0)"/>
+      <hint lang="en" value="Stopping work (`State`=0)"/>
+      <desc resKey="pidcontroller_stop"/>
+    </method>
+    <method call="set" index="2" name="SetPoint" return="void" type="num">
+      <param name="Value" type="num"/>
+      <hint lang="pl" value="Ustawia wartość regulatora - wartość docelowa"/>
+      <hint lang="en" value="Setting the target value of the regulator"/>
+      <desc resKey="pidcontroller_setpoint_1"/>
+    </method>
+    <method call="set" index="3" name="SetKp" return="void" type="num">
+      <param name="Kp" type="num"/>
+      <hint lang="pl" value="Ustawia wartość wzmocnienia członu proporcjonalnego regulatora PID"/>
+      <hint lang="en" value="Setting the proportional gain value"/>
+      <desc resKey="pidcontroller_setkp"/>
+    </method>
+    <method call="set" index="4" name="SetKi" return="void" type="num">
+      <param name="Ki" type="num"/>
+      <hint lang="pl" value="Ustawia wartość wzmocnienia członu całkującego regulatora PID"/>
+      <hint lang="en" value="Setting the gain value of the integrator"/>
+      <desc resKey="pidcontroller_setki"/>
+    </method>
+    <method call="set" index="5" name="SetKd" return="void" type="num">
+      <param name="Kd" type="num"/>
+      <hint lang="pl" value="Ustawia wartość wzmocnienia członu różniczkującego regulatora PID"/>
+      <hint lang="en" value="Setting the gain value of the differentiator"/>
+      <desc resKey="pidcontroller_setkd"/>
+    </method>
+    <method call="set" index="6" name="SetSwitchTime" return="void" type="num">
+      <param name="SwitchTime" type="num"/>
+      <hint lang="pl" value="Ustawia czas przełączania"/>
+      <hint lang="en" value="Setting the switching time"/>
+      <desc resKey="pidcontroller_setswitchtime"/>
+    </method>
+    <method call="set" index="7" name="SetAlpha" return="void" type="num">
+      <param name="Alpha" type="num"/>
+      <hint lang="pl" value="Ustawia parametr alpha w algorytmie Kaczmarza (zabezpieczenie przed zerowaniem mianownika)"/>
+      <hint lang="en" value="Setting the Alpha parameter in the Kaczmarz algorithm, protecting against zeroing the denominator"/>
+      <desc resKey="pidcontroller_setalpha"/>
+    </method>
+    <method call="set" index="8" name="SetGamma" return="void" type="num">
+      <param name="Gamma" type="num"/>
+      <hint lang="pl" value="Ustawia parametr gamma w algorytmie Kaczmarza (dynamika zmian oszacowania a i b)"/>
+      <hint lang="en" value="Setting the Gamma parameter in the Kaczmarz algorithm"/>
+      <desc resKey="pidcontroller_setgamma"/>
+    </method>
+    <method call="set" index="9" name="SetMode" return="void" type="num">
+      <param name="Mode" type="num"/>
+      <hint lang="pl" value="Ustawia tryb pracy regulatora: ręczny PID lub automatyczny algorytm Kaczmarza"/>
+      <hint lang="en" value="Setting the controller's operating mode - manual PID (Normal PID) or automatic algorithm of Kaczmarz (Auto-Kaczmarz)"/>
+      <desc resKey="pidcontroller_setmode"/>
+    </method>
+    <method call="set" index="10" name="SetA" return="void" type="num">
+      <param name="A" type="num"/>
+      <hint lang="pl" value="Ustawia parametr a w algorytmie Kaczmarza"/>
+      <hint lang="en" value="Setting parameter a in the Kaczmarz algorithm"/>
+      <desc resKey="pidcontroller_seta"/>
+    </method>
+    <method call="set" index="11" name="SetB" return="void" type="num">
+      <param name="B" type="num"/>
+      <hint lang="pl" value="Ustawia parametr b w algorytmie Kaczmarza"/>
+      <hint lang="en" value="Setting parameter b in the Kaczmarz algorithm"/>
+      <desc resKey="pidcontroller_setb"/>
+    </method>
+    <!--
+    <method name="DEBUG_save" call="execute" return="void" index="4" >
+      <hint lang="pl" value=""/>
+    </method>
+    -->
+  </methods>
+  <events>
+    <event address="0" name="OnChange">
+      <hint lang="pl" value="Zdarzenie wywoływane w momencie zmiany wartości cechy ControlOut"/>
+      <hint lang="en" value="An event dispatched when the value of the `Control Out`"/>
+      <desc resKey="pidcontroller_onchange"/>
+    </event>
+    <event address="1" name="OnStart">
+      <hint lang="pl" value="Zdarzenie wywoływane w momencie zmiany wartości ControlOut"/>
+      <hint lang="en" value="Events since change of ControlOut feature value"/>
+      <desc resKey="pidcontroller_onstart"/>
+    </event>
+    <event address="2" name="OnStop">
+      <hint lang="pl" value="Zdarzenie wywoływane przy zablokowaniu pracy"/>
+      <hint lang="en" value="Events since stopping work"/>
+      <desc resKey="pidcontroller_onstop"/>
+    </event>
+    <event address="4" name="OnOutOn">
+      <hint lang="pl" value="Zdarzenie wywoływane w momencie przełączenia wartości cechy ControlOut na 1"/>
+      <hint lang="en" value="An event dispatched when the value of the `ControlOut` property is switched to 1"/>
+      <desc resKey="pidcontroller_onouton"/>
+    </event>
+    <event address="5" name="OnOutOff">
+      <hint lang="pl" value="Zdarzenie wywoływane w momencie przełączenia wartości cechy ControlOut na 0"/>
+      <hint lang="en" value="An event dispatched when the value of the `ControlOut` property is changed to 0"/>
+      <desc resKey="pidcontroller_onoutoff"/>
+    </event>
+  </events>
 </object>

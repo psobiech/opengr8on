@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -23,12 +23,20 @@ import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
-import pl.psobiech.opengr8on.util.HexUtil;
 
 public class LuaScriptCommand {
     public static final String CHECK_ALIVE = "checkAlive()";
+
+    private static final int IP_ADDRESS_PART = 1;
+
+    private static final int SESSION_ID_PART = 2;
+
+    private static final int SCRIPT_PART = 3;
+
+    private static final int RETURN_VALUE_PART = 3;
 
     private LuaScriptCommand() {
         // NOP
@@ -46,9 +54,9 @@ public class LuaScriptCommand {
         }
 
         final String[] requestParts = Command.asString(buffer).split(":", 4);
-        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(requestParts[1]);
-        final Integer sessionId = HexUtil.asInt(requestParts[2]);
-        final String script = requestParts[3];
+        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(requestParts[IP_ADDRESS_PART]);
+        final Integer sessionId = HexUtil.asInt(requestParts[SESSION_ID_PART]);
+        final String script = requestParts[SCRIPT_PART];
 
         return Optional.of(
             new Request(
@@ -101,9 +109,9 @@ public class LuaScriptCommand {
         }
 
         final String[] responseParts = Command.asString(buffer).split(":", 4);
-        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(responseParts[1]);
-        final Integer sessionId = HexUtil.asInt(responseParts[2]);
-        final String returnValue = responseParts[3];
+        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(responseParts[IP_ADDRESS_PART]);
+        final Integer sessionId = HexUtil.asInt(responseParts[SESSION_ID_PART]);
+        final String returnValue = responseParts[RETURN_VALUE_PART];
 
         return Optional.of(
             new Response(
@@ -140,7 +148,7 @@ public class LuaScriptCommand {
         private Request(Inet4Address ipAddress, Integer sessionId, String script) {
             this.ipAddress = ipAddress;
             this.sessionId = sessionId;
-            this.script = script;
+            this.script    = script;
         }
 
         @Override
@@ -150,7 +158,7 @@ public class LuaScriptCommand {
                 ":",
                 ipAddress,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), 8, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SERIAL_NUMBER_SIZE, '0'),
                 ":",
                 script + "\r\n"
             );
@@ -179,8 +187,8 @@ public class LuaScriptCommand {
         private final String returnValue;
 
         private Response(Inet4Address ipAddress, Integer sessionId, String returnValue) {
-            this.ipAddress = ipAddress;
-            this.sessionId = sessionId;
+            this.ipAddress   = ipAddress;
+            this.sessionId   = sessionId;
             this.returnValue = returnValue;
         }
 
@@ -191,7 +199,7 @@ public class LuaScriptCommand {
                 ":",
                 ipAddress,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), 8, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SERIAL_NUMBER_SIZE, '0'),
                 ":",
                 returnValue
             );

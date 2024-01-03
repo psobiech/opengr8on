@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -20,9 +20,9 @@ package pl.psobiech.opengr8on.client.commands;
 
 import org.junit.jupiter.api.Test;
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand.Request;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand.Response;
-import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 
@@ -71,9 +71,9 @@ class SetIpCommandTest {
         assertFalse(SetIpCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(SetIpCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer = new byte[100];
-        buffer[Request.COMMAND.length()] = ':';
-        buffer[Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE] = ':';
+        buffer                                                                                          = new byte[100];
+        buffer[Request.COMMAND.length()]                                                                = ':';
+        buffer[Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE]                           = ':';
         buffer[Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE + 1 + Command.MIN_IP_SIZE] = ':';
         assertFalse(SetIpCommand.requestFromByteArray(buffer).isPresent());
 
@@ -82,8 +82,8 @@ class SetIpCommandTest {
         assertFalse(SetIpCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(SetIpCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer = new byte[100];
-        buffer[Response.COMMAND.length()] = ':';
+        buffer                                                                 = new byte[100];
+        buffer[Response.COMMAND.length()]                                      = ':';
         buffer[Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE] = ':';
         assertFalse(SetIpCommand.responseFromByteArray(buffer).isPresent());
     }

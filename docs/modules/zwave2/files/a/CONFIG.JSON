@@ -1,12 +1,12 @@
 {
-	"sn":	22XXXXXXX,
-	"mac":	"80:34:XX:XX:XX:XX",
-	"hwType":	19,
-	"hwVer":	1,
-	"fwType":	3,
-	"fwApiVer":	512,
-	"fwVer":	"5.12.1-2330",
-	"status":	"OK",
-	"tfbusDevices":	[],
-	"zwaveDevices":	[]
+  "sn": 22XXXXXXX,
+  "mac": "80:34:XX:XX:XX:XX",
+  "hwType": 19,
+  "hwVer": 1,
+  "fwType": 3,
+  "fwApiVer": 512,
+  "fwVer": "5.12.1-2330",
+  "status": "OK",
+  "tfbusDevices": [],
+  "zwaveDevices": []
 }

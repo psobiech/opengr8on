@@ -1,0 +1,158 @@
+/*
+ * OpenGr8on, open source extensions to systems based on Grenton devices
+ * Copyright (C) 2023 Piotr Sobiech
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package pl.psobiech.opengr8on.tftp.packets;
+
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+
+public abstract class TFTPPacket {
+    protected static final int OPERATOR_TYPE_OFFSET = 1;
+
+    static final int MIN_PACKET_SIZE = 4;
+
+    public static final byte READ_REQUEST = 1;
+
+    public static final byte WRITE_REQUEST = 2;
+
+    public static final byte DATA = 3;
+
+    public static final byte ACKNOWLEDGEMENT = 4;
+
+    public static final byte ERROR = 5;
+
+    public static final int SEGMENT_SIZE = 512;
+
+    final byte type;
+
+    private int port;
+
+    private InetAddress address;
+
+    TFTPPacket(byte type, InetAddress address, int port) {
+        this.type    = type;
+        this.address = address;
+        this.port    = port;
+    }
+
+    public static TFTPPacket newTFTPPacket(DatagramPacket datagram) throws TFTPPacketException {
+        if (datagram.getLength() < MIN_PACKET_SIZE) {
+            throw new TFTPPacketException("Bad packet. Datagram data length is too short.");
+        }
+
+        final byte[] data = datagram.getData();
+
+        return switch (data[OPERATOR_TYPE_OFFSET]) {
+            case READ_REQUEST -> new TFTPReadRequestPacket(datagram);
+            case WRITE_REQUEST -> new TFTPWriteRequestPacket(datagram);
+            case DATA -> new TFTPDataPacket(datagram);
+            case ACKNOWLEDGEMENT -> new TFTPAckPacket(datagram);
+            case ERROR -> new TFTPErrorPacket(datagram);
+            default -> throw new TFTPPacketException("Bad packet. Invalid TFTP operator code.");
+        };
+    }
+
+    public InetAddress getAddress() {
+        return address;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public abstract DatagramPacket newDatagram();
+
+    public abstract DatagramPacket newDatagram(byte[] data);
+
+    public void setAddress(InetAddress address) {
+        this.address = address;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public static String readNullTerminatedString(byte[] buffer, int from, int to) {
+        return new String(
+            readNullTerminated(buffer, from, to), StandardCharsets.US_ASCII
+        );
+    }
+
+    public static byte[] readNullTerminated(byte[] buffer, int from, int to) {
+        int nullTerminator = -1;
+        for (int i = from; i < to; i++) {
+            if (buffer[i] == 0) {
+                nullTerminator = i;
+                break;
+            }
+        }
+
+        if (nullTerminator < 0) {
+            return Arrays.copyOfRange(buffer, from, to);
+        }
+
+        return Arrays.copyOfRange(buffer, from, nullTerminator);
+    }
+
+    public static int writeNullTerminatedString(String value, byte[] buffer, int offset) {
+        final byte[] valueAsBytes = value.getBytes(StandardCharsets.US_ASCII);
+
+        System.arraycopy(valueAsBytes, 0, buffer, offset, valueAsBytes.length);
+        buffer[offset + valueAsBytes.length] = 0;
+
+        return valueAsBytes.length + 1;
+    }
+
+    public static int readInt(byte[] buffer, int offset) {
+        return asInt(buffer[offset], buffer[offset + 1]);
+    }
+
+    public static void writeInt(int value, byte[] buffer, int offset) {
+        buffer[offset]     = highNibble(value);
+        buffer[offset + 1] = lowNibble(value);
+    }
+
+    public static byte highNibble(int value) {
+        return (byte) ((value & 0xFFFF) >> (Integer.BYTES * 2));
+    }
+
+    public static byte lowNibble(int value) {
+        return (byte) (value & 0xFF);
+    }
+
+    public static int asInt(byte highNibble, byte lowNibble) {
+        return asInt(highNibble) << (Integer.BYTES * 2) | asInt(lowNibble);
+    }
+
+    private static int asInt(byte value) {
+        return value & 0xFF;
+    }
+
+    @Override
+    public String toString() {
+        return address + " " + port + " " + type;
+    }
+}

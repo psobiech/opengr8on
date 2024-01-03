@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -84,11 +84,11 @@ public class VirtualSystem implements Closeable {
     public void newObject(int index, String name, int ipAddress) {
         final VirtualObject virtualObject = switch (index) {
             // TODO: temporarily we depend that the main CLU is initialized first-ish
-            case 0 -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
-            case 1 -> new RemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
-            case 6 -> new Timer(name);
-            case 44 -> new Storage(name);
-            case 999 -> new MqttTopic(name, currentClu);
+            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
+            case RemoteCLU.INDEX -> new RemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
+            case Timer.INDEX -> new Timer(name);
+            case Storage.INDEX -> new Storage(name);
+            case MqttTopic.INDEX -> new MqttTopic(name, currentClu);
             default -> new VirtualObject(name);
         };
 
@@ -98,8 +98,8 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newGate(int index, String name) {
         final VirtualObject virtualObject = switch (index) {
-            case 121 -> new HttpRequest(name);
-            case 999 -> new MqttTopic(name, currentClu);
+            case HttpRequest.INDEX -> new HttpRequest(name);
+            case MqttTopic.INDEX -> new MqttTopic(name, currentClu);
             default -> new VirtualObject(name);
         };
 

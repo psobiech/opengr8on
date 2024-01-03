@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -63,11 +63,13 @@ import static org.luaj.vm2.LuaValue.valueOf;
 public class VirtualCLU extends VirtualObject implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualCLU.class);
 
+    public static final int INDEX = 0;
+
     private static final String SCHEME_TCP = "tcp";
 
     private static final int UTC_TIMEZONE_ID = 22;
 
-    private final static Map<Integer, ZoneId> TIME_ZONES = Map.ofEntries(
+    private static final Map<Integer, ZoneId> TIME_ZONES = Map.ofEntries(
         Map.entry(0, ZoneId.of("Europe/Warsaw")),
         Map.entry(1, ZoneId.of("Europe/London")),
         Map.entry(2, ZoneId.of("Europe/Moscow")),
@@ -92,6 +94,12 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         Map.entry(21, ZoneId.of("America/Los_Angeles")),
         Map.entry(UTC_TIMEZONE_ID, ZoneOffset.UTC)
     );
+
+    private static final int TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS = 60;
+
+    private static final int CONNECTION_TIMEOUT_SECONDS = 4;
+
+    private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
 
     private final Path aDriveDirectory;
 
@@ -152,7 +160,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 currentDateTime = getCurrentDateTime();
 
                 if (!currentDateTime.getZone().equals(lastDateTime.getZone())
-                    || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= 60) {
+                    || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
                     triggerEvent(Events.TIME_CHANGE);
                 }
             },
@@ -324,13 +332,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken deliveryToken) {
-                    LOGGER.info("MQTT deliveryComplete: {}", deliveryToken);
+                    LOGGER.debug("MQTT deliveryComplete: {}", deliveryToken.getMessageId());
                 }
             });
 
             final MqttConnectOptions options = new MqttConnectOptions();
-            options.setConnectionTimeout(60);
-            options.setKeepAliveInterval(60);
+            options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
+            options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
             options.setAutomaticReconnect(true);
             options.setCleanSession(false);
 

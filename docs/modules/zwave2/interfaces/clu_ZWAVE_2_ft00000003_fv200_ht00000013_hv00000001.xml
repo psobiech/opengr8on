@@ -1,416 +1,443 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<CLU firmwareType="00000003" firmwareVersion="00000200" hardwareType="00000013" hardwareVersion="00000001" typeName="CLU_ZWAVE_2">
-	<!--hwType=0x13(19), hwVer=0x1(1), fwType=0x3(3), fwApiVer=0x200(512)-->
-	<interface>
-		<features>
-			<feature get="true" index="0" name="Uptime" set="false" type="num" unit="s">
-				<hint lang="pl" value="Czas pracy urządzenia od ostatniego resetu (w sekundach)"/>
-				<hint lang="en" value="Time of device operation since last reset (in seconds)"/>
-				<hint lang="de" value="Arbeitszeit des Geräts seit dem letzten Reset (in Sekunden)"/>
-			    <desc resKey="clu_uptime"/>
-            </feature>
-			<feature get="true" index="1" name="Log" set="false" type="str">
-				<hint lang="pl" value="Wewnętrzny log urządzenia"/>
-				<hint lang="en" value="Internal device log"/>
-				<hint lang="de" value="Inneres Gerätelog"/>
-			    <desc resKey="clu_log"/>
-            </feature>
-			<feature enum="0,1,2,3,4,5,6,7,8,9,10,11" get="true" index="2" name="State" set="false" type="num">
-				<enum name="System starting" resKey="clu_state_enum_systemstarting" value="0"/>
-				<enum name="System ok" resKey="clu_state_enum_systemok" value="1"/>
-				<enum name="Telnet logging mode" resKey="clu_state_enum_telnetlogmode" value="2"/>
-				<enum name="Emergency mode" resKey="clu_state_enum_emergencymode" value="3"/>
-				<enum name="Critical error" resKey="clu_state_enum_criticalerror" value="4"/>
-				<enum name="Monitor mode" resKey="clu_state_enum_monitormode" value="5"/>
-				<enum name="Module not responding" resKey="clu_state_enum_modulenotresponding" value="6"/>
-				<enum name="Adding Z-Wave node" resKey="clu_state_enum_addingzwavenode" value="7"/>
-				<enum name="Removing Z-Wave node" resKey="clu_state_enum_removingzwavenode" value="8"/>
-				<enum name="Z-Wave add/remove busy" resKey="clu_state_enum_zwaveaddremovebussy" value="9"/>
-				<enum name="Z-Wave add/remove ERROR" resKey="clu_state_enum_zwaveaddremoveerror" value="10"/>
-				<enum name="Z-Wave add/remove OK" resKey="clu_state_enum_zwaveaddremoveok" value="11"/>
-				
-				<hint lang="pl" value="Stan urządzenia"/>
-				<hint lang="en" value="Device state"/>
-				<hint lang="de" value="Gerätestatus"/>
-			    <desc resKey="clu_state"/>
-            </feature>
-			<feature get="true" index="3" name="IsLocalPower" set="false" type="confirmation" unit="bool">
-				<hint lang="pl" value="Stan zasilania"/>
-				<hint lang="en" value="Power state"/>
-				<hint lang="de" value="Stromstatus"/>
-			    <desc resKey="clu_islocalpower"/>
-            </feature>	
-			<feature get="true" index="5" name="Date" set="false" type="str">
-				<hint lang="pl" value="Zwraca aktualną datę"/>
-				<hint lang="en" value="Returns the current date"/>
-				<hint lang="de" value="Gibt das aktuelle Datum zurück"/>
-			    <desc resKey="clu_date"/>
-            </feature>
-			<feature get="true" index="6" name="Time" set="false" type="str">
-				<hint lang="pl" value="Zwraca aktualny czas (hh:mm:ss)"/>
-				<hint lang="en" value="Returns the current time (hh:mm:ss)"/>
-				<hint lang="de" value="Aktuelle Zeit (hh:mm:ss)"/>
-			    <desc resKey="clu_time"/>
-            </feature>	
-			<feature get="true" index="7" name="Day" range="1-31" set="false" type="num">
-				<hint lang="pl" value="Zwraca numer bieżącego dnia miesiąca"/>
-				<hint lang="en" value="Returns the number of the current day of the month"/>
-				<hint lang="de" value="Nummer des laufenden Tages im Monat"/>
-			    <desc resKey="clu_day"/>
-            </feature>	
-			<feature get="true" index="8" name="Month" range="1-12" set="false" type="num">
-				<hint lang="pl" value="Zwraca numer bieżącego miesiąca"/>
-				<hint lang="en" value="Returns the current number of the month"/>
-				<hint lang="de" value="Nummer des laufenden Monats"/>
-			    <desc resKey="clu_month"/>
-            </feature>	
-			<feature get="true" index="9" name="Year" set="false" type="num">
-				<hint lang="pl" value="Zwraca numer bieżącego roku"/>
-				<hint lang="en" value="Returns the current number of the year"/>
-				<hint lang="de" value="Nummer des laufenden Jahres"/>
-			    <desc resKey="clu_year"/>
-            </feature>	
-			<feature get="true" index="10" name="DayOfWeek" range="0-6" set="false" type="num">
-				<hint lang="pl" value="Zwraca numer bieżącego dnia tygodnia (0=niedziela)"/>
-				<hint lang="en" value="Returns the current day of the week (0=Sunday)"/>
-				<hint lang="de" value="Nummer des laufenden Tages in der Woche (0 = Sonntag)"/>
-			    <desc resKey="clu_dayofweek"/>
-            </feature>		
-			<feature get="true" index="11" name="Hour" range="0-23" set="false" type="num" unit="h">
-				<hint lang="pl" value="Zwraca aktualną godzinę (bez minut i sekund)"/>
-				<hint lang="en" value="Returns the current hour (no minutes or seconds)"/>
-				<hint lang="de" value="Aktuelle Uhrzeit (ohne Minuten und Sekunden)"/>
-			    <desc resKey="clu_hour"/>
-            </feature>	
-			<feature get="true" index="12" name="Minute" range="0-59" set="false" type="num" unit="m">
-				<hint lang="pl" value="Zwraca aktualną liczbę minut od ostatniej pełnej godziny"/>
-				<hint lang="en" value="Returns the current number of minutes from last full hour"/>
-				<hint lang="de" value="Aktuelle Anzahl von Minuten seit der letzten vollen Stunde"/>
-			    <desc resKey="clu_minute"/>
-            </feature>	
-			<feature get="true" index="13" name="LocalTime" set="false" type="num" unit="s">
-				<hint lang="pl" value="Zwraca aktualny znacznik czasu"/>
-				<hint lang="en" value="Returns the current time"/>
-				<hint lang="de" value="Aktueller Timestamp"/>
-			    <desc resKey="clu_localtime"/>
-            </feature>
-			<!--			
-			<feature name="ClientsPollInterval" index="15" type="num" get="true" set="true" default="1000" range="200-10000" unit="ms" >
-				<hint lang="pl" value=""/>
-				<hint lang="en" value=""/>
-			</feature>	
-			<feature name="ClientsAliveTime" index="16" type="num" get="true" set="true" default="60" range="10-3600" unit="s" >
-				<hint lang="pl" value=""/>
-				<hint lang="en" value=""/>
-			</feature>	
-			-->
-			<feature get="true" index="17" name="FirmwareVersion" set="false" type="str">
-				<hint lang="pl" value="Wersja oprogramowania CLU"/>
-				<hint lang="en" value="CLU firmware version"/>
-				<hint lang="de" value="Softwareversion CLU"/>
-			    <desc resKey="clu_firmwareversion_3"/>
-            </feature>	
-			<feature default="0" get="true" index="18" name="UseCloud" set="true" type="confirmation" unit="bool">  
-				<hint lang="pl" value="Określa czy CLU łączy się do chmury"/>  
-				<hint lang="en" value="Specifies whether CLU connects to the cloud"/> 
-				<hint lang="de" value="Gibt an, ob die CLU eine Verbindung zur Cloud herstellt"/>
-			    <desc resKey="clu_usecloud_2"/>
-            </feature>
-			<feature default="0" get="true" index="19" name="CloudConnection" set="false" type="confirmation" unit="bool">
-				<hint lang="pl" value="Określa status połączenia CLU z chmurą"/>  
-				<hint lang="en" value="Specifies whether CLU is connected to the cloud"/>  
-				<hint lang="de" value="Gibt an, ob die CLU mit der Cloud verbunden ist"/>
-			    <desc resKey="clu_cloudconnection_2"/>
-            </feature>
-			<feature default="50" enum="50,60" get="true" index="20" name="VoltageFrequency" set="true" type="num" unit="Hz">  
-				<enum name="50Hz" resKey="clu_voltagefrequency_enum_50hz" value="50"/>
-				<enum name="60Hz" resKey="clu_voltagefrequency_enum_60hz" value="60"/>
-				<hint lang="pl" value="Częstotliwość napięcia w sieci"/>  
-				<hint lang="en" value="Supply frequency"/>  
-				<hint lang="de" value="Versorgungsfrequenz"/>  
-			    <desc resKey="clu_voltagefrequency"/>
-            </feature>
-			<feature default="230" get="true" index="21" name="DefaultVoltageValue" set="true" type="num" unit="V">
-				<hint lang="pl" value="Domyślna wartość napięcia definiowanego w urządzeniach"/>  
-				<hint lang="en" value="Default value of voltage defined in devices"/>  
-				<hint lang="de" value="Standardwert der in Geräten definierten Spannung"/>
-			    <desc resKey="clu_defaultvoltagevalue"/>
-            </feature>
-			<feature default="tempus1.gum.gov.pl" get="true" index="22" name="NTPServer" set="true" type="str" unit="">  
-				<hint lang="pl" value="Adres serwera czasu UTC"/>  
-				<hint lang="en" value="UTC time server address"/>  
-				<hint lang="de" value="UTC-Zeitserveradresse"/>
-			    <desc resKey="clu_ntpserver"/>
-            </feature>
-			<feature default="0" enum="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22" get="true" index="23" name="TimeZone" set="true" type="num">
-				<enum name="Europe/Warsaw" resKey="clu_timezone_enum_europewarsaw" value="0"/>
-				<enum name="Europe/London" resKey="clu_timezone_enum_europelondon" value="1"/>
-				<enum name="Europe/Moscow" resKey="clu_timezone_enum_europemoscow" value="2"/>
-				<enum name="Europe/Istanbul" resKey="clu_timezone_enum_europeistanbul" value="3"/>
-				<enum name="Europe/Athens" resKey="clu_timezone_enum_europeathens" value="4"/>
-				<enum name="Asia/Dubai" resKey="clu_timezone_enum_asiadubai" value="5"/>
-				<enum name="Asia/Jakarta" resKey="clu_timezone_enum_asiajakarta" value="6"/>
-				<enum name="Asia/HongKong" resKey="clu_timezone_enum_asiahongkong" value="7"/>
-				<enum name="Australia/Sydney" resKey="clu_timezone_enum_australiasydney" value="8"/>
-				<enum name="Australia/Perth" resKey="clu_timezone_enum_australiaperth" value="9"/>
-				<enum name="Australia/Brisbane" resKey="clu_timezone_enum_australiabrisbane" value="10"/>
-				<enum name="NewZeland/Auckland" resKey="clu_timezone_enum_newzelandauckland" value="11"/>
-				<enum name="USA/Hawaii" resKey="clu_timezone_enum_usahawaii" value="12"/>
-				<enum name="USA/Alaska" resKey="clu_timezone_enum_usaalaska" value="13"/>
-				<enum name="USA/CentralTime" resKey="clu_timezone_enum_usacentraltime" value="14"/>
-				<enum name="USA/EasternTime" resKey="clu_timezone_enum_usaeasterntime" value="15"/>
-				<enum name="USA/AtlanticTime" resKey="clu_timezone_enum_usaatlantictime" value="16"/>
-				<enum name="America/Brazil" resKey="clu_timezone_enum_americabrazil" value="17"/>
-				<enum name="America/Colombia" resKey="clu_timezone_enum_americacolombia" value="18"/>
-				<enum name="America/Argentina" resKey="clu_timezone_enum_americaargentina" value="19"/>
-				<enum name="America/CentralAmerica" resKey="clu_timezone_enum_americacentralamerica" value="20"/>
-				<enum name="Pacific Time" resKey="clu_timezone_enum_pacifictime" value="21"/>
-				<enum name="UTC" resKey="clu_timezone_enum_utctime" value="22"/>
-				<hint lang="pl" value="Strefa czasowa"/>  
-				<hint lang="en" value="Time zone"/>  
-				<hint lang="de" value="Zeitzone"/>
-			    <desc resKey="clu_timezone"/>
-            </feature>
-			<feature enum="0,1" get="true" index="24" name="QoS" set="true" type="num">
-				<enum name="QoS0" resKey="clu_qos_enum_qos0" value="0"/>
-				<enum name="QoS1" resKey="clu_qos_enum_qos1" value="1"/>
+<!--
+  ~ OpenGr8on, open source extensions to systems based on Grenton devices
+  ~ Copyright (C) 2023 Piotr Sobiech
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
 
-				<hint lang="pl" value="Jakość usług sieciowych"/>
-				<hint lang="en" value="Quality of service"/>
-				<hint lang="de" value="Servicequalität"/>
-			    <desc resKey="clu_qos"/>
-            </feature>
-			<feature default="8.8.8.8" get="true" index="25" name="PrimaryDNS" set="true" type="str" unit="string">
-				<hint lang="pl" value="Preferowany serwer DNS"/>
-				<hint lang="en" value="Preferred DNS server"/>
-				<hint lang="de" value="Bevorzugter DNS-Server"/>
-			    <desc resKey="clu_primarydns"/>
-            </feature>
-			<feature default="8.8.4.4" get="true" index="26" name="SecondaryDNS" set="true" type="str" unit="string">
-				<hint lang="pl" value="Alternatywny serwer DNS"/>
-				<hint lang="en" value="Alternate (secondary) DNS server"/>
-				<hint lang="de" value="Alternativer DNS-Server"/>
-			    <desc resKey="clu_secondarydns"/>
-            </feature>
-			<feature get="true" index="27" name="BusVoltage" range="0-30" set="false" type="num" unit="V">
-				<hint lang="pl" value="Napięcie zasilania CLU"/>
-				<hint lang="en" value="CLU supply Voltage"/>
-				<hint lang="de" value="Versorgungsspannung CLU"/>
-			    <desc resKey="clu_busvoltage"/>
-            </feature>
-			<feature default="0.5" get="true" index="28" name="BusVoltageSensitivity" range="0-30" set="true" type="num" unit="V">
-				<hint lang="pl" value="Czułość - minimalna zmiana wartości na zasilaniu która wywołuje zdarzenia OnBusVoltageChange, OnBusVoltageLower lub OnBusVoltageRise"/>
-				<hint lang="en" value="Minimum change of supply voltage state when the OnBusVoltageChange, OnBusVoltageLower or OnBusVoltageRise event is generated"/>
-				<hint lang="de" value="Minimale Änderung des Versorgungsspannungszustands bei der Erzeugung des OnBusVoltageChange, OnBusVoltageLower or OnBusVoltageRise Ereignisses"/>
-			    <desc resKey="clu_busvoltagesensitivity"/>
-            </feature>
-			<feature default="25" get="true" index="29" name="MaxBusVoltage" range="0-30" set="true" type="num" unit="V">
-				<hint lang="pl" value="Wartość maksymalna po przekroczeniu której generowane jest zdarzenie OnBusVoltageOutOfRange"/>
-				<hint lang="en" value="Maximum value of the Value characteristic after exceeding which the OnBusVoltageOutOfRange event is generated"/>
-				<hint lang="de" value="Maximaler Wert des Wertmerkmals, nach dessen Überschreitung das Ereignis OnBusVoltageOutOfRange generiert wird"/>
-			    <desc resKey="clu_maxbusvoltage"/>
-            </feature>
-			<feature default="23" get="true" index="30" name="MinBusVoltage" range="0-30" set="true" type="num" unit="V">
-				<hint lang="pl" value="Wartość minimalna po przekroczeniu której generowane jest zdarzenie OnBusVoltageOutOfRange"/>
-				<hint lang="en" value="Minimal value of the Value characteristic after exceeding which the OnBusVoltageOutOfRange event is generated"/>
-				<hint lang="de" value="Minimaler Wert des Wertmerkmals, nach dessen Überschreitung das Ereignis OnBusVoltageOutOfRange generiert wird"/>
-			    <desc resKey="clu_minbusvoltage"/>
-            </feature>
-			<feature default="0" enum="0,1,2,3,4" get="true" index="31" name="TelnetLogLevel" set="true" type="num">
-				<enum name="OFF" resKey="clu_telnetloglevel_enum_off" value="0"/>
-				<enum name="ERROR" resKey="clu_telnetloglevel_enum_error" value="1"/>
-				<enum name="WARNING" resKey="clu_telnetloglevel_enum_warning" value="2"/>
-				<enum name="INFO" resKey="clu_telnetloglevel_enum_info" value="3"/>
-				<enum name="DEBUG" resKey="clu_telnetloglevel_enum_debug" value="4"/>
-				<hint lang="pl" value="Określa poziom logowania"/>
-				<hint lang="en" value="Specifies the logging level"/>
-				<hint lang="de" value="Gibt die Protokollierungsebene an"/>
-				<desc resKey="clu_telnetloglevel"/>
-			</feature>
-			<!--
-			<feature default="0" enum="0,1,2,3,4" get="true" index="32" name="TelnetLogLevelDev" set="true" type="num" visible="false">
-				<enum name="OFF" resKey="clu_telnetloglevel_enum_off" value="0"/>
-				<enum name="ERROR" resKey="clu_telnetloglevel_enum_error" value="1"/>
-				<enum name="WARNING" resKey="clu_telnetloglevel_enum_warning" value="2"/>
-				<enum name="INFO" resKey="clu_telnetloglevel_enum_info" value="3"/>
-				<enum name="DEBUG" resKey="clu_telnetloglevel_enum_debug" value="4"/>
-				<hint lang="pl" value="Określa poziom logowania"/>
-				<hint lang="en" value="Specifies the logging level"/>
-				<hint lang="de" value="Gibt die Protokollierungsebene an"/>
-				<desc resKey="clu_telnetloglevel"/>
-			</feature>
-			-->
-		</features>	
-		<methods>
-			<method call="execute" index="0" name="AddToLog" return="void">
-				<param name="Log" type="str"/>
-				<hint lang="pl" value="Dodaje do loga wewnętrznego nowy wpis"/>	
-				<hint lang="en" value="Adds a new entry to the internal log"/>	
-				<hint lang="de" value="Fügt neue Eintragungen ins innere Log ein"/>
-			    <desc resKey="clu_addtolog"/>
+<CLU firmwareType="00000003" firmwareVersion="00000200" hardwareType="00000013" hardwareVersion="00000001" typeName="CLU_ZWAVE_2">
+  <!--hwType=0x13(19), hwVer=0x1(1), fwType=0x3(3), fwApiVer=0x200(512)-->
+  <interface>
+    <features>
+      <feature get="true" index="0" name="Uptime" set="false" type="num" unit="s">
+        <hint lang="pl" value="Czas pracy urządzenia od ostatniego resetu (w sekundach)"/>
+        <hint lang="en" value="Time of device operation since last reset (in seconds)"/>
+        <hint lang="de" value="Arbeitszeit des Geräts seit dem letzten Reset (in Sekunden)"/>
+        <desc resKey="clu_uptime"/>
+      </feature>
+      <feature get="true" index="1" name="Log" set="false" type="str">
+        <hint lang="pl" value="Wewnętrzny log urządzenia"/>
+        <hint lang="en" value="Internal device log"/>
+        <hint lang="de" value="Inneres Gerätelog"/>
+        <desc resKey="clu_log"/>
+      </feature>
+      <feature enum="0,1,2,3,4,5,6,7,8,9,10,11" get="true" index="2" name="State" set="false" type="num">
+        <enum name="System starting" resKey="clu_state_enum_systemstarting" value="0"/>
+        <enum name="System ok" resKey="clu_state_enum_systemok" value="1"/>
+        <enum name="Telnet logging mode" resKey="clu_state_enum_telnetlogmode" value="2"/>
+        <enum name="Emergency mode" resKey="clu_state_enum_emergencymode" value="3"/>
+        <enum name="Critical error" resKey="clu_state_enum_criticalerror" value="4"/>
+        <enum name="Monitor mode" resKey="clu_state_enum_monitormode" value="5"/>
+        <enum name="Module not responding" resKey="clu_state_enum_modulenotresponding" value="6"/>
+        <enum name="Adding Z-Wave node" resKey="clu_state_enum_addingzwavenode" value="7"/>
+        <enum name="Removing Z-Wave node" resKey="clu_state_enum_removingzwavenode" value="8"/>
+        <enum name="Z-Wave add/remove busy" resKey="clu_state_enum_zwaveaddremovebussy" value="9"/>
+        <enum name="Z-Wave add/remove ERROR" resKey="clu_state_enum_zwaveaddremoveerror" value="10"/>
+        <enum name="Z-Wave add/remove OK" resKey="clu_state_enum_zwaveaddremoveok" value="11"/>
+
+        <hint lang="pl" value="Stan urządzenia"/>
+        <hint lang="en" value="Device state"/>
+        <hint lang="de" value="Gerätestatus"/>
+        <desc resKey="clu_state"/>
+      </feature>
+      <feature get="true" index="3" name="IsLocalPower" set="false" type="confirmation" unit="bool">
+        <hint lang="pl" value="Stan zasilania"/>
+        <hint lang="en" value="Power state"/>
+        <hint lang="de" value="Stromstatus"/>
+        <desc resKey="clu_islocalpower"/>
+      </feature>
+      <feature get="true" index="5" name="Date" set="false" type="str">
+        <hint lang="pl" value="Zwraca aktualną datę"/>
+        <hint lang="en" value="Returns the current date"/>
+        <hint lang="de" value="Gibt das aktuelle Datum zurück"/>
+        <desc resKey="clu_date"/>
+      </feature>
+      <feature get="true" index="6" name="Time" set="false" type="str">
+        <hint lang="pl" value="Zwraca aktualny czas (hh:mm:ss)"/>
+        <hint lang="en" value="Returns the current time (hh:mm:ss)"/>
+        <hint lang="de" value="Aktuelle Zeit (hh:mm:ss)"/>
+        <desc resKey="clu_time"/>
+      </feature>
+      <feature get="true" index="7" name="Day" range="1-31" set="false" type="num">
+        <hint lang="pl" value="Zwraca numer bieżącego dnia miesiąca"/>
+        <hint lang="en" value="Returns the number of the current day of the month"/>
+        <hint lang="de" value="Nummer des laufenden Tages im Monat"/>
+        <desc resKey="clu_day"/>
+      </feature>
+      <feature get="true" index="8" name="Month" range="1-12" set="false" type="num">
+        <hint lang="pl" value="Zwraca numer bieżącego miesiąca"/>
+        <hint lang="en" value="Returns the current number of the month"/>
+        <hint lang="de" value="Nummer des laufenden Monats"/>
+        <desc resKey="clu_month"/>
+      </feature>
+      <feature get="true" index="9" name="Year" set="false" type="num">
+        <hint lang="pl" value="Zwraca numer bieżącego roku"/>
+        <hint lang="en" value="Returns the current number of the year"/>
+        <hint lang="de" value="Nummer des laufenden Jahres"/>
+        <desc resKey="clu_year"/>
+      </feature>
+      <feature get="true" index="10" name="DayOfWeek" range="0-6" set="false" type="num">
+        <hint lang="pl" value="Zwraca numer bieżącego dnia tygodnia (0=niedziela)"/>
+        <hint lang="en" value="Returns the current day of the week (0=Sunday)"/>
+        <hint lang="de" value="Nummer des laufenden Tages in der Woche (0 = Sonntag)"/>
+        <desc resKey="clu_dayofweek"/>
+      </feature>
+      <feature get="true" index="11" name="Hour" range="0-23" set="false" type="num" unit="h">
+        <hint lang="pl" value="Zwraca aktualną godzinę (bez minut i sekund)"/>
+        <hint lang="en" value="Returns the current hour (no minutes or seconds)"/>
+        <hint lang="de" value="Aktuelle Uhrzeit (ohne Minuten und Sekunden)"/>
+        <desc resKey="clu_hour"/>
+      </feature>
+      <feature get="true" index="12" name="Minute" range="0-59" set="false" type="num" unit="m">
+        <hint lang="pl" value="Zwraca aktualną liczbę minut od ostatniej pełnej godziny"/>
+        <hint lang="en" value="Returns the current number of minutes from last full hour"/>
+        <hint lang="de" value="Aktuelle Anzahl von Minuten seit der letzten vollen Stunde"/>
+        <desc resKey="clu_minute"/>
+      </feature>
+      <feature get="true" index="13" name="LocalTime" set="false" type="num" unit="s">
+        <hint lang="pl" value="Zwraca aktualny znacznik czasu"/>
+        <hint lang="en" value="Returns the current time"/>
+        <hint lang="de" value="Aktueller Timestamp"/>
+        <desc resKey="clu_localtime"/>
+      </feature>
+      <!--
+      <feature name="ClientsPollInterval" index="15" type="num" get="true" set="true" default="1000" range="200-10000" unit="ms" >
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+      </feature>
+      <feature name="ClientsAliveTime" index="16" type="num" get="true" set="true" default="60" range="10-3600" unit="s" >
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+      </feature>
+      -->
+      <feature get="true" index="17" name="FirmwareVersion" set="false" type="str">
+        <hint lang="pl" value="Wersja oprogramowania CLU"/>
+        <hint lang="en" value="CLU firmware version"/>
+        <hint lang="de" value="Softwareversion CLU"/>
+        <desc resKey="clu_firmwareversion_3"/>
+      </feature>
+      <feature default="0" get="true" index="18" name="UseCloud" set="true" type="confirmation" unit="bool">
+        <hint lang="pl" value="Określa czy CLU łączy się do chmury"/>
+        <hint lang="en" value="Specifies whether CLU connects to the cloud"/>
+        <hint lang="de" value="Gibt an, ob die CLU eine Verbindung zur Cloud herstellt"/>
+        <desc resKey="clu_usecloud_2"/>
+      </feature>
+      <feature default="0" get="true" index="19" name="CloudConnection" set="false" type="confirmation" unit="bool">
+        <hint lang="pl" value="Określa status połączenia CLU z chmurą"/>
+        <hint lang="en" value="Specifies whether CLU is connected to the cloud"/>
+        <hint lang="de" value="Gibt an, ob die CLU mit der Cloud verbunden ist"/>
+        <desc resKey="clu_cloudconnection_2"/>
+      </feature>
+      <feature default="50" enum="50,60" get="true" index="20" name="VoltageFrequency" set="true" type="num" unit="Hz">
+        <enum name="50Hz" resKey="clu_voltagefrequency_enum_50hz" value="50"/>
+        <enum name="60Hz" resKey="clu_voltagefrequency_enum_60hz" value="60"/>
+        <hint lang="pl" value="Częstotliwość napięcia w sieci"/>
+        <hint lang="en" value="Supply frequency"/>
+        <hint lang="de" value="Versorgungsfrequenz"/>
+        <desc resKey="clu_voltagefrequency"/>
+      </feature>
+      <feature default="230" get="true" index="21" name="DefaultVoltageValue" set="true" type="num" unit="V">
+        <hint lang="pl" value="Domyślna wartość napięcia definiowanego w urządzeniach"/>
+        <hint lang="en" value="Default value of voltage defined in devices"/>
+        <hint lang="de" value="Standardwert der in Geräten definierten Spannung"/>
+        <desc resKey="clu_defaultvoltagevalue"/>
+      </feature>
+      <feature default="tempus1.gum.gov.pl" get="true" index="22" name="NTPServer" set="true" type="str" unit="">
+        <hint lang="pl" value="Adres serwera czasu UTC"/>
+        <hint lang="en" value="UTC time server address"/>
+        <hint lang="de" value="UTC-Zeitserveradresse"/>
+        <desc resKey="clu_ntpserver"/>
+      </feature>
+      <feature default="0" enum="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22" get="true" index="23" name="TimeZone" set="true" type="num">
+        <enum name="Europe/Warsaw" resKey="clu_timezone_enum_europewarsaw" value="0"/>
+        <enum name="Europe/London" resKey="clu_timezone_enum_europelondon" value="1"/>
+        <enum name="Europe/Moscow" resKey="clu_timezone_enum_europemoscow" value="2"/>
+        <enum name="Europe/Istanbul" resKey="clu_timezone_enum_europeistanbul" value="3"/>
+        <enum name="Europe/Athens" resKey="clu_timezone_enum_europeathens" value="4"/>
+        <enum name="Asia/Dubai" resKey="clu_timezone_enum_asiadubai" value="5"/>
+        <enum name="Asia/Jakarta" resKey="clu_timezone_enum_asiajakarta" value="6"/>
+        <enum name="Asia/HongKong" resKey="clu_timezone_enum_asiahongkong" value="7"/>
+        <enum name="Australia/Sydney" resKey="clu_timezone_enum_australiasydney" value="8"/>
+        <enum name="Australia/Perth" resKey="clu_timezone_enum_australiaperth" value="9"/>
+        <enum name="Australia/Brisbane" resKey="clu_timezone_enum_australiabrisbane" value="10"/>
+        <enum name="NewZeland/Auckland" resKey="clu_timezone_enum_newzelandauckland" value="11"/>
+        <enum name="USA/Hawaii" resKey="clu_timezone_enum_usahawaii" value="12"/>
+        <enum name="USA/Alaska" resKey="clu_timezone_enum_usaalaska" value="13"/>
+        <enum name="USA/CentralTime" resKey="clu_timezone_enum_usacentraltime" value="14"/>
+        <enum name="USA/EasternTime" resKey="clu_timezone_enum_usaeasterntime" value="15"/>
+        <enum name="USA/AtlanticTime" resKey="clu_timezone_enum_usaatlantictime" value="16"/>
+        <enum name="America/Brazil" resKey="clu_timezone_enum_americabrazil" value="17"/>
+        <enum name="America/Colombia" resKey="clu_timezone_enum_americacolombia" value="18"/>
+        <enum name="America/Argentina" resKey="clu_timezone_enum_americaargentina" value="19"/>
+        <enum name="America/CentralAmerica" resKey="clu_timezone_enum_americacentralamerica" value="20"/>
+        <enum name="Pacific Time" resKey="clu_timezone_enum_pacifictime" value="21"/>
+        <enum name="UTC" resKey="clu_timezone_enum_utctime" value="22"/>
+        <hint lang="pl" value="Strefa czasowa"/>
+        <hint lang="en" value="Time zone"/>
+        <hint lang="de" value="Zeitzone"/>
+        <desc resKey="clu_timezone"/>
+      </feature>
+      <feature enum="0,1" get="true" index="24" name="QoS" set="true" type="num">
+        <enum name="QoS0" resKey="clu_qos_enum_qos0" value="0"/>
+        <enum name="QoS1" resKey="clu_qos_enum_qos1" value="1"/>
+
+        <hint lang="pl" value="Jakość usług sieciowych"/>
+        <hint lang="en" value="Quality of service"/>
+        <hint lang="de" value="Servicequalität"/>
+        <desc resKey="clu_qos"/>
+      </feature>
+      <feature default="8.8.8.8" get="true" index="25" name="PrimaryDNS" set="true" type="str" unit="string">
+        <hint lang="pl" value="Preferowany serwer DNS"/>
+        <hint lang="en" value="Preferred DNS server"/>
+        <hint lang="de" value="Bevorzugter DNS-Server"/>
+        <desc resKey="clu_primarydns"/>
+      </feature>
+      <feature default="8.8.4.4" get="true" index="26" name="SecondaryDNS" set="true" type="str" unit="string">
+        <hint lang="pl" value="Alternatywny serwer DNS"/>
+        <hint lang="en" value="Alternate (secondary) DNS server"/>
+        <hint lang="de" value="Alternativer DNS-Server"/>
+        <desc resKey="clu_secondarydns"/>
+      </feature>
+      <feature get="true" index="27" name="BusVoltage" range="0-30" set="false" type="num" unit="V">
+        <hint lang="pl" value="Napięcie zasilania CLU"/>
+        <hint lang="en" value="CLU supply Voltage"/>
+        <hint lang="de" value="Versorgungsspannung CLU"/>
+        <desc resKey="clu_busvoltage"/>
+      </feature>
+      <feature default="0.5" get="true" index="28" name="BusVoltageSensitivity" range="0-30" set="true" type="num" unit="V">
+        <hint lang="pl"
+          value="Czułość - minimalna zmiana wartości na zasilaniu która wywołuje zdarzenia OnBusVoltageChange, OnBusVoltageLower lub OnBusVoltageRise"/>
+        <hint lang="en" value="Minimum change of supply voltage state when the OnBusVoltageChange, OnBusVoltageLower or OnBusVoltageRise event is generated"/>
+        <hint lang="de"
+          value="Minimale Änderung des Versorgungsspannungszustands bei der Erzeugung des OnBusVoltageChange, OnBusVoltageLower or OnBusVoltageRise Ereignisses"/>
+        <desc resKey="clu_busvoltagesensitivity"/>
+      </feature>
+      <feature default="25" get="true" index="29" name="MaxBusVoltage" range="0-30" set="true" type="num" unit="V">
+        <hint lang="pl" value="Wartość maksymalna po przekroczeniu której generowane jest zdarzenie OnBusVoltageOutOfRange"/>
+        <hint lang="en" value="Maximum value of the Value characteristic after exceeding which the OnBusVoltageOutOfRange event is generated"/>
+        <hint lang="de" value="Maximaler Wert des Wertmerkmals, nach dessen Überschreitung das Ereignis OnBusVoltageOutOfRange generiert wird"/>
+        <desc resKey="clu_maxbusvoltage"/>
+      </feature>
+      <feature default="23" get="true" index="30" name="MinBusVoltage" range="0-30" set="true" type="num" unit="V">
+        <hint lang="pl" value="Wartość minimalna po przekroczeniu której generowane jest zdarzenie OnBusVoltageOutOfRange"/>
+        <hint lang="en" value="Minimal value of the Value characteristic after exceeding which the OnBusVoltageOutOfRange event is generated"/>
+        <hint lang="de" value="Minimaler Wert des Wertmerkmals, nach dessen Überschreitung das Ereignis OnBusVoltageOutOfRange generiert wird"/>
+        <desc resKey="clu_minbusvoltage"/>
+      </feature>
+      <feature default="0" enum="0,1,2,3,4" get="true" index="31" name="TelnetLogLevel" set="true" type="num">
+        <enum name="OFF" resKey="clu_telnetloglevel_enum_off" value="0"/>
+        <enum name="ERROR" resKey="clu_telnetloglevel_enum_error" value="1"/>
+        <enum name="WARNING" resKey="clu_telnetloglevel_enum_warning" value="2"/>
+        <enum name="INFO" resKey="clu_telnetloglevel_enum_info" value="3"/>
+        <enum name="DEBUG" resKey="clu_telnetloglevel_enum_debug" value="4"/>
+        <hint lang="pl" value="Określa poziom logowania"/>
+        <hint lang="en" value="Specifies the logging level"/>
+        <hint lang="de" value="Gibt die Protokollierungsebene an"/>
+        <desc resKey="clu_telnetloglevel"/>
+      </feature>
+      <!--
+      <feature default="0" enum="0,1,2,3,4" get="true" index="32" name="TelnetLogLevelDev" set="true" type="num" visible="false">
+        <enum name="OFF" resKey="clu_telnetloglevel_enum_off" value="0"/>
+        <enum name="ERROR" resKey="clu_telnetloglevel_enum_error" value="1"/>
+        <enum name="WARNING" resKey="clu_telnetloglevel_enum_warning" value="2"/>
+        <enum name="INFO" resKey="clu_telnetloglevel_enum_info" value="3"/>
+        <enum name="DEBUG" resKey="clu_telnetloglevel_enum_debug" value="4"/>
+        <hint lang="pl" value="Określa poziom logowania"/>
+        <hint lang="en" value="Specifies the logging level"/>
+        <hint lang="de" value="Gibt die Protokollierungsebene an"/>
+        <desc resKey="clu_telnetloglevel"/>
+      </feature>
+      -->
+    </features>
+    <methods>
+      <method call="execute" index="0" name="AddToLog" return="void">
+        <param name="Log" type="str"/>
+        <hint lang="pl" value="Dodaje do loga wewnętrznego nowy wpis"/>
+        <hint lang="en" value="Adds a new entry to the internal log"/>
+        <hint lang="de" value="Fügt neue Eintragungen ins innere Log ein"/>
+        <desc resKey="clu_addtolog"/>
+      </method>
+      <method call="execute" index="1" name="ClearLog" return="void">
+        <hint lang="pl" value="Kasuje zawartość wewnętrznego logu urządzenia"/>
+        <hint lang="en" value="Deletes the contents of the internal device log"/>
+        <hint lang="de" value="Löscht den Inhalt des inneren Gerätelogs"/>
+        <desc resKey="clu_clearlog"/>
+      </method>
+      <method call="execute" index="2" name="SetDateTime" return="void">
+        <param name="LocalTimestamp" type="timestamp"/>
+        <hint lang="pl" value="Ustawia datę i czas"/>
+        <hint lang="en" value="Sets date and time"/>
+        <hint lang="de" value="Stellt Datum und Zeit ein"/>
+        <desc resKey="clu_setdatetime"/>
+      </method>
+      <method call="execute" index="3" name="StartZWaveDiscovery" return="void">
+        <param name="Time" type="num"/>
+        <hint lang="pl" value="Uruchamia wykrywanie urządzeń bezprzewodowych"/>
+        <hint lang="en" value="Initiates Z-Wave module discovery mode"/>
+        <hint lang="de" value="Aktiviert das Hinzufügen von Z-Wave-Modulen(falls die Zeit = 0, dann nur bis zum ersten hinzugefügten Knoten)"/>
+        <desc resKey="clu_startzwavediscovery"/>
+      </method>
+      <method call="execute" index="4" name="StopZWaveDiscovery" return="void">
+        <hint lang="pl" value="Wstrzymuje wykrywanie urządzeń bezprzewodowych"/>
+        <hint lang="en" value="Stops Z-Wave module discovery mode"/>
+        <hint lang="de" value="Stoppt das Hinzufügen von Z-Wave-Modulen"/>
+        <desc resKey="clu_stopzwavediscovery"/>
+      </method>
+      <!--<method name="ClearNetwork" call="execute" return="void" index="5" >
+        <hint lang="pl" value="Czysci informacje o istniejacych polaczeniach z bezprzewodowymi urzadzeniami"/>
+        <hint lang="en" value="Cleares information about nodes"/>
+      </method>
+      <method name="DumpDebug" call="execute" return="void" index="6">
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+        <param name="Name" type="str" range="3-8" />
+      </method>
+      <method name="SetClientsPollInterval" call="set" return="void" index="15">
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+        <param name="ClientsPollInterval" type="num" range="200-10000" />
+      </method>
+      <method name="SetClientsAliveTime" call="set" return="void"  index="16">
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+        <param name="ClientsAliveTime" type="num" range="10-3600" />
+      </method> -->
+      <method call="set" index="25" name="SetPrimaryDNS" return="void" unit="string">
+        <param name="IP" type="num"/>
+        <hint lang="pl" value="Ustawia cechę PrimaryDNS"/>
+        <hint lang="en" value="Sets the PrimaryDNS feature"/>
+        <hint lang="de" value="Legt die PrimaryDNS-Funktion fest"/>
+        <desc resKey="clu_setprimarydns"/>
+      </method>
+      <method call="set" index="26" name="SetSecondaryDNS" return="void" unit="string">
+        <param name="IP" type="num"/>
+        <hint lang="pl" value="Ustawia cechę SecondaryDNS"/>
+        <hint lang="en" value="Sets the SecondaryDNS feature"/>
+        <hint lang="de" value="Legt die SecondaryDNS-Funktion fest"/>
+        <desc resKey="clu_setsecondarydns"/>
+      </method>
+      <method call="set" index="31" name="SetTelnetLogLevel" return="void">
+        <param name="TelnetLogLevel" type="num"/>
+        <hint lang="pl" value="Określa poziom logowania"/>
+        <hint lang="en" value="Specifies the logging level"/>
+        <hint lang="de" value="Gibt die Protokollierungsebene an"/>
+        <desc resKey="clu_telnetloglevel"/>
+      </method>
+      <!--
+      <method call="set" index="32" name="SetTelnetLogLevelDev" return="void" visible="false">
+        <param name="TelnetLogLevelDev" type="num"/>
+        <hint lang="pl" value="Określa poziom logowania"/>
+        <hint lang="en" value="Specifies the logging level"/>
+        <hint lang="de" value="Gibt die Protokollierungsebene an"/>
+              <desc resKey="clu_telnetloglevel"/>
             </method>
-			<method call="execute" index="1" name="ClearLog" return="void">
-				<hint lang="pl" value="Kasuje zawartość wewnętrznego logu urządzenia"/>
-				<hint lang="en" value="Deletes the contents of the internal device log"/>
-				<hint lang="de" value="Löscht den Inhalt des inneren Gerätelogs"/>
-			    <desc resKey="clu_clearlog"/>
-            </method>
-			<method call="execute" index="2" name="SetDateTime" return="void">
-				<param name="LocalTimestamp" type="timestamp"/>
-				<hint lang="pl" value="Ustawia datę i czas"/>
-				<hint lang="en" value="Sets date and time"/>
-				<hint lang="de" value="Stellt Datum und Zeit ein"/>
-			    <desc resKey="clu_setdatetime"/>
-            </method>
-			<method call="execute" index="3" name="StartZWaveDiscovery" return="void">
-				<param name="Time" type="num"/>
-				<hint lang="pl" value="Uruchamia wykrywanie urządzeń bezprzewodowych"/>
-				<hint lang="en" value="Initiates Z-Wave module discovery mode"/>
-				<hint lang="de" value="Aktiviert das Hinzufügen von Z-Wave-Modulen(falls die Zeit = 0, dann nur bis zum ersten hinzugefügten Knoten)"/>
-			    <desc resKey="clu_startzwavediscovery"/>
-            </method>
-			<method call="execute" index="4" name="StopZWaveDiscovery" return="void">
-				<hint lang="pl" value="Wstrzymuje wykrywanie urządzeń bezprzewodowych"/>
-				<hint lang="en" value="Stops Z-Wave module discovery mode"/>
-				<hint lang="de" value="Stoppt das Hinzufügen von Z-Wave-Modulen"/>
-			    <desc resKey="clu_stopzwavediscovery"/>
-            </method>
-			<!--<method name="ClearNetwork" call="execute" return="void" index="5" >
-				<hint lang="pl" value="Czysci informacje o istniejacych polaczeniach z bezprzewodowymi urzadzeniami"/>
-				<hint lang="en" value="Cleares information about nodes"/>
-			</method>
-			<method name="DumpDebug" call="execute" return="void" index="6">
-				<hint lang="pl" value=""/>    
-				<hint lang="en" value=""/>  
-				<param name="Name" type="str" range="3-8" />
-			</method>
-			<method name="SetClientsPollInterval" call="set" return="void" index="15">
-				<hint lang="pl" value=""/>
-				<hint lang="en" value=""/>
-				<param name="ClientsPollInterval" type="num" range="200-10000" />
-			</method>
-			<method name="SetClientsAliveTime" call="set" return="void"  index="16">
-				<hint lang="pl" value=""/>    
-				<hint lang="en" value=""/>    
-				<param name="ClientsAliveTime" type="num" range="10-3600" />
-			</method> -->
-			<method call="set" index="25" name="SetPrimaryDNS" return="void" unit="string">
-				<param name="IP" type="num"/>
-				<hint lang="pl" value="Ustawia cechę PrimaryDNS"/>
-				<hint lang="en" value="Sets the PrimaryDNS feature"/>
-				<hint lang="de" value="Legt die PrimaryDNS-Funktion fest"/>
-        	    <desc resKey="clu_setprimarydns"/>
-            </method>
-			<method call="set" index="26" name="SetSecondaryDNS" return="void" unit="string">
-				<param name="IP" type="num"/>
-				<hint lang="pl" value="Ustawia cechę SecondaryDNS"/>
-				<hint lang="en" value="Sets the SecondaryDNS feature"/>
-				<hint lang="de" value="Legt die SecondaryDNS-Funktion fest"/>
-        	    <desc resKey="clu_setsecondarydns"/>
-            </method>
-			<method call="set" index="31" name="SetTelnetLogLevel" return="void">
-				<param name="TelnetLogLevel" type="num"/>
-				<hint lang="pl" value="Określa poziom logowania"/>
-				<hint lang="en" value="Specifies the logging level"/>
-				<hint lang="de" value="Gibt die Protokollierungsebene an"/>
-        	    <desc resKey="clu_telnetloglevel"/>
-            </method>
-			<!--
-			<method call="set" index="32" name="SetTelnetLogLevelDev" return="void" visible="false">
-				<param name="TelnetLogLevelDev" type="num"/>
-				<hint lang="pl" value="Określa poziom logowania"/>
-				<hint lang="en" value="Specifies the logging level"/>
-				<hint lang="de" value="Gibt die Protokollierungsebene an"/>
-        	    <desc resKey="clu_telnetloglevel"/>
-            </method>
-			-->
-		</methods>
-		<events>
-			<event address="0" name="OnInit">
-				<hint lang="pl" value="Zdarzenie wywoływane jednorazowo w momencie inicjalizacji urządzenia"/>
-				<hint lang="en" value="Event occurring once during device initialization"/>
-				<hint lang="de" value="Ereignis, das einmalig aufgerufen wird, sobald das Gerät aktiviert wird"/>
-			    <desc resKey="clu_oninit"/>
-            </event>
-			<!--<event name="OnLocalPowerOff" address="1" >
-				<hint lang="pl" value=""/>
-				<hint lang="en" value=""/>
-			</event>
-			<event name="OnLocalPowerOn" address="2" >
-				<hint lang="pl" value=""/>
-				<hint lang="en" value=""/>
-			</event>
-			<event name="OnTamperDetect" address="3" >
-				<hint lang="pl" value=""/>
-				<hint lang="en" value=""/>
-			</event> -->
-			<event address="8" name="OnBusVoltageChange">
-				<hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości zasilania CLU"/>
-				<hint lang="en" value="Event resulting from changing value of supply"/>
-				<hint lang="de" value="Ereignis aus einer Änderung des Wertes des Angebots"/>
-			    <desc resKey="clu_onbusvoltagechange"/>
-            </event>
-			<event address="9" name="OnBusVoltageLower">
-				<hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości zasilania CLU na niższą (zbocze opadające)"/>
-				<hint lang="en" value="Event occurs when a value of supply lower than the value from the last reading appears at input"/>
-				<hint lang="de" value="Ein Ereignis tritt auf, wenn am Eingang ein Wert für die Versorgung angezeigt wird, der niedriger als der Wert aus dem letzten Messwert ist"/>
-			    <desc resKey="clu_onbusvoltagelower"/>
-            </event>
-			<event address="10" name="OnBusVoltageRise">
-				<hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości zasilania CLU na wyższą (zbocze narastające)"/>
-				<hint lang="en" value="Event occurs when a value of supply higher than the value from the last reading appears at input"/>
-				<hint lang="de" value="Ein Ereignis tritt auf, wenn am Eingang ein Wert für die Versorgung angezeigt wird, der höher ist als der Wert aus dem letzten Messwert"/>
-			    <desc resKey="clu_onbusvoltagerise"/>
-            </event>
-			<event address="11" name="OnBusVoltageOutOfRange">
-				<hint lang="pl" value="Zdarzenie wywoływane gdy wartość na wejściu zasilania CLU (BusVoltage) przekroczy wyznaczony zakres (BusVoltageMin - BusVoltageMax)"/>
-				<hint lang="en" value="Event resulting from exceeding the permissible range (BusVoltageMin - BusVoltageMax)"/>
-				<hint lang="de" value="Ereignis, das sich aus dem Überschreiten des zulässigen Bereichs (BusVoltageMin \: BusVoltageMax) ergibt"/>
-			    <desc resKey="clu_onbusvoltageoutofrange"/>
-            </event>
-			<event address="12" name="OnBusVoltageInRange">
-				<hint lang="pl" value="Zdarzenie wywoływane gdy wartość na wejściu zasilania CLU (BusVoltage) powróci do wyznaczonego zakresu (BusVoltageMin - BusVoltageMax)"/>
-				<hint lang="en" value="Event resulting from returning to the permissible range (BusVoltageMin - BusVoltageMax)"/>
-				<hint lang="de" value="Ereignis, das sich aus der Rückkehr in den zulässigen Bereich (BusVoltageMin \: BusVoltageMax) ergibt"/>
-			    <desc resKey="clu_onbusvoltageinrange"/>
-            </event>
-			<event address="13" name="OnTimeChange">
-				<hint lang="pl" value="Zdarzenie wywoływane po zmianie czasu o wartość większą niż ± 60 sekund. Możliwe przypadki:&#13;- wywołanie metody SetDateTime&#13;- aktualizacja czasu z serwera NTP&#13;- zmiana czasu lokalnego letni/zimowy"/>
-				<hint lang="en" value="The event is raised after the time has changed by more than ± 60 seconds. Possible cases:&#13;- calling the SetDateTime method&#13;- updating the time from the NTP server&#13;- changing the local time summer / winter"/>
-				<hint lang="de" value="Das Ereignis wird ausgelöst, nachdem sich die Zeit um mehr als ± 60 Sekunden geändert hat. Mögliche Fälle:&#13;- Aufruf der Methode SetDateTime&#13;- Aktualisierung der Uhrzeit vom NTP-Server&#13;- Änderung der Ortszeit Sommer / Winter"/>
-			    <desc resKey="clu_ontimechange"/>
-            </event>
-		</events>
-	</interface>
-	<objects>
-		<object maxInstances="-1" name="Timer" version="1"/>
-		<object maxInstances="-1" name="Calendar" version="1"/>
-		<object maxInstances="64" name="Scheduler" version="1"/>
-		<object maxInstances="64" name="PIDcontroller" version="1"/>
-		<object maxInstances="64" name="Thermostat" version="2"/>
-		<object maxInstances="64" name="Push" version="1"/>
-		<object maxInstances="64" name="SunriseSunsetCalendar" version="3"/>
-		<object maxInstances="64" name="PresenceSensor" version="2"/>
-		<object maxInstances="64" name="EventScheduler" version="1"/>
-	</objects>
-	<modulesVersionConstraints>
-		<module type="DIN" version="421"/>
-		<module type="DOUT" version="500"/>
-		<module type="DIMM" version="500"/>
-		<module type="MODULE" version="500"/>
-	</modulesVersionConstraints>
-	<options>
-		<option name="maxIOMs" value="64"/>
-		<option name="FeatureToGetActualTimeOnClu" value="LocalTime"/>
-		<option name="GettingTimeType" value="LOCAL"/>
-		<option name="MethodToSetActualTimeOnClu" value="SetDateTime"/>
-		<option name="SettingTimeType" value="LOCAL"/>   
-		<option name="cipher" value="true"/>
-		<option name="accept_tftp" value="true"/>
-		<option name="accept_udp" value="true"/>
-		<option name="accept_tcp" value="false"/>
-		<option name="maxObjects" value="400"/>
-		<option name="maxTfBusModules" value="48"/>
-		<option name="maxZwaveModules" value="231"/>
-	</options>
+      -->
+    </methods>
+    <events>
+      <event address="0" name="OnInit">
+        <hint lang="pl" value="Zdarzenie wywoływane jednorazowo w momencie inicjalizacji urządzenia"/>
+        <hint lang="en" value="Event occurring once during device initialization"/>
+        <hint lang="de" value="Ereignis, das einmalig aufgerufen wird, sobald das Gerät aktiviert wird"/>
+        <desc resKey="clu_oninit"/>
+      </event>
+      <!--<event name="OnLocalPowerOff" address="1" >
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+      </event>
+      <event name="OnLocalPowerOn" address="2" >
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+      </event>
+      <event name="OnTamperDetect" address="3" >
+        <hint lang="pl" value=""/>
+        <hint lang="en" value=""/>
+      </event> -->
+      <event address="8" name="OnBusVoltageChange">
+        <hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości zasilania CLU"/>
+        <hint lang="en" value="Event resulting from changing value of supply"/>
+        <hint lang="de" value="Ereignis aus einer Änderung des Wertes des Angebots"/>
+        <desc resKey="clu_onbusvoltagechange"/>
+      </event>
+      <event address="9" name="OnBusVoltageLower">
+        <hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości zasilania CLU na niższą (zbocze opadające)"/>
+        <hint lang="en" value="Event occurs when a value of supply lower than the value from the last reading appears at input"/>
+        <hint lang="de"
+          value="Ein Ereignis tritt auf, wenn am Eingang ein Wert für die Versorgung angezeigt wird, der niedriger als der Wert aus dem letzten Messwert ist"/>
+        <desc resKey="clu_onbusvoltagelower"/>
+      </event>
+      <event address="10" name="OnBusVoltageRise">
+        <hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości zasilania CLU na wyższą (zbocze narastające)"/>
+        <hint lang="en" value="Event occurs when a value of supply higher than the value from the last reading appears at input"/>
+        <hint lang="de"
+          value="Ein Ereignis tritt auf, wenn am Eingang ein Wert für die Versorgung angezeigt wird, der höher ist als der Wert aus dem letzten Messwert"/>
+        <desc resKey="clu_onbusvoltagerise"/>
+      </event>
+      <event address="11" name="OnBusVoltageOutOfRange">
+        <hint lang="pl"
+          value="Zdarzenie wywoływane gdy wartość na wejściu zasilania CLU (BusVoltage) przekroczy wyznaczony zakres (BusVoltageMin - BusVoltageMax)"/>
+        <hint lang="en" value="Event resulting from exceeding the permissible range (BusVoltageMin - BusVoltageMax)"/>
+        <hint lang="de" value="Ereignis, das sich aus dem Überschreiten des zulässigen Bereichs (BusVoltageMin \: BusVoltageMax) ergibt"/>
+        <desc resKey="clu_onbusvoltageoutofrange"/>
+      </event>
+      <event address="12" name="OnBusVoltageInRange">
+        <hint lang="pl"
+          value="Zdarzenie wywoływane gdy wartość na wejściu zasilania CLU (BusVoltage) powróci do wyznaczonego zakresu (BusVoltageMin - BusVoltageMax)"/>
+        <hint lang="en" value="Event resulting from returning to the permissible range (BusVoltageMin - BusVoltageMax)"/>
+        <hint lang="de" value="Ereignis, das sich aus der Rückkehr in den zulässigen Bereich (BusVoltageMin \: BusVoltageMax) ergibt"/>
+        <desc resKey="clu_onbusvoltageinrange"/>
+      </event>
+      <event address="13" name="OnTimeChange">
+        <hint lang="pl"
+          value="Zdarzenie wywoływane po zmianie czasu o wartość większą niż ± 60 sekund. Możliwe przypadki:&#13;- wywołanie metody SetDateTime&#13;- aktualizacja czasu z serwera NTP&#13;- zmiana czasu lokalnego letni/zimowy"/>
+        <hint lang="en"
+          value="The event is raised after the time has changed by more than ± 60 seconds. Possible cases:&#13;- calling the SetDateTime method&#13;- updating the time from the NTP server&#13;- changing the local time summer / winter"/>
+        <hint lang="de"
+          value="Das Ereignis wird ausgelöst, nachdem sich die Zeit um mehr als ± 60 Sekunden geändert hat. Mögliche Fälle:&#13;- Aufruf der Methode SetDateTime&#13;- Aktualisierung der Uhrzeit vom NTP-Server&#13;- Änderung der Ortszeit Sommer / Winter"/>
+        <desc resKey="clu_ontimechange"/>
+      </event>
+    </events>
+  </interface>
+  <objects>
+    <object maxInstances="-1" name="Timer" version="1"/>
+    <object maxInstances="-1" name="Calendar" version="1"/>
+    <object maxInstances="64" name="Scheduler" version="1"/>
+    <object maxInstances="64" name="PIDcontroller" version="1"/>
+    <object maxInstances="64" name="Thermostat" version="2"/>
+    <object maxInstances="64" name="Push" version="1"/>
+    <object maxInstances="64" name="SunriseSunsetCalendar" version="3"/>
+    <object maxInstances="64" name="PresenceSensor" version="2"/>
+    <object maxInstances="64" name="EventScheduler" version="1"/>
+  </objects>
+  <modulesVersionConstraints>
+    <module type="DIN" version="421"/>
+    <module type="DOUT" version="500"/>
+    <module type="DIMM" version="500"/>
+    <module type="MODULE" version="500"/>
+  </modulesVersionConstraints>
+  <options>
+    <option name="maxIOMs" value="64"/>
+    <option name="FeatureToGetActualTimeOnClu" value="LocalTime"/>
+    <option name="GettingTimeType" value="LOCAL"/>
+    <option name="MethodToSetActualTimeOnClu" value="SetDateTime"/>
+    <option name="SettingTimeType" value="LOCAL"/>
+    <option name="cipher" value="true"/>
+    <option name="accept_tftp" value="true"/>
+    <option name="accept_udp" value="true"/>
+    <option name="accept_tcp" value="false"/>
+    <option name="maxObjects" value="400"/>
+    <option name="maxTfBusModules" value="48"/>
+    <option name="maxZwaveModules" value="231"/>
+  </options>
 </CLU>

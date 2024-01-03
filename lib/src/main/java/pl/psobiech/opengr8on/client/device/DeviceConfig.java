@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -49,12 +49,12 @@ public class DeviceConfig {
         int firmwareType, int firmwareVersion,
         String status
     ) {
-        this.serialNumber = Util.mapNullSafe(serialNumber, value -> Long.parseLong(value, 10));
-        this.hardwareType = hardwareType;
+        this.serialNumber    = Util.mapNullSafe(serialNumber, Long::parseLong);
+        this.hardwareType    = hardwareType;
         this.hardwareVersion = hardwareVersion;
-        this.firmwareType = firmwareType;
+        this.firmwareType    = firmwareType;
         this.firmwareVersion = firmwareVersion;
-        this.status = status;
+        this.status          = status;
     }
 
     public Long getSerialNumber() {
@@ -84,12 +84,12 @@ public class DeviceConfig {
     @Override
     public String toString() {
         return "DeviceConfig{" +
-            "serialNumber=" + ToStringUtil.toString(serialNumber) +
-            ", hardwareType=" + ToStringUtil.toString(hardwareType) +
-            ", hardwareVersion=" + ToStringUtil.toString(hardwareVersion) +
-            ", firmwareType=" + ToStringUtil.toString(firmwareType) +
-            ", firmwareVersion=" + ToStringUtil.toString(firmwareVersion) +
-            ", status=" + status +
-            '}';
+               "serialNumber=" + ToStringUtil.toString(serialNumber) +
+               ", hardwareType=" + ToStringUtil.toString(hardwareType) +
+               ", hardwareVersion=" + ToStringUtil.toString(hardwareVersion) +
+               ", firmwareType=" + ToStringUtil.toString(firmwareType) +
+               ", firmwareVersion=" + ToStringUtil.toString(firmwareVersion) +
+               ", status=" + status +
+               '}';
     }
 }

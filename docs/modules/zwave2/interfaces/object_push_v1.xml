@@ -1,84 +1,102 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ~ OpenGr8on, open source extensions to systems based on Grenton devices
+  ~ Copyright (C) 2023 Piotr Sobiech
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <object class="31" name="Push" version="1">
-	<features>
-		<feature default="message" get="true" index="0" name="Message" range="0-500" set="true" type="str">
-			<hint lang="pl" value="Buffor wyjściowy dla notyfikacji push (skrzynka nadawcza)"/>
-			<hint lang="en" value="Outgoing push notification message buffer (outbox)"/>
-			<hint lang="de" value="Puffer für ausgehende Push-Benachrichtigungsnachrichten"/>
-		    <desc resKey="push_message"/>
-        </feature>
-		<feature default="title" get="true" index="1" name="Title" range="0-500" set="true" type="str">
-			<hint lang="pl" value="Buffor wyjściowy dla tytułu notyfikacji push (skrzynka nadawcza)"/>
-			<hint lang="en" value="Outgoing push notification title buffer (outbox)"/>
-			<hint lang="de" value="Titelpuffer für ausgehende Push-Benachrichtigungen"/>
-		    <desc resKey="push_title"/>
-        </feature>
-		<feature get="true" index="2" name="LastSendTime" set="false" type="str">
-				<hint lang="pl" value="Czas wysłania ostatniej notyfikacji push"/>
-				<hint lang="en" value="Send time of last push notification"/>
-				<hint lang="de" value="Sendezeit der letzten Push-Benachrichtigung"/>
-		    <desc resKey="push_lastsendtime"/>
-        </feature>
-		<feature default="1" get="true" index="3" name="Interval" range="1-86400" set="true" type="num" unit="s">
-			<hint lang="pl" value="Interwał pomiędzy kolejnymi notyfikacjami"/>
-			<hint lang="en" value="Interval between push notifications"/>
-			<hint lang="de" value="Intervall zwischen Push-Benachrichtigungen"/>
-		    <desc resKey="push_interval"/>
-        </feature>
-	</features>
-	<methods>
-		<method call="set" index="0" name="SetMessage" range="0-500" return="void">
-			<param name="Text" range="0-500" type="str"/>
-			<hint lang="pl" value="Dodaje tekst do bufora wyjściowego (skrzynki nadawczej)"/>
-			<hint lang="en" value="Adds text to outgoing buffer (outbox)"/>
-			<hint lang="de" value="Fügt dem ausgehenden Puffer Text hinzu"/>
-            <desc resKey="push_setmessage"/>
-        </method>
-		<method call="execute" index="1" name="ClearMessage" return="void">
-			<hint lang="pl" value="Czyści bufor wyjściowy (skrzynkę nadawczą)"/>
-			<hint lang="en" value="Clears outgoing buffer (Message)"/>
-			<hint lang="de" value="Löscht den ausgehenden Puffer"/>
-            <desc resKey="push_clearmessage"/>
-        </method>
-		<method call="set" index="1" name="SetTitle" range="0-500" return="void">
-			<param name="Text" range="0-500" type="str"/>
-			<hint lang="pl" value="Dodaje tekst do tytułu"/>
-			<hint lang="en" value="Adds text to title buffer"/>
-			<hint lang="de" value="Fügt dem Titelpuffer Text hinzu"/>
-            <desc resKey="push_settitle"/>
-        </method>
-		<method call="execute" index="3" name="ClearTitle" return="void">
-			<hint lang="pl" value="Czyści bufor tytułu"/>
-			<hint lang="en" value="Clears title buffer"/>
-			<hint lang="de" value="Löscht den Titelpuffer"/>
-            <desc resKey="push_cleartitle"/>
-        </method>
-		<method call="execute" index="4" name="Send" return="void">
-			<hint lang="pl" value="Wysyła powiadomienie"/>
-			<hint lang="en" value="Sends push notification"/>
-			<hint lang="de" value="Sendet eine Push-Benachrichtigung"/>
-            <desc resKey="push_send"/>
-        </method>
-		<method call="set" index="3" name="SetInterval" range="1-86400" return="void">
-			<param name="Interval" range="1-86400" type="num"/>
-			<hint lang="pl" value="Ustawia interwał pomiędzy kolejnymi notyfikacjami"/>
-			<hint lang="en" value="Sets interval between push notifications"/>
-			<hint lang="de" value="Legt das Intervall zwischen Push-Benachrichtigungen fest"/>
-            <desc resKey="push_setinterval"/>
-        </method>
-	</methods>
-	<events>
-		<event address="0" name="OnSend">
-			<hint lang="pl" value="Zdarzenie wywoływane przy wysłaniu notyfikacji"/>
-			<hint lang="en" value="Occurs when a push notification is send"/>
-			<hint lang="de" value="Tritt auf, wenn eine Push-Benachrichtigung gesendet wird"/>
-		    <desc resKey="push_onsend"/>
-        </event>
-		<event address="1" name="OnOverflow">
-			<hint lang="pl" value="Zdarzenie wywoływane przy przepełnieniu kolejki"/>
-			<hint lang="en" value="Occurs when a outgoing buffer overflows"/>
-			<hint lang="de" value="Tritt auf, wenn ein ausgehender Puffer überläuft"/>
-		    <desc resKey="push_onoverflow"/>
-        </event>
-	</events>
+  <features>
+    <feature default="message" get="true" index="0" name="Message" range="0-500" set="true" type="str">
+      <hint lang="pl" value="Buffor wyjściowy dla notyfikacji push (skrzynka nadawcza)"/>
+      <hint lang="en" value="Outgoing push notification message buffer (outbox)"/>
+      <hint lang="de" value="Puffer für ausgehende Push-Benachrichtigungsnachrichten"/>
+      <desc resKey="push_message"/>
+    </feature>
+    <feature default="title" get="true" index="1" name="Title" range="0-500" set="true" type="str">
+      <hint lang="pl" value="Buffor wyjściowy dla tytułu notyfikacji push (skrzynka nadawcza)"/>
+      <hint lang="en" value="Outgoing push notification title buffer (outbox)"/>
+      <hint lang="de" value="Titelpuffer für ausgehende Push-Benachrichtigungen"/>
+      <desc resKey="push_title"/>
+    </feature>
+    <feature get="true" index="2" name="LastSendTime" set="false" type="str">
+      <hint lang="pl" value="Czas wysłania ostatniej notyfikacji push"/>
+      <hint lang="en" value="Send time of last push notification"/>
+      <hint lang="de" value="Sendezeit der letzten Push-Benachrichtigung"/>
+      <desc resKey="push_lastsendtime"/>
+    </feature>
+    <feature default="1" get="true" index="3" name="Interval" range="1-86400" set="true" type="num" unit="s">
+      <hint lang="pl" value="Interwał pomiędzy kolejnymi notyfikacjami"/>
+      <hint lang="en" value="Interval between push notifications"/>
+      <hint lang="de" value="Intervall zwischen Push-Benachrichtigungen"/>
+      <desc resKey="push_interval"/>
+    </feature>
+  </features>
+  <methods>
+    <method call="set" index="0" name="SetMessage" range="0-500" return="void">
+      <param name="Text" range="0-500" type="str"/>
+      <hint lang="pl" value="Dodaje tekst do bufora wyjściowego (skrzynki nadawczej)"/>
+      <hint lang="en" value="Adds text to outgoing buffer (outbox)"/>
+      <hint lang="de" value="Fügt dem ausgehenden Puffer Text hinzu"/>
+      <desc resKey="push_setmessage"/>
+    </method>
+    <method call="execute" index="1" name="ClearMessage" return="void">
+      <hint lang="pl" value="Czyści bufor wyjściowy (skrzynkę nadawczą)"/>
+      <hint lang="en" value="Clears outgoing buffer (Message)"/>
+      <hint lang="de" value="Löscht den ausgehenden Puffer"/>
+      <desc resKey="push_clearmessage"/>
+    </method>
+    <method call="set" index="1" name="SetTitle" range="0-500" return="void">
+      <param name="Text" range="0-500" type="str"/>
+      <hint lang="pl" value="Dodaje tekst do tytułu"/>
+      <hint lang="en" value="Adds text to title buffer"/>
+      <hint lang="de" value="Fügt dem Titelpuffer Text hinzu"/>
+      <desc resKey="push_settitle"/>
+    </method>
+    <method call="execute" index="3" name="ClearTitle" return="void">
+      <hint lang="pl" value="Czyści bufor tytułu"/>
+      <hint lang="en" value="Clears title buffer"/>
+      <hint lang="de" value="Löscht den Titelpuffer"/>
+      <desc resKey="push_cleartitle"/>
+    </method>
+    <method call="execute" index="4" name="Send" return="void">
+      <hint lang="pl" value="Wysyła powiadomienie"/>
+      <hint lang="en" value="Sends push notification"/>
+      <hint lang="de" value="Sendet eine Push-Benachrichtigung"/>
+      <desc resKey="push_send"/>
+    </method>
+    <method call="set" index="3" name="SetInterval" range="1-86400" return="void">
+      <param name="Interval" range="1-86400" type="num"/>
+      <hint lang="pl" value="Ustawia interwał pomiędzy kolejnymi notyfikacjami"/>
+      <hint lang="en" value="Sets interval between push notifications"/>
+      <hint lang="de" value="Legt das Intervall zwischen Push-Benachrichtigungen fest"/>
+      <desc resKey="push_setinterval"/>
+    </method>
+  </methods>
+  <events>
+    <event address="0" name="OnSend">
+      <hint lang="pl" value="Zdarzenie wywoływane przy wysłaniu notyfikacji"/>
+      <hint lang="en" value="Occurs when a push notification is send"/>
+      <hint lang="de" value="Tritt auf, wenn eine Push-Benachrichtigung gesendet wird"/>
+      <desc resKey="push_onsend"/>
+    </event>
+    <event address="1" name="OnOverflow">
+      <hint lang="pl" value="Zdarzenie wywoływane przy przepełnieniu kolejki"/>
+      <hint lang="en" value="Occurs when a outgoing buffer overflows"/>
+      <hint lang="de" value="Tritt auf, wenn ein ausgehender Puffer überläuft"/>
+      <desc resKey="push_onoverflow"/>
+    </event>
+  </events>
 </object>

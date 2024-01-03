@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -28,6 +28,12 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.Util;
 
 public class SetIpCommand {
+    private static final int SERIAL_NUMBER_PART = 1;
+
+    private static final int IP_ADDRESS_PART = 2;
+
+    private static final int GATEWAY_IP_ADDRESS_PART = 3;
+
     private SetIpCommand() {
         // NOP
     }
@@ -47,9 +53,9 @@ public class SetIpCommand {
         }
 
         final String[] requestParts = requestPartsOptional.get();
-        final Long serialNumber = HexUtil.asLong(requestParts[1]);
-        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(requestParts[2]);
-        final Inet4Address gatewayIpAddress = IPv4AddressUtil.parseIPv4(requestParts[3]);
+        final Long serialNumber = HexUtil.asLong(requestParts[SERIAL_NUMBER_PART]);
+        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(requestParts[IP_ADDRESS_PART]);
+        final Inet4Address gatewayIpAddress = IPv4AddressUtil.parseIPv4(requestParts[GATEWAY_IP_ADDRESS_PART]);
 
         return Optional.of(
             new Request(
@@ -163,7 +169,7 @@ public class SetIpCommand {
 
         private Response(Long serialNumber, Inet4Address ipAddress) {
             this.serialNumber = serialNumber;
-            this.ipAddress = ipAddress;
+            this.ipAddress    = ipAddress;
         }
 
         @Override
@@ -171,7 +177,7 @@ public class SetIpCommand {
             return Command.serialize(
                 COMMAND,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), 8, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_SIZE, '0'),
                 ":",
                 ipAddress
             );

@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -50,11 +50,15 @@ import static org.apache.commons.lang3.StringUtils.upperCase;
 public class HttpRequest extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequest.class);
 
+    public static final int INDEX = 121;
+
     private static final String METHOD_GET = "GET";
 
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
 
     private static final double MAXIMUM_RESPONSE_LENGTH = 10 * 1024; // 10kB
+
+    private static final int CONNECT_TIMEOUT = 4000;
 
     private final ScheduledExecutorService executors;
 
@@ -155,7 +159,7 @@ public class HttpRequest extends VirtualObject {
             }
 
             final long timeoutMillis = TimeUnit.SECONDS.toMillis(get(Features.TIMEOUT).checklong());
-            newConnection.setConnectTimeout(8000); // TODO: what would be a good value here?
+            newConnection.setConnectTimeout(CONNECT_TIMEOUT); // TODO: what would be a good value here?
             newConnection.setReadTimeout((int) timeoutMillis);
 
             final String requestMethod = upperCase(get(Features.METHOD).checkjstring());

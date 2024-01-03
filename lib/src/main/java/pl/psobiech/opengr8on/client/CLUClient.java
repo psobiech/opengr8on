@@ -3,33 +3,29 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package pl.psobiech.opengr8on.client;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Inet4Address;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +38,11 @@ import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTP;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPErrorPacket;
-import pl.psobiech.opengr8on.org.apache.commons.net.TFTPPacketIOException;
+import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPClient;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.RandomUtil;
@@ -53,7 +51,7 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.Util;
 
 public class CLUClient extends Client implements Closeable {
-    private static Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
 
     private static final String TFTP_NOT_FOUND_ERROR_CODE = "Error code %d".formatted(TFTPErrorPacket.FILE_NOT_FOUND);
 
@@ -62,8 +60,6 @@ public class CLUClient extends Client implements Closeable {
     private static final Duration DEFAULT_TIMEOUT_DURATION = Duration.ofMillis(SocketUtil.DEFAULT_TIMEOUT);
 
     private final CLUDevice cluDevice;
-
-    private final ReentrantLock tftpClientLock = new ReentrantLock();
 
     private final TFTPClient tftpClient;
 
@@ -93,19 +89,11 @@ public class CLUClient extends Client implements Closeable {
     public CLUClient(NetworkInterfaceDto networkInterface, CLUDevice cluDevice, CipherKey cipherKey, int port) {
         super(networkInterface, port);
 
+        this.tftpClient = new TFTPClient();
+
         this.cluDevice = cluDevice;
 
-        this.tftpClient = createTFTPClient();
-
         this.cipherKey = cipherKey;
-    }
-
-    private static TFTPClient createTFTPClient() {
-        final TFTPClient tftpClient = new TFTPClient();
-        tftpClient.setMaxTimeouts(TFTP_RETRIES);
-        tftpClient.setDefaultTimeout(DEFAULT_TIMEOUT_DURATION.dividedBy(TFTP_RETRIES));
-
-        return tftpClient;
     }
 
     public Optional<Boolean> setCipherKey(CipherKey newCipherKey) {
@@ -198,64 +186,54 @@ public class CLUClient extends Client implements Closeable {
         return Optional.of(true);
     }
 
-    public void uploadFile(Path file, String location) {
-        tftpClientLock.lock();
-        try (
-            tftpClient;
-            InputStream inputStream = Files.newInputStream(file)
-        ) {
-            tftpClient.open();
+    public void uploadFile(Path path, String location) {
+        try {
+            tftpClient.send(
+                          path,
+                          TFTP.NETASCII_MODE,
+                          cluDevice.getAddress(), TFTP_PORT,
+                          location
+                      )
+                      .get();
+        } catch (ExecutionException e) {
+            throw new UnexpectedException(e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
 
-            tftpClient.sendFile(
-                location, TFTP.BINARY_MODE,
-                inputStream,
-                cluDevice.getAddress(), TFTP_PORT
-            );
-        } catch (IOException e) {
             throw new UnexpectedException(e);
-        } finally {
-            tftpClientLock.unlock();
         }
     }
 
-    public Optional<Path> downloadFile(String location, Path file) {
-        tftpClientLock.lock();
-        try (
-            tftpClient;
-            OutputStream outputStream = Files.newOutputStream(file)
-        ) {
-            tftpClient.open();
+    public Optional<Path> downloadFile(String location, Path path) {
+        try {
+            tftpClient.receive(
+                          location,
+                          cluDevice.getAddress(), TFTP_PORT,
+                          TFTP.NETASCII_MODE,
+                          path
+                      )
+                      .get();
 
-            tftpClient.receiveFile(
-                location, TFTP.BINARY_MODE,
-                outputStream,
-                cluDevice.getAddress(), TFTP_PORT
-            );
+            return Optional.of(path);
+        } catch (ExecutionException e) {
+            FileUtil.deleteQuietly(path);
 
-            return Optional.of(file);
-        } catch (IOException e) {
-            final boolean fileNotFound;
-            if (e instanceof TFTPPacketIOException) {
-                fileNotFound = ((TFTPPacketIOException) e).getErrorPacketCode() == TFTPErrorPacket.FILE_NOT_FOUND;
-            } else {
-                final String message = e.getMessage();
+            final Throwable cause = e.getCause();
+            if (cause instanceof TFTPPacketException packetException) {
+                if (packetException.getError() == TFTPErrorPacket.FILE_NOT_FOUND) {
+                    FileUtil.deleteQuietly(path);
 
-                fileNotFound = (message != null && message.startsWith(TFTP_NOT_FOUND_ERROR_CODE));
-            }
-
-            if (fileNotFound) {
-                try {
-                    Files.deleteIfExists(file);
-                } catch (IOException e2) {
-                    LOGGER.warn(e2.getMessage(), e2);
+                    return Optional.empty();
                 }
-
-                return Optional.empty();
             }
 
             throw new UnexpectedException(e);
-        } finally {
-            tftpClientLock.unlock();
+        } catch (InterruptedException e) {
+            FileUtil.deleteQuietly(path);
+
+            Thread.currentThread().interrupt();
+
+            throw new UnexpectedException(e);
         }
     }
 
@@ -290,9 +268,5 @@ public class CLUClient extends Client implements Closeable {
         } finally {
             socketLock.unlock();
         }
-    }
-
-    public static class TFTPClient extends pl.psobiech.opengr8on.org.apache.commons.net.TFTPClient implements Closeable {
-        // NOP
     }
 }

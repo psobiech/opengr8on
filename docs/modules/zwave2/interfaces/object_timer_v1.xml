@@ -1,81 +1,99 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ~ OpenGr8on, open source extensions to systems based on Grenton devices
+  ~ Copyright (C) 2023 Piotr Sobiech
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <object class="6" name="Timer" version="1">
-	<features>
-		<feature get="true" index="0" name="Time" set="true" type="num" unit="ms">
-			<hint lang="pl" value="Czas zliczeń"/>
-			<hint lang="en" value="Countdown time (in ms)"/>
-		    <desc resKey="timer_time_1"/>
-        </feature>
-		<feature enum="0,1" get="true" index="1" name="Mode" set="true" type="num">
-			<enum name="CountDown" resKey="timer_mode_enum_countdown" value="0"/>
-			<enum name="Interval" resKey="timer_mode_enum_interval" value="1"/>
-			<hint lang="pl" value="Tryb pracy: 0 - zliczanie w dół (CountDown), 1 - cykliczny (Interval)"/>
-			<hint lang="en" value="Timer work mode: 0 - countdown, 1 - interval"/>
-		    <desc resKey="timer_mode_1"/>
-        </feature>
-		<feature enum="0,1,2" get="true" index="2" name="State" set="false" type="num">
-			<enum name="Stopped" resKey="timer_state_enum_stopped" value="0"/>
-			<enum name="Counting" resKey="timer_state_enum_counting" value="1"/>
-			<enum name="Paused" resKey="timer_state_enum_paused" value="2"/>
-			<hint lang="pl" value="Aktualny stan pracy timera: 0 - zatrzymany (stopped), 1 - liczy (counting), 2 - pauza (paused)"/>
-			<hint lang="en" value="Current timer work status: 0 - stopped, 1 - counting, 2 - paused"/>
-		    <desc resKey="timer_state_1"/>
-        </feature>
-		<feature get="true" index="3" name="Value" set="false" type="num" unit="ms">
-			<hint lang="pl" value="Czas jaki pozostał do wyzwolenia zdarzenia OnTimer"/>
-			<hint lang="en" value="Time left until OnTimer event occurs (in ms)"/>
-		    <desc resKey="timer_value"/>
-        </feature>
-	</features>
-	<methods>
-		<method call="execute" index="0" name="Start" return="void">
-			<hint lang="pl" value="Uruchamia timer"/>
-			<hint lang="en" value="Starts the timer"/>
-		    <desc resKey="timer_start"/>
-        </method>
-		<method call="execute" index="1" name="Stop" return="void">
-			<hint lang="pl" value="Zatrzymuje timer"/>
-			<hint lang="en" value="Stops the timer"/>
-		    <desc resKey="timer_stop"/>
-        </method>
-		<method call="execute" index="2" name="Pause" return="void">
-			<hint lang="pl" value="Pauza timera"/>
-			<hint lang="en" value="Pauses the timer"/>
-		    <desc resKey="timer_pause"/>
-        </method>
-		<method call="set" index="0" name="SetTime" return="void">
-			<param name="Time" type="num" unit="ms"/>
-			<hint lang="pl" value="Ustawia czas timera"/>
-			<hint lang="en" value="Sets time of the timer (in ms)"/>
-		    <desc resKey="timer_settime_1"/>
-        </method>
-		<method call="set" index="1" name="SetMode" return="void">
-			<param name="Mode" type="num"/>
-			<hint lang="pl" value="Ustawia tryb pracy: 0 - zliczanie w dół (CountDown), 1 - cykliczny (Interval)"/>
-			<hint lang="en" value="Sets work mode"/>
-		    <desc resKey="timer_setmode_1"/>
-        </method>
-	</methods>
-	<events>
-		<event address="0" name="OnTimer">
-			<hint lang="pl" value="Zdarzenie wywoływane przy zliczeniu timera"/>
-			<hint lang="en" value="The event is called when the timer is counted"/>
-		    <desc resKey="timer_ontimer_1"/>
-        </event>
-		<event address="1" name="OnStart">
-			<hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu timera"/>
-			<hint lang="en" value="The event is triggered when the timer starts"/>
-		    <desc resKey="timer_onstart_1"/>
-        </event>
-		<event address="2" name="OnStop">
-			<hint lang="pl" value="Zdarzenie wywoływane przy zatrzymaniu timera"/>
-            <hint lang="en" value="Event triggered when the timer stops"/>
-		    <desc resKey="timer_onstop_1"/>
-        </event>
-		<event address="3" name="OnPause">
-			<hint lang="pl" value="Zdarzenie wywoływane przy pauzie timera"/>
-            <hint lang="en" value="The event is called when the timer is paused"/>
-		    <desc resKey="timer_onpause"/>
-        </event>
-	</events>
+  <features>
+    <feature get="true" index="0" name="Time" set="true" type="num" unit="ms">
+      <hint lang="pl" value="Czas zliczeń"/>
+      <hint lang="en" value="Countdown time (in ms)"/>
+      <desc resKey="timer_time_1"/>
+    </feature>
+    <feature enum="0,1" get="true" index="1" name="Mode" set="true" type="num">
+      <enum name="CountDown" resKey="timer_mode_enum_countdown" value="0"/>
+      <enum name="Interval" resKey="timer_mode_enum_interval" value="1"/>
+      <hint lang="pl" value="Tryb pracy: 0 - zliczanie w dół (CountDown), 1 - cykliczny (Interval)"/>
+      <hint lang="en" value="Timer work mode: 0 - countdown, 1 - interval"/>
+      <desc resKey="timer_mode_1"/>
+    </feature>
+    <feature enum="0,1,2" get="true" index="2" name="State" set="false" type="num">
+      <enum name="Stopped" resKey="timer_state_enum_stopped" value="0"/>
+      <enum name="Counting" resKey="timer_state_enum_counting" value="1"/>
+      <enum name="Paused" resKey="timer_state_enum_paused" value="2"/>
+      <hint lang="pl" value="Aktualny stan pracy timera: 0 - zatrzymany (stopped), 1 - liczy (counting), 2 - pauza (paused)"/>
+      <hint lang="en" value="Current timer work status: 0 - stopped, 1 - counting, 2 - paused"/>
+      <desc resKey="timer_state_1"/>
+    </feature>
+    <feature get="true" index="3" name="Value" set="false" type="num" unit="ms">
+      <hint lang="pl" value="Czas jaki pozostał do wyzwolenia zdarzenia OnTimer"/>
+      <hint lang="en" value="Time left until OnTimer event occurs (in ms)"/>
+      <desc resKey="timer_value"/>
+    </feature>
+  </features>
+  <methods>
+    <method call="execute" index="0" name="Start" return="void">
+      <hint lang="pl" value="Uruchamia timer"/>
+      <hint lang="en" value="Starts the timer"/>
+      <desc resKey="timer_start"/>
+    </method>
+    <method call="execute" index="1" name="Stop" return="void">
+      <hint lang="pl" value="Zatrzymuje timer"/>
+      <hint lang="en" value="Stops the timer"/>
+      <desc resKey="timer_stop"/>
+    </method>
+    <method call="execute" index="2" name="Pause" return="void">
+      <hint lang="pl" value="Pauza timera"/>
+      <hint lang="en" value="Pauses the timer"/>
+      <desc resKey="timer_pause"/>
+    </method>
+    <method call="set" index="0" name="SetTime" return="void">
+      <param name="Time" type="num" unit="ms"/>
+      <hint lang="pl" value="Ustawia czas timera"/>
+      <hint lang="en" value="Sets time of the timer (in ms)"/>
+      <desc resKey="timer_settime_1"/>
+    </method>
+    <method call="set" index="1" name="SetMode" return="void">
+      <param name="Mode" type="num"/>
+      <hint lang="pl" value="Ustawia tryb pracy: 0 - zliczanie w dół (CountDown), 1 - cykliczny (Interval)"/>
+      <hint lang="en" value="Sets work mode"/>
+      <desc resKey="timer_setmode_1"/>
+    </method>
+  </methods>
+  <events>
+    <event address="0" name="OnTimer">
+      <hint lang="pl" value="Zdarzenie wywoływane przy zliczeniu timera"/>
+      <hint lang="en" value="The event is called when the timer is counted"/>
+      <desc resKey="timer_ontimer_1"/>
+    </event>
+    <event address="1" name="OnStart">
+      <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu timera"/>
+      <hint lang="en" value="The event is triggered when the timer starts"/>
+      <desc resKey="timer_onstart_1"/>
+    </event>
+    <event address="2" name="OnStop">
+      <hint lang="pl" value="Zdarzenie wywoływane przy zatrzymaniu timera"/>
+      <hint lang="en" value="Event triggered when the timer stops"/>
+      <desc resKey="timer_onstop_1"/>
+    </event>
+    <event address="3" name="OnPause">
+      <hint lang="pl" value="Zdarzenie wywoływane przy pauzie timera"/>
+      <hint lang="en" value="The event is called when the timer is paused"/>
+      <desc resKey="timer_onpause"/>
+    </event>
+  </events>
 </object>

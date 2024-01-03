@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -113,8 +113,10 @@ public class LuaServer {
     }
 
     public static LuaThreadWrapper create(
-        NetworkInterfaceDto networkInterface, Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
+        NetworkInterfaceDto networkInterface, Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
     ) {
+        final Path aDriveDirectory = rootDirectory.resolve("a");
+
         final VirtualSystem virtualSystem = new VirtualSystem(
             aDriveDirectory,
             networkInterface,
@@ -127,20 +129,20 @@ public class LuaServer {
 
         globals.load(new JseBaseLib());
         globals.load(new PackageLib());
-        //globals.load(new Bit32Lib());
+        // globals.load(new Bit32Lib());
         globals.load(new TableLib());
         globals.load(new StringLib());
         globals.load(new CoroutineLib());
-        //globals.load(new JseMathLib());
-        //globals.load(new JseIoLib());
+        // globals.load(new JseMathLib());
+        // globals.load(new JseIoLib());
         globals.load(new JseOsLib());
-        //globals.load(new LuajavaLib());
+        // globals.load(new LuajavaLib());
         globals.load(new LuaApiLib(LOGGER, virtualSystem, globals));
 
         globals.finder = fileName -> {
             try {
                 final Path filePath = aDriveDirectory.resolve(StringUtils.upperCase(fileName));
-                if (!filePath.getParent().equals(aDriveDirectory)) {
+                if (!aDriveDirectory.startsWith(rootDirectory)) {
                     throw new UnexpectedException("Attempt to access external directory");
                 }
 
@@ -266,7 +268,7 @@ public class LuaServer {
                                 );
 
             this.virtualSystem = virtualSystem;
-            this.globals = globals;
+            this.globals       = globals;
         }
 
         public Globals globals() {
@@ -298,9 +300,9 @@ public class LuaServer {
 
         private final BaseLuaFunction fn;
 
-        public LuaFunctionWrapper(Logger logger, BaseLuaFunction fn) {
+        LuaFunctionWrapper(Logger logger, BaseLuaFunction fn) {
             this.logger = logger;
-            this.fn = fn;
+            this.fn     = fn;
         }
 
         @Override
@@ -325,7 +327,9 @@ public class LuaServer {
 
         @Override
         public LuaValue call(LuaValue a, LuaValue b, LuaValue c, LuaValue d) {
-            return invoke(LuaValue.varargsOf(new LuaValue[] {a, b, c, d}, 0, 4));
+            final LuaValue[] luaValues = {a, b, c, d};
+
+            return invoke(LuaValue.varargsOf(luaValues, 0, luaValues.length));
         }
 
         @Override

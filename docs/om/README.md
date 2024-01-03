@@ -1,5 +1,6 @@
 # Run in Wayland using xwayland
-Since OM uses legacy Java8, to run under Wayland, we need to force X11/XWayland GDK support. 
+
+Since OM uses legacy Java8, to run under Wayland, we need to force X11/XWayland GDK support.
 
 Export the following environment variable:
 > GDK_BACKEND=x11

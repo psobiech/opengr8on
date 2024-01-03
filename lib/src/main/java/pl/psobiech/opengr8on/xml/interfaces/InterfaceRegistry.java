@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -38,15 +38,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.HexUtil;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 
 public class InterfaceRegistry {
-    public static final InterfaceRegistry EMPTY = new InterfaceRegistry();
+    private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceRegistry.class);
 
     private static final String SEPARATOR = ":";
 
-    private static Logger LOGGER = LoggerFactory.getLogger(InterfaceRegistry.class);
+    private static final int HARDWARE_TYPE_LENGTH = 16;
+
+    private static final int HARDWARE_VERSION_LENGTH = 16;
+
+    private static final int FIRMWARE_TYPE_LENGTH = 8;
+
+    private static final int FIRMWARE_VERSION_LENGTH = 4;
 
     private final Map<String, CLU> clus;
 
@@ -137,7 +143,7 @@ public class InterfaceRegistry {
             objects.put(objectKey, Collections.unmodifiableMap(objectVersions));
         }
 
-        this.clus = Collections.unmodifiableMap(clus);
+        this.clus    = Collections.unmodifiableMap(clus);
         this.modules = Collections.unmodifiableMap(modules);
         this.objects = Collections.unmodifiableMap(objects);
 
@@ -145,7 +151,7 @@ public class InterfaceRegistry {
     }
 
     private InterfaceRegistry() {
-        this.clus = Collections.emptyMap();
+        this.clus    = Collections.emptyMap();
         this.modules = Collections.emptyMap();
         this.objects = Collections.emptyMap();
     }
@@ -203,8 +209,8 @@ public class InterfaceRegistry {
     }
 
     private static String createKey(long hardwareType, long hardwareVersion, int firmwareType, int firmwareVersion) {
-        return parse(hardwareType, 16) + SEPARATOR + parse(hardwareVersion, 16) + SEPARATOR
-            + parse(firmwareType, 8) + SEPARATOR + parse(firmwareVersion, 4);
+        return parse(hardwareType, HARDWARE_TYPE_LENGTH) + SEPARATOR + parse(hardwareVersion, HARDWARE_VERSION_LENGTH) + SEPARATOR
+               + parse(firmwareType, FIRMWARE_TYPE_LENGTH) + SEPARATOR + parse(firmwareVersion, FIRMWARE_VERSION_LENGTH);
     }
 
     public Optional<CLUObject> getObject(String name, int version) {

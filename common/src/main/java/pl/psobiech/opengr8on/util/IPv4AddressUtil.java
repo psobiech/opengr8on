@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -124,7 +124,7 @@ public final class IPv4AddressUtil {
 
     private static int getNetworkMaskFromPrefix(short networkPrefixLength) {
         int networkMask = 0x00;
-        for (int i = 0; i < 32 - networkPrefixLength; i++) {
+        for (int i = 0; i < Integer.SIZE - networkPrefixLength; i++) {
             networkMask += (1 << i);
         }
 
@@ -248,7 +248,7 @@ public final class IPv4AddressUtil {
                                             .orElseThrow(() -> new UnexpectedException("Invalid IPv4 address: " + ipv4AddressAsString));
 
         final byte[] addressAsBytes = new byte[Integer.BYTES];
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < addressAsBytes.length; i++) {
             addressAsBytes[i] = (byte) Integer.parseInt(ipAddressParts[i]);
         }
 
@@ -288,7 +288,7 @@ public final class IPv4AddressUtil {
 
             assert IPv4AddressUtil.getIPv4AsNumber(broadcastAddress) == (networkAddress | (~networkMask));
             this.broadcastAddress = broadcastAddress;
-            this.networkMask = networkMask;
+            this.networkMask      = networkMask;
 
             this.networkInterface = networkInterface;
         }
@@ -344,7 +344,7 @@ public final class IPv4AddressUtil {
                                                                        .map(IPv4AddressUtil::getIPv4AsNumber)
                                                                        .collect(Collectors.toSet());
 
-            int currentIpAsNumber = getIPv4AsNumber(currentAddress);
+            final int currentIpAsNumber = getIPv4AsNumber(currentAddress);
             int ipAsNumber = getIPv4AsNumber(startingAddress);
 
             final List<Inet4Address> addresses = new ArrayList<>(limit);
@@ -375,12 +375,12 @@ public final class IPv4AddressUtil {
         @Override
         public String toString() {
             return "NetworkInterfaceDto{" +
-                "networkInterface=" + ToStringUtil.toString(networkInterface) +
-                ", address=" + ToStringUtil.toString(address) +
-                ", broadcastAddress=" + ToStringUtil.toString(broadcastAddress) +
-                ", networkAddress=" + ToStringUtil.toString(parseIPv4(networkAddress)) +
-                ", networkMask=" + ToStringUtil.toString(parseIPv4(networkMask)) +
-                '}';
+                   "networkInterface=" + ToStringUtil.toString(networkInterface) +
+                   ", address=" + ToStringUtil.toString(address) +
+                   ", broadcastAddress=" + ToStringUtil.toString(broadcastAddress) +
+                   ", networkAddress=" + ToStringUtil.toString(parseIPv4(networkAddress)) +
+                   ", networkMask=" + ToStringUtil.toString(parseIPv4(networkMask)) +
+                   '}';
         }
     }
 }

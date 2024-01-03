@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -59,6 +59,8 @@ public class Client implements Closeable {
     public static final int TFTP_PORT = 69;
 
     private static final int BUFFER_SIZE = 2048;
+
+    private static final int ESTIMATED_CLUS = 8;
 
     private int port;
 
@@ -122,7 +124,7 @@ public class Client implements Closeable {
         Duration timeout, int limit
     ) {
         final String uuid = uuid(command);
-        final Queue<Payload> queue = new ArrayBlockingQueue<>(8);
+        final Queue<Payload> queue = new ArrayBlockingQueue<>(ESTIMATED_CLUS);
 
         final Future<Void> future = executor.submit(() -> {
             socketLock.lock();
@@ -156,7 +158,7 @@ public class Client implements Closeable {
         });
 
         return StreamSupport.stream(
-            new AbstractSpliterator<>(8, 0) {
+            new AbstractSpliterator<>(ESTIMATED_CLUS, 0) {
                 @Override
                 public boolean tryAdvance(Consumer<? super Payload> action) {
                     final boolean futureDone = future.isDone();

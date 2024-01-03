@@ -3,16 +3,16 @@
  * Copyright (C) 2023 Piotr Sobiech
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -79,7 +79,7 @@ public class CipherKey {
     }
 
     public CipherKey(SecretKeySpec keySpecification, IvParameterSpec ivParameterSpecification) {
-        this.keySpecification = keySpecification;
+        this.keySpecification         = keySpecification;
         this.ivParameterSpecification = ivParameterSpecification;
     }
 
@@ -102,6 +102,7 @@ public class CipherKey {
         for (; i < iv.length / 2; i++) {
             result[i] = (byte) (iv[i] ^ privateKey[i]);
         }
+
         for (; i < size; i++) {
             result[i] = (byte) (iv[i] ^ privateKey[(size - 1) - i]);
         }
@@ -214,7 +215,7 @@ public class CipherKey {
         }
 
         return Arrays.equals(keySpecification.getEncoded(), cipherKey.keySpecification.getEncoded())
-            && Arrays.equals(ivParameterSpecification.getIV(), cipherKey.ivParameterSpecification.getIV());
+               && Arrays.equals(ivParameterSpecification.getIV(), cipherKey.ivParameterSpecification.getIV());
     }
 
     @Override
@@ -225,8 +226,8 @@ public class CipherKey {
     @Override
     public String toString() {
         return "CipherKey{" +
-            "key=" + Base64.encodeBase64String(keySpecification.getEncoded()) +
-            ", iv=" + Base64.encodeBase64String(ivParameterSpecification.getIV()) +
-            '}';
+               "key=" + Base64.encodeBase64String(keySpecification.getEncoded()) +
+               ", iv=" + Base64.encodeBase64String(ivParameterSpecification.getIV()) +
+               '}';
     }
 }
