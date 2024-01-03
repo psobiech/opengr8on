@@ -169,7 +169,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     @Override
     public void loop() {
-        final boolean mqttEnable = get(Features.USE_MQTT).checkboolean();
+        final boolean mqttEnable = LuaUtil.trueish(get(Features.USE_MQTT));
         final boolean mqttAlreadyEnabled = mqttClient != null;
         if (mqttEnable ^ mqttAlreadyEnabled) {
             disableMqtt();
