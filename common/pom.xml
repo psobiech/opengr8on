@@ -53,6 +53,10 @@
   <build>
     <resources>
       <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
         <directory>../</directory>
         <targetPath>META-INF</targetPath>
         <includes>
