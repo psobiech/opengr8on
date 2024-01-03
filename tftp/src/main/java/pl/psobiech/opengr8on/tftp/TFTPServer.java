@@ -48,6 +48,10 @@ import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 public class TFTPServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
 
+    private TFTPServer() {
+        // NOP
+    }
+
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
 
     public static Future<Void> create(NetworkInterface networkInterface, Path serverDirectory, int port, ServerMode mode) {
