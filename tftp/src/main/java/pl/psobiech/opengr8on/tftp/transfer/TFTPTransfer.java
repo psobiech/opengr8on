@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 
 public abstract class TFTPTransfer {
@@ -60,7 +60,7 @@ public abstract class TFTPTransfer {
                     !responseAddress.equals(requestAddress)
                     || !(responsePort == requestPort)
                 )) {
-                    final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorPacket.UNKNOWN_TID, "Unexpected Host or Port");
+                    final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port");
                     LOGGER.debug("TFTP Server ignoring message from unexpected source.", packetException);
 
                     tftp.send(packetException.asError(responseAddress, responsePort));

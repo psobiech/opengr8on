@@ -18,7 +18,7 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.io.IOException;
+import java.io.Closeable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -37,24 +37,42 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
-import pl.psobiech.opengr8on.tftp.transfer.TFTPServerReceive;
-import pl.psobiech.opengr8on.tftp.transfer.TFTPServerSend;
-import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
+import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 
-public class TFTPServer {
+public class TFTPServer implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
-
-    private TFTPServer() {
-        // NOP
-    }
 
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
 
-    public static Future<Void> create(NetworkInterface networkInterface, Path serverDirectory, int port, ServerMode mode) throws SocketException {
-        return create(getAddress(networkInterface), serverDirectory, port, mode);
+    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+
+    private final InetAddress localAddress;
+
+    private final int port;
+
+    private final ServerMode mode;
+
+    private final Path serverDirectory;
+
+    private final TFTP serverTFTP;
+
+    private Future<Void> listener = null;
+
+    public TFTPServer(NetworkInterface networkInterface, Path serverDirectory, int port, ServerMode mode) {
+        this(getAddress(networkInterface), port, mode, serverDirectory);
+    }
+
+    public TFTPServer(InetAddress localAddress, int port, ServerMode mode, Path serverDirectory) {
+        this.localAddress = localAddress;
+        this.port         = port;
+
+        this.mode = mode;
+
+        this.serverDirectory = serverDirectory;
+
+        this.serverTFTP = new TFTP();
     }
 
     private static InetAddress getAddress(NetworkInterface networkInterface) {
@@ -69,121 +87,162 @@ public class TFTPServer {
         throw new IllegalArgumentException("No address found for interface: " + networkInterface.getName());
     }
 
-    public static Future<Void> create(InetAddress localAddress, Path serverDirectory, int port, ServerMode mode) throws SocketException {
-        final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+    public Future<Void> start() throws SocketException {
+        if (listener != null && !listener.isDone()) {
+            return listener;
+        }
 
-        final TFTP mainTFTP = new TFTP();
         try {
             if (localAddress == null) {
-                mainTFTP.open(port);
+                serverTFTP.open(port);
             } else {
-                mainTFTP.open(port, localAddress);
+                serverTFTP.open(port, localAddress);
             }
         } catch (SocketException e) {
-            mainTFTP.close();
+            serverTFTP.close();
 
             throw e;
         }
 
-        return executorService.submit(() -> {
-            LOGGER.debug("Starting TFTP Server on port " + port + ".  Server directory: " + serverDirectory + ". Server Mode is " + mode);
-            Files.createDirectories(serverDirectory);
+        listener = executorService.submit(() -> {
+                LOGGER.debug("Starting TFTP Server on port " + port + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
-            try (mainTFTP) {
-                do {
-                    final TFTPPacket incomingPacket = mainTFTP.receive();
+                Files.createDirectories(serverDirectory);
 
-                    final TFTPTransfer transfer;
-                    if (incomingPacket instanceof TFTPReadRequestPacket packet) {
-                        transfer = createTransfer(mainTFTP, mode, serverDirectory, packet);
-                    } else if (incomingPacket instanceof TFTPWriteRequestPacket packet) {
-                        transfer = createTransfer(mainTFTP, mode, serverDirectory, packet);
-                    } else {
-                        LOGGER.error("Unexpected TFTP packet: " + incomingPacket.getType());
+                listen();
 
-                        continue;
+                return null;
+            }
+        );
+
+        return listener;
+    }
+
+    private void listen() {
+        try (serverTFTP) {
+            do {
+                TFTPPacket incomingPacket = null;
+                try {
+                    incomingPacket = serverTFTP.receive();
+                    if (!(incomingPacket instanceof TFTPRequestPacket requestPacket)) {
+                        throw new TFTPPacketException("Unexpected TFTP packet: " + incomingPacket.getType());
                     }
 
-                    executorService.submit(() -> {
-                        try (TFTP tftp = new TFTP()) {
-                            tftp.open();
+                    onRequest(requestPacket);
+                } catch (TFTPPacketException e) {
+                    onPacketException(e, incomingPacket);
+                } catch (Exception e) {
+                    LOGGER.error(e.getMessage(), e);
+                }
+            } while (!Thread.interrupted());
 
-                            transfer.execute(tftp);
-                        } catch (Exception e) {
-                            LOGGER.error(e.getMessage(), e);
-                        }
+            LOGGER.debug("Stopped TFTP Server on port " + port);
+        }
+    }
 
-                        return null;
-                    });
-                } while (!Thread.interrupted());
-            } finally {
-                executorService.shutdownNow();
+    private void onPacketException(TFTPPacketException e, TFTPPacket incomingPacket) {
+        LOGGER.error(e.getMessage(), e);
+
+        if (incomingPacket != null) {
+            try {
+                final TFTPErrorPacket errorPacket = e.asError(incomingPacket.getAddress(), incomingPacket.getPort());
+
+                serverTFTP.send(errorPacket);
+            } catch (Exception e2) {
+                LOGGER.error(e2.getMessage(), e2);
             }
+        }
+    }
 
-            return null;
+    private void onRequest(TFTPRequestPacket requestPacket) throws TFTPPacketException {
+        final Path path = parseLocation(serverDirectory, requestPacket.getFileName());
+        final TFTPTransferType transferType = TFTPTransferType.ofServerPacket(requestPacket);
+
+        validateTransferRequest(requestPacket, transferType, path);
+
+        LOGGER.debug("TFTP transfer " + requestPacket.getType() + " of " + requestPacket.getFileName() + " from/to " + path);
+
+        executorService.submit(() -> {
+            try (TFTP tftp = new TFTP()) {
+                tftp.open();
+
+                transferType.create(requestPacket, path)
+                            .execute(tftp);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+            }
         });
     }
 
-    private static TFTPTransfer createTransfer(
-        TFTP mainTFTP, ServerMode mode, Path serverDirectory,
-        TFTPReadRequestPacket packet
-    ) throws IOException, TFTPPacketException {
-        if (mode == ServerMode.PUT_ONLY) {
-            final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorPacket.ILLEGAL_OPERATION, "Read not allowed by server.");
-            mainTFTP.send(packetException.asError(packet.getAddress(), packet.getPort()));
+    private void validateTransferRequest(TFTPRequestPacket requestPacket, TFTPTransferType transferType, Path path) throws TFTPPacketException {
+        switch (transferType) {
+            case SERVER_READ_REQUEST -> {
+                if (mode == ServerMode.PUT_ONLY) {
+                    throw new TFTPPacketException(
+                        TFTPErrorType.ACCESS_VIOLATION, "Read not allowed by server."
+                    );
+                }
+            }
 
-            throw packetException;
+            case SERVER_WRITE_REQUEST -> {
+                if (mode == ServerMode.GET_ONLY) {
+                    throw new TFTPPacketException(
+                        TFTPErrorType.ACCESS_VIOLATION, "Write not allowed by server."
+                    );
+                }
+
+                if (mode != ServerMode.GET_AND_REPLACE && Files.exists(path)) {
+                    throw new TFTPPacketException(
+                        TFTPErrorType.FILE_EXISTS, "File already exists"
+                    );
+                }
+            }
+
+            default -> throw new TFTPPacketException("Unsupported TFTP packet: " + requestPacket.getType());
         }
-
-        final Path path = getPath(serverDirectory, packet.getFileName());
-
-        return new TFTPServerSend(packet, path);
     }
 
-    private static TFTPTransfer createTransfer(
-        TFTP mainTFTP, ServerMode mode, Path serverDirectory,
-        TFTPWriteRequestPacket packet
-    ) throws IOException, TFTPPacketException {
-        if (mode == ServerMode.GET_ONLY) {
-            final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorPacket.ILLEGAL_OPERATION, "Write not allowed by server.");
-            mainTFTP.send(packetException.asError(packet.getAddress(), packet.getPort()));
-
-            throw packetException;
-        }
-
-        final Path path = getPath(serverDirectory, packet.getFileName());
-        if (mode != ServerMode.GET_AND_REPLACE && Files.exists(path)) {
-            final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorPacket.FILE_EXISTS, "File already exists");
-            mainTFTP.send(packetException.asError(packet.getAddress(), packet.getPort()));
-
-            throw packetException;
-        }
-
-        return new TFTPServerReceive(packet, path);
-    }
-
-    /*
-     * Makes sure that paths provided by TFTP clients do not get outside the serverRoot directory.
+    /**
+     * @param rootDirectory root directory of the server (all files need to be contained within this directory)
+     * @param location TFTP location, e.g. a:\file.txt /file.txt or file.txt (in case of a:\file.txt, it will be converted to /a/file.txt)
      */
-    private static Path getPath(Path serverDirectory, String fileName) throws IOException {
-        final Matcher matcher = PATH_PATTERN.matcher(fileName.replaceAll("\\\\", "/"));
+    private static Path parseLocation(Path rootDirectory, String location) throws TFTPPacketException {
+        final Matcher matcher = PATH_PATTERN.matcher(location.replaceAll("\\\\", "/"));
         if (!matcher.matches()) {
-            throw new IOException("Unsupported file location: " + fileName);
+            throw new TFTPPacketException(TFTPErrorType.ILLEGAL_OPERATION, "Unsupported file location: " + location);
         }
-
-        Path parentDirectory = serverDirectory.toAbsolutePath();
 
         final String drive = matcher.group("drive");
+        Path parentDirectory = rootDirectory.toAbsolutePath().normalize();
         if (drive != null) {
             parentDirectory = parentDirectory.resolve(drive);
         }
 
-        final Path filePath = parentDirectory.resolve(Paths.get(matcher.group("path")));
-        if (!filePath.startsWith(serverDirectory)) {
-            throw new IOException("Cannot access files outside of TFTP server root");
+        final Path path = Paths.get(matcher.group("path"));
+        final Path filePath = parentDirectory.resolve(path);
+        if (!filePath.startsWith(rootDirectory)) {
+            throw new TFTPPacketException(TFTPErrorType.ACCESS_VIOLATION, "Cannot access files outside of TFTP server root");
         }
 
         return filePath;
+    }
+
+    @Override
+    public void close() {
+        stop();
+
+        executorService.shutdownNow();
+    }
+
+    public Future<Void> stop() {
+        final Future<Void> currentListener = listener;
+        listener = null;
+
+        if (currentListener != null) {
+            currentListener.cancel(true);
+        }
+
+        return currentListener;
     }
 
     public enum ServerMode {

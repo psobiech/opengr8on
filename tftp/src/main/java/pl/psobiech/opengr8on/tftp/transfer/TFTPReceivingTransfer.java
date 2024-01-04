@@ -31,10 +31,11 @@ import org.apache.commons.net.io.FromNetASCIIOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 
@@ -43,7 +44,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
     protected void incomingTransfer(
         TFTP tftp, boolean server,
-        int mode,
+        TFTPTransferMode mode,
         InetAddress requestAddress, int requestPort,
         Path targetPath
     ) throws IOException, TFTPPacketException {
@@ -55,7 +56,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
         } catch (IOException e) {
             Files.deleteIfExists(temporaryPath);
 
-            final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorPacket.UNDEFINED, e.getMessage(), e);
+            final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorType.UNDEFINED, e.getMessage(), e);
             tftp.send(packetException.asError(requestAddress, requestPort));
 
             throw packetException;
@@ -120,7 +121,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                                 if (!responseAddress.equals(requestAddress)
                                     || !(responsePort == requestPort)) {
                                     final TFTPPacketException packetException = new TFTPPacketException(
-                                        TFTPErrorPacket.UNKNOWN_TID, "Unexpected Host or Port"
+                                        TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port"
                                     );
                                     LOGGER.debug("Ignoring message from unexpected source.", packetException);
 
@@ -142,7 +143,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                 }
 
                 throw new TFTPPacketException(
-                    TFTPErrorPacket.UNDEFINED,
+                    TFTPErrorType.UNDEFINED,
                     "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                 );
             }
@@ -151,9 +152,9 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
         }
     }
 
-    private static OutputStream createOutputStream(Path targetPath, int mode) throws IOException {
+    private static OutputStream createOutputStream(Path targetPath, TFTPTransferMode mode) throws IOException {
         final OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(targetPath));
-        if (mode == TFTP.NETASCII_MODE) {
+        if (mode == TFTPTransferMode.NETASCII) {
             return new FromNetASCIIOutputStream(outputStream);
         }
 

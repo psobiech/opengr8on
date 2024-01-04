@@ -22,6 +22,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 
 public class TFTPErrorPacket extends TFTPPacket {
@@ -29,47 +30,12 @@ public class TFTPErrorPacket extends TFTPPacket {
 
     private static final int ERROR_OFFSET = 2;
 
-    /**
-     * The undefined error code according to RFC 783.
-     */
-    public static final int UNDEFINED = 0;
-
-    /**
-     * The file not found error code according to RFC 783.
-     */
-    public static final int FILE_NOT_FOUND = 1;
-
-    /**
-     * The access violation error code according to RFC 783.
-     */
-    public static final int ACCESS_VIOLATION = 2;
-
-    /**
-     * The disk full error code according to RFC 783.
-     */
-    public static final int OUT_OF_SPACE = 3;
-
-    /**
-     * The illegal TFTP operation error code according to RFC 783.
-     */
-    public static final int ILLEGAL_OPERATION = 4;
-
-    /**
-     * The unknown transfer id error code according to RFC 783.
-     */
-    public static final int UNKNOWN_TID = 5;
-
-    /**
-     * The file already exists error code according to RFC 783.
-     */
-    public static final int FILE_EXISTS = 6;
-
-    private final int error;
+    private final TFTPErrorType error;
 
     private final String message;
 
-    TFTPErrorPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(ERROR, datagram.getAddress(), datagram.getPort());
+    public TFTPErrorPacket(DatagramPacket datagram) throws TFTPPacketException {
+        super(TFTPPacketType.ERROR, datagram.getAddress(), datagram.getPort());
 
         final int length = datagram.getLength();
         if (length < HEADER_SIZE + 1) {
@@ -77,22 +43,22 @@ public class TFTPErrorPacket extends TFTPPacket {
         }
 
         final byte[] data = datagram.getData();
-        if (getType() != data[OPERATOR_TYPE_OFFSET]) {
+        if (getType().packetType() != data[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
-        error   = readInt(data, ERROR_OFFSET);
+        error   = TFTPErrorType.ofErrorCode(readInt(data, ERROR_OFFSET));
         message = readNullTerminatedString(data, HEADER_SIZE, length);
     }
 
-    public TFTPErrorPacket(InetAddress destination, int port, int error, String message) {
-        super(ERROR, destination, port);
+    public TFTPErrorPacket(InetAddress destination, int port, TFTPErrorType error, String message) {
+        super(TFTPPacketType.ERROR, destination, port);
 
         this.error   = error;
         this.message = message;
     }
 
-    public int getError() {
+    public TFTPErrorType getError() {
         return error;
     }
 
@@ -119,8 +85,8 @@ public class TFTPErrorPacket extends TFTPPacket {
 
     private void writeHeader(byte[] data) {
         data[0]                    = 0;
-        data[OPERATOR_TYPE_OFFSET] = type;
-        writeInt(error, data, ERROR_OFFSET);
+        data[OPERATOR_TYPE_OFFSET] = type.packetType();
+        writeInt(error.errorCode(), data, ERROR_OFFSET);
     }
 
     @Override

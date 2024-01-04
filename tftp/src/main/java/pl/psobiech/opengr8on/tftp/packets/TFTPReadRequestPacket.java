@@ -21,20 +21,21 @@ package pl.psobiech.opengr8on.tftp.packets;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
-import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 
 public class TFTPReadRequestPacket extends TFTPRequestPacket {
-    TFTPReadRequestPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(READ_REQUEST, datagram);
+    public TFTPReadRequestPacket(DatagramPacket datagram) throws TFTPPacketException {
+        super(TFTPPacketType.READ_REQUEST, datagram);
     }
 
-    public TFTPReadRequestPacket(InetAddress destination, int port, String fileName, int mode) {
-        super(destination, port, READ_REQUEST, fileName, mode);
+    public TFTPReadRequestPacket(InetAddress destination, int port, String fileName, TFTPTransferMode mode) {
+        super(destination, port, TFTPPacketType.READ_REQUEST, fileName, mode);
     }
 
     @Override
     public String toString() {
-        return super.toString() + " RRQ " + getFileName() + " " + TFTP.getModeName(getMode());
+        return super.toString() + " RRQ " + getFileName() + " " + getMode();
     }
 }

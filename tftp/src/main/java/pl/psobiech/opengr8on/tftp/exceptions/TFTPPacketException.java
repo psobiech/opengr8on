@@ -22,27 +22,28 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 
 public class TFTPPacketException extends Exception {
-    private final int error;
+    private final TFTPErrorType error;
 
     public TFTPPacketException(TFTPErrorPacket errorPacket) {
         this(errorPacket.getError(), errorPacket.getMessage());
     }
 
-    public TFTPPacketException(int error, IOException exception) {
+    public TFTPPacketException(TFTPErrorType error, IOException exception) {
         super(exception);
 
         this.error = error;
     }
 
-    public TFTPPacketException(int error, String message) {
+    public TFTPPacketException(TFTPErrorType error, String message) {
         super(message);
 
         this.error = error;
     }
 
-    public TFTPPacketException(int error, String message, Throwable throwable) {
+    public TFTPPacketException(TFTPErrorType error, String message, Throwable throwable) {
         super(message, throwable);
 
         this.error = error;
@@ -51,7 +52,7 @@ public class TFTPPacketException extends Exception {
     public TFTPPacketException(String message) {
         super(message);
 
-        error = TFTPErrorPacket.UNDEFINED;
+        this.error = TFTPErrorType.UNDEFINED;
     }
 
     public TFTPErrorPacket asError(InetAddress address, int port) {
@@ -61,7 +62,7 @@ public class TFTPPacketException extends Exception {
         );
     }
 
-    public int getError() {
+    public TFTPErrorType getError() {
         return error;
     }
 }

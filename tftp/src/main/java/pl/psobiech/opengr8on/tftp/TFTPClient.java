@@ -32,13 +32,13 @@ import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 public class TFTPClient implements Closeable {
     private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
 
-    public Future<Void> receive(String fileName, InetAddress host, int port, int mode, Path path) {
+    public Future<Void> receive(String fileName, InetAddress host, int port, TFTPTransferMode mode, Path path) {
         return transfer(
             new TFTPClientReceive(host, port, mode, fileName, path)
         );
     }
 
-    public Future<Void> send(Path path, int mode, InetAddress host, int port, String fileName) {
+    public Future<Void> send(Path path, TFTPTransferMode mode, InetAddress host, int port, String fileName) {
         return transfer(
             new TFTPClientSend(host, port, mode, fileName, path)
         );

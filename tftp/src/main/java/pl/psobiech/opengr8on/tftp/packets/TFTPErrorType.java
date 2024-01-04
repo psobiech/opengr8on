@@ -18,24 +18,41 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
-import java.net.DatagramPacket;
-import java.net.InetAddress;
+/**
+ * Error codes according to RFC 783.
+ */
+public enum TFTPErrorType {
+    UNDEFINED(0),
+    FILE_NOT_FOUND(1),
+    ACCESS_VIOLATION(2),
+    OUT_OF_SPACE(3),
+    ILLEGAL_OPERATION(4),
+    UNKNOWN_TID(5),
+    FILE_EXISTS(6),
+    //
+    ;
 
-import pl.psobiech.opengr8on.tftp.TFTPPacketType;
-import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+    private final int errorCode;
 
-public class TFTPWriteRequestPacket extends TFTPRequestPacket {
-    public TFTPWriteRequestPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(TFTPPacketType.WRITE_REQUEST, datagram);
+    TFTPErrorType(long errorCode) {
+        if (errorCode < 0 || errorCode > 0xFFFFFFFFL) {
+            throw new IllegalArgumentException();
+        }
+
+        this.errorCode = (int) (errorCode & 0xFFFFFFFFL);
     }
 
-    public TFTPWriteRequestPacket(InetAddress destination, int port, String fileName, TFTPTransferMode mode) {
-        super(destination, port, TFTPPacketType.WRITE_REQUEST, fileName, mode);
+    public int errorCode() {
+        return errorCode;
     }
 
-    @Override
-    public String toString() {
-        return super.toString() + " WRQ " + getFileName() + " " + getMode();
+    public static TFTPErrorType ofErrorCode(int errorCode) {
+        for (TFTPErrorType value : values()) {
+            if (value.errorCode() == errorCode) {
+                return value;
+            }
+        }
+
+        return UNDEFINED;
     }
 }

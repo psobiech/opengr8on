@@ -30,30 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 
 public class TFTP extends DatagramSocketClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTP.class);
-
-    /**
-     * The ascii transfer mode. Equivalent to NETASCII_MODE
-     */
-    public static final int ASCII_MODE = 0;
-
-    /**
-     * The netascii transfer mode.
-     */
-    public static final int NETASCII_MODE = ASCII_MODE;
-
-    /**
-     * The binary transfer mode. Equivalent to OCTET_MODE.
-     */
-    public static final int BINARY_MODE = 1;
-
-    /**
-     * The octet transfer mode.
-     */
-    public static final int OCTET_MODE = BINARY_MODE;
 
     private static final int DEFAULT_TIMEOUT = 5000;
 
@@ -85,10 +64,6 @@ public class TFTP extends DatagramSocketClient {
         } finally {
             setSoTimeout(soTimeoutDuration);
         }
-    }
-
-    public static String getModeName(int mode) {
-        return TFTPRequestPacket.MODES.get(mode);
     }
 
     public void send(TFTPPacket packet) throws IOException {

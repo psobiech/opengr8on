@@ -43,13 +43,13 @@ public class SocketUtil {
         // NOP
     }
 
-    public static UDPSocket udp(Inet4Address address, int port) {
+    public static UDPSocket udpListener(Inet4Address address, int port) {
         return new UDPSocket(
             address, port, false, null
         );
     }
 
-    public static UDPSocket udp(NetworkInterface networkInterface, Inet4Address address) {
+    public static UDPSocket udpRandomPort(NetworkInterface networkInterface, Inet4Address address) {
         return new UDPSocket(
             address, 0, true, networkInterface
         );
@@ -83,7 +83,7 @@ public class SocketUtil {
                 this.socket.setTrafficClass(IPTOS_RELIABILITY);
 
                 this.socket.setBroadcast(broadcast);
-                if (broadcast) {
+                if (broadcast && networkInterface != null) {
                     this.socket.setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
                 }
             } catch (IOException e) {

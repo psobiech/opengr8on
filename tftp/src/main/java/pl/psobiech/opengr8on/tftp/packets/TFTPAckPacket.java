@@ -21,22 +21,23 @@ package pl.psobiech.opengr8on.tftp.packets;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 
 public class TFTPAckPacket extends TFTPBlockPacket {
     private static final int PACKET_SIZE = HEADER_SIZE;
 
-    TFTPAckPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(ACKNOWLEDGEMENT, datagram.getAddress(), datagram.getPort(), getBlockNumber(datagram));
+    public TFTPAckPacket(DatagramPacket datagram) throws TFTPPacketException {
+        super(TFTPPacketType.ACKNOWLEDGEMENT, datagram.getAddress(), datagram.getPort(), getBlockNumber(datagram));
 
         final byte[] data = datagram.getData();
-        if (getType() != data[OPERATOR_TYPE_OFFSET]) {
+        if (getType().packetType() != data[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
     }
 
     public TFTPAckPacket(InetAddress destination, int port, int blockNumber) {
-        super(ACKNOWLEDGEMENT, destination, port, blockNumber);
+        super(TFTPPacketType.ACKNOWLEDGEMENT, destination, port, blockNumber);
     }
 
     @Override

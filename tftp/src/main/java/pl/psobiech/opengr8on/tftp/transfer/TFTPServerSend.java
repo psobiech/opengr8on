@@ -25,27 +25,44 @@ import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
 
 public class TFTPServerSend extends TFTPSendingTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServerSend.class);
 
-    private final TFTPReadRequestPacket tftpPacket;
+    private final InetAddress requestAddress;
+
+    private final int requestPort;
+
+    private final TFTPTransferMode mode;
 
     private final Path path;
 
     public TFTPServerSend(TFTPReadRequestPacket tftpPacket, Path path) {
-        this.tftpPacket = tftpPacket;
+        this(
+            tftpPacket.getAddress(), tftpPacket.getPort(),
+            tftpPacket.getMode(),
+            path, tftpPacket.getFileName()
+        );
+    }
+
+    public TFTPServerSend(
+        InetAddress requestAddress, int requestPort,
+        TFTPTransferMode mode,
+        Path path, String location
+    ) {
+        this.requestAddress = requestAddress;
+        this.requestPort    = requestPort;
+
+        this.mode = mode;
 
         this.path = path;
     }
 
     @Override
     public void execute(TFTP tftp) throws IOException, TFTPPacketException {
-        final InetAddress requestAddress = tftpPacket.getAddress();
-        final int requestPort = tftpPacket.getPort();
-
-        outgoingTransfer(tftp, true, path, tftpPacket.getMode(), requestAddress, requestPort);
+        outgoingTransfer(tftp, true, path, mode, requestAddress, requestPort);
     }
 }

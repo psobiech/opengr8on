@@ -188,7 +188,6 @@
     <module name="MagicNumber">
       <property name="ignoreNumbers" value="-1, 0, 1, 2, 255, 65535, 4294967295"/>
     </module>
-    <module name="MissingSwitchDefault"/>
     <module name="MultipleVariableDeclarations"/>
     <module name="SimplifyBooleanExpression"/>
     <module name="SimplifyBooleanReturn"/>

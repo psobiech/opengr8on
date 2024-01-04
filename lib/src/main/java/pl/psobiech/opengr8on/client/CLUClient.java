@@ -40,8 +40,9 @@ import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPClient;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
@@ -53,7 +54,7 @@ import pl.psobiech.opengr8on.util.Util;
 public class CLUClient extends Client implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
 
-    private static final String TFTP_NOT_FOUND_ERROR_CODE = "Error code %d".formatted(TFTPErrorPacket.FILE_NOT_FOUND);
+    private static final String TFTP_NOT_FOUND_ERROR_CODE = "Error code %d".formatted(TFTPErrorType.FILE_NOT_FOUND.errorCode());
 
     private static final int TFTP_RETRIES = 3;
 
@@ -190,8 +191,8 @@ public class CLUClient extends Client implements Closeable {
         try {
             tftpClient.send(
                           path,
-                          TFTP.NETASCII_MODE,
-                          cluDevice.getAddress(), TFTP_PORT,
+                          TFTPTransferMode.OCTET,
+                          cluDevice.getAddress(), TFTP.DEFAULT_PORT,
                           location
                       )
                       .get();
@@ -208,8 +209,8 @@ public class CLUClient extends Client implements Closeable {
         try {
             tftpClient.receive(
                           location,
-                          cluDevice.getAddress(), TFTP_PORT,
-                          TFTP.NETASCII_MODE,
+                          cluDevice.getAddress(), TFTP.DEFAULT_PORT,
+                          TFTPTransferMode.OCTET,
                           path
                       )
                       .get();
@@ -220,7 +221,7 @@ public class CLUClient extends Client implements Closeable {
 
             final Throwable cause = e.getCause();
             if (cause instanceof TFTPPacketException packetException) {
-                if (packetException.getError() == TFTPErrorPacket.FILE_NOT_FOUND) {
+                if (packetException.getError() == TFTPErrorType.FILE_NOT_FOUND) {
                     FileUtil.deleteQuietly(path);
 
                     return Optional.empty();

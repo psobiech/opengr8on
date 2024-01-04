@@ -56,8 +56,6 @@ public class Client implements Closeable {
 
     public static final int COMMAND_PORT = 1234;
 
-    public static final int TFTP_PORT = 69;
-
     private static final int BUFFER_SIZE = 2048;
 
     private static final int ESTIMATED_CLUS = 8;
@@ -83,7 +81,7 @@ public class Client implements Closeable {
 
         this.port = port;
 
-        this.socket = SocketUtil.udp(networkInterface.getNetworkInterface(), networkInterface.getAddress());
+        this.socket = SocketUtil.udpRandomPort(networkInterface.getNetworkInterface(), networkInterface.getAddress());
         this.socket.open();
     }
 

@@ -21,33 +21,32 @@ package pl.psobiech.opengr8on.tftp.packets;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 
 public abstract class TFTPRequestPacket extends TFTPPacket {
-    public static final List<String> MODES = List.of("netascii", "octet");
-
     private static final int HEADER_SIZE = 2;
 
     private static final int FILE_NAME_OFFSET = 2;
 
-    private final int mode;
+    private final TFTPTransferMode mode;
 
     private final String fileName;
 
-    TFTPRequestPacket(InetAddress destination, int port, byte type, String fileName, int mode) {
+    TFTPRequestPacket(InetAddress destination, int port, TFTPPacketType type, String fileName, TFTPTransferMode mode) {
         super(type, destination, port);
 
         this.fileName = fileName;
         this.mode     = mode;
     }
 
-    TFTPRequestPacket(byte type, DatagramPacket datagram) throws TFTPPacketException {
+    TFTPRequestPacket(TFTPPacketType type, DatagramPacket datagram) throws TFTPPacketException {
         super(type, datagram.getAddress(), datagram.getPort());
 
         final byte[] data = datagram.getData();
-        if (getType() != data[OPERATOR_TYPE_OFFSET]) {
+        if (getType().packetType() != data[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
@@ -63,24 +62,21 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
         final String modeAsString = readNullTerminatedString(data, FILE_NAME_OFFSET + fileNameAsBytes.length + 1, length)
             .toLowerCase(java.util.Locale.ENGLISH);
 
-        this.mode = MODES.indexOf(modeAsString);
-        if (this.mode < 0) {
-            throw new TFTPPacketException("Unrecognized TFTP transfer mode: " + modeAsString);
-        }
+        this.mode = TFTPTransferMode.ofMode(modeAsString);
     }
 
     public String getFileName() {
         return fileName;
     }
 
-    public int getMode() {
+    public TFTPTransferMode getMode() {
         return mode;
     }
 
     @Override
     public DatagramPacket newDatagram() {
         final byte[] fileNameAsBytes = fileName.getBytes(StandardCharsets.US_ASCII);
-        final byte[] modeAsBytes = MODES.get(mode).getBytes(StandardCharsets.US_ASCII);
+        final byte[] modeAsBytes = mode.valueAsBytes();
 
         final byte[] data = new byte[HEADER_SIZE + fileNameAsBytes.length + 1 + modeAsBytes.length + 1];
 
@@ -90,10 +86,10 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
     @Override
     public DatagramPacket newDatagram(byte[] data) {
         data[0] = 0;
-        data[OPERATOR_TYPE_OFFSET] = type;
+        data[OPERATOR_TYPE_OFFSET] = type.packetType();
 
         final int fileNameLength = writeNullTerminatedString(fileName, data, FILE_NAME_OFFSET);
-        final int modeLength = writeNullTerminatedString(MODES.get(mode), data, HEADER_SIZE + fileNameLength);
+        final int modeLength = writeNullTerminatedString(mode.value(), data, HEADER_SIZE + fileNameLength);
 
         return new DatagramPacket(
             data, 0, HEADER_SIZE + fileNameLength + modeLength,

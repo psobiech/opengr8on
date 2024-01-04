@@ -23,6 +23,7 @@ import java.io.UncheckedIOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 
 public class TFTPDataPacket extends TFTPBlockPacket {
@@ -34,11 +35,11 @@ public class TFTPDataPacket extends TFTPBlockPacket {
 
     private final byte[] data;
 
-    TFTPDataPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(DATA, datagram.getAddress(), datagram.getPort(), getBlockNumber(datagram));
+    public TFTPDataPacket(DatagramPacket datagram) throws TFTPPacketException {
+        super(TFTPPacketType.DATA, datagram.getAddress(), datagram.getPort(), getBlockNumber(datagram));
 
         this.data = datagram.getData();
-        if (getType() != this.data[OPERATOR_TYPE_OFFSET]) {
+        if (getType().packetType() != this.data[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
@@ -47,7 +48,7 @@ public class TFTPDataPacket extends TFTPBlockPacket {
     }
 
     public TFTPDataPacket(InetAddress destination, int port, int blockNumber, byte[] data, int offset, int length) {
-        super(DATA, destination, port, blockNumber);
+        super(TFTPPacketType.DATA, destination, port, blockNumber);
 
         this.data   = data;
         this.offset = offset;

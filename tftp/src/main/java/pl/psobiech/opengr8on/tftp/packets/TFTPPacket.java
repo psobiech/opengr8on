@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 
 public abstract class TFTPPacket {
@@ -30,25 +31,15 @@ public abstract class TFTPPacket {
 
     static final int MIN_PACKET_SIZE = 4;
 
-    public static final byte READ_REQUEST = 1;
-
-    public static final byte WRITE_REQUEST = 2;
-
-    public static final byte DATA = 3;
-
-    public static final byte ACKNOWLEDGEMENT = 4;
-
-    public static final byte ERROR = 5;
-
     public static final int SEGMENT_SIZE = 512;
 
-    final byte type;
+    final TFTPPacketType type;
 
     private int port;
 
     private InetAddress address;
 
-    TFTPPacket(byte type, InetAddress address, int port) {
+    TFTPPacket(TFTPPacketType type, InetAddress address, int port) {
         this.type    = type;
         this.address = address;
         this.port    = port;
@@ -61,14 +52,8 @@ public abstract class TFTPPacket {
 
         final byte[] data = datagram.getData();
 
-        return switch (data[OPERATOR_TYPE_OFFSET]) {
-            case READ_REQUEST -> new TFTPReadRequestPacket(datagram);
-            case WRITE_REQUEST -> new TFTPWriteRequestPacket(datagram);
-            case DATA -> new TFTPDataPacket(datagram);
-            case ACKNOWLEDGEMENT -> new TFTPAckPacket(datagram);
-            case ERROR -> new TFTPErrorPacket(datagram);
-            default -> throw new TFTPPacketException("Bad packet. Invalid TFTP operator code.");
-        };
+        return TFTPPacketType.ofPacketType(data[OPERATOR_TYPE_OFFSET])
+                             .parse(datagram);
     }
 
     public InetAddress getAddress() {
@@ -79,7 +64,7 @@ public abstract class TFTPPacket {
         return port;
     }
 
-    public int getType() {
+    public TFTPPacketType getType() {
         return type;
     }
 

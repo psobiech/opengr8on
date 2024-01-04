@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
 
@@ -35,7 +36,7 @@ public class TFTPClientReceive extends TFTPReceivingTransfer {
 
     private final Path file;
 
-    public TFTPClientReceive(InetAddress host, int port, int mode, String fileName, Path file) {
+    public TFTPClientReceive(InetAddress host, int port, TFTPTransferMode mode, String fileName, Path file) {
         this.tftpPacket = new TFTPReadRequestPacket(host, port, fileName, mode);
 
         this.file = file;

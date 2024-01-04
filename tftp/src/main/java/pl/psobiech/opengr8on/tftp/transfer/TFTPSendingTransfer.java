@@ -30,10 +30,11 @@ import org.apache.commons.net.io.ToNetASCIIInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 
 public abstract class TFTPSendingTransfer extends TFTPTransfer {
@@ -41,7 +42,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
     protected void outgoingTransfer(
         TFTP tftp, boolean server,
-        Path path, int mode,
+        Path path, TFTPTransferMode mode,
         InetAddress requestAddress, int requestPort
     ) throws TFTPPacketException, IOException {
         try (InputStream inputStream = createInputStream(path, mode)) {
@@ -100,7 +101,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
                     if (retry-- < 0) {
                         final TFTPPacketException packetException = new TFTPPacketException(
-                            TFTPErrorPacket.UNDEFINED, "Communication error, no retries available"
+                            TFTPErrorType.UNDEFINED, "Communication error, no retries available"
                         );
                         tftp.send(packetException.asError(requestAddress, requestPort));
 
@@ -110,14 +111,14 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
             } while (lastRead == TFTPDataPacket.MAX_DATA_LENGTH && !Thread.interrupted());
         } catch (FileNotFoundException e) {
             final TFTPPacketException packetException = new TFTPPacketException(
-                TFTPErrorPacket.FILE_NOT_FOUND, e.getMessage(), e
+                TFTPErrorType.FILE_NOT_FOUND, e.getMessage(), e
             );
             tftp.send(packetException.asError(requestAddress, requestPort));
 
             throw packetException;
         } catch (Exception e) {
             final TFTPPacketException packetException = new TFTPPacketException(
-                TFTPErrorPacket.UNDEFINED, e.getMessage(), e
+                TFTPErrorType.UNDEFINED, e.getMessage(), e
             );
             tftp.send(packetException.asError(requestAddress, requestPort));
 
@@ -125,9 +126,9 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
         }
     }
 
-    protected static InputStream createInputStream(Path path, int mode) throws IOException {
+    protected static InputStream createInputStream(Path path, TFTPTransferMode mode) throws IOException {
         final InputStream inputStream = new BufferedInputStream(Files.newInputStream(path));
-        if (mode == TFTP.NETASCII_MODE) {
+        if (mode == TFTPTransferMode.NETASCII) {
             return new ToNetASCIIInputStream(inputStream);
         }
 

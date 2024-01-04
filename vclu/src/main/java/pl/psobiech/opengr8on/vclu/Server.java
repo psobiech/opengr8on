@@ -22,13 +22,13 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
+import java.net.SocketException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -54,6 +54,7 @@ import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
@@ -111,9 +112,11 @@ public class Server implements Closeable {
 
     private CipherKey currentCipherKey;
 
-    private Future<Void> tftpServerFuture;
+    private final TFTPServer tftpServer;
 
     public Server(NetworkInterfaceDto networkInterface, Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
+        rootDirectory = rootDirectory.toAbsolutePath().normalize();
+
         this.networkInterface = networkInterface;
         this.rootDirectory    = rootDirectory;
 
@@ -122,13 +125,15 @@ public class Server implements Closeable {
 
         restartLuaThread();
 
-        this.broadcastSocket = SocketUtil.udp(
+        this.broadcastSocket = SocketUtil.udpListener(
             IPv4AddressUtil.parseIPv4("255.255.255.255"),
             //                 networkInterface.getBroadcastAddress(),
             Client.COMMAND_PORT
         );
 
-        this.socket = SocketUtil.udp(networkInterface.getAddress(), Client.COMMAND_PORT);
+        this.socket = SocketUtil.udpListener(networkInterface.getAddress(), Client.COMMAND_PORT);
+
+        this.tftpServer = new TFTPServer(networkInterface.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory);
     }
 
     public void listen() throws InterruptedException {
@@ -339,6 +344,7 @@ public class Server implements Closeable {
         if (requestOptional.isPresent()) {
             final ResetCommand.Request request = requestOptional.get();
 
+            tftpServer.stop();
             restartLuaThread();
 
             return Optional.of(
@@ -438,16 +444,12 @@ public class Server implements Closeable {
         final byte[] buffer = payload.buffer();
         final Optional<StartTFTPdCommand.Request> requestOptional = StartTFTPdCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
-            if (tftpServerFuture == null) {
-                try {
-                    tftpServerFuture = TFTPServer.create(
-                        networkInterface.getNetworkInterface(), rootDirectory, Client.TFTP_PORT, ServerMode.GET_AND_REPLACE
-                    );
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
+            try {
+                tftpServer.start();
+            } catch (SocketException e) {
+                LOGGER.error(e.getMessage(), e);
 
-                    return sendError();
-                }
+                return sendError();
             }
 
             return Optional.of(
@@ -512,9 +514,7 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
-        if (tftpServerFuture != null) {
-            tftpServerFuture.cancel(true);
-        }
+        tftpServer.close();
 
         socketLock.lock();
         try {
