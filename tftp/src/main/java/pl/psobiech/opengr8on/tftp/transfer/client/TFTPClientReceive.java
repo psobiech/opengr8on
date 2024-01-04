@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.tftp.transfer;
+package pl.psobiech.opengr8on.tftp.transfer.client;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -27,18 +27,18 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
+import pl.psobiech.opengr8on.tftp.transfer.TFTPReceivingTransfer;
 
-public class TFTPClientSend extends TFTPSendingTransfer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TFTPClientSend.class);
+public class TFTPClientReceive extends TFTPReceivingTransfer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TFTPClientReceive.class);
 
-    private final TFTPWriteRequestPacket tftpPacket;
+    private final TFTPReadRequestPacket tftpPacket;
 
     private final Path file;
 
-    public TFTPClientSend(InetAddress host, int port, TFTPTransferMode mode, String fileName, Path file) {
-        this.tftpPacket = new TFTPWriteRequestPacket(host, port, fileName, mode);
+    public TFTPClientReceive(InetAddress host, int port, TFTPTransferMode mode, String fileName, Path file) {
+        this.tftpPacket = new TFTPReadRequestPacket(host, port, fileName, mode);
 
         this.file = file;
     }
@@ -47,13 +47,6 @@ public class TFTPClientSend extends TFTPSendingTransfer {
     public void execute(TFTP tftp) throws IOException, TFTPPacketException {
         tftp.send(tftpPacket);
 
-        InetAddress host = tftpPacket.getAddress();
-        int port = tftpPacket.getPort();
-
-        final TFTPPacket responsePacket = readResponsePacket(tftp, true, host, port, tftpPacket);
-        host = responsePacket.getAddress();
-        port = responsePacket.getPort();
-
-        outgoingTransfer(tftp, false, file, tftpPacket.getMode(), host, port);
+        incomingTransfer(tftp, false, tftpPacket.getMode(), tftpPacket.getAddress(), tftpPacket.getPort(), file);
     }
 }

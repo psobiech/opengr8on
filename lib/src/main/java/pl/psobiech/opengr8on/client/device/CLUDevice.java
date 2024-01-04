@@ -33,13 +33,13 @@ public class CLUDevice {
 
     private final String macAddress;
 
-    private final byte[] iv;
-
     private Inet4Address address;
 
     private final CipherTypeEnum cipherType;
 
     private final byte[] privateKey;
+
+    private byte[] iv;
 
     private CipherKey cipherKey;
 
@@ -92,7 +92,7 @@ public class CLUDevice {
 
         this.cipherType = cipherType;
 
-        this.iv = iv;
+        this.iv         = iv;
         this.privateKey = privateKey;
 
         this.cipherKey = cipherKey;
@@ -122,10 +122,6 @@ public class CLUDevice {
         return cipherType;
     }
 
-    public byte[] getIv() {
-        return iv;
-    }
-
     public byte[] getPrivateKey() {
         return privateKey;
     }
@@ -135,6 +131,7 @@ public class CLUDevice {
     }
 
     public void setCipherKey(CipherKey cipherKey) {
+        this.iv        = cipherKey.getIV();
         this.cipherKey = cipherKey;
     }
 

@@ -37,7 +37,7 @@ public abstract class TFTPTransfer {
 
     protected int maxRetries = DEFAULT_RETRIES;
 
-    private void setMaxRetries(int maxRetries) {
+    public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
     }
 
@@ -51,7 +51,7 @@ public abstract class TFTPTransfer {
     ) throws IOException, TFTPPacketException {
         int retries = maxRetries;
 
-        while (!Thread.interrupted()) {
+        do {
             try {
                 final TFTPPacket responsePacket = tftp.receive();
                 final InetAddress responseAddress = responsePacket.getAddress();
@@ -77,7 +77,7 @@ public abstract class TFTPTransfer {
                 // didn't get an ack for this data. need to resend it.
                 tftp.send(lastPacket);
             }
-        }
+        } while (!Thread.interrupted());
 
         throw new InterruptedIOException();
     }

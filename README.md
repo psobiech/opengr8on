@@ -26,10 +26,11 @@ What works:
 - Tested under linux/amd64 and linux/arm64 (on Raspberry PI4)
 
 Does not work:
-- If discovery is interrupted, VCLU application requires restart (some key management issue? TBD)
+- No known issues
 
 TODOs:
 - implement missing objects
+- measurements
 - persistent storage
 - create fortified mode (when CLU does not accept new keys or commands using default keys)
 

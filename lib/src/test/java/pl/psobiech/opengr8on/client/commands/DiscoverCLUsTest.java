@@ -91,7 +91,7 @@ class DiscoverCLUsTest {
         //
 
         assertEquals(ipAddress, cluDevice.getAddress());
-        assertArrayEquals(cipherKey.getIV(), cluDevice.getIv());
+        assertArrayEquals(cipherKey.getIV(), cluDevice.getCipherKey().getIV());
         assertEquals(serialNumber, cluDevice.getSerialNumber());
         assertEquals(macAddress, cluDevice.getMacAddress());
         assertEquals(CipherTypeEnum.PROJECT, cluDevice.getCipherType());
@@ -132,7 +132,7 @@ class DiscoverCLUsTest {
         //
 
         assertEquals(ipAddress, cluDevice.getAddress());
-        assertArrayEquals(cipherKey.getIV(), cluDevice.getIv());
+        assertArrayEquals(cipherKey.getIV(), cluDevice.getCipherKey().getIV());
         assertEquals(serialNumber, cluDevice.getSerialNumber());
         assertEquals(macAddress, cluDevice.getMacAddress());
         assertEquals(CipherTypeEnum.NONE, cluDevice.getCipherType());
@@ -168,7 +168,6 @@ class DiscoverCLUsTest {
         //
 
         assertEquals(ipAddress, cluDevice.getAddress());
-        assertArrayEquals(cipherKey.getIV(), cluDevice.getIv());
         assertEquals(serialNumber, cluDevice.getSerialNumber());
         assertEquals(macAddress, cluDevice.getMacAddress());
         assertEquals(CipherTypeEnum.UNKNOWN, cluDevice.getCipherType());

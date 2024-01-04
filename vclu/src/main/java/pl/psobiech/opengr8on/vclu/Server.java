@@ -25,6 +25,7 @@ import java.net.Inet4Address;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -108,9 +109,11 @@ public class Server implements Closeable {
 
     private LuaThreadWrapper luaThread;
 
-    private CipherKey broadcastCipherKey = CipherKey.DEFAULT_BROADCAST;
+    private List<CipherKey> unicastCipherKeys;
 
-    private CipherKey currentCipherKey;
+    private List<CipherKey> broadcastCipherKeys;
+
+    private CipherKey projectCipherKey;
 
     private final TFTPServer tftpServer;
 
@@ -120,14 +123,17 @@ public class Server implements Closeable {
         this.networkInterface = networkInterface;
         this.rootDirectory    = rootDirectory;
 
-        this.currentCipherKey = projectCipherKey;
-        this.cluDevice        = cluDevice;
+        this.cluDevice = cluDevice;
+
+        this.projectCipherKey = projectCipherKey;
+
+        this.unicastCipherKeys   = List.of(projectCipherKey);
+        this.broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
 
         restartLuaThread();
 
         this.broadcastSocket = SocketUtil.udpListener(
-            IPv4AddressUtil.parseIPv4("255.255.255.255"),
-            //                 networkInterface.getBroadcastAddress(),
+            IPv4AddressUtil.BROADCAST_ADDRESS, // networkInterface.getBroadcastAddress(),
             Client.COMMAND_PORT
         );
 
@@ -145,15 +151,21 @@ public class Server implements Closeable {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
-                        awaitRequestPayload(String.valueOf(uuid), broadcastSocket, broadcastCipherKey, Duration.ofMillis(TIMEOUT_BROADCAST_MILLIS))
-                            .flatMap(payload ->
-                                onBroadcastCommand(payload)
+                        awaitRequestPayload(
+                            String.valueOf(uuid),
+                            broadcastSocket, Duration.ofMillis(TIMEOUT_BROADCAST_MILLIS),
+                            broadcastCipherKeys
+                        )
+                            .flatMap(requestPair -> {
+                                final Payload payload = requestPair.getRight();
+
+                                return onBroadcastCommand(requestPair.getLeft(), payload)
                                     .map(pair ->
                                         ImmutableTriple.of(
                                             payload, pair.getLeft(), pair.getRight()
                                         )
-                                    )
-                            )
+                                    );
+                            })
                             .ifPresent(triple ->
                                 respond(uuid, triple.getLeft(), triple.getMiddle(), triple.getRight())
                             );
@@ -169,15 +181,21 @@ public class Server implements Closeable {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
-                        awaitRequestPayload(String.valueOf(uuid), socket, currentCipherKey, Duration.ofMillis(TIMEOUT_MILLIS))
-                            .flatMap(payload ->
-                                onCommand(payload)
+                        awaitRequestPayload(
+                            String.valueOf(uuid),
+                            socket, Duration.ofMillis(TIMEOUT_MILLIS),
+                            unicastCipherKeys
+                        )
+                            .flatMap(requestPair -> {
+                                final Payload payload = requestPair.getRight();
+
+                                return onCommand(requestPair.getLeft(), payload)
                                     .map(pair ->
                                         ImmutableTriple.of(
                                             payload, pair.getLeft(), pair.getRight()
                                         )
-                                    )
-                            )
+                                    );
+                            })
                             .ifPresent(triple ->
                                 respond(uuid, triple.getLeft(), triple.getMiddle(), triple.getRight())
                             );
@@ -196,20 +214,20 @@ public class Server implements Closeable {
         respond(uuid, cipherKey, requestPayload.address(), requestPayload.port(), command);
     }
 
-    private Optional<Pair<CipherKey, Command>> onBroadcastCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onBroadcastCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         if (DiscoverCLUsCommand.requestMatches(buffer)) {
-            return onDiscoverCommand(payload);
+            return onDiscoverCommand(requestCipherKey, payload);
         }
 
         if (SetIpCommand.requestMatches(buffer)) {
-            return onSetIpCommand(payload);
+            return onSetIpCommand(requestCipherKey, payload);
         }
 
         return Optional.empty();
     }
 
-    private Optional<Pair<CipherKey, Command>> onDiscoverCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onDiscoverCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         final Optional<DiscoverCLUsCommand.Request> requestOptional = DiscoverCLUsCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
@@ -217,23 +235,26 @@ public class Server implements Closeable {
 
             final byte[] encrypted = request.getEncrypted();
             final byte[] iv = request.getIV();
-            final byte[] hash = DiscoverCLUsCommand.hash(currentCipherKey.decrypt(encrypted)
+            final byte[] hash = DiscoverCLUsCommand.hash(projectCipherKey.decrypt(encrypted)
                                                                          .orElse(RandomUtil.bytes(Command.RANDOM_SIZE)));
 
-            cluDevice.setCipherKey(
-                cluDevice.getCipherKey()
-                         .withIV(RandomUtil.bytes(Command.IV_SIZE))
-            );
+            final CipherKey temporaryCipherKey = cluDevice.getCipherKey()
+                                                          .withIV(RandomUtil.bytes(Command.IV_SIZE));
 
-            currentCipherKey = cluDevice.getCipherKey();
-            broadcastCipherKey = cluDevice.getCipherKey();
+            cluDevice.setCipherKey(temporaryCipherKey);
+            broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey, temporaryCipherKey);
+
+            LOGGER.warn("CIPHER KEY temporarily updated...");
+            unicastCipherKeys = List.of(projectCipherKey, temporaryCipherKey);
+
+            persistKeys();
 
             return Optional.of(
                 ImmutablePair.of(
                     CipherKey.DEFAULT_BROADCAST.withIV(iv),
                     DiscoverCLUsCommand.response(
-                        currentCipherKey.encrypt(hash),
-                        currentCipherKey.getIV(),
+                        temporaryCipherKey.encrypt(hash),
+                        temporaryCipherKey.getIV(),
                         cluDevice.getSerialNumber(),
                         cluDevice.getMacAddress()
                     )
@@ -241,36 +262,38 @@ public class Server implements Closeable {
             );
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
-    private Optional<Pair<CipherKey, Command>> onCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
 
         if (SetIpCommand.requestMatches(buffer)) {
-            return onSetIpCommand(payload);
+            return onSetIpCommand(requestCipherKey, payload);
         }
 
         if (SetKeyCommand.requestMatches(buffer)) {
-            return onSetKeyCommand(payload);
+            return onSetKeyCommand(requestCipherKey, payload);
         }
 
         if (ResetCommand.requestMatches(buffer)) {
-            return onResetCommand(payload);
+            return onResetCommand(requestCipherKey, payload);
         }
 
         if (LuaScriptCommand.requestMatches(buffer)) {
-            return onLuaScriptCommand(payload);
+            return onLuaScriptCommand(requestCipherKey, payload);
         }
 
-        if (StartTFTPdCommand.requestMatches(buffer)) {
-            return onStartFTPdCommand(payload);
+        if (requestCipherKey == projectCipherKey) {
+            if (StartTFTPdCommand.requestMatches(buffer)) {
+                return onStartFTPdCommand(requestCipherKey, payload);
+            }
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
-    private Optional<Pair<CipherKey, Command>> onSetIpCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onSetIpCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         final Optional<SetIpCommand.Request> requestOptional = SetIpCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
@@ -279,7 +302,7 @@ public class Server implements Closeable {
             if (Objects.equals(cluDevice.getSerialNumber(), request.getSerialNumber())) {
                 return Optional.of(
                     ImmutablePair.of(
-                        currentCipherKey,
+                        requestCipherKey,
                         SetIpCommand.response(
                             cluDevice.getSerialNumber(),
                             cluDevice.getAddress()
@@ -289,10 +312,10 @@ public class Server implements Closeable {
             }
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
-    private Optional<Pair<CipherKey, Command>> onSetKeyCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onSetKeyCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         final Optional<SetKeyCommand.Request> requestOptional = SetKeyCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
@@ -303,34 +326,39 @@ public class Server implements Closeable {
             final byte[] iv = request.getIV();
 
             final CipherKey newCipherKey = new CipherKey(key, iv);
-            updateCipherKey(newCipherKey);
+            updateProjectCipherKey(newCipherKey);
             // if (newCipherKey.decrypt(encrypted).isEmpty()) {
             //    return sendError();
             //}
 
-            broadcastCipherKey = CipherKey.DEFAULT_BROADCAST;
-
             return Optional.of(
                 ImmutablePair.of(
-                    currentCipherKey,
+                    projectCipherKey,
                     SetKeyCommand.response()
                 )
             );
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
-    private void updateCipherKey(CipherKey newCipherKey) {
-        currentCipherKey = newCipherKey;
+    private void updateProjectCipherKey(CipherKey newCipherKey) {
+        projectCipherKey = newCipherKey;
 
+        unicastCipherKeys   = List.of(projectCipherKey);
+        broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
+
+        persistKeys();
+    }
+
+    private void persistKeys() {
         try {
             ObjectMapperFactory.JSON.writerFor(CluKeys.class)
                                     .writeValue(
                                         rootDirectory.resolve("../keys.json").toFile(),
                                         new CluKeys(
-                                            currentCipherKey.getSecretKey(), currentCipherKey.getIV(),
-                                            cluDevice.getIv(), cluDevice.getPrivateKey()
+                                            projectCipherKey.getSecretKey(), projectCipherKey.getIV(),
+                                            cluDevice.getCipherKey().getIV(), cluDevice.getPrivateKey()
                                         )
                                     );
         } catch (IOException e) {
@@ -338,18 +366,20 @@ public class Server implements Closeable {
         }
     }
 
-    private Optional<Pair<CipherKey, Command>> onResetCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onResetCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         final Optional<ResetCommand.Request> requestOptional = ResetCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
             final ResetCommand.Request request = requestOptional.get();
+
+            unicastCipherKeys = List.of(projectCipherKey);
 
             tftpServer.stop();
             restartLuaThread();
 
             return Optional.of(
                 ImmutablePair.of(
-                    currentCipherKey,
+                    requestCipherKey,
                     ResetCommand.response(
                         cluDevice.getAddress()
                     )
@@ -357,23 +387,21 @@ public class Server implements Closeable {
             );
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
     private void restartLuaThread() {
         LOGGER.info("VCLU is starting...");
         FileUtil.closeQuietly(this.luaThread);
 
-        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, currentCipherKey, CLUFiles.MAIN_LUA);
+        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
         this.luaThread.start();
 
         LuaError lastException;
         int retries = RESTART_RETRIES;
         do {
             try {
-                this.luaThread.globals()
-                              .load("return %s".formatted(LuaScriptCommand.CHECK_ALIVE))
-                              .call();
+                luaCall(LuaScriptCommand.CHECK_ALIVE);
 
                 return;
             } catch (LuaError e) {
@@ -394,20 +422,33 @@ public class Server implements Closeable {
         LOGGER.info("Entering VCLU emergency mode!");
         FileUtil.closeQuietly(this.luaThread);
 
-        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, currentCipherKey, CLUFiles.EMERGNCY_LUA);
+        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
         this.luaThread.start();
     }
 
-    private Optional<Pair<CipherKey, Command>> onLuaScriptCommand(Payload payload) {
+    private LuaValue luaCall(String script) {
+        return this.luaThread.globals()
+                             .load("return %s".formatted(script))
+                             .call();
+    }
+
+    private Optional<Pair<CipherKey, Command>> onLuaScriptCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         final Optional<LuaScriptCommand.Request> requestOptional = LuaScriptCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
             final LuaScriptCommand.Request request = requestOptional.get();
 
+            String script = request.getScript();
+            if (requestCipherKey != projectCipherKey) {
+                // allow only checkAlive() function if not using project cipher key
+                if (!script.equalsIgnoreCase(LuaScriptCommand.CHECK_ALIVE)) {
+                    return sendError(requestCipherKey);
+                }
+            }
+
             // when having docker network interfaces,
             // OM often picks incorrect/unreachable local address,
             // so we need to also save real remote address from udp packet
-            String script = request.getScript();
             if (script.startsWith(CLIENT_REGISTER_METHOD_PREFIX)) {
                 final String remoteAddress = payload.address().getHostAddress();
 
@@ -416,9 +457,7 @@ public class Server implements Closeable {
 
             LuaValue luaValue;
             try {
-                luaValue = luaThread.globals()
-                                    .load("return %s".formatted(script))
-                                    .call();
+                luaValue = luaCall(script);
             } catch (LuaError e) {
                 LOGGER.error(e.getMessage(), e);
 
@@ -427,7 +466,7 @@ public class Server implements Closeable {
 
             return Optional.of(
                 ImmutablePair.of(
-                    currentCipherKey,
+                    requestCipherKey,
                     LuaScriptCommand.response(
                         cluDevice.getAddress(),
                         request.getSessionId(),
@@ -437,10 +476,10 @@ public class Server implements Closeable {
             );
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
-    private Optional<Pair<CipherKey, Command>> onStartFTPdCommand(Payload payload) {
+    private Optional<Pair<CipherKey, Command>> onStartFTPdCommand(CipherKey requestCipherKey, Payload payload) {
         final byte[] buffer = payload.buffer();
         final Optional<StartTFTPdCommand.Request> requestOptional = StartTFTPdCommand.requestFromByteArray(buffer);
         if (requestOptional.isPresent()) {
@@ -449,36 +488,50 @@ public class Server implements Closeable {
             } catch (SocketException e) {
                 LOGGER.error(e.getMessage(), e);
 
-                return sendError();
+                return sendError(requestCipherKey);
             }
 
             return Optional.of(
                 ImmutablePair.of(
-                    currentCipherKey,
+                    requestCipherKey,
                     StartTFTPdCommand.response()
                 )
             );
         }
 
-        return sendError();
+        return sendError(requestCipherKey);
     }
 
-    private Optional<Pair<CipherKey, Command>> sendError() {
+    private Optional<Pair<CipherKey, Command>> sendError(CipherKey requestCipherKey) {
         return Optional.of(
             ImmutablePair.of(
-                currentCipherKey,
+                requestCipherKey,
                 ErrorCommand.response()
             )
         );
     }
 
-    protected Optional<Payload> awaitRequestPayload(String uuid, UDPSocket socket, CipherKey responseCipherKey, Duration timeout) {
+    protected Optional<Payload> awaitRequestPayload(String uuid, UDPSocket socket, Duration timeout, CipherKey responseCipherKey) {
+        return awaitRequestPayload(uuid, socket, timeout, List.of(responseCipherKey))
+            .map(Pair::getRight);
+    }
+
+    protected Optional<Pair<CipherKey, Payload>> awaitRequestPayload(String uuid, UDPSocket socket, Duration timeout, List<CipherKey> responseCipherKeys) {
         final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
         if (encryptedPayload.isEmpty()) {
             return Optional.empty();
         }
 
-        return Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
+        for (CipherKey responseCipherKey : responseCipherKeys) {
+            final Optional<Payload> decryptedPayload = Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
+            if (decryptedPayload.isPresent()) {
+                return Optional.of(
+                    ImmutablePair.of(responseCipherKey, decryptedPayload.get())
+                );
+            }
+        }
+
+        return Optional.empty();
     }
 
     protected void respond(UUID uuid, CipherKey cipherKey, Inet4Address ipAddress, int port, Command command) {

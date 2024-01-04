@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.tftp.transfer;
+package pl.psobiech.opengr8on.tftp.transfer.server;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -27,10 +27,11 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
+import pl.psobiech.opengr8on.tftp.transfer.TFTPSendingTransfer;
 
-public class TFTPServerReceive extends TFTPReceivingTransfer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServerReceive.class);
+public class TFTPServerSend extends TFTPSendingTransfer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServerSend.class);
 
     private final InetAddress requestAddress;
 
@@ -40,7 +41,7 @@ public class TFTPServerReceive extends TFTPReceivingTransfer {
 
     private final Path path;
 
-    public TFTPServerReceive(TFTPWriteRequestPacket tftpPacket, Path path) {
+    public TFTPServerSend(TFTPReadRequestPacket tftpPacket, Path path) {
         this(
             tftpPacket.getAddress(), tftpPacket.getPort(),
             tftpPacket.getMode(),
@@ -48,7 +49,11 @@ public class TFTPServerReceive extends TFTPReceivingTransfer {
         );
     }
 
-    public TFTPServerReceive(InetAddress requestAddress, int requestPort, TFTPTransferMode mode, Path path, String location) {
+    public TFTPServerSend(
+        InetAddress requestAddress, int requestPort,
+        TFTPTransferMode mode,
+        Path path, String location
+    ) {
         this.requestAddress = requestAddress;
         this.requestPort    = requestPort;
 
@@ -59,6 +64,6 @@ public class TFTPServerReceive extends TFTPReceivingTransfer {
 
     @Override
     public void execute(TFTP tftp) throws IOException, TFTPPacketException {
-        incomingTransfer(tftp, true, mode, requestAddress, requestPort, path);
+        outgoingTransfer(tftp, true, path, mode, requestAddress, requestPort);
     }
 }

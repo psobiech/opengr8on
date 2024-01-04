@@ -47,8 +47,10 @@ public final class IPv4AddressUtil {
 
     private static final int PING_TIMEOUT = 2000;
 
+    public static final Inet4Address BROADCAST_ADDRESS = parseIPv4("255.255.255.255");
+
     public static final Set<Inet4Address> DEFAULT_BROADCAST_ADDRESSES = Set.of(
-        parseIPv4("255.255.255.255"),
+        BROADCAST_ADDRESS,
         parseIPv4("255.255.0.0"),
         parseIPv4("255.0.0.0")
     );

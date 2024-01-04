@@ -80,6 +80,10 @@ public class VirtualSystem implements Closeable {
         return objectsByName.get(name);
     }
 
+    public VirtualCLU getCurrentClu() {
+        return currentClu;
+    }
+
     @SuppressWarnings("resource")
     public void newObject(int index, String name, int ipAddress) {
         final VirtualObject virtualObject = switch (index) {

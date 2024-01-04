@@ -250,13 +250,14 @@ public class LuaServer {
         public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory, CLUFiles cluFile) {
             this.thread = Thread.ofVirtual()
                                 .name("LuaThreadWrapper")
-                                .inheritInheritableThreadLocals(true)
                                 .unstarted(
                                     () -> {
                                         try {
                                             loadScript(globals, aDriveDirectory.resolve(cluFile.getFileName()), cluFile.getFileName());
                                         } catch (LuaError e) {
                                             if (e.getCause() instanceof UncheckedInterruptedException) {
+                                                LOGGER.trace(e.getMessage(), e);
+
                                                 return;
                                             }
 
@@ -273,6 +274,10 @@ public class LuaServer {
 
         public Globals globals() {
             return globals;
+        }
+
+        public VirtualSystem virtualSystem() {
+            return virtualSystem;
         }
 
         public void start() {

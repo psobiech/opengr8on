@@ -70,7 +70,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
             boolean firstPacket = !server;
             int acknowledgedBlock = 0;
-            while (!Thread.interrupted()) {
+            do {
                 final TFTPPacket responsePacket = readResponsePacket(tftp, firstPacket, requestAddress, requestPort, lastSentAck);
                 if (firstPacket) {
                     firstPacket = false;
@@ -146,7 +146,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                     TFTPErrorType.UNDEFINED,
                     "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                 );
-            }
+            } while (!Thread.interrupted());
         } finally {
             Files.deleteIfExists(temporaryPath);
         }

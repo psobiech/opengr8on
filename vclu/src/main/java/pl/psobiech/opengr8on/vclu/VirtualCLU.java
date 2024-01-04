@@ -168,6 +168,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         );
     }
 
+    public boolean isFortified() {
+        return false;
+    }
+
     @Override
     public void setup() {
         set(Features.STATE, LuaValue.valueOf(State.OK.value));

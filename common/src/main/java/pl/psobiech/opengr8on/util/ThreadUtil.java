@@ -25,6 +25,14 @@ import java.util.concurrent.ThreadFactory;
 public class ThreadUtil {
     private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks");
 
+    private static final ScheduledExecutorService INSTANCE;
+
+    static {
+        INSTANCE = executor("DEFAULT");
+
+        shutdownHook(INSTANCE::shutdownNow);
+    }
+
     private ThreadUtil() {
         // NOP
     }
@@ -35,14 +43,19 @@ public class ThreadUtil {
         );
     }
 
+    public static ScheduledExecutorService getInstance() {
+        return INSTANCE;
+    }
+
     public static ScheduledExecutorService executor(String name) {
-        return Executors.newScheduledThreadPool(
-            1,
-            daemonThreadFactory(name)
-        );
+        return Executors.newScheduledThreadPool(1, daemonThreadFactory(name));
     }
 
     public static ThreadFactory daemonThreadFactory(String groupName) {
+        return virtualThreadFactory(groupName);
+    }
+
+    public static ThreadFactory virtualThreadFactory(String groupName) {
         return Thread.ofVirtual()
                      .name(groupName)
                      .inheritInheritableThreadLocals(true)

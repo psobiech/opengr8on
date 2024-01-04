@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -90,7 +91,8 @@ public final class FileUtil {
             deleteQuietly(TEMPORARY_DIRECTORY);
         });
 
-        ThreadUtil.shutdownHook(FILE_TRACKER::cleanUp);
+        ThreadUtil.getInstance()
+                  .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
 
         mkdir(TEMPORARY_DIRECTORY);
     }
@@ -251,7 +253,7 @@ public final class FileUtil {
             // NOP
         }
 
-        public void cleanUp() {
+        public void log() {
             final Map<Path, UnexpectedException> unreachablePaths = new HashMap<>();
 
             synchronized (stacktraces) {

@@ -26,9 +26,9 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
-import pl.psobiech.opengr8on.tftp.transfer.TFTPServerReceive;
-import pl.psobiech.opengr8on.tftp.transfer.TFTPServerSend;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
+import pl.psobiech.opengr8on.tftp.transfer.server.TFTPServerReceive;
+import pl.psobiech.opengr8on.tftp.transfer.server.TFTPServerSend;
 
 public enum TFTPTransferType {
     SERVER_READ_REQUEST(TFTPReadRequestPacket.class, TFTPServerSend::new),
@@ -38,9 +38,9 @@ public enum TFTPTransferType {
 
     private final Class<? extends TFTPPacket> packetClass;
 
-    private final Creator<? extends TFTPPacket> creator;
+    private final Creator creator;
 
-    <T extends TFTPRequestPacket> TFTPTransferType(Class<T> packetClass, Creator<T> creator) {
+    <T extends TFTPRequestPacket> TFTPTransferType(Class<T> packetClass, Creator creator) {
         this.packetClass = packetClass;
         this.creator     = creator;
     }
@@ -68,7 +68,7 @@ public enum TFTPTransferType {
     }
 
     @FunctionalInterface
-    private interface Creator<T extends TFTPRequestPacket> {
+    private interface Creator {
         default TFTPTransfer create(TFTPRequestPacket packet, Path path) throws TFTPPacketException {
             return create(
                 packet.getAddress(), packet.getPort(),
