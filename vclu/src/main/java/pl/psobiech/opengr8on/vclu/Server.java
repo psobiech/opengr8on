@@ -444,7 +444,9 @@ public class Server implements Closeable {
                         networkInterface.getNetworkInterface(), rootDirectory, Client.TFTP_PORT, ServerMode.GET_AND_REPLACE
                     );
                 } catch (Exception e) {
-                    throw new UnexpectedException(e);
+                    LOGGER.error(e.getMessage(), e);
+
+                    return sendError();
                 }
             }
 

@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
@@ -54,7 +53,7 @@ public class TFTPServer {
 
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
 
-    public static Future<Void> create(NetworkInterface networkInterface, Path serverDirectory, int port, ServerMode mode) {
+    public static Future<Void> create(NetworkInterface networkInterface, Path serverDirectory, int port, ServerMode mode) throws SocketException {
         return create(getAddress(networkInterface), serverDirectory, port, mode);
     }
 
@@ -70,7 +69,7 @@ public class TFTPServer {
         throw new IllegalArgumentException("No address found for interface: " + networkInterface.getName());
     }
 
-    public static Future<Void> create(InetAddress localAddress, Path serverDirectory, int port, ServerMode mode) {
+    public static Future<Void> create(InetAddress localAddress, Path serverDirectory, int port, ServerMode mode) throws SocketException {
         final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
 
         final TFTP mainTFTP = new TFTP();
@@ -81,7 +80,9 @@ public class TFTPServer {
                 mainTFTP.open(port, localAddress);
             }
         } catch (SocketException e) {
-            throw new UnexpectedException(e);
+            mainTFTP.close();
+
+            throw e;
         }
 
         return executorService.submit(() -> {

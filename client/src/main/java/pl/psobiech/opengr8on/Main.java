@@ -410,9 +410,6 @@ public class Main {
                                                            .get();
 
                 LOGGER.debug(cluDefinition.getTypeName());
-
-                client.downloadFile("SETTINGS.USR", temporaryFile);
-                client.uploadFile(temporaryFile, "SETTINGS.USR");
             } finally {
                 FileUtil.deleteQuietly(temporaryFile);
             }

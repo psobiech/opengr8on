@@ -31,11 +31,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>pl.psobiech.opengr8on</groupId>
-      <artifactId>common</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <scope>test</scope>
