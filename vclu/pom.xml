@@ -26,6 +26,8 @@
     <groupId>pl.psobiech.opengr8on</groupId>
     <artifactId>parent</artifactId>
     <version>0.3.0-SNAPSHOT</version>
+
+    <relativePath>../parent</relativePath>
   </parent>
 
   <artifactId>vclu</artifactId>

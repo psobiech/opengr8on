@@ -55,7 +55,7 @@ import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
-import pl.psobiech.opengr8on.vclu.util.ResourceUtil;
+import pl.psobiech.opengr8on.util.ResourceUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -191,13 +191,6 @@ class ServerCommandTest {
 
     @Test
     void checkAliveWrongKey() throws Exception {
-        // should not accept CLU KEY
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
-            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
-
-            assertFalse(aliveOptional.isPresent());
-        }
-
         // should not accept random KEY
         final CipherKey randomCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
         try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, randomCipherKey, LOCALHOST, socket.getLocalPort())) {
@@ -209,6 +202,13 @@ class ServerCommandTest {
 
     @Test
     void discovery() throws Exception {
+        // should not accept CLU KEY
+        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
+            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+            assertFalse(aliveOptional.isPresent());
+        }
+
         final List<CLUDevice> devices = broadcastClient.discover(
                                                            projectCipherKey,
                                                            Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),

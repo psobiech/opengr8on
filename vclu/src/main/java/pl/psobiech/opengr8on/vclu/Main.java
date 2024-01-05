@@ -35,6 +35,10 @@ import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 
 public class Main {
     static {
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", "8");
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "8");
+        System.setProperty("jdk.virtualThreadScheduler.minRunnable", "2");
+
         System.setProperty("jdk.tracePinnedThreads", "full/short");
     }
 

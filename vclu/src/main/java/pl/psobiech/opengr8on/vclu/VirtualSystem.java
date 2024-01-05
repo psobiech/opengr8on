@@ -50,6 +50,8 @@ public class VirtualSystem implements Closeable {
 
     private static final long LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(64);
 
+    private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(8);
+
     private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
 
     private final ScheduledExecutorService executors = ThreadUtil.executor("LuaServer");
@@ -121,11 +123,17 @@ public class VirtualSystem implements Closeable {
 
     public void loop() {
         final long startTime = System.nanoTime();
-        for (VirtualObject value : objectsByName.values()) {
+        for (VirtualObject object : objectsByName.values()) {
+            final long objectStartTime = System.nanoTime();
             try {
-                value.loop();
+                object.loop();
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
+            } finally {
+                final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
+                if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
+                    LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                }
             }
 
             Thread.yield();

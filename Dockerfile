@@ -12,12 +12,13 @@ RUN apt update && \
 
 FROM app-builder AS app-deps
 
-COPY tftp/pom.xml tftp/
+COPY pom.xml .
+COPY parent/pom.xml parent/
 COPY common/pom.xml common/
 COPY lib/pom.xml lib/
+COPY tftp/pom.xml tftp/
 COPY client/pom.xml client/
 COPY vclu/pom.xml vclu/
-COPY pom.xml .
 
 COPY vclu/assembly/jar-with-dependencies.xml vclu/assembly/
 

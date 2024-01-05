@@ -16,16 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua.fn;
+package pl.psobiech.opengr8on.client.xml;
 
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
+import org.apache.commons.codec.binary.Base64;
+import org.junit.jupiter.api.Test;
+import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.util.ResourceUtil;
+import pl.psobiech.opengr8on.xml.omp.OmpReader;
 
-public interface LuaNoArgFunction extends BaseLuaFunction {
-    @Override
-    default LuaValue invoke(Varargs args) {
-        return call();
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+
+public class OmpReaderTest {
+    @Test
+    void loadCipherKey() {
+        final CipherKey cipherKey = OmpReader.readProjectCipherKey(ResourceUtil.classPath("test.omp"));
+
+        assertArrayEquals(cipherKey.getSecretKey(), Base64.decodeBase64("vd/TDJU8awHhOBn6h3YsxQ=="));
+        assertArrayEquals(cipherKey.getIV(), Base64.decodeBase64("oykoaQgbuuhYOnE9CUdrnQ=="));
     }
-
-    LuaValue call();
 }

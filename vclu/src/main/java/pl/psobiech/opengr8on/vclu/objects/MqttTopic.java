@@ -181,7 +181,7 @@ public class MqttTopic extends VirtualObject {
                 set(Features.MESSAGE, LuaValue.valueOf(payload));
 
                 if (triggerEvent(Events.MESSAGE)) {
-                    message.acknowledged()
+                    message.acknowledgement()
                            .run();
                 }
             }
@@ -200,7 +200,7 @@ public class MqttTopic extends VirtualObject {
         clear(Features.MESSAGE);
     }
 
-    private record Message(byte[] payload, Runnable acknowledged) { }
+    private record Message(byte[] payload, Runnable acknowledgement) { }
 
     private enum Features implements IFeature {
         TOPIC(0),

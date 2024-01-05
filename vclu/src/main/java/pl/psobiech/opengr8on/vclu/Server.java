@@ -68,6 +68,7 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
+import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
@@ -79,7 +80,6 @@ import pl.psobiech.opengr8on.vclu.lua.LuaServer;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer.MainThreadWrapper;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-import pl.psobiech.opengr8on.vclu.util.ResourceUtil;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 public class Server implements Closeable {
@@ -567,6 +567,7 @@ public class Server implements Closeable {
 
         try {
             mqttClient = new MqttClient(mqttUrl, name, null, executorService);
+            mqttClient.setTimeToWait(1);
             mqttClient.setManualAcks(true);
             mqttClient.setCallback(new MqttCallback() {
                 @Override

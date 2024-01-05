@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.util;
+package pl.psobiech.opengr8on.util;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,9 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.vclu.lua.LuaServer;
-import pl.psobiech.opengr8on.vclu.lua.LuaServer.SchemeEnum;
 
+import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripToEmpty;
 import static org.apache.commons.lang3.StringUtils.stripToNull;
 
@@ -57,7 +56,7 @@ public class ResourceUtil {
     public static Path classPath(URI uri) {
         final String resourceUriPath = getResourceUriPath(uri);
 
-        final URL url = LuaServer.class.getResource(resourceUriPath);
+        final URL url = ResourceUtil.class.getResource(resourceUriPath);
         if (url == null) {
             throw new UnexpectedException(uri + " not found!");
         }
@@ -112,5 +111,17 @@ public class ResourceUtil {
         }
 
         return "/" + host + path;
+    }
+
+    private enum SchemeEnum {
+        CLASSPATH,
+        JAR,
+        FILE,
+        //
+        ;
+
+        public String toUrlScheme() {
+            return lowerCase(name());
+        }
     }
 }

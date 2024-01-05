@@ -20,7 +20,30 @@ on:
     - cron: '25 13 * * 4'
 
 jobs:
-  analyze:
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Scan
+        run: |
+          semgrep \
+            --verbose \
+            --sarif --output report.sarif \
+            --metrics=off \
+            --config="p/default" \
+            --config="p/owasp-top-ten" \
+            --config="p/cwe-top-25" \
+            --config="p/secrets"
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: report.sarif
+          category: semgrep
+  codeql:
     name: Analyze
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
@@ -66,7 +89,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Test
-        run: mvn -B package
+        run: mvn -B package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

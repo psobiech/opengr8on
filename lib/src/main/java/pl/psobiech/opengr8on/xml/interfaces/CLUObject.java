@@ -47,6 +47,10 @@ public class CLUObject {
     }
 
     public String getClassName() {
+        if (className == null) {
+            return "OBJECT";
+        }
+
         return className;
     }
 

@@ -23,6 +23,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 public class ThreadUtil {
+    static {
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", "8");
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "8");
+        System.setProperty("jdk.virtualThreadScheduler.minRunnable", "2");
+
+        System.setProperty("jdk.tracePinnedThreads", "full/short");
+    }
+
     private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks");
 
     private static final ScheduledExecutorService INSTANCE;

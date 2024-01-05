@@ -47,14 +47,11 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.vclu.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgConsumer;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgConsumer;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaTwoArgFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgConsumer;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgFunction;
-
-import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 public class LuaServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(LuaServer.class);
@@ -76,10 +73,6 @@ public class LuaServer {
     }
 
     public static LibFunction wrap(Logger logger, LuaVarArgFunction luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    public static LibFunction wrap(Logger logger, LuaNoArgFunction luaFunction) {
         return wrap(logger, (BaseLuaFunction) luaFunction);
     }
 
@@ -156,18 +149,6 @@ public class LuaServer {
 
         return globals.load(script, name)
                       .call();
-    }
-
-    public enum SchemeEnum {
-        CLASSPATH,
-        JAR,
-        FILE,
-        //
-        ;
-
-        public String toUrlScheme() {
-            return lowerCase(name());
-        }
     }
 
     public static class MainThreadWrapper implements Closeable {

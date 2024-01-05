@@ -53,6 +53,20 @@ jobs:
             device-interfaces-${{ steps.tag.outputs.tag }}.zip
             vclu/target/vclu-jar-with-dependencies.jar
             client/target/client-jar-with-dependencies.jar
+      - name: Code Coverage Report
+        id: jacoco_reporter
+        uses: PavanMudigonda/jacoco-reporter@v4.9
+        with:
+          coverage_results_path: target/site/jacoco/jacoco.xml
+          coverage_report_name: Coverage
+          coverage_report_title: Coverage
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          skip_check_run: false
+          minimum_coverage: 50
+          fail_below_threshold: false
+          publish_only_summary: false
+      - name: Attach Coverage Summary
+        run: echo "${{ steps.jacoco_reporter.outputs.coverageSummary }}" >> $GITHUB_STEP_SUMMARY
       - name: Submit Dependency Snapshot
         if: github.ref == 'refs/heads/develop'
         uses: advanced-security/maven-dependency-submission-action@v3
