@@ -25,9 +25,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientReceive;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientSend;
-import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 
 public class TFTPClient implements Closeable {
     private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();

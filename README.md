@@ -21,14 +21,17 @@ Just run VCLU docker image (or multiple images on different devices, just adjust
 Manager (https://grentonsmarthome.github.io/release-en/om/).
 
 What works:
+
 - Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
 - Communication between CLU and CLU (accessing variables from other CLUs) - even physical ones
 - Tested under linux/amd64 and linux/arm64 (on Raspberry PI4)
 
 Does not work:
+
 - No known issues
 
 TODOs:
+
 - implement missing objects
 - measurements
 - persistent storage
@@ -37,6 +40,7 @@ TODOs:
 ## Virtual Objects
 
 ### MqttTopic
+
 [MQTT.md](MQTT.md)
 
 ### Timer
