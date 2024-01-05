@@ -23,15 +23,14 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.StandardSocketOptions;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 public class SocketUtil {
@@ -45,13 +44,13 @@ public class SocketUtil {
 
     public static UDPSocket udpListener(Inet4Address address, int port) {
         return new UDPSocket(
-            address, port, false, null
+            address, port, false
         );
     }
 
-    public static UDPSocket udpRandomPort(NetworkInterface networkInterface, Inet4Address address) {
+    public static UDPSocket udpRandomPort(Inet4Address address) {
         return new UDPSocket(
-            address, 0, true, networkInterface
+            address, 0, true
         );
     }
 
@@ -62,17 +61,14 @@ public class SocketUtil {
 
         private final boolean broadcast;
 
-        private final NetworkInterface networkInterface;
-
         private final ReentrantLock socketLock = new ReentrantLock();
 
         private DatagramSocket socket;
 
-        public UDPSocket(Inet4Address address, int port, boolean broadcast, NetworkInterface networkInterface) {
-            this.address          = address;
-            this.port             = port;
-            this.broadcast        = broadcast;
-            this.networkInterface = networkInterface;
+        public UDPSocket(Inet4Address address, int port, boolean broadcast) {
+            this.address = address;
+            this.port = port;
+            this.broadcast = broadcast;
         }
 
         public void open() {
@@ -83,14 +79,19 @@ public class SocketUtil {
                 this.socket.setTrafficClass(IPTOS_RELIABILITY);
 
                 this.socket.setBroadcast(broadcast);
-                if (broadcast && networkInterface != null) {
-                    this.socket.setOption(StandardSocketOptions.IP_MULTICAST_IF, networkInterface);
-                }
             } catch (IOException e) {
                 throw new UnexpectedException(e);
             } finally {
                 socketLock.unlock();
             }
+        }
+
+        public Inet4Address getLocalAddress() {
+            return (Inet4Address) socket.getLocalAddress();
+        }
+
+        public int getLocalPort() {
+            return socket.getLocalPort();
         }
 
         public void send(DatagramPacket packet) {
@@ -128,11 +129,18 @@ public class SocketUtil {
             socketLock.lock();
             try {
                 try {
-                    socket.setSoTimeout(Math.toIntExact(timeout.toMillis()));
+                    // defend against 0 to prevent infinite timeouts
+                    socket.setSoTimeout(Math.max(1, Math.toIntExact(timeout.toMillis())));
                     socket.receive(packet);
                     socket.setSoTimeout(DEFAULT_TIMEOUT);
                 } catch (SocketTimeoutException e) {
                     return Optional.empty();
+                } catch (SocketException e) {
+                    if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
+                        throw new UncheckedInterruptedException(e);
+                    }
+
+                    throw new UnexpectedException(e);
                 } catch (IOException e) {
                     throw new UnexpectedException(e);
                 }

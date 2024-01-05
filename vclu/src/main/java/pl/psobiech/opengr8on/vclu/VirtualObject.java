@@ -150,7 +150,7 @@ public class VirtualObject implements Closeable {
         final int address = event.address();
         final LuaFunction luaFunction = eventFunctions.get(address);
         if (luaFunction == null) {
-            LOGGER.warn("Not implemented: " + name + ":addEvent(" + address + ")");
+            LOGGER.trace("Not registered: " + name + ":addEvent(" + address + ")");
 
             return false;
         }

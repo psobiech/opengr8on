@@ -70,7 +70,7 @@ public class TFTPServer implements Closeable {
 
         this.mode = mode;
 
-        this.serverDirectory = serverDirectory;
+        this.serverDirectory = serverDirectory.toAbsolutePath().normalize();
 
         this.serverTFTP = new TFTP();
     }

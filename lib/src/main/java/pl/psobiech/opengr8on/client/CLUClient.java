@@ -45,7 +45,7 @@ import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
@@ -53,10 +53,6 @@ import pl.psobiech.opengr8on.util.Util;
 
 public class CLUClient extends Client implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
-
-    private static final String TFTP_NOT_FOUND_ERROR_CODE = "Error code %d".formatted(TFTPErrorType.FILE_NOT_FOUND.errorCode());
-
-    private static final int TFTP_RETRIES = 3;
 
     private static final Duration DEFAULT_TIMEOUT_DURATION = Duration.ofMillis(SocketUtil.DEFAULT_TIMEOUT);
 
@@ -66,29 +62,30 @@ public class CLUClient extends Client implements Closeable {
 
     private CipherKey cipherKey;
 
-    public CLUClient(NetworkInterfaceDto networkInterface, CLUDevice cluDevice) {
-        this(networkInterface, cluDevice, cluDevice.getCipherKey());
+    public CLUClient(Inet4Address localAddress, CLUDevice cluDevice) {
+        this(localAddress, cluDevice, cluDevice.getCipherKey());
     }
 
-    public CLUClient(NetworkInterfaceDto networkInterface, Inet4Address ipAddress, CipherKey cipherKey) {
-        this(networkInterface, ipAddress, cipherKey, COMMAND_PORT);
+    public CLUClient(Inet4Address localAddress, Inet4Address ipAddress, CipherKey cipherKey) {
+        this(localAddress, ipAddress, cipherKey, COMMAND_PORT);
     }
 
-    public CLUClient(NetworkInterfaceDto networkInterface, Inet4Address ipAddress, CipherKey cipherKey, int port) {
+    public CLUClient(Inet4Address localAddress, Inet4Address ipAddress, CipherKey cipherKey, int port) {
         this(
-            networkInterface,
+            localAddress,
             new CLUDevice(ipAddress, CipherTypeEnum.PROJECT),
             cipherKey,
+            IPv4AddressUtil.BROADCAST_ADDRESS,
             port
         );
     }
 
-    public CLUClient(NetworkInterfaceDto networkInterface, CLUDevice cluDevice, CipherKey cipherKey) {
-        this(networkInterface, cluDevice, cipherKey, COMMAND_PORT);
+    public CLUClient(Inet4Address localAddress, CLUDevice cluDevice, CipherKey cipherKey) {
+        this(localAddress, cluDevice, cipherKey, IPv4AddressUtil.BROADCAST_ADDRESS, COMMAND_PORT);
     }
 
-    public CLUClient(NetworkInterfaceDto networkInterface, CLUDevice cluDevice, CipherKey cipherKey, int port) {
-        super(networkInterface, port);
+    public CLUClient(Inet4Address localAddress, CLUDevice cluDevice, CipherKey cipherKey, Inet4Address broadcastAddress, int port) {
+        super(localAddress, broadcastAddress, port);
 
         this.tftpClient = new TFTPClient();
 
@@ -97,7 +94,7 @@ public class CLUClient extends Client implements Closeable {
         this.cipherKey = cipherKey;
     }
 
-    public Optional<Boolean> setCipherKey(CipherKey newCipherKey) {
+    public Optional<Boolean> updateCipherKey(CipherKey newCipherKey) {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_SIZE);
 
         return request(
@@ -110,7 +107,7 @@ public class CLUClient extends Client implements Closeable {
             .flatMap(payload ->
                 SetKeyCommand.responseFromByteArray(payload.buffer())
                              .map(response -> {
-                                 this.cipherKey = newCipherKey;
+                                 setCipherKey(newCipherKey);
 
                                  return true;
                              })
@@ -128,10 +125,7 @@ public class CLUClient extends Client implements Closeable {
             .flatMap(payload -> {
                 final Optional<SetIpCommand.Response> responseOptional = SetIpCommand.responseFromByteArray(payload.buffer());
                 if (responseOptional.isEmpty()) {
-                    final Inet4Address ipAddress = payload.address();
-                    cluDevice.setAddress(ipAddress);
-
-                    return Optional.of(payload.address());
+                    return Optional.empty();
                 }
 
                 final SetIpCommand.Response response = responseOptional.get();
@@ -142,12 +136,20 @@ public class CLUClient extends Client implements Closeable {
             });
     }
 
+    public CipherKey getCipherKey() {
+        return cipherKey;
+    }
+
+    public void setCipherKey(CipherKey cipherKey) {
+        this.cipherKey = cipherKey;
+    }
+
     public CLUDevice getCluDevice() {
         return cluDevice;
     }
 
     public Optional<Boolean> reset(Duration timeout) {
-        final ResetCommand.Request command = ResetCommand.request(networkInterface.getAddress());
+        final ResetCommand.Request command = ResetCommand.request(localAddress);
 
         final Optional<Response> reset = request(command, DEFAULT_TIMEOUT_DURATION)
             .flatMap(payload -> ResetCommand.responseFromByteArray(payload.buffer()));
@@ -170,7 +172,7 @@ public class CLUClient extends Client implements Closeable {
 
     public Optional<String> execute(String script) {
         final Integer sessionId = HexUtil.asInt(RandomUtil.hexString(8));
-        final LuaScriptCommand.Request command = LuaScriptCommand.request(networkInterface.getAddress(), sessionId, script);
+        final LuaScriptCommand.Request command = LuaScriptCommand.request(localAddress, sessionId, script);
 
         return request(command, DEFAULT_TIMEOUT_DURATION)
             .flatMap(payload -> LuaScriptCommand.parse(sessionId, payload));

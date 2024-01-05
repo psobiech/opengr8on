@@ -23,7 +23,7 @@ import java.net.DatagramPacket;
 import java.net.Inet4Address;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -35,7 +35,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Future.State;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -44,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
@@ -60,11 +58,7 @@ public class Client implements Closeable {
 
     private static final int ESTIMATED_CLUS = 8;
 
-    private int port;
-
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
-
-    protected final NetworkInterfaceDto networkInterface;
 
     protected final ReentrantLock socketLock = new ReentrantLock();
 
@@ -72,47 +66,38 @@ public class Client implements Closeable {
 
     private final ExecutorService executor = ThreadUtil.executor("cluClient");
 
-    public Client(NetworkInterfaceDto networkInterface) {
-        this(networkInterface, COMMAND_PORT);
+    protected final Inet4Address localAddress;
+
+    private final Inet4Address broadcastAddress;
+
+    private final int port;
+
+    public Client(Inet4Address localAddress) {
+        this(localAddress, IPv4AddressUtil.BROADCAST_ADDRESS, COMMAND_PORT);
     }
 
-    public Client(NetworkInterfaceDto networkInterface, int port) {
-        this.networkInterface = networkInterface;
-
+    public Client(Inet4Address localAddress, Inet4Address broadcastAddress, int port) {
+        this.localAddress = localAddress;
+        this.broadcastAddress = broadcastAddress;
         this.port = port;
 
-        this.socket = SocketUtil.udpRandomPort(networkInterface.getNetworkInterface(), networkInterface.getAddress());
+        this.socket = SocketUtil.udpRandomPort(localAddress);
         this.socket.open();
     }
 
     public Stream<CLUDevice> discover(CipherKey projectCipherKey, Map<Long, byte[]> privateKeys, Duration timeout, int limit) {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_SIZE);
         final DiscoverCLUsCommand.Request request = DiscoverCLUsCommand.request(
-            projectCipherKey.encrypt(randomBytes), projectCipherKey.getIV(), networkInterface.getAddress()
+            projectCipherKey.encrypt(randomBytes), projectCipherKey.getIV(), localAddress
         );
 
         return broadcastStream(
             CipherKey.DEFAULT_BROADCAST, CipherKey.DEFAULT_BROADCAST.withIV(projectCipherKey.getIV()),
             request,
-            IPv4AddressUtil.parseIPv4("255.255.255.255"), // networkInterface.getBroadcastAddress(),
+            broadcastAddress,
             timeout, limit
         )
             .flatMap(payload -> DiscoverCLUsCommand.parse(randomBytes, payload, privateKeys).stream());
-    }
-
-    public Collection<Payload> broadcast(
-        CipherKey requestCipherKey, CipherKey responseCipherKey,
-        Command command,
-        Inet4Address ipAddress,
-        Duration timeout, int limit
-    ) {
-        return broadcastStream(
-            requestCipherKey, responseCipherKey,
-            command,
-            ipAddress,
-            timeout, limit
-        )
-            .collect(Collectors.toList());
     }
 
     public Stream<Payload> broadcastStream(
@@ -131,7 +116,7 @@ public class Client implements Closeable {
 
                 Duration threadTimeout = timeout;
 
-                final ArrayList<Payload> results = new ArrayList<>(Math.max(limit == Integer.MAX_VALUE ? -1 : limit, 0));
+                final List<Payload> results = new ArrayList<>(Math.max(limit == Integer.MAX_VALUE ? -1 : limit, 0));
                 do {
                     final long startedAt = System.nanoTime();
 

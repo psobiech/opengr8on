@@ -37,7 +37,6 @@ import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
@@ -57,7 +56,7 @@ public class VirtualSystem implements Closeable {
 
     private final Path aDriveDirectory;
 
-    private final NetworkInterfaceDto networkInterface;
+    private final Inet4Address localAddress;
 
     private final CLUDevice device;
 
@@ -69,11 +68,11 @@ public class VirtualSystem implements Closeable {
 
     private ScheduledFuture<?> clientReportFuture = null;
 
-    public VirtualSystem(Path aDriveDirectory, NetworkInterfaceDto networkInterface, CLUDevice device, CipherKey cipherKey) {
+    public VirtualSystem(Path aDriveDirectory, Inet4Address localAddress, CLUDevice device, CipherKey cipherKey) {
         this.aDriveDirectory = aDriveDirectory;
-        this.networkInterface = networkInterface;
-        this.device = device;
-        this.cipherKey = cipherKey;
+        this.localAddress    = localAddress;
+        this.device          = device;
+        this.cipherKey       = cipherKey;
     }
 
     public VirtualObject getObject(String name) {
@@ -89,7 +88,7 @@ public class VirtualSystem implements Closeable {
         final VirtualObject virtualObject = switch (index) {
             // TODO: temporarily we depend that the main CLU is initialized first-ish
             case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
-            case RemoteCLU.INDEX -> new RemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
+            case RemoteCLU.INDEX -> new RemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), localAddress, cipherKey);
             case Timer.INDEX -> new Timer(name);
             case Storage.INDEX -> new Storage(name);
             case MqttTopic.INDEX -> new MqttTopic(name, currentClu);
@@ -171,14 +170,14 @@ public class VirtualSystem implements Closeable {
                 try {
                     final String valuesAsString = "clientReport:" + sessionId + ":" + fetchValues(subscription);
 
-                    try (CLUClient client = new CLUClient(networkInterface, ipAddress, cipherKey, port)) {
+                    try (CLUClient client = new CLUClient(localAddress, ipAddress, cipherKey, port)) {
                         client.clientReport(valuesAsString);
                     }
 
                     if (!ipAddress.equals(remoteIpAddress)) {
                         // when having docker network interfaces,
                         // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
-                        try (CLUClient client = new CLUClient(networkInterface, remoteIpAddress, cipherKey, port)) {
+                        try (CLUClient client = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
                             client.clientReport(valuesAsString);
                         }
                     }

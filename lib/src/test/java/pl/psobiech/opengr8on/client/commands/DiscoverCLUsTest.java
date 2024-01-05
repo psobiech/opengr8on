@@ -24,6 +24,8 @@ import java.util.Optional;
 
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.Mocks;
@@ -43,6 +45,7 @@ import static pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand.parse;
 import static pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand.request;
 import static pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand.response;
 
+@Execution(ExecutionMode.CONCURRENT)
 class DiscoverCLUsTest {
     @Test
     void hash() {

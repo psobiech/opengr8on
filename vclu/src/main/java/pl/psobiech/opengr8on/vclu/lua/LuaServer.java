@@ -20,18 +20,8 @@ package pl.psobiech.opengr8on.vclu.lua;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
@@ -54,7 +44,6 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.vclu.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgConsumer;
@@ -66,15 +55,9 @@ import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgConsumer;
 import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgFunction;
 
 import static org.apache.commons.lang3.StringUtils.lowerCase;
-import static org.apache.commons.lang3.StringUtils.stripToEmpty;
-import static org.apache.commons.lang3.StringUtils.stripToNull;
 
 public class LuaServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(LuaServer.class);
-
-    private static final String JAR_PATH_SEPARATOR = Pattern.quote("!");
-
-    private static final Map<String, FileSystem> JAR_FILE_SYSTEMS = new HashMap<>();
 
     private LuaServer() {
         // NOP
@@ -112,14 +95,12 @@ public class LuaServer {
         return new LuaFunctionWrapper(logger, luaFunction);
     }
 
-    public static LuaThreadWrapper create(
-        NetworkInterfaceDto networkInterface, Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
+    public static MainThreadWrapper create(
+        Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
     ) {
-        final Path aDriveDirectory = rootDirectory.resolve("a");
-
         final VirtualSystem virtualSystem = new VirtualSystem(
             aDriveDirectory,
-            networkInterface,
+            cluDevice.getAddress(),
             cluDevice, cipherKey
         );
 
@@ -142,7 +123,7 @@ public class LuaServer {
         globals.finder = fileName -> {
             try {
                 final Path filePath = aDriveDirectory.resolve(StringUtils.upperCase(fileName));
-                if (!aDriveDirectory.startsWith(rootDirectory)) {
+                if (!filePath.startsWith(aDriveDirectory)) {
                     throw new UnexpectedException("Attempt to access external directory");
                 }
 
@@ -152,11 +133,17 @@ public class LuaServer {
             }
         };
 
-        loadScript(globals, classPath(URI.create("classpath:/" + CLUFiles.INIT_LUA.getFileName())), CLUFiles.INIT_LUA.getFileName());
+        loadScript(globals, aDriveDirectory, CLUFiles.INIT_LUA);
 
-        return new LuaThreadWrapper(
+        return new MainThreadWrapper(
             virtualSystem, globals, aDriveDirectory, cluFile
         );
+    }
+
+    private static LuaValue loadScript(Globals globals, Path aDriveDirectory, CLUFiles cluFiles) {
+        final String fileName = cluFiles.getFileName();
+
+        return loadScript(globals, aDriveDirectory.resolve(fileName), fileName);
     }
 
     private static LuaValue loadScript(Globals globals, Path path, String name) {
@@ -171,63 +158,6 @@ public class LuaServer {
                       .call();
     }
 
-    private static Path classPath(URI uri) {
-        final String resourceUriPath = getResourceUriPath(uri);
-
-        final URL url = LuaServer.class.getResource(resourceUriPath);
-        if (url == null) {
-            throw new UnexpectedException(uri + " not found!");
-        }
-
-        try {
-            final URI classPathUri = url.toURI();
-            final String scheme = classPathUri.getScheme();
-            final String classPathUriAsString = classPathUri.toString();
-
-            final Path path;
-            if (scheme.equals(SchemeEnum.JAR.toUrlScheme())) {
-                final String jarPath = classPathUriAsString.split(JAR_PATH_SEPARATOR, 2)[0];
-
-                path = getOrCreateJarFileSystemFor(jarPath).provider()
-                                                           .getPath(classPathUri);
-            } else {
-                path = Paths.get(classPathUri);
-            }
-
-            return path;
-        } catch (URISyntaxException e) {
-            throw new UnexpectedException(e);
-        }
-    }
-
-    private static FileSystem getOrCreateJarFileSystemFor(String jarPath) {
-        synchronized (JAR_FILE_SYSTEMS) {
-            return JAR_FILE_SYSTEMS.computeIfAbsent(
-                jarPath,
-                ignored -> {
-                    try {
-                        final URI jarUri = URI.create(jarPath);
-
-                        return FileSystems.newFileSystem(jarUri, Collections.emptyMap());
-                    } catch (IOException e) {
-                        throw new UnexpectedException(e);
-                    }
-                }
-            );
-        }
-    }
-
-    private static String getResourceUriPath(URI uri) {
-        final String path = stripToEmpty(uri.getPath());
-
-        final String host = stripToNull(uri.getHost());
-        if (host == null) {
-            return path;
-        }
-
-        return "/" + host + path;
-    }
-
     public enum SchemeEnum {
         CLASSPATH,
         JAR,
@@ -240,20 +170,20 @@ public class LuaServer {
         }
     }
 
-    public static class LuaThreadWrapper implements Closeable {
+    public static class MainThreadWrapper implements Closeable {
         private final VirtualSystem virtualSystem;
 
         private final Globals globals;
 
         private final Thread thread;
 
-        public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory, CLUFiles cluFile) {
+        public MainThreadWrapper(VirtualSystem virtualSystem, Globals globals, Path aDriveDirectory, CLUFiles cluFile) {
             this.thread = Thread.ofVirtual()
-                                .name("LuaThreadWrapper")
+                                .name(getClass().getSimpleName())
                                 .unstarted(
                                     () -> {
                                         try {
-                                            loadScript(globals, aDriveDirectory.resolve(cluFile.getFileName()), cluFile.getFileName());
+                                            loadScript(globals, aDriveDirectory, cluFile);
                                         } catch (LuaError e) {
                                             if (e.getCause() instanceof UncheckedInterruptedException) {
                                                 LOGGER.trace(e.getMessage(), e);
@@ -293,9 +223,7 @@ public class LuaServer {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new UnexpectedException(e);
+                LOGGER.warn(e.getMessage(), e);
             }
         }
     }

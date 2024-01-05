@@ -19,11 +19,14 @@
 package pl.psobiech.opengr8on.client.commands;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.commands.ErrorCommand.Response;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@Execution(ExecutionMode.CONCURRENT)
 class ErrorCommandTest {
     @Test
     void correctResponse() {

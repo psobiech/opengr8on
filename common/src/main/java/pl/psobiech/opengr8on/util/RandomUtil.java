@@ -57,7 +57,7 @@ public final class RandomUtil {
         HEX_DICTIONARY = chars;
     }
 
-    private static SecureRandom createWeakRandom() {
+    private static synchronized SecureRandom createWeakRandom() {
         return new SecureRandom();
     }
 

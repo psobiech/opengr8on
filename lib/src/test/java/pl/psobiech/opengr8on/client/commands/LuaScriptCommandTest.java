@@ -22,6 +22,8 @@ import java.net.Inet4Address;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand.Request;
@@ -32,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@Execution(ExecutionMode.CONCURRENT)
 class LuaScriptCommandTest {
     @Test
     void parsePayload() {

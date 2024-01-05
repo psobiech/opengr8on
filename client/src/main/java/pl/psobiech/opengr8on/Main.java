@@ -187,7 +187,7 @@ public class Main {
             final CipherKey projectCipherKey = getProjectCipherKey(commandLine, projectPathOption)
                 .orElseThrow(() -> new UnexpectedException("Provide a project location"));
 
-            try (CLUClient client = new CLUClient(networkInterface, ipAddress, projectCipherKey)) {
+            try (CLUClient client = new CLUClient(networkInterface.getAddress(), ipAddress, projectCipherKey)) {
                 LOGGER.info(client.execute(command).get());
 
                 final Boolean success = client.startTFTPdServer().get();
@@ -281,7 +281,7 @@ public class Main {
         usedAddresses.add(networkInterface.getAddress());
         usedAddresses.add(MIN_IP);
 
-        try (Client broadcastClient = new Client(networkInterface)) {
+        try (Client broadcastClient = new Client(networkInterface.getAddress())) {
             broadcastClient.discover(
                                projectCipherKey, PRIVATE_KEYS,
                                DEFAULT_LONG_TIMEOUT, cluLimit
@@ -289,7 +289,7 @@ public class Main {
                            .map(cluDevice -> {
                                LOGGER.debug("Discovered device: {}", cluDevice);
 
-                               return new CLUClient(networkInterface, cluDevice);
+                               return new CLUClient(networkInterface.getAddress(), cluDevice);
                            })
                            .forEach(client -> {
                                try (client) {
@@ -306,7 +306,7 @@ public class Main {
 
                                    usedAddresses.add(nextAddress);
 
-                                   client.setCipherKey(projectCipherKey)
+                                   client.updateCipherKey(projectCipherKey)
                                          .get();
 
                                    if (!deviceAddress.equals(nextAddress)) {
@@ -379,7 +379,7 @@ public class Main {
         CipherKey projectCipherKey, InterfaceRegistry interfaceRegistry
     ) throws IOException {
         final CLUDevice device;
-        try (CLUClient client = new CLUClient(networkInterface, ipAddress, projectCipherKey)) {
+        try (CLUClient client = new CLUClient(networkInterface.getAddress(), ipAddress, projectCipherKey)) {
             client.startTFTPdServer()
                   .get();
 

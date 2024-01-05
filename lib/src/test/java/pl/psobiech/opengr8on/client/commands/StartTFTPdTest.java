@@ -19,12 +19,15 @@
 package pl.psobiech.opengr8on.client.commands;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand.Request;
 import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand.Response;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@Execution(ExecutionMode.CONCURRENT)
 class StartTFTPdTest {
     @Test
     void correctRequest() {

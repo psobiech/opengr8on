@@ -19,6 +19,8 @@
 package pl.psobiech.opengr8on.client.commands;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand.Request;
@@ -29,6 +31,7 @@ import pl.psobiech.opengr8on.util.RandomUtil;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@Execution(ExecutionMode.CONCURRENT)
 class SetIpCommandTest {
     @Test
     void correctRequest() {

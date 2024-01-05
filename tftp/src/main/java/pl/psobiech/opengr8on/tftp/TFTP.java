@@ -21,7 +21,6 @@ package pl.psobiech.opengr8on.tftp;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.DatagramPacket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 
@@ -50,52 +49,22 @@ public class TFTP extends DatagramSocketClient {
         setDefaultTimeout(DEFAULT_TIMEOUT_DURATION);
     }
 
-    public void discardPackets() throws IOException {
-        final DatagramPacket datagram = newDatagramPacket();
-        final Duration soTimeoutDuration = getSoTimeoutDuration();
-
-        setSoTimeout(Duration.ofMillis(1));
-        try {
-            do {
-                checkOpen().receive(datagram);
-            } while (!Thread.interrupted());
-        } catch (SocketException e) {
-            // Do nothing. We timed out, so we hope we're caught up.
-        } finally {
-            setSoTimeout(soTimeoutDuration);
-        }
-    }
-
     public void send(TFTPPacket packet) throws IOException {
-        sendPacket(packet, packet.newDatagram(sendBuffer));
-    }
-
-    private void sendPacket(TFTPPacket packet, DatagramPacket datagramPacket) throws IOException {
         LOGGER.trace("{}: {}", ">", packet);
-        checkOpen().send(datagramPacket);
+
+        checkOpen().send(
+            packet.newDatagram(sendBuffer)
+        );
     }
 
     public TFTPPacket receive() throws IOException, TFTPPacketException {
         final DatagramPacket datagramPacket = new DatagramPacket(receiveBuffer, 0, receiveBuffer.length);
 
-        return receivePacket(datagramPacket);
-    }
-
-    /**
-     * Receives a TFTPPacket.
-     *
-     * @return The TFTPPacket received.
-     * @throws InterruptedIOException If a socket timeout occurs. The Java documentation claims an InterruptedIOException is thrown on a DatagramSocket timeout,
-     * but in practice we find a SocketException is thrown. You should catch both to be safe.
-     * @throws IOException If some other I/O error occurs.
-     * @throws TFTPPacketException If an invalid TFTP packet is received.
-     */
-    private TFTPPacket receivePacket(DatagramPacket packet) throws IOException, InterruptedIOException, TFTPPacketException {
         do {
             try {
-                checkOpen().receive(packet);
+                checkOpen().receive(datagramPacket);
 
-                final TFTPPacket newTFTPPacket = TFTPPacket.newTFTPPacket(packet);
+                final TFTPPacket newTFTPPacket = TFTPPacket.newTFTPPacket(datagramPacket);
                 LOGGER.trace("{}: {}", "<", newTFTPPacket);
 
                 return newTFTPPacket;
@@ -105,9 +74,5 @@ public class TFTP extends DatagramSocketClient {
         } while (!Thread.interrupted());
 
         throw new InterruptedIOException();
-    }
-
-    public static DatagramPacket newDatagramPacket() {
-        return new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
     }
 }

@@ -57,6 +57,11 @@
       <groupId>org.eclipse.paho</groupId>
       <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.jstach</groupId>
+      <artifactId>jstachio</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

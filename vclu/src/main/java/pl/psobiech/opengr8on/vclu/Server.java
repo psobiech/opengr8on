@@ -26,6 +26,7 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -65,7 +66,6 @@ import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
@@ -76,9 +76,10 @@ import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer;
-import pl.psobiech.opengr8on.vclu.lua.LuaServer.LuaThreadWrapper;
+import pl.psobiech.opengr8on.vclu.lua.LuaServer.MainThreadWrapper;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.ResourceUtil;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 public class Server implements Closeable {
@@ -108,8 +109,6 @@ public class Server implements Closeable {
 
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
 
-    protected final NetworkInterfaceDto networkInterface;
-
     private final Path rootDirectory;
 
     private final CLUDevice cluDevice;
@@ -122,7 +121,7 @@ public class Server implements Closeable {
 
     private final ScheduledExecutorService executorService = ThreadUtil.executor("cluServer");
 
-    private LuaThreadWrapper mainThread;
+    private MainThreadWrapper mainThread;
 
     private List<CipherKey> unicastCipherKeys;
 
@@ -134,29 +133,30 @@ public class Server implements Closeable {
 
     private MqttClient mqttClient;
 
-    public Server(NetworkInterfaceDto networkInterface, Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
-        rootDirectory = rootDirectory.toAbsolutePath().normalize();
+    public Server(Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
+        this(
+            rootDirectory, projectCipherKey, cluDevice,
+            // TODO: networkInterface.getBroadcastAddress() does not work with OM
+            SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
+            SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
+            new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
+        );
+    }
 
-        this.networkInterface = networkInterface;
-        this.rootDirectory    = rootDirectory;
-
-        this.cluDevice = cluDevice;
+    protected Server(
+        Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
+        UDPSocket broadcastSocket, UDPSocket socket, TFTPServer tftpServer
+    ) {
+        this.rootDirectory   = rootDirectory.toAbsolutePath().normalize();
+        this.cluDevice       = cluDevice;
+        this.broadcastSocket = broadcastSocket;
+        this.socket          = socket;
+        this.tftpServer      = tftpServer;
 
         this.projectCipherKey = projectCipherKey;
 
-        this.unicastCipherKeys   = List.of(projectCipherKey);
         this.broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
-
-        startClu();
-
-        this.broadcastSocket = SocketUtil.udpListener(
-            IPv4AddressUtil.BROADCAST_ADDRESS, // networkInterface.getBroadcastAddress(),
-            Client.COMMAND_PORT
-        );
-
-        this.socket = SocketUtil.udpListener(networkInterface.getAddress(), Client.COMMAND_PORT);
-
-        this.tftpServer = new TFTPServer(networkInterface.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory);
+        this.unicastCipherKeys   = List.of(projectCipherKey);
     }
 
     public void listen() throws InterruptedException {
@@ -184,6 +184,8 @@ public class Server implements Closeable {
                         }
 
                         respond(uuid, request, responseOptional.get());
+                    } catch (UncheckedInterruptedException e) {
+                        LOGGER.trace(e.getMessage(), e);
                     } catch (Exception e) {
                         LOGGER.error(e.getMessage(), e);
                     }
@@ -212,12 +214,16 @@ public class Server implements Closeable {
                         }
 
                         respond(uuid, request, responseOptional.get());
+                    } catch (UncheckedInterruptedException e) {
+                        LOGGER.trace(e.getMessage(), e);
                     } catch (Exception e) {
                         LOGGER.error(e.getMessage(), e);
                     }
                 },
                 TIMEOUT_BROADCAST_MILLIS, TIMEOUT_MILLIS, TimeUnit.MILLISECONDS
             );
+
+        startClu();
 
         // sleep until interrupted
         new CountDownLatch(1).await();
@@ -232,8 +238,18 @@ public class Server implements Closeable {
         for (CipherKey responseCipherKey : responseCipherKeys) {
             final Optional<Payload> decryptedPayload = Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
             if (decryptedPayload.isPresent()) {
+                LOGGER.trace(
+                    "\n%s\n<-D--\t%s // %s"
+                        .formatted(uuid, decryptedPayload.get(), responseCipherKey)
+                );
+
                 return Optional.of(
                     new Request(responseCipherKey, decryptedPayload.get())
+                );
+            } else {
+                LOGGER.trace(
+                    "\n%s\n<-E--\t%s // %s"
+                        .formatted(uuid, encryptedPayload.get(), responseCipherKey)
                 );
             }
         }
@@ -339,15 +355,18 @@ public class Server implements Closeable {
 
     private Optional<Response> onSetIpCommand(Request request, SetIpCommand.Request command) {
         if (Objects.equals(cluDevice.getSerialNumber(), command.getSerialNumber())) {
-            return Optional.of(
-                new Response(
-                    request.cipherKey(),
-                    SetIpCommand.response(
-                        cluDevice.getSerialNumber(),
-                        cluDevice.getAddress()
+            // we cant change IP address
+            if (command.getIpAddress().equals(cluDevice.getAddress())) {
+                return Optional.of(
+                    new Response(
+                        request.cipherKey(),
+                        SetIpCommand.response(
+                            cluDevice.getSerialNumber(),
+                            cluDevice.getAddress()
+                        )
                     )
-                )
-            );
+                );
+            }
         }
 
         return sendError(request);
@@ -421,20 +440,52 @@ public class Server implements Closeable {
         startClu();
     }
 
-    private void startClu() {
+    protected void startClu() {
         LOGGER.info("VCLU is starting...");
         FileUtil.closeQuietly(this.mainThread);
 
-        this.mainThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
+        final Path aDriveDirectory = rootDirectory.resolve("a");
+
+        try {
+            Files.copy(
+                ResourceUtil.classPath(CLUFiles.INIT_LUA.getFileName()),
+                aDriveDirectory.resolve(CLUFiles.INIT_LUA.getFileName()),
+                StandardCopyOption.REPLACE_EXISTING
+            );
+
+            Files.copy(
+                ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
+                aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName()),
+                StandardCopyOption.REPLACE_EXISTING
+            );
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
+        }
+
+        this.mainThread = LuaServer.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
         this.mainThread.start();
 
+        try {
+            checkAlive();
+        } catch (Exception e) {
+            LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
+            FileUtil.closeQuietly(this.mainThread);
+
+            this.mainThread = LuaServer.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
+            this.mainThread.start();
+
+            checkAlive();
+        }
+
+        initialize();
+    }
+
+    private void checkAlive() {
         LuaError lastException;
         int retries = RESTART_RETRIES;
         do {
             try {
                 luaCall(LuaScriptCommand.CHECK_ALIVE);
-
-                initialize();
 
                 return;
             } catch (LuaError e) {
@@ -450,16 +501,14 @@ public class Server implements Closeable {
             }
         } while (retries-- > 0);
 
-        LOGGER.error("Could not start VCLU...", lastException);
-
-        LOGGER.info("Entering VCLU emergency mode!");
-        FileUtil.closeQuietly(this.mainThread);
-
-        this.mainThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
-        this.mainThread.start();
+        throw lastException;
     }
 
     private void initialize() {
+        synchronized (this) {
+            this.notifyAll();
+        }
+
         final VirtualCLU currentClu = mainThread.virtualSystem().getCurrentClu();
         if (currentClu == null) {
             LOGGER.warn("VCLU is not properly initialized...");
@@ -479,7 +528,17 @@ public class Server implements Closeable {
         }
     }
 
-    private LuaValue luaCall(String script) {
+    public void awaitInitialized() throws InterruptedException {
+        synchronized (this) {
+            this.wait();
+        }
+    }
+
+    protected LuaValue luaCall(String script) {
+        if (this.mainThread == null) {
+            throw new LuaError("LUA is not initialized");
+        }
+
         return this.mainThread.globals()
                               .load("return %s".formatted(script))
                               .call();
@@ -709,7 +768,12 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
+        executorService.shutdownNow();
+
         tftpServer.close();
+        disableMqtt();
+
+        mainThread.close();
 
         socketLock.lock();
         try {
@@ -719,12 +783,6 @@ public class Server implements Closeable {
         }
 
         broadcastSocket.close();
-
-        mainThread.close();
-
-        disableMqtt();
-
-        executorService.shutdownNow();
     }
 
     private record Request(CipherKey cipherKey, Payload payload) { }

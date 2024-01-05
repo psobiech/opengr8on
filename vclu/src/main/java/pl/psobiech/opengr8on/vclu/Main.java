@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import java.net.Inet4Address;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -67,13 +68,15 @@ public class Main {
                                                                         IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
                                                                     )
                                                                     .get();
+
+        final Inet4Address localAddress = networkInterface.getAddress();
         final CLUDevice cluDevice = new CLUDevice(
             configJson.getSerialNumber(), configJson.getMacAddress(),
-            networkInterface.getAddress(),
+            localAddress,
             CipherTypeEnum.PROJECT, cluKeys.defaultIV(), cluKeys.pin()
         );
 
-        try (Server server = new Server(networkInterface, rootDirectory, projectCipherKey, cluDevice)) {
+        try (Server server = new Server(rootDirectory, projectCipherKey, cluDevice)) {
             server.listen();
         }
     }

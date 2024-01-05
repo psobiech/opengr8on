@@ -16,26 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.exceptions;
+package pl.psobiech.opengr8on.vclu;
 
-import java.net.SocketException;
+import io.jstach.jstache.JStache;
 
-public class UncheckedInterruptedException extends RuntimeException {
-    private static final String SOCKET_INTERRUPTED_MESSAGE = "Closed by interrupt";
-
-    public UncheckedInterruptedException(InterruptedException e) {
-        super(e.getMessage(), e);
-
-        Thread.currentThread().interrupt();
-    }
-
-    public UncheckedInterruptedException(SocketException e) {
-        super(e.getMessage(), e);
-
-        Thread.currentThread().interrupt();
-    }
-
-    public static boolean wasSocketInterrupted(SocketException e) {
-        return e.getMessage().equalsIgnoreCase(SOCKET_INTERRUPTED_MESSAGE);
-    }
-}
+@JStache(path = "classpath:/MAIN.LUA.mustache")
+public record MainLuaTemplate(String serialNumberHex) { }
