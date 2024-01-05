@@ -44,7 +44,9 @@ public class MqttTopic extends VirtualObject {
 
     private final Set<String> topicFilters = new HashSet<>();
 
-    private final LinkedBlockingDeque<Map.Entry<String, byte[]>> messageQueue = new LinkedBlockingDeque<>();
+    private final LinkedBlockingDeque<Map.Entry<String, Message>> messageQueue = new LinkedBlockingDeque<>();
+
+    private MqttClient mqttClient;
 
     public MqttTopic(String name, VirtualCLU currentClu) {
         super(name);
@@ -58,6 +60,10 @@ public class MqttTopic extends VirtualObject {
         register(Methods.PUBLISH, this::publish);
     }
 
+    public void setMqttClient(MqttClient mqttClient) {
+        this.mqttClient = mqttClient;
+    }
+
     @Override
     public void setup() {
         triggerEvent(Events.INIT);
@@ -68,7 +74,6 @@ public class MqttTopic extends VirtualObject {
             final String topic = arg1.checkjstring();
 
             topicFilters.add(topic);
-            final MqttClient mqttClient = currentClu.getMqttClient();
             if (mqttClient != null) {
                 mqttClient.subscribe(topic);
             }
@@ -86,7 +91,6 @@ public class MqttTopic extends VirtualObject {
             final String topic = arg1.checkjstring();
 
             topicFilters.remove(topic);
-            final MqttClient mqttClient = currentClu.getMqttClient();
             if (mqttClient != null) {
                 mqttClient.unsubscribe(topic);
             }
@@ -100,12 +104,12 @@ public class MqttTopic extends VirtualObject {
     }
 
     private LuaValue publish(LuaValue arg1, LuaValue arg2) {
-        final MqttClient mqttClient = currentClu.getMqttClient();
         if (mqttClient == null) {
             return LuaValue.FALSE;
         }
 
         final String topic = arg1.checkjstring();
+
         if (isSubscribedTo(topic)) {
             LOGGER.warn("Attempt to publish to a topic that we are subscribed to: {}", topic);
 
@@ -129,12 +133,12 @@ public class MqttTopic extends VirtualObject {
         return LuaValue.FALSE;
     }
 
-    public void onMessage(String topic, int id, byte[] payload) {
+    public void onMessage(String topic, byte[] payload, Runnable acknowledged) {
         if (!isSubscribedTo(topic)) {
             return;
         }
 
-        while (!messageQueue.offer(Map.entry(topic, payload))) {
+        while (!messageQueue.offer(Map.entry(topic, new Message(payload, acknowledged)))) {
             // TODO: retry/fail logic
             Thread.yield();
         }
@@ -165,17 +169,21 @@ public class MqttTopic extends VirtualObject {
     public void loop() {
         final String currentPayload = getMessage();
         if (currentPayload == null || currentPayload.isEmpty()) {
-            final Entry<String, byte[]> entry = messageQueue.poll();
+            final Entry<String, Message> entry = messageQueue.poll();
             if (entry != null) {
-                final String key = entry.getKey();
-                final String payload = new String(entry.getValue());
+                final String topic = entry.getKey();
 
-                set(Features.TOPIC, LuaValue.valueOf(key));
+                set(Features.TOPIC, LuaValue.valueOf(topic));
 
-                // TODO: maybe add feature to parse JSON into LUA table
+                // TODO: JSON parsing into LUA tables
+                final Message message = entry.getValue();
+                final String payload = new String(message.payload());
                 set(Features.MESSAGE, LuaValue.valueOf(payload));
 
-                triggerEvent(Events.MESSAGE);
+                if (triggerEvent(Events.MESSAGE)) {
+                    message.acknowledged()
+                           .run();
+                }
             }
         }
     }
@@ -191,6 +199,8 @@ public class MqttTopic extends VirtualObject {
     private void clearMessage() {
         clear(Features.MESSAGE);
     }
+
+    private record Message(byte[] payload, Runnable acknowledged) { }
 
     private enum Features implements IFeature {
         TOPIC(0),

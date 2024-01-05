@@ -48,7 +48,7 @@ public class ThreadUtil {
     }
 
     public static ScheduledExecutorService executor(String name) {
-        return Executors.newScheduledThreadPool(1, daemonThreadFactory(name));
+        return Executors.newScheduledThreadPool(Integer.MAX_VALUE, virtualThreadFactory(name));
     }
 
     public static ThreadFactory daemonThreadFactory(String groupName) {

@@ -49,6 +49,10 @@ public class VirtualObject implements Closeable {
         this.name = name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     /**
      * Method executed once
      */
@@ -142,22 +146,24 @@ public class VirtualObject implements Closeable {
         return luaFunction.invoke(args);
     }
 
-    public void triggerEvent(IEvent event) {
+    public boolean triggerEvent(IEvent event) {
         final int address = event.address();
         final LuaFunction luaFunction = eventFunctions.get(address);
         if (luaFunction == null) {
             LOGGER.warn("Not implemented: " + name + ":addEvent(" + address + ")");
 
-            return;
+            return false;
         }
 
         try {
-            Thread.yield();
-
             luaFunction.call();
+
+            return true;
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }
+
+        return false;
     }
 
     public void addEventHandler(IEvent event, LuaFunction luaFunction) {

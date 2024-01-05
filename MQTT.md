@@ -9,12 +9,12 @@ Configure MQTTUrl, eg. tcp://user:pass@localhost:1883
 Copy certificates and CLU private key into CLU runtime directory
 
 ```bash
-cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/root/a/MQTT-ROOT.CRT
-cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/root/a/MQTT-PUBLIC.CRT # required only if using client certificate authentication
-cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/root/a/MQTT-PRIVATE.PEM # required only if using client certificate authentication
+cp ./easy-rsa/easyrsa3/pki/ca.crt ./runtime/mqtt/ca.crt
+cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/mqtt/certificate.crt # required only if using client certificate authentication
+cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/mqtt/key.pem # required only if using client certificate authentication
 ```
 
-Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 if using client certificate)
+Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 if using client certificate authentication)
 Run VCLU and enable UseMQTT in OM.
 
 ## MqttTopic
@@ -47,7 +47,7 @@ CLU1703856280877->myTopic->NextMessage()
 
 # Configure MQTT broker
 
-The broker should be compatible with Tasmota32 https://tasmota.github.io/docs/TLS/#tls-secured-mqtt
+The broker should be compatible with Tasmota32 https://tasmota.github.io/docs/TLS/#tls-secured-mqtt and AWS IoT
 
 ## Generate Certificates
 

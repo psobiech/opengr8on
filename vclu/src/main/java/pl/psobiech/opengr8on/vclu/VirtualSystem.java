@@ -88,7 +88,7 @@ public class VirtualSystem implements Closeable {
     public void newObject(int index, String name, int ipAddress) {
         final VirtualObject virtualObject = switch (index) {
             // TODO: temporarily we depend that the main CLU is initialized first-ish
-            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), aDriveDirectory));
+            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
             case RemoteCLU.INDEX -> new RemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), networkInterface, cipherKey);
             case Timer.INDEX -> new Timer(name);
             case Storage.INDEX -> new Storage(name);

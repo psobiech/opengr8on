@@ -21,10 +21,6 @@ package pl.psobiech.opengr8on.vclu;
 import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.net.Inet4Address;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -33,30 +29,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.CLUFiles;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 import static org.luaj.vm2.LuaValue.valueOf;
 
@@ -64,8 +48,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualCLU.class);
 
     public static final int INDEX = 0;
-
-    private static final String SCHEME_TCP = "tcp";
 
     private static final int UTC_TIMEZONE_ID = 22;
 
@@ -97,12 +79,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private static final int TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS = 60;
 
-    private static final int CONNECTION_TIMEOUT_SECONDS = 4;
-
-    private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
-
-    private final Path aDriveDirectory;
-
     private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
 
     private final ScheduledExecutorService executorService;
@@ -111,14 +87,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private volatile ZonedDateTime currentDateTime;
 
-    private MqttClient mqttClient;
-
-    public VirtualCLU(String name, Inet4Address address, Path aDriveDirectory) {
+    public VirtualCLU(String name) {
         super(name);
 
         this.executorService = ThreadUtil.executor(name);
-
-        this.aDriveDirectory = aDriveDirectory;
 
         register(Features.UPTIME, this::getUptime);
         set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
@@ -144,11 +116,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 LuaUtil.trueish(arg1)
             );
         });
-        register(Features.MQTT_CONNECTION, arg1 ->
-            LuaValue.valueOf(
-                mqttClient != null && mqttClient.isConnected()
-            )
-        );
+        set(Features.MQTT_CONNECTION, LuaValue.valueOf(false));
 
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
@@ -168,10 +136,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         );
     }
 
-    public boolean isFortified() {
-        return false;
-    }
-
     @Override
     public void setup() {
         set(Features.STATE, LuaValue.valueOf(State.OK.value));
@@ -179,17 +143,16 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         triggerEvent(Events.INIT);
     }
 
-    @Override
-    public void loop() {
-        final boolean mqttEnable = LuaUtil.trueish(get(Features.USE_MQTT));
-        final boolean mqttAlreadyEnabled = mqttClient != null;
-        if (mqttEnable ^ mqttAlreadyEnabled) {
-            disableMqtt();
+    public boolean isMqttEnabled() {
+        return LuaUtil.trueish(get(Features.USE_MQTT));
+    }
 
-            if (mqttEnable) {
-                enableMqtt();
-            }
-        }
+    public String getMqttUrl() {
+        return LuaUtil.stringify(get(Features.MQTT_URL));
+    }
+
+    public void setMqttConnected(boolean value) {
+        set(Features.MQTT_CONNECTION, LuaValue.valueOf(value));
     }
 
     private LuaNumber getUptime(LuaValue arg1) {
@@ -296,123 +259,17 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return LuaValue.NIL;
     }
 
-    private void disableMqtt() {
-        if (mqttClient != null) {
-            try {
-                mqttClient.disconnect();
-            } catch (MqttException e) {
-                throw new UnexpectedException(e);
-            }
-
-            FileUtil.closeQuietly(mqttClient);
-        }
-
-        mqttClient = null;
-    }
-
-    private void enableMqtt() {
-        // TODO: manage the client connection and topics
-        // TODO: expose some LUA API to publish/subscribe
-        final String mqttUrl = get(Features.MQTT_URL).checkjstring();
-
-        final URI mqttUri = URI.create(mqttUrl);
-
-        try {
-            mqttClient = new MqttClient(mqttUrl, name, null);
-            mqttClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable throwable) {
-                    LOGGER.error("MQTT connectionLost", throwable);
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage message) {
-                    LOGGER.trace("MQTT messageArrived: {} / {}", topic, message);
-
-                    for (MqttTopic mqttTopic : mqttTopics) {
-                        mqttTopic.onMessage(topic, message.getId(), message.getPayload());
-                    }
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken deliveryToken) {
-                    LOGGER.debug("MQTT deliveryComplete: {}", deliveryToken.getMessageId());
-                }
-            });
-
-            final MqttConnectOptions options = new MqttConnectOptions();
-            options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
-            options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
-            options.setAutomaticReconnect(true);
-            options.setCleanSession(false);
-
-            final String userInfo = mqttUri.getUserInfo();
-            if (userInfo != null) {
-                final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
-                if (userInfoPartsOptional.isPresent()) {
-                    final String[] userInfoParts = userInfoPartsOptional.get();
-
-                    options.setUserName(userInfoParts[0]);
-                    options.setPassword(userInfoParts[1].toCharArray());
-                }
-            }
-
-            final Path caCertificatePath = aDriveDirectory.resolve(CLUFiles.MQTT_ROOT_PEM.getFileName());
-            if (!mqttUri.getScheme().equals(SCHEME_TCP) && Files.exists(caCertificatePath)) {
-                options.setSocketFactory(
-                    TlsUtil.createSocketFactory(
-                        caCertificatePath,
-                        aDriveDirectory.resolve(CLUFiles.MQTT_PUBLIC_CRT.getFileName()),
-                        aDriveDirectory.resolve(CLUFiles.MQTT_PRIVATE_PEM.getFileName())
-                    )
-                );
-            }
-
-            executorService.schedule(() -> {
-                    try {
-                        mqttClient.connect(options);
-                        LOGGER.info("Connected to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId());
-
-                        for (MqttTopic mqttTopic : mqttTopics) {
-                            mqttClient.subscribe(
-                                mqttTopic.getTopicFilters()
-                                         .toArray(String[]::new)
-                            );
-                        }
-                    } catch (MqttException e) {
-                        throw new UnexpectedException(e);
-                    }
-                },
-                0, TimeUnit.SECONDS
-            );
-        } catch (MqttException e) {
-            throw new UnexpectedException(e);
-        }
-    }
-
     public void addMqttSubscription(MqttTopic mqttTopic) {
         mqttTopics.add(mqttTopic);
     }
 
-    public MqttClient getMqttClient() {
-        return mqttClient;
+    public List<MqttTopic> getMqttTopics() {
+        return mqttTopics;
     }
 
     @Override
     public void close() {
-        super.close();
-
         executorService.shutdownNow();
-
-        if (mqttClient != null) {
-            try {
-                mqttClient.disconnect();
-            } catch (MqttException e) {
-                LOGGER.warn(e.getMessage(), e);
-            }
-        }
-
-        FileUtil.closeQuietly(mqttClient);
     }
 
     private enum State {

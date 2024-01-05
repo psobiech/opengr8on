@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
 import java.net.SocketException;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -34,6 +36,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -64,10 +72,14 @@ import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.util.ToStringUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer;
 import pl.psobiech.opengr8on.vclu.lua.LuaServer.LuaThreadWrapper;
+import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 public class Server implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -85,6 +97,12 @@ public class Server implements Closeable {
     private static final int RESTART_RETRIES = 8;
 
     private static final long RETRY_DELAY = 100L;
+
+    private static final String SCHEME_TCP = "tcp";
+
+    private static final int CONNECTION_TIMEOUT_SECONDS = 4;
+
+    private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
 
     private final DatagramPacket requestPacket = new DatagramPacket(EMPTY_BUFFER, 0);
 
@@ -104,7 +122,7 @@ public class Server implements Closeable {
 
     private final ScheduledExecutorService executorService = ThreadUtil.executor("cluServer");
 
-    private LuaThreadWrapper luaThread;
+    private LuaThreadWrapper mainThread;
 
     private List<CipherKey> unicastCipherKeys;
 
@@ -113,6 +131,8 @@ public class Server implements Closeable {
     private CipherKey projectCipherKey;
 
     private final TFTPServer tftpServer;
+
+    private MqttClient mqttClient;
 
     public Server(NetworkInterfaceDto networkInterface, Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
         rootDirectory = rootDirectory.toAbsolutePath().normalize();
@@ -127,7 +147,7 @@ public class Server implements Closeable {
         this.unicastCipherKeys   = List.of(projectCipherKey);
         this.broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
 
-        restartLuaThread();
+        startClu();
 
         this.broadcastSocket = SocketUtil.udpListener(
             IPv4AddressUtil.BROADCAST_ADDRESS, // networkInterface.getBroadcastAddress(),
@@ -379,11 +399,7 @@ public class Server implements Closeable {
     }
 
     private Optional<Response> onResetCommand(Request request, ResetCommand.Request command) {
-        LOGGER.warn("Restoring CIPHER KEY...");
-        unicastCipherKeys = List.of(projectCipherKey);
-
-        tftpServer.stop();
-        restartLuaThread();
+        restartClu();
 
         return Optional.of(
             new Response(
@@ -395,18 +411,30 @@ public class Server implements Closeable {
         );
     }
 
-    private void restartLuaThread() {
-        LOGGER.info("VCLU is starting...");
-        FileUtil.closeQuietly(this.luaThread);
+    private void restartClu() {
+        LOGGER.warn("Restoring CIPHER KEY...");
+        unicastCipherKeys = List.of(projectCipherKey);
 
-        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
-        this.luaThread.start();
+        disableMqtt();
+        tftpServer.stop();
+
+        startClu();
+    }
+
+    private void startClu() {
+        LOGGER.info("VCLU is starting...");
+        FileUtil.closeQuietly(this.mainThread);
+
+        this.mainThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
+        this.mainThread.start();
 
         LuaError lastException;
         int retries = RESTART_RETRIES;
         do {
             try {
                 luaCall(LuaScriptCommand.CHECK_ALIVE);
+
+                initialize();
 
                 return;
             } catch (LuaError e) {
@@ -425,16 +453,156 @@ public class Server implements Closeable {
         LOGGER.error("Could not start VCLU...", lastException);
 
         LOGGER.info("Entering VCLU emergency mode!");
-        FileUtil.closeQuietly(this.luaThread);
+        FileUtil.closeQuietly(this.mainThread);
 
-        this.luaThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
-        this.luaThread.start();
+        this.mainThread = LuaServer.create(networkInterface, rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
+        this.mainThread.start();
+    }
+
+    private void initialize() {
+        final VirtualCLU currentClu = mainThread.virtualSystem().getCurrentClu();
+        if (currentClu == null) {
+            LOGGER.warn("VCLU is not properly initialized...");
+
+            return;
+        }
+
+        if (currentClu.isMqttEnabled()) {
+            final Path mqttPath = rootDirectory.resolve("mqtt");
+
+            enableMqtt(
+                currentClu.getMqttUrl(), currentClu.getName(),
+                mqttPath.resolve("ca.crt"),
+                mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
+                currentClu
+            );
+        }
     }
 
     private LuaValue luaCall(String script) {
-        return this.luaThread.globals()
-                             .load("return %s".formatted(script))
-                             .call();
+        return this.mainThread.globals()
+                              .load("return %s".formatted(script))
+                              .call();
+    }
+
+    private void disableMqtt() {
+        if (mqttClient != null) {
+            try {
+                mqttClient.disconnect();
+            } catch (MqttException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+
+            FileUtil.closeQuietly(mqttClient);
+        }
+
+        mqttClient = null;
+    }
+
+    private void enableMqtt(
+        String mqttUrl, String name,
+        Path caCertificatePath, Path certificatePath, Path keyPath,
+        VirtualCLU currentClu
+    ) {
+        final URI mqttUri = URI.create(mqttUrl);
+
+        try {
+            mqttClient = new MqttClient(mqttUrl, name, null, executorService);
+            mqttClient.setManualAcks(true);
+            mqttClient.setCallback(new MqttCallback() {
+                @Override
+                public void connectionLost(Throwable throwable) {
+                    LOGGER.error("MQTT connectionLost", throwable);
+
+                    currentClu.setMqttConnected(false);
+                }
+
+                @Override
+                public void messageArrived(String topic, MqttMessage message) {
+                    LOGGER.trace("MQTT messageArrived {}: {}", topic, ToStringUtil.toString(message.getPayload()));
+
+                    for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
+                        mqttTopic.onMessage(
+                            topic, message.getPayload(),
+                            () -> {
+                                try {
+                                    mqttClient.messageArrivedComplete(message.getId(), message.getQos());
+                                } catch (MqttException e) {
+                                    LOGGER.error(e.getMessage(), e);
+                                }
+                            }
+                        );
+                    }
+                }
+
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken deliveryToken) {
+                    LOGGER.trace("MQTT deliveryComplete: {}", deliveryToken.getMessageId());
+                }
+            });
+
+            final MqttConnectOptions options = new MqttConnectOptions();
+            options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
+            options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
+            options.setAutomaticReconnect(true);
+            options.setCleanSession(false);
+
+            final String userInfo = mqttUri.getUserInfo();
+            if (userInfo != null) {
+                final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
+                if (userInfoPartsOptional.isPresent()) {
+                    final String[] userInfoParts = userInfoPartsOptional.get();
+
+                    options.setUserName(userInfoParts[0]);
+                    options.setPassword(userInfoParts[1].toCharArray());
+                }
+            }
+
+            if (!mqttUri.getScheme().equals(SCHEME_TCP) && Files.exists(caCertificatePath)) {
+                options.setSocketFactory(
+                    TlsUtil.createSocketFactory(
+                        caCertificatePath,
+                        certificatePath, keyPath
+                    )
+                );
+            }
+
+            for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
+                // TODO: pass only a sub-interface
+                mqttTopic.setMqttClient(mqttClient);
+            }
+
+            executorService.schedule(() -> {
+                    try {
+                        mqttClient.connect(options);
+
+                        LOGGER.info("Connected to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId());
+                    } catch (MqttException e) {
+                        LOGGER.error("Error while connecting to MQTT", e);
+                    }
+
+                    final boolean connected = mqttClient.isConnected();
+                    currentClu.setMqttConnected(connected);
+
+                    if (connected) {
+                        for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
+                            try {
+                                mqttClient.subscribe(
+                                    mqttTopic.getTopicFilters()
+                                             .toArray(String[]::new)
+                                );
+                            } catch (MqttException e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+                        }
+                    }
+
+                },
+                0, TimeUnit.SECONDS
+            );
+        } catch (MqttException e) {
+            throw new UnexpectedException(e);
+        }
     }
 
     private Optional<Response> onLuaScriptCommand(Request request, LuaScriptCommand.Request command) {
@@ -552,7 +720,9 @@ public class Server implements Closeable {
 
         broadcastSocket.close();
 
-        luaThread.close();
+        mainThread.close();
+
+        disableMqtt();
 
         executorService.shutdownNow();
     }
