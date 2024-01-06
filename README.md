@@ -26,13 +26,16 @@ TODOs:
 
 ## Virtual Objects
 
-### MqttTopic
+### MqttTopic (and mosquitto configuration)
 
 [MQTT.md](MQTT.md)
 
 ### Timer
 
 ### HttpRequest
+
+## Example Client
+[client/README.md](client%2FREADME.md)
 
 ## Quickstart
 
@@ -52,6 +55,14 @@ TODOs:
 
 # Build
 
+## Docker
+
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
+
+or
+
+> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest 192.168.31.44
+
 ## Local
 
 > mvn package
@@ -61,14 +72,6 @@ TODOs:
 or
 
 > java -jar vclu/target/vclu.jar 192.168.31.44
-
-## Docker
-
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
-
-or
-
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest 192.168.31.44
 
 # Licenses
 

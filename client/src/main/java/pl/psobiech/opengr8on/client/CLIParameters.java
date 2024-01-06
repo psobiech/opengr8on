@@ -50,7 +50,7 @@ public class CLIParameters {
                                                            .hasArg()
                                                            .build();
 
-    static final Option PROJECT_PATH_OPTION = Option.builder("p").longOpt("project")
+    static final Option PROJECT_PATH_OPTION = Option.builder("pr").longOpt("project")
                                                     .desc(".omp project file path")
                                                     .hasArg()
                                                     .build();

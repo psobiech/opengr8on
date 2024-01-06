@@ -23,8 +23,6 @@ import java.net.Inet4Address;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -151,10 +149,6 @@ public class Main {
         Integer cluLimit,
         InterfaceRegistry interfaceRegistry
     ) {
-        final List<Inet4Address> usedAddresses = new ArrayList<>();
-        usedAddresses.add(networkInterface.getAddress());
-        usedAddresses.add(MIN_IP);
-
         try (Client broadcastClient = new Client(networkInterface.getAddress())) {
             broadcastClient.discover(
                                projectCipherKey, PRIVATE_KEYS,
@@ -168,40 +162,9 @@ public class Main {
                            .forEach(client -> {
                                try (client) {
                                    final CLUDevice device = client.getCluDevice();
-                                   final Inet4Address deviceAddress = device.getAddress();
-
-                                   // temporary hack, we expect the lowest ip to be last
-                                   final Inet4Address lastAddress = usedAddresses.getLast();
-                                   final Inet4Address nextAddress = networkInterface.nextAvailable(
-                                                                                        lastAddress, Duration.ofMillis(TIMEOUT),
-                                                                                        deviceAddress, usedAddresses
-                                                                                    )
-                                                                                    .get();
-
-                                   usedAddresses.add(nextAddress);
 
                                    client.updateCipherKey(projectCipherKey)
                                          .get();
-
-                                   if (!deviceAddress.equals(nextAddress)) {
-                                       client.setAddress(nextAddress, networkInterface.getAddress())
-                                             .map(address -> {
-                                                 Util.repeatUntilTrueOrTimeout(
-                                                     DEFAULT_LONG_TIMEOUT,
-                                                     duration ->
-                                                         Optional.of(
-                                                             IPv4AddressUtil.ping(address)
-                                                         )
-                                                 );
-
-                                                 return address;
-                                             })
-                                             .orElseGet(() -> {
-                                                 LOGGER.warn("CLU did not accept new IP address");
-
-                                                 return null;
-                                             });
-                                   }
 
                                    client.reset(DEFAULT_LONG_TIMEOUT)
                                          .get();
