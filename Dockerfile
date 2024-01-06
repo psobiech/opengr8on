@@ -20,11 +20,11 @@ COPY tftp/pom.xml tftp/
 COPY client/pom.xml client/
 COPY vclu/pom.xml vclu/
 
-COPY vclu/assembly/jar-with-dependencies.xml vclu/assembly/
+COPY assembly/jar-with-dependencies.xml assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
-#RUN mvn -B dependency:go-offline
-RUN mvn -B compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+#RUN mvn -B -T 4 dependency:go-offline
+RUN mvn -B -T 4 compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM app-deps AS app-build
 
@@ -34,7 +34,7 @@ COPY lib lib
 COPY client client
 COPY vclu vclu
 
-RUN mvn -B clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B -T 4 clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21 AS jre-build
 
