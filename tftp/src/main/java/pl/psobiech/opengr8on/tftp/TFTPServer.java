@@ -227,7 +227,7 @@ public class TFTPServer implements Closeable {
      * @param rootDirectory root directory of the server (all files need to be contained within this directory)
      * @param location TFTP location, e.g. a:\file.txt /file.txt or file.txt (in case of a:\file.txt, it will be converted to /a/file.txt)
      */
-    private static Path parseLocation(Path rootDirectory, String location) throws TFTPPacketException {
+    protected static Path parseLocation(Path rootDirectory, String location) throws TFTPPacketException {
         final Matcher matcher = PATH_PATTERN.matcher(location.replaceAll("\\\\", "/"));
         if (!matcher.matches()) {
             throw new TFTPPacketException(TFTPErrorType.ILLEGAL_OPERATION, "Unsupported file location: " + location);
@@ -240,7 +240,7 @@ public class TFTPServer implements Closeable {
         }
 
         final Path path = Paths.get(matcher.group("path"));
-        final Path filePath = parentDirectory.resolve(path);
+        final Path filePath = parentDirectory.resolve(path).toAbsolutePath().normalize();
         if (!filePath.startsWith(rootDirectory)) {
             throw new TFTPPacketException(TFTPErrorType.ACCESS_VIOLATION, "Cannot access files outside of TFTP server root");
         }

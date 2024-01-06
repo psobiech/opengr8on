@@ -67,34 +67,11 @@ public final class FileUtil {
             throw new UnexpectedException(e);
         }
 
-        ThreadUtil.shutdownHook(() -> {
-            try {
-                Files.walkFileTree(TEMPORARY_DIRECTORY, new SimpleFileVisitor<>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                        deleteQuietly(file);
-
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                        deleteQuietly(dir);
-
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
-            } catch (IOException e) {
-                LOGGER.warn(e.getMessage(), e);
-            }
-
-            deleteQuietly(TEMPORARY_DIRECTORY);
-        });
-
         ThreadUtil.getInstance()
                   .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
 
         mkdir(TEMPORARY_DIRECTORY);
+        ThreadUtil.shutdownHook(() -> FileUtil.deleteRecursively(TEMPORARY_DIRECTORY));
     }
 
     private FileUtil() {
