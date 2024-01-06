@@ -11,7 +11,11 @@ name: Test
 on:
   pull_request:
     branches: [ "develop" ]
-
+    paths-ignore:
+      - '.github/**'
+      - '**/**.md'
+      - 'docs/**'
+      - 'badges/**'
 jobs:
   test:
     runs-on: ubuntu-latest

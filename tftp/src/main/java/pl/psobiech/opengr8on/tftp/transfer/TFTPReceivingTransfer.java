@@ -148,7 +148,13 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
                 if (responsePacket instanceof TFTPErrorPacket errorPacket) {
                     // TODO: split internal exceptions from remote ones
-                    throw new TFTPPacketException(errorPacket.getError(), errorPacket.getMessage());
+                    final TFTPErrorType error = errorPacket.getError();
+                    if (error == TFTPErrorType.FILE_NOT_FOUND) {
+                        throw new TFTPPacketException(
+                            error,
+                            "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                        );
+                    }
                 }
 
                 throw new TFTPPacketException(

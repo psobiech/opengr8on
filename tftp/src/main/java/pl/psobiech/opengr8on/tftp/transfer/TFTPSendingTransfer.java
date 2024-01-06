@@ -51,7 +51,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
             boolean firstPacket = !server;
 
-            int block = 1;
+            int block = 0;
             boolean readNextBlock = true;
             TFTPDataPacket requestPacket = null;
 

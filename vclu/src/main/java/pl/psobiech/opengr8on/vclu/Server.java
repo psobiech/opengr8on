@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -561,7 +562,12 @@ public class Server implements Closeable {
         final URI mqttUri = URI.create(mqttUrl);
 
         try {
-            mqttClient = new MqttClient(mqttUrl, name, null, executorService);
+            mqttClient = new MqttClient(
+                mqttUrl,
+                name,
+                null,
+                Executors.newScheduledThreadPool(2 + 2, ThreadUtil.threadFactory("mqtt", true))
+            );
             mqttClient.setTimeToWait(MQTT_TIMEOUT);
             mqttClient.setManualAcks(true);
             mqttClient.setCallback(new MqttCallback() {

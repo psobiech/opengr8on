@@ -169,8 +169,7 @@ public final class FileUtil {
                 return;
             } catch (Exception e) {
                 // log exception and revert to copy
-
-                LOGGER.debug(e.getMessage(), e);
+                LOGGER.trace(e.getMessage(), e);
             }
         }
 

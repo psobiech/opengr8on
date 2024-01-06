@@ -1,17 +1,4 @@
-[![Publish](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml)
-
-# Disclaimer
-
-This project is not endorsed by, directly affiliated with, maintained, authorized, or sponsored by Grenton Sp. z o.o.
-
-The use of any trade name or trademark is for identification and reference purposes only and does not imply any association with the trademark holder of their
-product brand.
-
-Any product names, logos, brands, and other trademarks or images featured or referred to within this page are the property of their respective trademark
-holders.
-
-Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work, and disclaims liability for all uses of
-the work, to the fullest extent permitted by applicable law.
+[![Publish](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml/badge.svg)](https://github.com/psobiech/opengr8on/actions/workflows/publish.yml) ![jacoco.svg](badges%2Fjacoco.svg)
 
 # Virtual CLU
 
@@ -90,3 +77,16 @@ Documentation (docs/ directory) is under CC BY-SA 4.0 license.
 Datasheets are owned by their respective owners.
 
 All other code is licensed under AGPLv3.
+
+# Disclaimer
+
+This project is not endorsed by, directly affiliated with, maintained, authorized, or sponsored by Grenton Sp. z o.o.
+
+The use of any trade name or trademark is for identification and reference purposes only and does not imply any association with the trademark holder of their
+product brand.
+
+Any product names, logos, brands, and other trademarks or images featured or referred to within this page are the property of their respective trademark
+holders.
+
+Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work, and disclaims liability for all uses of
+the work, to the fullest extent permitted by applicable law.

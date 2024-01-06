@@ -152,7 +152,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>pl.psobiech.opengr8on.Main</mainClass>
+              <mainClass>pl.psobiech.opengr8on.client.Main</mainClass>
             </manifest>
           </archive>
         </configuration>

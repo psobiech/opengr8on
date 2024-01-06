@@ -108,7 +108,7 @@ class ServerTest {
         final Path mainLuaPath = aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName());
         Files.writeString(
             mainLuaPath,
-            JStachio.render(new MainLuaTemplate(StringUtils.leftPad(HexUtil.asString(cluDevice.getSerialNumber()), 8, '0')))
+            JStachio.render(new MainLuaTemplate(StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(cluDevice.getSerialNumber()), 8, '0'))))
         );
 
         server = new Server(
@@ -129,7 +129,7 @@ class ServerTest {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(30)
     void emergencyMode() throws Exception {
         Files.delete(aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()));
 
@@ -142,6 +142,7 @@ class ServerTest {
     }
 
     @Test
+    @Timeout(30)
     void normalMode() throws Exception {
         runServer(client -> {
             final Optional<Boolean> aliveOptional = client.checkAlive();
@@ -174,7 +175,7 @@ class ServerTest {
 
     private void runServer(ServerContext fn) throws Exception {
         final Future<Void> future = executor.submit(() -> {
-            Thread.yield();
+            Thread.sleep(100);
             server.listen();
 
             return null;

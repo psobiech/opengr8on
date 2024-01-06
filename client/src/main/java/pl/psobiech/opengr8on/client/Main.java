@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on;
+package pl.psobiech.opengr8on.client;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -31,15 +31,9 @@ import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.CLUFiles;
-import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CLUDeviceConfig;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
@@ -55,9 +49,9 @@ import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
 import pl.psobiech.opengr8on.xml.omp.OmpReader;
 
 public class Main {
-    public static final Duration DEFAULT_LONG_TIMEOUT = Duration.ofMillis(30_000);
+    private static final Duration DEFAULT_LONG_TIMEOUT = Duration.ofMillis(30_000);
 
-    public static final int TIMEOUT = 4_000;
+    private static final int TIMEOUT = 4_000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
@@ -72,106 +66,43 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        final Option helpOption = Option.builder("h").longOpt("help")
-                                        .desc("display current help")
-                                        .build();
-
-        final Option localIPAddressPathOption = Option.builder("nip").longOpt("network-address")
-                                                      .desc("local IPv4 address to use")
-                                                      .hasArg()
-                                                      .build();
-
-        final Option networkInterfaceOption = Option.builder("ni").longOpt("network-interface")
-                                                    .desc("local network interface name")
-                                                    .hasArg()
-                                                    .build();
-
-        //
-
-        final Option projectPathOption = Option.builder("p").longOpt("project")
-                                               .desc("OMP project file path")
-                                               .hasArg()
-                                               .build();
-
-        //
-
-        final Option discoverOption = Option.builder("d").longOpt("discover")
-                                            .desc("discover clus")
-                                            .build();
-
-        final Option deviceInterfacesPathOption = Option.builder("di").longOpt("device-interfaces")
-                                                        .desc("device interfaces directory path")
-                                                        .hasArg()
-                                                        .build();
-
-        final Option cluLimitPathOption = Option.builder("cl").longOpt("clu-limit")
-                                                .desc("maximum number of clus to discover")
-                                                .hasArg()
-                                                .build();
-
-        //
-
-        final Option fetchOption = Option.builder("f").longOpt("fetch")
-                                         .desc("fetch device info")
-                                         .build();
-
-        final Option executeOption = Option.builder("e").longOpt("execute")
-                                           .desc("execute command")
-                                           .hasArg()
-                                           .build();
-
-        final Option ipAddressPathOption = Option.builder("ip").longOpt("address")
-                                                 .desc("local IPv4 address to use")
-                                                 .hasArg()
-                                                 .build();
-
-        //
-
-        final Options options = new Options()
-            .addOption(helpOption)
-            .addOption(localIPAddressPathOption).addOption(networkInterfaceOption).addOption(projectPathOption)
-            .addOption(discoverOption).addOption(deviceInterfacesPathOption).addOption(cluLimitPathOption)
-            .addOption(ipAddressPathOption).addOption(fetchOption).addOption(executeOption);
-
-        final CommandLine commandLine = new DefaultParser().parse(options, args);
-        if (commandLine.hasOption(helpOption)) {
+        final CommandLine commandLine = new DefaultParser().parse(CLIParameters.OPTIONS, args);
+        if (commandLine.hasOption(CLIParameters.HELP_OPTION)) {
             new HelpFormatter()
-                .printHelp("java -jar opengr8on.jar", options);
+                .printHelp("java -jar client.jar", CLIParameters.OPTIONS);
 
             System.exit(0);
         }
 
         //
 
-        final NetworkInterfaceDto networkInterface = getNetworkInterface(commandLine, networkInterfaceOption, localIPAddressPathOption);
+        final NetworkInterfaceDto networkInterface = CLIParameters.getNetworkInterface(commandLine);
         LOGGER.debug("Using network interface: {}", networkInterface);
 
-        if (commandLine.hasOption(discoverOption)) {
-            final InterfaceRegistry interfaceRegistry = getInterfaceRegistry(commandLine, deviceInterfacesPathOption);
-            final CipherKey projectCipherKey = getProjectCipherKey(commandLine, projectPathOption)
-                .orElseGet(() -> {
-                    final CipherKey cipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
-                    LOGGER.debug("Generated random project key: {}", cipherKey);
+        if (commandLine.hasOption(CLIParameters.DISCOVER_OPTION)) {
+            final InterfaceRegistry interfaceRegistry = CLIParameters.getInterfaceRegistry(commandLine);
+            final CipherKey projectCipherKey = CLIParameters.getProjectCipherKey(commandLine)
+                                                            .orElseGet(() -> {
+                                                                final CipherKey cipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
+                                                                LOGGER.debug("Generated random project key: {}", cipherKey);
 
-                    return cipherKey;
-                });
+                                                                return cipherKey;
+                                                            });
 
-            final Integer cluLimit = Optional.ofNullable(commandLine.getOptionValue(cluLimitPathOption))
+            final Integer cluLimit = Optional.ofNullable(commandLine.getOptionValue(CLIParameters.CLU_LIMIT_PATH_OPTION))
                                              .map(Integer::parseInt)
-                                             .orElse(Integer.MAX_VALUE);
+                                             .orElse(1);
 
             discover(networkInterface, projectCipherKey, cluLimit, interfaceRegistry);
 
             return;
         }
 
-        final Inet4Address ipAddress = Optional.ofNullable(commandLine.getOptionValue(ipAddressPathOption))
-                                               .map(IPv4AddressUtil::parseIPv4)
-                                               .orElseThrow(() -> new UnexpectedException("Missing device IP address"));
+        final Inet4Address ipAddress = CLIParameters.getRemoteIPAddress(commandLine);
 
-        if (commandLine.hasOption(fetchOption)) {
-            final InterfaceRegistry interfaceRegistry = getInterfaceRegistry(commandLine, deviceInterfacesPathOption);
-            final CipherKey projectCipherKey = Optional.ofNullable(commandLine.getOptionValue(projectPathOption))
+        if (commandLine.hasOption(CLIParameters.FETCH_OPTION)) {
+            final InterfaceRegistry interfaceRegistry = CLIParameters.getInterfaceRegistry(commandLine);
+            final CipherKey projectCipherKey = Optional.ofNullable(commandLine.getOptionValue(CLIParameters.PROJECT_PATH_OPTION))
                                                        .map(Paths::get)
                                                        .map(OmpReader::readProjectCipherKey)
                                                        .orElseThrow(() -> new UnexpectedException("Provide a project location"));
@@ -180,11 +111,11 @@ public class Main {
             // try (CLUClient client = new CLUClient(networkInterface, device, projectCipherKey)) {
             //     // NOP
             // }
-        } else if (commandLine.hasOption(executeOption)) {
-            final String command = commandLine.getOptionValue(executeOption);
+        } else if (commandLine.hasOption(CLIParameters.EXECUTE_OPTION)) {
+            final String command = commandLine.getOptionValue(CLIParameters.EXECUTE_OPTION);
 
-            final CipherKey projectCipherKey = getProjectCipherKey(commandLine, projectPathOption)
-                .orElseThrow(() -> new UnexpectedException("Provide a project location"));
+            final CipherKey projectCipherKey = CLIParameters.getProjectCipherKey(commandLine)
+                                                            .orElseThrow(() -> new UnexpectedException("Provide a project location"));
 
             try (CLUClient client = new CLUClient(networkInterface.getAddress(), ipAddress, projectCipherKey)) {
                 LOGGER.info(client.execute(command).get());
@@ -212,62 +143,6 @@ public class Main {
                 }
             }
         }
-    }
-
-    private static InterfaceRegistry getInterfaceRegistry(CommandLine commandLine, Option deviceInterfacesPathOption) {
-        return Optional.ofNullable(commandLine.getOptionValue(deviceInterfacesPathOption))
-                       .map(Paths::get)
-                       .map(InterfaceRegistry::new)
-                       .orElseGet(() -> new InterfaceRegistry(Paths.get("./device-interfaces")));
-    }
-
-    private static Optional<CipherKey> getProjectCipherKey(CommandLine commandLine, Option projectPathOption) {
-        return Optional.ofNullable(commandLine.getOptionValue(projectPathOption))
-                       .map(Paths::get)
-                       .map(OmpReader::readProjectCipherKey);
-    }
-
-    private static NetworkInterfaceDto getNetworkInterface(CommandLine commandLine, Option networkInterfaceOption, Option localIPAddressPathOption) {
-        final Optional<String> ipAddressOptional = Optional.ofNullable(commandLine.getOptionValue(localIPAddressPathOption));
-        if (ipAddressOptional.isPresent()) {
-            final String ipAddress = ipAddressOptional.get();
-
-            final Optional<NetworkInterfaceDto> networkInterfaceByAddressOptional = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(ipAddress);
-            if (networkInterfaceByAddressOptional.isEmpty()) {
-                throw new UnexpectedException("Could not find network interface with address: " + ipAddress);
-            }
-
-            final Optional<String> networkInterfaceNameOptional = Optional.ofNullable(commandLine.getOptionValue(networkInterfaceOption));
-            if (networkInterfaceNameOptional.isPresent()) {
-                final String networkInterfaceName = networkInterfaceNameOptional.get();
-                final String ipAddressNetworkInterfaceName = networkInterfaceByAddressOptional.get().getNetworkInterface().getName();
-                if (!networkInterfaceName.equals(ipAddressNetworkInterfaceName)) {
-                    throw new UnexpectedException(
-                        "Network interface %s does not have address %s configured"
-                            .formatted(
-                                networkInterfaceName,
-                                ipAddressNetworkInterfaceName
-                            )
-                    );
-                }
-            }
-
-            return networkInterfaceByAddressOptional.get();
-        }
-
-        final Optional<String> networkInterfaceNameOptional = Optional.ofNullable(commandLine.getOptionValue(networkInterfaceOption));
-        if (networkInterfaceNameOptional.isPresent()) {
-            final String networkInterfaceName = networkInterfaceNameOptional.get();
-
-            final Optional<NetworkInterfaceDto> networkInterfaceByName = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(networkInterfaceName);
-            if (networkInterfaceByName.isEmpty()) {
-                throw new UnexpectedException("Could not find local network interface with name: " + networkInterfaceName);
-            }
-
-            return networkInterfaceByName.get();
-        }
-
-        throw new UnexpectedException("Provide either address or network interface name");
     }
 
     private static void discover(
@@ -321,7 +196,11 @@ public class Main {
 
                                                  return address;
                                              })
-                                             .orElseThrow(() -> new UnexpectedException("CLU did not accept new IP address"));
+                                             .orElseGet(() -> {
+                                                 LOGGER.warn("CLU did not accept new IP address");
+
+                                                 return null;
+                                             });
                                    }
 
                                    client.reset(DEFAULT_LONG_TIMEOUT)

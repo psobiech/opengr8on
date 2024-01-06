@@ -9,6 +9,7 @@ on:
       - '.github/**'
       - '**/**.md'
       - 'docs/**'
+      - 'badges/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +41,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package runtime
         run: |
+          mv vclu/target/vclu-jar-with-dependencies.jar vclu/target/vclu.jar
+          mv client/target/client-jar-with-dependencies.jar client/target/client.jar
           zip -r runtime-${{ steps.tag.outputs.tag }}.zip ./runtime
           cd ./runtime && zip -r ../device-interfaces-${{ steps.tag.outputs.tag }}.zip ./device-interfaces
       - name: Release
@@ -51,11 +54,12 @@ jobs:
           files: |
             runtime-${{ steps.tag.outputs.tag }}.zip
             device-interfaces-${{ steps.tag.outputs.tag }}.zip
-            vclu/target/vclu-jar-with-dependencies.jar
-            client/target/client-jar-with-dependencies.jar
+            vclu/target/vclu.jar
+            client/target/client.jar
       - name: Code Coverage Report
         id: jacoco_reporter
         uses: PavanMudigonda/jacoco-reporter@v4.9
+        if: github.ref == 'refs/heads/develop'
         with:
           coverage_results_path: target/site/jacoco/jacoco.xml
           coverage_report_name: Coverage
@@ -64,8 +68,9 @@ jobs:
           skip_check_run: false
           minimum_coverage: 50
           fail_below_threshold: false
-          publish_only_summary: false
+          publish_only_summary: true
       - name: Attach Coverage Summary
+        if: github.ref == 'refs/heads/develop'
         run: echo "${{ steps.jacoco_reporter.outputs.coverageSummary }}" >> $GITHUB_STEP_SUMMARY
       - name: Submit Dependency Snapshot
         if: github.ref == 'refs/heads/develop'

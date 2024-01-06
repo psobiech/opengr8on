@@ -63,11 +63,26 @@ public final class IPv4AddressUtil {
     );
 
     public static final Set<String> NETWORK_INTERFACE_NAME_PREFIX_BLACKLIST = Set.of(
-        "vmnet", "vboxnet", "docker"
+        "vmnet", "vboxnet"
     );
 
     private IPv4AddressUtil() {
         // NOP
+    }
+
+    public static Optional<NetworkInterfaceDto> getLocalIPv4NetworkInterfaceByNameOrAddress(String nameOrAddress) {
+        final List<NetworkInterfaceDto> networkInterfaces = getLocalIPv4NetworkInterfaces();
+        for (NetworkInterfaceDto networkInterface : networkInterfaces) {
+            if (Objects.equals(networkInterface.getNetworkInterface().getName(), nameOrAddress)) {
+                return Optional.of(networkInterface);
+            }
+
+            if (Objects.equals(networkInterface.getAddress().getHostAddress(), nameOrAddress)) {
+                return Optional.of(networkInterface);
+            }
+        }
+
+        return Optional.empty();
     }
 
     public static Optional<NetworkInterfaceDto> getLocalIPv4NetworkInterfaceByName(String name) {

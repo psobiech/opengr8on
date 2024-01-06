@@ -139,7 +139,7 @@ public class SetIpCommand {
             return Command.serialize(
                 COMMAND,
                 ":",
-                StringUtils.lowerCase(HexUtil.asString(serialNumber)),
+                StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(serialNumber), MAX_SERIAL_NUMBER_SIZE, '0')),
                 ":",
                 ipAddress,
                 ":",

@@ -14,10 +14,24 @@ name: "CodeQL"
 on:
   push:
     branches: [ "develop" ]
+    paths-ignore:
+      - '.github/**'
+      - '**/**.md'
+      - 'docs/**'
+      - 'badges/**'
   pull_request:
     branches: [ "develop" ]
+    paths-ignore:
+      - '.github/**'
+      - '**/**.md'
+      - 'docs/**'
+      - 'badges/**'
   schedule:
-    - cron: '25 13 * * 4'
+    - cron: '23 13 * * 4'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   semgrep:

@@ -31,7 +31,7 @@ public class ThreadUtil {
         System.setProperty("jdk.tracePinnedThreads", "full/short");
     }
 
-    private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks");
+    private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks", false);
 
     private static final ScheduledExecutorService INSTANCE;
 
@@ -70,10 +70,10 @@ public class ThreadUtil {
                      .factory();
     }
 
-    public static ThreadFactory threadFactory(String groupName) {
+    public static ThreadFactory threadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()
                      .name(groupName)
-                     .daemon(false)
+                     .daemon(daemon)
                      .inheritInheritableThreadLocals(true)
                      .factory();
     }
