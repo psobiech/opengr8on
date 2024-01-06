@@ -75,7 +75,6 @@
         <artifactId>versions-maven-plugin</artifactId>
         <version>2.16.2</version>
         <configuration>
-          <nextSnapshot>true</nextSnapshot>
           <processAllModules>true</processAllModules>
           <generateBackupPoms>false</generateBackupPoms>
         </configuration>

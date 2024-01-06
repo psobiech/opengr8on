@@ -12,7 +12,7 @@ on:
       - 'badges/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -83,9 +83,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup main branches locally
+      - name: Setup master branche locally
+        continue-on-error: true
         run: |
           git fetch origin master:master
+      - name: Setup develop branche locally
+        continue-on-error: true
+        run: |
           git fetch origin develop:develop
       - name: Describe tag
         id: tag
