@@ -105,6 +105,8 @@ public class Server implements Closeable {
 
     private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
 
+    private static final int MQTT_TIMEOUT = 1000;
+
     private final DatagramPacket requestPacket = new DatagramPacket(EMPTY_BUFFER, 0);
 
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
@@ -567,7 +569,7 @@ public class Server implements Closeable {
 
         try {
             mqttClient = new MqttClient(mqttUrl, name, null, executorService);
-            mqttClient.setTimeToWait(1);
+            mqttClient.setTimeToWait(MQTT_TIMEOUT);
             mqttClient.setManualAcks(true);
             mqttClient.setCallback(new MqttCallback() {
                 @Override
