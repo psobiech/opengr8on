@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -34,9 +33,11 @@ import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
+import pl.psobiech.opengr8on.util.FileUtil;
 
 public abstract class TFTPReceivingTransfer extends TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPReceivingTransfer.class);
@@ -47,7 +48,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
         InetAddress requestAddress, int requestPort,
         Path targetPath
     ) throws IOException, TFTPPacketException {
-        final Path temporaryPath = Files.createTempFile(null, null);
+        final Path temporaryPath = FileUtil.temporaryFile();
 
         final OutputStream outputStream;
         try {
@@ -97,14 +98,18 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                         acknowledgedBlock = receivedBlock;
                     }
 
-                    lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
-                    tftp.send(lastSentAck);
-                    if (dataLength < TFTPDataPacket.MAX_DATA_LENGTH) {
+                    if (dataLength >= TFTPDataPacket.MAX_DATA_LENGTH) {
+                        lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
+                        tftp.send(lastSentAck);
+                    } else {
                         // end of stream signal - The transfer is complete.
                         outputStream.close();
 
                         Files.createDirectories(targetPath.getParent());
-                        Files.move(temporaryPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                        FileUtil.linkOrCopy(temporaryPath, targetPath);
+
+                        lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
+                        tftp.send(lastSentAck);
 
                         if (!server) {
                             return;
@@ -141,6 +146,11 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                     continue;
                 }
 
+                if (responsePacket instanceof TFTPErrorPacket errorPacket) {
+                    // TODO: split internal exceptions from remote ones
+                    throw new TFTPPacketException(errorPacket.getError(), errorPacket.getMessage());
+                }
+
                 throw new TFTPPacketException(
                     TFTPErrorType.UNDEFINED,
                     "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
@@ -159,5 +169,4 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
         return outputStream;
     }
-
 }

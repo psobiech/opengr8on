@@ -59,6 +59,10 @@ public class TFTP implements Closeable {
         return socket.getLocalPort();
     }
 
+    public void discard() {
+        socket.discard(new DatagramPacket(receiveBuffer, receiveBuffer.length));
+    }
+
     public void send(TFTPPacket packet) throws IOException {
         LOGGER.trace("{}: {}", ">", packet);
 

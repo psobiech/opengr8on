@@ -65,6 +65,8 @@ public class TFTPClient implements Closeable {
     private void execute(TFTPTransfer transfer) throws IOException, TFTPPacketException {
         tftpLock.lock();
         try {
+            tftp.discard();
+
             transfer.execute(tftp);
         } finally {
             tftpLock.unlock();

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.slf4j.Logger;
@@ -80,9 +81,9 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
                 }
 
                 if (!(responsePacket instanceof final TFTPAckPacket ack)) {
-                    LOGGER.error("Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted.");
-
-                    break;
+                    throw new TFTPPacketException(
+                        TFTPErrorType.UNDEFINED, "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                    );
                 }
 
                 // once we get here, we know we have an answer packet from the correct host.
@@ -100,16 +101,17 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
                     readNextBlock = false;
 
                     if (retry-- < 0) {
-                        final TFTPPacketException packetException = new TFTPPacketException(
-                            TFTPErrorType.UNDEFINED, "Communication error, no retries available"
+                        throw new TFTPPacketException(
+                            TFTPErrorType.UNDEFINED, "Communication error, no more retries available"
                         );
-                        tftp.send(packetException.asError(requestAddress, requestPort));
-
-                        throw packetException;
                     }
                 }
             } while (lastRead == TFTPDataPacket.MAX_DATA_LENGTH && !Thread.interrupted());
-        } catch (FileNotFoundException e) {
+        } catch (TFTPPacketException packetException) {
+            tftp.send(packetException.asError(requestAddress, requestPort));
+
+            throw packetException;
+        } catch (FileNotFoundException | NoSuchFileException e) {
             final TFTPPacketException packetException = new TFTPPacketException(
                 TFTPErrorType.FILE_NOT_FOUND, e.getMessage(), e
             );

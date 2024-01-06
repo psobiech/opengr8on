@@ -37,6 +37,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
@@ -127,8 +129,8 @@ class TFTPTest {
     void uploadBinary(int bufferSize) throws Exception {
         final byte[] expectedBuffer = RandomUtil.bytes(bufferSize);
 
-        final Path temporaryPathFrom = Files.createTempFile(null, null);
-        final Path temporaryPathTo = Files.createTempFile(null, null);
+        final Path temporaryPathFrom = FileUtil.temporaryFile();
+        final Path temporaryPathTo = FileUtil.temporaryFile();
         try {
             Files.write(temporaryPathFrom, expectedBuffer);
 
@@ -166,8 +168,8 @@ class TFTPTest {
     void uploadTextAscii() throws Exception {
         final String expectedString = "Some test string\nand a second line\n";
 
-        final Path temporaryPathFrom = Files.createTempFile(null, null);
-        final Path temporaryPathTo = Files.createTempFile(null, null);
+        final Path temporaryPathFrom = FileUtil.temporaryFile();
+        final Path temporaryPathTo = FileUtil.temporaryFile();
         try {
             Files.writeString(temporaryPathFrom, expectedString);
 
@@ -197,7 +199,28 @@ class TFTPTest {
         }
     }
 
-    private interface ServerContext {
-        void execute(TFTPClient client) throws Exception;
+    @Test
+    void downloadNotFound() throws Exception {
+        final Path temporaryPathTo = FileUtil.temporaryFile();
+        try {
+            final String fileName = "notexisting.lua";
+
+            final Path expectedPath = rootDirectory.resolve(fileName);
+            assertFalse(Files.exists(expectedPath));
+
+            try {
+                client.download(
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    fileName,
+                    temporaryPathTo
+                );
+            } catch (TFTPPacketException e) {
+                assertEquals(TFTPErrorType.FILE_NOT_FOUND, e.getError());
+            }
+
+            assertFalse(Files.exists(expectedPath));
+        } finally {
+            FileUtil.deleteQuietly(temporaryPathTo);
+        }
     }
 }

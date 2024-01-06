@@ -56,9 +56,17 @@ public class TFTPPacketException extends Exception {
     }
 
     public TFTPErrorPacket asError(InetAddress address, int port) {
+        final String message;
+        final Throwable cause = getCause();
+        if (cause == null) {
+            message = getMessage();
+        } else {
+            message = cause.getClass().getSimpleName() + ": " + getMessage();
+        }
+
         return new TFTPErrorPacket(
             address, port,
-            getError(), getMessage()
+            getError(), message
         );
     }
 

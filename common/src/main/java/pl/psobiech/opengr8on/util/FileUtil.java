@@ -162,7 +162,7 @@ public final class FileUtil {
     public static void linkOrCopy(Path from, Path to) {
         deleteQuietly(to);
 
-        if (!SystemUtils.IS_OS_WINDOWS) {
+        if (!SystemUtils.IS_OS_WINDOWS && !Files.exists(to)) {
             try {
                 Files.createLink(to, from);
 
