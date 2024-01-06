@@ -24,7 +24,7 @@
 
   <groupId>pl.psobiech.opengr8on</groupId>
   <artifactId>aggregator</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>OpenGr8on Aggregator</name>
