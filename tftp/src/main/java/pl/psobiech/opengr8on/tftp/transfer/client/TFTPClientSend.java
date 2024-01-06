@@ -26,7 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPSendingTransfer;
@@ -54,6 +58,20 @@ public class TFTPClientSend extends TFTPSendingTransfer {
         final TFTPPacket responsePacket = readResponsePacket(tftp, true, host, port, tftpPacket);
         host = responsePacket.getAddress();
         port = responsePacket.getPort();
+
+        if (!(responsePacket instanceof TFTPAckPacket)) {
+            if (responsePacket instanceof TFTPErrorPacket errorPacket) {
+                throw new TFTPException(
+                    errorPacket.getError(),
+                    "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                );
+            }
+
+            throw new TFTPException(
+                TFTPErrorType.UNDEFINED,
+                "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+            );
+        }
 
         outgoingTransfer(tftp, false, file, tftpPacket.getMode(), host, port);
     }

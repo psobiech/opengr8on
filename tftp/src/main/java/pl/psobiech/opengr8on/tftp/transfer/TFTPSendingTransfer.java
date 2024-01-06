@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
@@ -81,7 +82,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
                 }
 
                 if (!(responsePacket instanceof final TFTPAckPacket ack)) {
-                    throw new TFTPPacketException(
+                    throw new TFTPException(
                         TFTPErrorType.UNDEFINED, "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                     );
                 }
@@ -101,7 +102,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
                     readNextBlock = false;
 
                     if (retry-- < 0) {
-                        throw new TFTPPacketException(
+                        throw new TFTPException(
                             TFTPErrorType.UNDEFINED, "Communication error, no more retries available"
                         );
                     }
@@ -138,5 +139,4 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
         return inputStream;
     }
-
 }

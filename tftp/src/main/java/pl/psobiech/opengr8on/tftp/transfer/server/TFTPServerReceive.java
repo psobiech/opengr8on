@@ -41,14 +41,6 @@ public class TFTPServerReceive extends TFTPReceivingTransfer {
 
     private final Path path;
 
-    public TFTPServerReceive(TFTPWriteRequestPacket tftpPacket, Path path) {
-        this(
-            tftpPacket.getAddress(), tftpPacket.getPort(),
-            tftpPacket.getMode(),
-            path, tftpPacket.getFileName()
-        );
-    }
-
     public TFTPServerReceive(InetAddress requestAddress, int requestPort, TFTPTransferMode mode, Path path, String location) {
         this.requestAddress = requestAddress;
         this.requestPort    = requestPort;

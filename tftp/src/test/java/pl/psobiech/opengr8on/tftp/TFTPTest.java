@@ -33,7 +33,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.util.FileUtil;
@@ -62,6 +62,10 @@ class TFTPTest {
     private static Future<Void> serverFuture;
 
     private static TFTPClient client;
+
+    private String LF = Character.toString(0x0A);
+
+    private String CR = Character.toString(0x0D);
 
     @BeforeAll
     static void setUp() throws Exception {
@@ -103,7 +107,7 @@ class TFTPTest {
             0,
             1,
             1023, 1024, 1025, // multiple blocks
-            (0xFFFF + 513) * TFTPPacket.SEGMENT_SIZE // block number rollover
+            0xFFFF * TFTPPacket.SEGMENT_SIZE + 1025 // block number rollover
         }
     )
     void uploadBinary(int bufferSize) throws Exception {
@@ -145,15 +149,15 @@ class TFTPTest {
     }
 
     @Test
-    void uploadTextAscii() throws Exception {
-        final String expectedString = "Some test string\nand a second line\n";
+    void uploadDownloadTextAsciiLF() throws Exception {
+        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
         try {
             Files.writeString(temporaryPathFrom, expectedString);
 
-            final String fileName = "main.lua";
+            final String fileName = "uploadDownloadTextAsciiLF.lua";
 
             final Path expectedPath = rootDirectory.resolve(fileName);
             assertFalse(Files.exists(expectedPath));
@@ -180,6 +184,97 @@ class TFTPTest {
     }
 
     @Test
+    void uploadDownloadTextAsciiCRLF() throws Exception {
+        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String inputString = "Some test string" + CR + LF + "and a second line" + CR + LF + " ;-)";
+
+        final Path temporaryPathFrom = FileUtil.temporaryFile();
+        final Path temporaryPathTo = FileUtil.temporaryFile();
+        try {
+            Files.writeString(temporaryPathFrom, inputString);
+
+            final String fileName = "uploadTextAsciiCRLF.lua";
+
+            final Path expectedPath = rootDirectory.resolve(fileName);
+            assertFalse(Files.exists(expectedPath));
+
+            client.upload(
+                LOCALHOST, TFTPTransferMode.NETASCII,
+                temporaryPathFrom,
+                fileName
+            );
+
+            client.download(
+                LOCALHOST, TFTPTransferMode.NETASCII,
+                fileName,
+                temporaryPathTo
+            );
+
+            assertTrue(Files.exists(expectedPath));
+            assertEquals(expectedString, Files.readString(expectedPath));
+            assertEquals(expectedString, Files.readString(temporaryPathTo));
+        } finally {
+            FileUtil.deleteQuietly(temporaryPathFrom);
+            FileUtil.deleteQuietly(temporaryPathTo);
+        }
+    }
+
+    @Test
+    void downloadTextAsciiLF() throws Exception {
+        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+
+        final Path temporaryPathFrom = FileUtil.temporaryFile();
+        final Path temporaryPathTo = FileUtil.temporaryFile();
+        try {
+            final String fileName = "downloadTextAsciiLF.lua";
+
+            final Path expectedPath = rootDirectory.resolve(fileName);
+            assertFalse(Files.exists(expectedPath));
+
+            Files.writeString(expectedPath, expectedString);
+
+            client.download(
+                LOCALHOST, TFTPTransferMode.NETASCII,
+                fileName,
+                temporaryPathTo
+            );
+
+            assertEquals(expectedString, Files.readString(temporaryPathTo));
+        } finally {
+            FileUtil.deleteQuietly(temporaryPathFrom);
+            FileUtil.deleteQuietly(temporaryPathTo);
+        }
+    }
+
+    @Test
+    void downloadTextAsciiCRLF() throws Exception {
+        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String inputString = "Some test string" + CR + LF + "and a second line" + CR + LF + " ;-)";
+
+        final Path temporaryPathFrom = FileUtil.temporaryFile();
+        final Path temporaryPathTo = FileUtil.temporaryFile();
+        try {
+            final String fileName = "downloadTextAsciiCRLF.lua";
+
+            final Path expectedPath = rootDirectory.resolve(fileName);
+            assertFalse(Files.exists(expectedPath));
+
+            Files.writeString(expectedPath, inputString);
+
+            client.download(
+                LOCALHOST, TFTPTransferMode.NETASCII,
+                fileName,
+                temporaryPathTo
+            );
+
+            assertEquals(expectedString, Files.readString(temporaryPathTo));
+        } finally {
+            FileUtil.deleteQuietly(temporaryPathFrom);
+            FileUtil.deleteQuietly(temporaryPathTo);
+        }
+    }
+
+    @Test
     void downloadNotFound() throws Exception {
         final Path temporaryPathTo = FileUtil.temporaryFile();
         try {
@@ -194,13 +289,59 @@ class TFTPTest {
                     fileName,
                     temporaryPathTo
                 );
-            } catch (TFTPPacketException e) {
+            } catch (TFTPException e) {
                 assertEquals(TFTPErrorType.FILE_NOT_FOUND, e.getError());
             }
 
             assertFalse(Files.exists(expectedPath));
         } finally {
             FileUtil.deleteQuietly(temporaryPathTo);
+        }
+    }
+
+    @Test
+    void downloadDirectory() throws Exception {
+        final Path temporaryPathTo = FileUtil.temporaryFile();
+        try {
+            final String fileName = "imadirectory";
+
+            final Path expectedPath = rootDirectory.resolve(fileName);
+            FileUtil.mkdir(expectedPath);
+
+            try {
+                client.download(
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    fileName,
+                    temporaryPathTo
+                );
+            } catch (TFTPException e) {
+                assertEquals(TFTPErrorType.UNDEFINED, e.getError());
+            }
+        } finally {
+            FileUtil.deleteQuietly(temporaryPathTo);
+        }
+    }
+
+    @Test
+    void uploadToDirectory() throws Exception {
+        final Path temporaryPathFrom = FileUtil.temporaryFile();
+        try {
+            final String fileName = "imadirectory";
+
+            final Path expectedPath = rootDirectory.resolve(fileName);
+            FileUtil.mkdir(expectedPath);
+
+            try {
+                client.upload(
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    temporaryPathFrom,
+                    fileName
+                );
+            } catch (TFTPException e) {
+                assertEquals(TFTPErrorType.FILE_EXISTS, e.getError());
+            }
+        } finally {
+            FileUtil.deleteQuietly(temporaryPathFrom);
         }
     }
 }

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
@@ -147,17 +148,13 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                 }
 
                 if (responsePacket instanceof TFTPErrorPacket errorPacket) {
-                    // TODO: split internal exceptions from remote ones
-                    final TFTPErrorType error = errorPacket.getError();
-                    if (error == TFTPErrorType.FILE_NOT_FOUND) {
-                        throw new TFTPPacketException(
-                            error,
-                            "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
-                        );
-                    }
+                    throw new TFTPException(
+                        errorPacket.getError(),
+                        "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                    );
                 }
 
-                throw new TFTPPacketException(
+                throw new TFTPException(
                     TFTPErrorType.UNDEFINED,
                     "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                 );

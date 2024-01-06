@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPSendingTransfer;
 
 public class TFTPServerSend extends TFTPSendingTransfer {
@@ -40,14 +39,6 @@ public class TFTPServerSend extends TFTPSendingTransfer {
     private final TFTPTransferMode mode;
 
     private final Path path;
-
-    public TFTPServerSend(TFTPReadRequestPacket tftpPacket, Path path) {
-        this(
-            tftpPacket.getAddress(), tftpPacket.getPort(),
-            tftpPacket.getMode(),
-            path, tftpPacket.getFileName()
-        );
-    }
 
     public TFTPServerSend(
         InetAddress requestAddress, int requestPort,
