@@ -25,11 +25,10 @@ import java.util.Arrays;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public abstract class TFTPPacket {
     protected static final int OPERATOR_TYPE_OFFSET = 1;
-
-    static final int MIN_PACKET_SIZE = 4;
 
     public static final int SEGMENT_SIZE = 512;
 
@@ -45,15 +44,9 @@ public abstract class TFTPPacket {
         this.port    = port;
     }
 
-    public static TFTPPacket newTFTPPacket(DatagramPacket datagram) throws TFTPPacketException {
-        if (datagram.getLength() < MIN_PACKET_SIZE) {
-            throw new TFTPPacketException("Bad packet. Datagram data length is too short.");
-        }
-
-        final byte[] data = datagram.getData();
-
-        return TFTPPacketType.ofPacketType(data[OPERATOR_TYPE_OFFSET])
-                             .parse(datagram);
+    public static TFTPPacket newTFTPPacket(Payload payload) throws TFTPPacketException {
+        return TFTPPacketType.ofPacketType(payload.buffer()[OPERATOR_TYPE_OFFSET])
+                             .parse(payload);
     }
 
     public InetAddress getAddress() {

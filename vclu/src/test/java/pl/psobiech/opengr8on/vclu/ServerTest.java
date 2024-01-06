@@ -52,8 +52,8 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ResourceUtil;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,19 +68,17 @@ class ServerTest {
 
     private Path aDriveDirectory;
 
-    private UDPSocket broadcastSocket;
-
-    private UDPSocket socket;
-
     private TFTPServer tftpServer;
 
     private CipherKey projectCipherKey;
 
     private CLUDevice cluDevice;
 
-    private Server server;
+    private UDPSocket broadcastSocket;
 
-    private CLUClient client;
+    private UDPSocket socket;
+
+    private Server server;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -130,7 +128,6 @@ class ServerTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        FileUtil.closeQuietly(client);
         FileUtil.closeQuietly(server);
         executor.shutdownNow();
 
@@ -208,11 +205,14 @@ class ServerTest {
         });
         server.awaitInitialized();
 
+        CLUClient client = null;
         try {
             client = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, socket.getLocalPort());
 
             fn.execute(client);
         } finally {
+            FileUtil.closeQuietly(client);
+
             future.cancel(true);
 
             try {

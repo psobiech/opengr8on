@@ -19,45 +19,62 @@
 package pl.psobiech.opengr8on.tftp;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.locks.ReentrantLock;
 
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientReceive;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientSend;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 
 public class TFTPClient implements Closeable {
     private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
 
-    public Future<Void> receive(String fileName, InetAddress host, int port, TFTPTransferMode mode, Path path) {
-        return transfer(
-            new TFTPClientReceive(host, port, mode, fileName, path)
-        );
+    private final ReentrantLock tftpLock = new ReentrantLock();
+
+    private final TFTP tftp;
+
+    private final int port;
+
+    public TFTPClient(UDPSocket socket) {
+        this(socket, TFTP.DEFAULT_PORT);
     }
 
-    public Future<Void> send(Path path, TFTPTransferMode mode, InetAddress host, int port, String fileName) {
-        return transfer(
-            new TFTPClientSend(host, port, mode, fileName, path)
-        );
+    public TFTPClient(UDPSocket socket, int port) {
+        this.tftp = new TFTP(socket);
+        this.port = port;
     }
 
-    private Future<Void> transfer(TFTPTransfer transfer) {
-        return executorService.submit(() -> {
-            try (TFTP tftp = new TFTP()) {
-                tftp.open();
+    public void open() {
+        tftp.open();
+    }
 
-                transfer.execute(tftp);
-            }
+    public void download(InetAddress host, TFTPTransferMode mode, String fileName, Path path) throws TFTPPacketException, IOException {
+        execute(new TFTPClientReceive(host, port, mode, fileName, path));
+    }
 
-            return null;
-        });
+    public void upload(InetAddress host, TFTPTransferMode mode, Path path, String fileName) throws TFTPPacketException, IOException {
+        execute(new TFTPClientSend(host, port, mode, fileName, path));
+    }
+
+    private void execute(TFTPTransfer transfer) throws IOException, TFTPPacketException {
+        tftpLock.lock();
+        try {
+            transfer.execute(tftp);
+        } finally {
+            tftpLock.unlock();
+        }
     }
 
     @Override
     public void close() {
+        tftp.close();
+
         executorService.shutdownNow();
     }
 }

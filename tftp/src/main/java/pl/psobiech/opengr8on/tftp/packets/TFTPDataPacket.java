@@ -25,6 +25,7 @@ import java.net.InetAddress;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public class TFTPDataPacket extends TFTPBlockPacket {
     public static final int MAX_DATA_LENGTH = 512;
@@ -33,31 +34,31 @@ public class TFTPDataPacket extends TFTPBlockPacket {
 
     private final int offset;
 
-    private final byte[] data;
+    private final byte[] buffer;
 
-    public TFTPDataPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(TFTPPacketType.DATA, datagram.getAddress(), datagram.getPort(), getBlockNumber(datagram));
+    public TFTPDataPacket(Payload payload) throws TFTPPacketException {
+        super(TFTPPacketType.DATA, payload.address(), payload.port(), getBlockNumber(payload));
 
-        this.data = datagram.getData();
-        if (getType().packetType() != this.data[OPERATOR_TYPE_OFFSET]) {
+        this.buffer = payload.buffer();
+        if (getType().packetType() != this.buffer[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
         this.offset = HEADER_SIZE;
-        this.length = Math.min(datagram.getLength() - HEADER_SIZE, MAX_DATA_LENGTH);
+        this.length = Math.min(buffer.length - HEADER_SIZE, MAX_DATA_LENGTH);
     }
 
-    public TFTPDataPacket(InetAddress destination, int port, int blockNumber, byte[] data, int offset, int length) {
+    public TFTPDataPacket(InetAddress destination, int port, int blockNumber, byte[] buffer, int offset, int length) {
         super(TFTPPacketType.DATA, destination, port, blockNumber);
 
-        this.data   = data;
+        this.buffer = buffer;
         this.offset = offset;
 
         this.length = Math.min(length, MAX_DATA_LENGTH);
     }
 
-    public byte[] getData() {
-        return data;
+    public byte[] getBuffer() {
+        return buffer;
     }
 
     public int getDataLength() {
@@ -75,12 +76,12 @@ public class TFTPDataPacket extends TFTPBlockPacket {
 
     @Override
     public DatagramPacket newDatagram(byte[] buffer) {
-        if (buffer == this.data) {
+        if (buffer == this.buffer) {
             throw new UncheckedIOException(new IOException("Unexpected buffer passed to method"));
         }
 
         writeHeader(buffer);
-        System.arraycopy(this.data, offset, buffer, HEADER_SIZE, length);
+        System.arraycopy(this.buffer, offset, buffer, HEADER_SIZE, length);
 
         return new DatagramPacket(buffer, 0, HEADER_SIZE + length, getAddress(), getPort());
     }

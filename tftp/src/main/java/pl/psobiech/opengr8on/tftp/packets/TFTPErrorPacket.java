@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public class TFTPErrorPacket extends TFTPPacket {
     private static final int HEADER_SIZE = 4;
@@ -34,21 +35,21 @@ public class TFTPErrorPacket extends TFTPPacket {
 
     private final String message;
 
-    public TFTPErrorPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(TFTPPacketType.ERROR, datagram.getAddress(), datagram.getPort());
+    public TFTPErrorPacket(Payload payload) throws TFTPPacketException {
+        super(TFTPPacketType.ERROR, payload.address(), payload.port());
 
-        final int length = datagram.getLength();
+        final byte[] buffer = payload.buffer();
+        if (getType().packetType() != buffer[OPERATOR_TYPE_OFFSET]) {
+            throw new TFTPPacketException("TFTP operator code does not match type.");
+        }
+
+        final int length = buffer.length;
         if (length < HEADER_SIZE + 1) {
             throw new TFTPPacketException("Bad error packet. No message.");
         }
 
-        final byte[] data = datagram.getData();
-        if (getType().packetType() != data[OPERATOR_TYPE_OFFSET]) {
-            throw new TFTPPacketException("TFTP operator code does not match type.");
-        }
-
-        error   = TFTPErrorType.ofErrorCode(readInt(data, ERROR_OFFSET));
-        message = readNullTerminatedString(data, HEADER_SIZE, length);
+        error   = TFTPErrorType.ofErrorCode(readInt(buffer, ERROR_OFFSET));
+        message = readNullTerminatedString(buffer, HEADER_SIZE, length);
     }
 
     public TFTPErrorPacket(InetAddress destination, int port, TFTPErrorType error, String message) {

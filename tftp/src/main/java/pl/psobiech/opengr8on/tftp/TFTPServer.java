@@ -26,7 +26,9 @@ import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Enumeration;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,22 +37,24 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
+import pl.psobiech.opengr8on.util.SocketUtil;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 
 public class TFTPServer implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
 
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
     private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
 
     private final InetAddress localAddress;
-
-    private final int port;
 
     private final ServerMode mode;
 
@@ -65,14 +69,17 @@ public class TFTPServer implements Closeable {
     }
 
     public TFTPServer(InetAddress localAddress, int port, ServerMode mode, Path serverDirectory) {
+        this(localAddress, mode, serverDirectory, SocketUtil.udpListener(localAddress, port));
+    }
+
+    public TFTPServer(InetAddress localAddress, ServerMode mode, Path serverDirectory, UDPSocket socket) {
         this.localAddress = localAddress;
-        this.port         = port;
 
         this.mode = mode;
 
         this.serverDirectory = serverDirectory.toAbsolutePath().normalize();
 
-        this.serverTFTP = new TFTP();
+        this.serverTFTP = new TFTP(socket);
     }
 
     private static InetAddress getAddress(NetworkInterface networkInterface) {
@@ -92,20 +99,10 @@ public class TFTPServer implements Closeable {
             return listener;
         }
 
-        try {
-            if (localAddress == null) {
-                serverTFTP.open(port);
-            } else {
-                serverTFTP.open(port, localAddress);
-            }
-        } catch (SocketException e) {
-            serverTFTP.close();
-
-            throw e;
-        }
+        serverTFTP.open();
 
         listener = executorService.submit(() -> {
-                LOGGER.debug("Starting TFTP Server on port " + port + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
+                LOGGER.debug("Starting TFTP Server on port " + serverTFTP.getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
                 Files.createDirectories(serverDirectory);
 
@@ -118,12 +115,29 @@ public class TFTPServer implements Closeable {
         return listener;
     }
 
+    public void awaitInitialized() throws InterruptedException {
+        synchronized (serverTFTP) {
+            serverTFTP.wait();
+        }
+    }
+
     private void listen() {
         try (serverTFTP) {
+            synchronized (serverTFTP) {
+                serverTFTP.notifyAll();
+            }
+
+            final int port = serverTFTP.getPort();
+
             do {
                 TFTPPacket incomingPacket = null;
                 try {
-                    incomingPacket = serverTFTP.receive();
+                    final Optional<TFTPPacket> incomingPacketOptional = serverTFTP.receive(DEFAULT_TIMEOUT);
+                    if (incomingPacketOptional.isEmpty()) {
+                        continue;
+                    }
+
+                    incomingPacket = incomingPacketOptional.get();
                     if (!(incomingPacket instanceof TFTPRequestPacket requestPacket)) {
                         throw new TFTPPacketException("Unexpected TFTP packet: " + incomingPacket.getType());
                     }
@@ -131,6 +145,10 @@ public class TFTPServer implements Closeable {
                     onRequest(requestPacket);
                 } catch (TFTPPacketException e) {
                     onPacketException(e, incomingPacket);
+                } catch (UncheckedInterruptedException e) {
+                    LOGGER.trace(e.getMessage(), e);
+
+                    break;
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage(), e);
                 }
@@ -163,11 +181,13 @@ public class TFTPServer implements Closeable {
         LOGGER.debug("TFTP transfer " + requestPacket.getType() + " of " + requestPacket.getFileName() + " from/to " + path);
 
         executorService.submit(() -> {
-            try (TFTP tftp = new TFTP()) {
+            try (TFTP tftp = new TFTP(SocketUtil.udpRandomPort(localAddress))) {
                 tftp.open();
 
                 transferType.create(requestPacket, path)
                             .execute(tftp);
+            } catch (UncheckedInterruptedException e) {
+                LOGGER.trace(e.getMessage(), e);
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
             }

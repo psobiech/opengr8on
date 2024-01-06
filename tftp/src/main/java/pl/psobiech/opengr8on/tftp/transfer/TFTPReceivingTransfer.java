@@ -22,12 +22,11 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 
-import org.apache.commons.net.io.FromNetASCIIOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
@@ -88,7 +87,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                 }
 
                 if (responsePacket instanceof TFTPDataPacket dataPacket) {
-                    final byte[] data = dataPacket.getData();
+                    final byte[] data = dataPacket.getBuffer();
                     final int dataLength = dataPacket.getDataLength();
                     final int dataOffset = dataPacket.getDataOffset();
 
@@ -112,29 +111,29 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                         }
 
                         // But my ack may be lost - so listen to see if I need to resend the ack.
-                        int retries = maxRetries;
                         do {
-                            try {
-                                final TFTPPacket unexpectedResponsePacket = tftp.receive();
-                                final InetAddress responseAddress = unexpectedResponsePacket.getAddress();
-                                final int responsePort = unexpectedResponsePacket.getPort();
-                                if (!responseAddress.equals(requestAddress)
-                                    || !(responsePort == requestPort)) {
-                                    final TFTPPacketException packetException = new TFTPPacketException(
-                                        TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port"
-                                    );
-                                    LOGGER.debug("Ignoring message from unexpected source.", packetException);
-
-                                    tftp.send(packetException.asError(responseAddress, responsePort));
-
-                                    continue;
-                                }
-
-                                tftp.send(lastSentAck);
-                            } catch (SocketTimeoutException e) {
-                                // NOP
+                            final Optional<TFTPPacket> repeatResponsePacketOptional = tftp.receive(DEFAULT_TIMEOUT);
+                            if (repeatResponsePacketOptional.isEmpty()) {
+                                return;
                             }
-                        } while (retries-- < 0 && !Thread.interrupted());
+
+                            final TFTPPacket unexpectedResponsePacket = repeatResponsePacketOptional.get();
+                            final InetAddress responseAddress = unexpectedResponsePacket.getAddress();
+                            final int responsePort = unexpectedResponsePacket.getPort();
+                            if (!responseAddress.equals(requestAddress)
+                                || !(responsePort == requestPort)) {
+                                final TFTPPacketException packetException = new TFTPPacketException(
+                                    TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port"
+                                );
+                                LOGGER.debug("Ignoring message from unexpected source.", packetException);
+
+                                tftp.send(packetException.asError(responseAddress, responsePort));
+
+                                continue;
+                            }
+
+                            tftp.send(lastSentAck);
+                        } while (!Thread.interrupted());
 
                         return;
                     }
@@ -160,4 +159,5 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
         return outputStream;
     }
+
 }

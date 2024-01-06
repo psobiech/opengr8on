@@ -26,9 +26,9 @@ import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.commons.net.io.ToNetASCIIInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
@@ -116,6 +116,8 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
             tftp.send(packetException.asError(requestAddress, requestPort));
 
             throw packetException;
+        } catch (UncheckedInterruptedException e) {
+            throw e;
         } catch (Exception e) {
             final TFTPPacketException packetException = new TFTPPacketException(
                 TFTPErrorType.UNDEFINED, e.getMessage(), e
@@ -134,4 +136,5 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
         return inputStream;
     }
+
 }

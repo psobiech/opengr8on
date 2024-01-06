@@ -24,10 +24,11 @@ import java.net.InetAddress;
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public class TFTPReadRequestPacket extends TFTPRequestPacket {
-    public TFTPReadRequestPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(TFTPPacketType.READ_REQUEST, datagram);
+    public TFTPReadRequestPacket(Payload payload) throws TFTPPacketException {
+        super(TFTPPacketType.READ_REQUEST, payload);
     }
 
     public TFTPReadRequestPacket(InetAddress destination, int port, String fileName, TFTPTransferMode mode) {

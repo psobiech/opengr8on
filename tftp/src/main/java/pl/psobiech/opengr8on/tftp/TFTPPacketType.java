@@ -18,8 +18,6 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.net.DatagramPacket;
-
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
@@ -27,11 +25,12 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public enum TFTPPacketType {
     UNKNOWN(
         0,
-        datagramPacket -> {
+        payload -> {
             throw new TFTPPacketException("Bad packet. Invalid TFTP operator code.");
         }
     ),
@@ -60,8 +59,8 @@ public enum TFTPPacketType {
         return packetType;
     }
 
-    public TFTPPacket parse(DatagramPacket datagram) throws TFTPPacketException {
-        return parser.parse(datagram);
+    public TFTPPacket parse(Payload payload) throws TFTPPacketException {
+        return parser.parse(payload);
     }
 
     public static TFTPPacketType ofPacketType(byte packetType) {
@@ -76,6 +75,6 @@ public enum TFTPPacketType {
 
     @FunctionalInterface
     private interface Parser {
-        TFTPPacket parse(DatagramPacket datagramPacket) throws TFTPPacketException;
+        TFTPPacket parse(Payload payload) throws TFTPPacketException;
     }
 }

@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public abstract class TFTPRequestPacket extends TFTPPacket {
     private static final int HEADER_SIZE = 2;
@@ -42,24 +43,24 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
         this.mode     = mode;
     }
 
-    TFTPRequestPacket(TFTPPacketType type, DatagramPacket datagram) throws TFTPPacketException {
-        super(type, datagram.getAddress(), datagram.getPort());
+    TFTPRequestPacket(TFTPPacketType type, Payload payload) throws TFTPPacketException {
+        super(type, payload.address(), payload.port());
 
-        final byte[] data = datagram.getData();
-        if (getType().packetType() != data[OPERATOR_TYPE_OFFSET]) {
+        final byte[] buffer = payload.buffer();
+        if (getType().packetType() != buffer[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
-        final int length = datagram.getLength();
+        final int length = buffer.length;
 
-        final byte[] fileNameAsBytes = readNullTerminated(data, FILE_NAME_OFFSET, length);
+        final byte[] fileNameAsBytes = readNullTerminated(buffer, FILE_NAME_OFFSET, length);
         this.fileName = new String(fileNameAsBytes, StandardCharsets.US_ASCII);
 
         if (2 + fileNameAsBytes.length >= length) {
             throw new TFTPPacketException("Bad file name and mode format.");
         }
 
-        final String modeAsString = readNullTerminatedString(data, FILE_NAME_OFFSET + fileNameAsBytes.length + 1, length)
+        final String modeAsString = readNullTerminatedString(buffer, FILE_NAME_OFFSET + fileNameAsBytes.length + 1, length)
             .toLowerCase(java.util.Locale.ENGLISH);
 
         this.mode = TFTPTransferMode.ofMode(modeAsString);

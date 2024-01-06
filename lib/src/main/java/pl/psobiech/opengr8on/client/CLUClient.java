@@ -19,13 +19,13 @@
 package pl.psobiech.opengr8on.client;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,6 @@ import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPClient;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
@@ -87,31 +86,12 @@ public class CLUClient extends Client implements Closeable {
     public CLUClient(Inet4Address localAddress, CLUDevice cluDevice, CipherKey cipherKey, Inet4Address broadcastAddress, int port) {
         super(localAddress, broadcastAddress, port);
 
-        this.tftpClient = new TFTPClient();
-
         this.cluDevice = cluDevice;
 
         this.cipherKey = cipherKey;
-    }
 
-    public Optional<Boolean> updateCipherKey(CipherKey newCipherKey) {
-        final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_SIZE);
-
-        return request(
-            newCipherKey,
-            SetKeyCommand.request(
-                newCipherKey.encrypt(randomBytes), newCipherKey.getSecretKey(), newCipherKey.getIV()
-            ),
-            DEFAULT_TIMEOUT_DURATION
-        )
-            .flatMap(payload ->
-                SetKeyCommand.responseFromByteArray(payload.buffer())
-                             .map(response -> {
-                                 setCipherKey(newCipherKey);
-
-                                 return true;
-                             })
-            );
+        this.tftpClient = new TFTPClient(SocketUtil.udpRandomPort(localAddress));
+        tftpClient.open();
     }
 
     public Inet4Address getAddress() {
@@ -138,6 +118,26 @@ public class CLUClient extends Client implements Closeable {
 
     public CipherKey getCipherKey() {
         return cipherKey;
+    }
+
+    public Optional<Boolean> updateCipherKey(CipherKey newCipherKey) {
+        final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_SIZE);
+
+        return request(
+            newCipherKey,
+            SetKeyCommand.request(
+                newCipherKey.encrypt(randomBytes), newCipherKey.getSecretKey(), newCipherKey.getIV()
+            ),
+            DEFAULT_TIMEOUT_DURATION
+        )
+            .flatMap(payload ->
+                SetKeyCommand.responseFromByteArray(payload.buffer())
+                             .map(response -> {
+                                 setCipherKey(newCipherKey);
+
+                                 return true;
+                             })
+            );
     }
 
     public void setCipherKey(CipherKey cipherKey) {
@@ -185,40 +185,34 @@ public class CLUClient extends Client implements Closeable {
     }
 
     public Optional<Boolean> stopTFTPdServer() {
-        // not implemented? req_stop_ftp req_tftp_stop don't work
+        // not implemented? req_stop_ftp/req_tftp_stop don't work
         return Optional.of(true);
     }
 
     public void uploadFile(Path path, String location) {
         try {
-            tftpClient.send(
-                          path,
-                          TFTPTransferMode.OCTET,
-                          cluDevice.getAddress(), TFTP.DEFAULT_PORT,
-                          location
-                      )
-                      .get();
-        } catch (ExecutionException e) {
+            tftpClient.upload(
+                cluDevice.getAddress(),
+                TFTPTransferMode.OCTET,
+                path,
+                location
+            );
+        } catch (IOException | TFTPPacketException e) {
             throw new UnexpectedException(e.getCause());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new UnexpectedException(e);
         }
     }
 
     public Optional<Path> downloadFile(String location, Path path) {
         try {
-            tftpClient.receive(
-                          location,
-                          cluDevice.getAddress(), TFTP.DEFAULT_PORT,
-                          TFTPTransferMode.OCTET,
-                          path
-                      )
-                      .get();
+            tftpClient.download(
+                cluDevice.getAddress(),
+                TFTPTransferMode.OCTET,
+                location,
+                path
+            );
 
             return Optional.of(path);
-        } catch (ExecutionException e) {
+        } catch (IOException | TFTPPacketException e) {
             FileUtil.deleteQuietly(path);
 
             final Throwable cause = e.getCause();
@@ -229,12 +223,6 @@ public class CLUClient extends Client implements Closeable {
                     return Optional.empty();
                 }
             }
-
-            throw new UnexpectedException(e);
-        } catch (InterruptedException e) {
-            FileUtil.deleteQuietly(path);
-
-            Thread.currentThread().interrupt();
 
             throw new UnexpectedException(e);
         }

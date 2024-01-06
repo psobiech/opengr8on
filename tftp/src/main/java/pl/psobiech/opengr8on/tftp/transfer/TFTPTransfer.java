@@ -21,7 +21,8 @@ package pl.psobiech.opengr8on.tftp.transfer;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
+import java.time.Duration;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,8 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 
 public abstract class TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPTransfer.class);
+
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
     public static final int DEFAULT_RETRIES = 3;
 
@@ -49,34 +52,31 @@ public abstract class TFTPTransfer {
         InetAddress requestAddress, int requestPort,
         TFTPPacket lastPacket
     ) throws IOException, TFTPPacketException {
-        int retries = maxRetries;
-
         do {
-            try {
-                final TFTPPacket responsePacket = tftp.receive();
-                final InetAddress responseAddress = responsePacket.getAddress();
-                final int responsePort = responsePacket.getPort();
-                if (!allowAllOrigins && (
-                    !responseAddress.equals(requestAddress)
-                    || !(responsePort == requestPort)
-                )) {
-                    final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port");
-                    LOGGER.debug("TFTP Server ignoring message from unexpected source.", packetException);
-
-                    tftp.send(packetException.asError(responseAddress, responsePort));
-
-                    continue;
-                }
-
-                return responsePacket;
-            } catch (SocketTimeoutException e) {
-                if (retries-- < 0) {
-                    throw e;
-                }
-
+            final Optional<TFTPPacket> responsePacketOptional = tftp.receive(DEFAULT_TIMEOUT);
+            if (responsePacketOptional.isEmpty()) {
                 // didn't get an ack for this data. need to resend it.
                 tftp.send(lastPacket);
+
+                continue;
             }
+
+            final TFTPPacket responsePacket = responsePacketOptional.get();
+            final InetAddress responseAddress = responsePacket.getAddress();
+            final int responsePort = responsePacket.getPort();
+            if (!allowAllOrigins
+                && (
+                    !responseAddress.equals(requestAddress) || !(responsePort == requestPort)
+                )) {
+                final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port");
+                LOGGER.debug("TFTP Server ignoring message from unexpected source.", packetException);
+
+                tftp.send(packetException.asError(responseAddress, responsePort));
+
+                continue;
+            }
+
+            return responsePacket;
         } while (!Thread.interrupted());
 
         throw new InterruptedIOException();

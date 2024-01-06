@@ -18,16 +18,16 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public class TFTPWriteRequestPacket extends TFTPRequestPacket {
-    public TFTPWriteRequestPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(TFTPPacketType.WRITE_REQUEST, datagram);
+    public TFTPWriteRequestPacket(Payload payload) throws TFTPPacketException {
+        super(TFTPPacketType.WRITE_REQUEST, payload);
     }
 
     public TFTPWriteRequestPacket(InetAddress destination, int port, String fileName, TFTPTransferMode mode) {

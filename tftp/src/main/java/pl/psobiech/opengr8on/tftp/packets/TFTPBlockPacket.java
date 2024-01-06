@@ -18,10 +18,10 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public abstract class TFTPBlockPacket extends TFTPPacket {
     protected static final int HEADER_SIZE = 4;
@@ -36,16 +36,16 @@ public abstract class TFTPBlockPacket extends TFTPPacket {
         this.blockNumber = blockNumber;
     }
 
-    protected static int getBlockNumber(DatagramPacket datagram) {
-        final byte[] data = datagram.getData();
+    protected static int getBlockNumber(Payload payload) {
+        final byte[] buffer = payload.buffer();
 
-        return readInt(data, BLOCK_NUMBER_OFFSET);
+        return readInt(buffer, BLOCK_NUMBER_OFFSET);
     }
 
-    protected void writeHeader(byte[] data) {
-        data[0]                    = 0;
-        data[OPERATOR_TYPE_OFFSET] = type.packetType();
-        writeInt(getBlockNumber(), data, BLOCK_NUMBER_OFFSET);
+    protected void writeHeader(byte[] buffer) {
+        buffer[0]                    = 0;
+        buffer[OPERATOR_TYPE_OFFSET] = type.packetType();
+        writeInt(getBlockNumber(), buffer, BLOCK_NUMBER_OFFSET);
     }
 
     public int getBlockNumber() {

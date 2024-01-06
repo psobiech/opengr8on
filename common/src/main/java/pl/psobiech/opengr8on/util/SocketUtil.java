@@ -18,10 +18,12 @@
 
 package pl.psobiech.opengr8on.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -42,20 +44,20 @@ public class SocketUtil {
         // NOP
     }
 
-    public static UDPSocket udpListener(Inet4Address address, int port) {
+    public static UDPSocket udpListener(InetAddress address, int port) {
         return new UDPSocket(
             address, port, false
         );
     }
 
-    public static UDPSocket udpRandomPort(Inet4Address address) {
+    public static UDPSocket udpRandomPort(InetAddress address) {
         return new UDPSocket(
             address, 0, true
         );
     }
 
-    public static class UDPSocket {
-        private final Inet4Address address;
+    public static class UDPSocket implements Closeable {
+        private final InetAddress address;
 
         private final int port;
 
@@ -65,7 +67,7 @@ public class SocketUtil {
 
         private DatagramSocket socket;
 
-        public UDPSocket(Inet4Address address, int port, boolean broadcast) {
+        public UDPSocket(InetAddress address, int port, boolean broadcast) {
             this.address = address;
             this.port = port;
             this.broadcast = broadcast;
@@ -86,8 +88,8 @@ public class SocketUtil {
             }
         }
 
-        public Inet4Address getLocalAddress() {
-            return (Inet4Address) socket.getLocalAddress();
+        public InetAddress getLocalAddress() {
+            return socket.getLocalAddress();
         }
 
         public int getLocalPort() {
@@ -159,6 +161,7 @@ public class SocketUtil {
             }
         }
 
+        @Override
         public void close() {
             socketLock.lock();
             try {

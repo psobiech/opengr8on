@@ -23,15 +23,16 @@ import java.net.InetAddress;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public class TFTPAckPacket extends TFTPBlockPacket {
     private static final int PACKET_SIZE = HEADER_SIZE;
 
-    public TFTPAckPacket(DatagramPacket datagram) throws TFTPPacketException {
-        super(TFTPPacketType.ACKNOWLEDGEMENT, datagram.getAddress(), datagram.getPort(), getBlockNumber(datagram));
+    public TFTPAckPacket(Payload datagram) throws TFTPPacketException {
+        super(TFTPPacketType.ACKNOWLEDGEMENT, datagram.address(), datagram.port(), getBlockNumber(datagram));
 
-        final byte[] data = datagram.getData();
-        if (getType().packetType() != data[OPERATOR_TYPE_OFFSET]) {
+        final byte[] buffer = datagram.buffer();
+        if (getType().packetType() != buffer[OPERATOR_TYPE_OFFSET]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
     }
