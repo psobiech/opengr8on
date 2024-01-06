@@ -43,11 +43,6 @@
       <artifactId>logback-classic</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>commons-net</groupId>
-      <artifactId>commons-net</artifactId>
-    </dependency>
-
     <!-- https://mvnrepository.com/artifact/org.luaj/luaj-jse -->
     <dependency>
       <groupId>org.luaj</groupId>
@@ -63,6 +58,7 @@
     <dependency>
       <groupId>io.jstach</groupId>
       <artifactId>jstachio</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
