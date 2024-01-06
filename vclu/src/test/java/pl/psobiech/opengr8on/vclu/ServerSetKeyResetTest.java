@@ -51,8 +51,8 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ResourceUtil;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -91,10 +91,10 @@ class ServerSetKeyResetTest {
     static void setUp() throws Exception {
         executor = Executors.newCachedThreadPool();
 
-        rootDirectory   = Files.createTempDirectory(null);
+        rootDirectory   = FileUtil.temporaryDirectory();
         aDriveDirectory = rootDirectory.resolve("a");
 
-        Files.createDirectories(aDriveDirectory);
+        FileUtil.mkdir(aDriveDirectory);
 
         broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
         socket          = new UDPSocket(LOCALHOST, 0, false);
@@ -111,11 +111,10 @@ class ServerSetKeyResetTest {
             RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
         );
 
-        Files.createFile(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
-        Files.copy(
+        FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
+        FileUtil.linkOrCopy(
             ResourceUtil.classPath(CLUFiles.OM_LUA.getFileName()),
-            aDriveDirectory.resolve(CLUFiles.OM_LUA.getFileName()),
-            StandardCopyOption.REPLACE_EXISTING
+            aDriveDirectory.resolve(CLUFiles.OM_LUA.getFileName())
         );
 
         final Path mainLuaPath = aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName());
@@ -160,23 +159,7 @@ class ServerSetKeyResetTest {
         FileUtil.closeQuietly(server);
         executor.shutdownNow();
 
-        Files.walkFileTree(rootDirectory, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                FileUtil.deleteQuietly(file);
-
-                return super.visitFile(file, attrs);
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path directory, IOException exc) throws IOException {
-                FileUtil.deleteQuietly(directory);
-
-                return super.postVisitDirectory(directory, exc);
-            }
-        });
-
-        FileUtil.deleteQuietly(rootDirectory);
+        FileUtil.deleteRecursively(rootDirectory);
     }
 
     @Test

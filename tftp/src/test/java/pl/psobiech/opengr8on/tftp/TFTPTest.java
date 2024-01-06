@@ -18,13 +18,9 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.io.IOException;
 import java.net.Inet4Address;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -71,8 +67,8 @@ class TFTPTest {
     static void setUp() throws Exception {
         executor = Executors.newCachedThreadPool();
 
-        rootDirectory = Files.createTempDirectory(null);
-        Files.createDirectories(rootDirectory);
+        rootDirectory = FileUtil.temporaryDirectory();
+        FileUtil.mkdir(rootDirectory);
 
         socket = new UDPSocket(LOCALHOST, 0, false);
         server = new TFTPServer(LOCALHOST, ServerMode.GET_AND_PUT, rootDirectory, socket);
@@ -98,23 +94,7 @@ class TFTPTest {
         FileUtil.closeQuietly(server);
         executor.shutdownNow();
 
-        Files.walkFileTree(rootDirectory, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                FileUtil.deleteQuietly(file);
-
-                return super.visitFile(file, attrs);
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path directory, IOException exc) throws IOException {
-                FileUtil.deleteQuietly(directory);
-
-                return super.postVisitDirectory(directory, exc);
-            }
-        });
-
-        FileUtil.deleteQuietly(rootDirectory);
+        FileUtil.deleteRecursively(rootDirectory);
     }
 
     @ParameterizedTest

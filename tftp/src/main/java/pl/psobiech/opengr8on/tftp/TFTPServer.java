@@ -43,6 +43,7 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 
@@ -104,7 +105,7 @@ public class TFTPServer implements Closeable {
         listener = executorService.submit(() -> {
                 LOGGER.debug("Starting TFTP Server on port " + serverTFTP.getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
-                Files.createDirectories(serverDirectory);
+                FileUtil.mkdir(serverDirectory);
 
                 listen();
 

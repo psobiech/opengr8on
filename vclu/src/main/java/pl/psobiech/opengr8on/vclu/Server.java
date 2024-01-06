@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -448,21 +447,15 @@ public class Server implements Closeable {
 
         final Path aDriveDirectory = rootDirectory.resolve("a");
 
-        try {
-            Files.copy(
-                ResourceUtil.classPath(CLUFiles.INIT_LUA.getFileName()),
-                aDriveDirectory.resolve(CLUFiles.INIT_LUA.getFileName()),
-                StandardCopyOption.REPLACE_EXISTING
-            );
+        FileUtil.linkOrCopy(
+            ResourceUtil.classPath(CLUFiles.INIT_LUA.getFileName()),
+            aDriveDirectory.resolve(CLUFiles.INIT_LUA.getFileName())
+        );
 
-            Files.copy(
-                ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
-                aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName()),
-                StandardCopyOption.REPLACE_EXISTING
-            );
-        } catch (IOException e) {
-            throw new UnexpectedException(e);
-        }
+        FileUtil.linkOrCopy(
+            ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
+            aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
+        );
 
         this.mainThread = LuaServer.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
         this.mainThread.start();

@@ -20,7 +20,6 @@ package pl.psobiech.opengr8on;
 
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -195,7 +194,7 @@ public class Main {
                     final CLUDevice device = client.getCluDevice();
 
                     final Path rootPath = Paths.get(".").resolve("live").resolve(String.valueOf(device.getSerialNumber()));
-                    Files.createDirectories(rootPath);
+                    FileUtil.mkdir(rootPath);
 
                     for (CLUFiles cluLikeFile : CLUFiles.values()) {
                         if (!cluLikeFile.isReadable() || !cluLikeFile.isWritable()) {

@@ -170,7 +170,7 @@ public final class FileUtil {
             } catch (Exception e) {
                 // log exception and revert to copy
 
-                LOGGER.warn(e.getMessage(), e);
+                LOGGER.debug(e.getMessage(), e);
             }
         }
 
@@ -203,6 +203,34 @@ public final class FileUtil {
                 LOGGER.trace(e.getMessage(), e);
             }
         }
+    }
+
+    public static void deleteRecursively(Path rootDirectory) {
+        if (rootDirectory == null) {
+            return;
+        }
+
+        try {
+            Files.walkFileTree(rootDirectory, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    FileUtil.deleteQuietly(file);
+
+                    return super.visitFile(file, attrs);
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path directory, IOException exc) throws IOException {
+                    FileUtil.deleteQuietly(directory);
+
+                    return super.postVisitDirectory(directory, exc);
+                }
+            });
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
+
+        FileUtil.deleteQuietly(rootDirectory);
     }
 
     public static void closeQuietly(AutoCloseable... closeables) {

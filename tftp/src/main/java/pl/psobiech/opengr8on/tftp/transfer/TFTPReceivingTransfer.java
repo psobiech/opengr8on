@@ -54,7 +54,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
         try {
             outputStream = createOutputStream(temporaryPath, mode);
         } catch (IOException e) {
-            Files.deleteIfExists(temporaryPath);
+            FileUtil.deleteQuietly(temporaryPath);
 
             final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorType.UNDEFINED, e.getMessage(), e);
             tftp.send(packetException.asError(requestAddress, requestPort));
@@ -105,7 +105,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                         // end of stream signal - The transfer is complete.
                         outputStream.close();
 
-                        Files.createDirectories(targetPath.getParent());
+                        FileUtil.mkdir(targetPath.getParent());
                         FileUtil.linkOrCopy(temporaryPath, targetPath);
 
                         lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
@@ -157,7 +157,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                 );
             } while (!Thread.interrupted());
         } finally {
-            Files.deleteIfExists(temporaryPath);
+            FileUtil.deleteQuietly(temporaryPath);
         }
     }
 
