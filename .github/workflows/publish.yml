@@ -17,7 +17,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  testLinux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Test
+        run: mvn -B -T 4 test
+  testWindows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Test
+        run: mvn -B -T 4 test
   maven:
+    needs: [testLinux, testWindows]
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -37,7 +64,7 @@ jobs:
         if: steps.tag.outputs.tag != ''
         run: mvn versions:set versions:update-child-modules -DnewVersion=${{ steps.tag.outputs.tag }} -DprocessAllModules
       - name: Deploy
-        run: mvn -B -T 4 deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=INFO
+        run: mvn -B -T 4 deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package runtime
@@ -58,26 +85,11 @@ jobs:
             device-interfaces-${{ steps.tag.outputs.tag }}.zip
             vclu/target/vclu.jar
             client/target/client.jar
-      - name: Code Coverage Report
-        id: jacoco_reporter
-        uses: PavanMudigonda/jacoco-reporter@v4.9
-        if: github.ref == 'refs/heads/develop'
-        with:
-          coverage_results_path: target/site/jacoco/jacoco.xml
-          coverage_report_name: Coverage
-          coverage_report_title: Coverage
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          skip_check_run: false
-          minimum_coverage: 50
-          fail_below_threshold: false
-          publish_only_summary: true
-      - name: Attach Coverage Summary
-        if: github.ref == 'refs/heads/develop'
-        run: echo "${{ steps.jacoco_reporter.outputs.coverageSummary }}" >> $GITHUB_STEP_SUMMARY
       - name: Submit Dependency Snapshot
         if: github.ref == 'refs/heads/develop'
         uses: advanced-security/maven-dependency-submission-action@v3
   docker:
+    needs: [testLinux, testWindows]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
