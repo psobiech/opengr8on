@@ -192,12 +192,13 @@ class TFTPTest {
 
     @Test
     void uploadDownloadTextAsciiLF() throws Exception {
-        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
+        final String inputString = "Some test string" + LF + "and a second line" + LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
         try {
-            Files.writeString(temporaryPathFrom, expectedString);
+            Files.writeString(temporaryPathFrom, inputString);
 
             final String fileName = "uploadDownloadTextAsciiLF.lua";
 
@@ -227,7 +228,7 @@ class TFTPTest {
 
     @Test
     void uploadDownloadTextAsciiCRLF() throws Exception {
-        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
         final String inputString = "Some test string" + CR + LF + "and a second line" + CR + LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
@@ -263,7 +264,8 @@ class TFTPTest {
 
     @Test
     void downloadTextAsciiLF() throws Exception {
-        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
+        final String inputString = "Some test string" + LF + "and a second line" + LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
@@ -273,7 +275,7 @@ class TFTPTest {
             final Path expectedPath = rootDirectory.resolve(fileName);
             assertFalse(Files.exists(expectedPath));
 
-            Files.writeString(expectedPath, expectedString);
+            Files.writeString(expectedPath, inputString);
 
             client.download(
                 LOCALHOST, TFTPTransferMode.NETASCII,
@@ -290,7 +292,7 @@ class TFTPTest {
 
     @Test
     void downloadTextAsciiCRLF() throws Exception {
-        final String expectedString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
         final String inputString = "Some test string" + CR + LF + "and a second line" + CR + LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();

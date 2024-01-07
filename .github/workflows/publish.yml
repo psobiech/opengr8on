@@ -37,7 +37,7 @@ jobs:
         if: steps.tag.outputs.tag != ''
         run: mvn versions:set versions:update-child-modules -DnewVersion=${{ steps.tag.outputs.tag }} -DprocessAllModules
       - name: Deploy
-        run: mvn -B deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=INFO
+        run: mvn -B -T 4 deploy -Dorg.slf4j.simpleLogger.defaultLogLevel=INFO
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package runtime

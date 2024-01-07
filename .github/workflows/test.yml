@@ -16,8 +16,10 @@ on:
       - '**/**.md'
       - 'docs/**'
       - 'badges/**'
+  workflow_dispatch:
+
 jobs:
-  test:
+  testLinux:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +29,19 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven-test
+          cache: maven
       - name: Test
-        run: mvn -B test
+        run: mvn -B -T 4 test
+  testWindows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Test
+        run: mvn -B -T 4 test
