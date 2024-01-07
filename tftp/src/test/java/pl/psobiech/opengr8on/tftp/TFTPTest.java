@@ -18,9 +18,15 @@
 
 package pl.psobiech.opengr8on.tftp;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Inet4Address;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -110,15 +116,13 @@ class TFTPTest {
             0xFFFF * TFTPPacket.SEGMENT_SIZE + 1025 // block number rollover
         }
     )
-    void uploadBinary(int bufferSize) throws Exception {
-        final byte[] expectedBuffer = RandomUtil.bytes(bufferSize);
-
+    void uploadBinary(int fileSize) throws Exception {
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
         try {
-            Files.write(temporaryPathFrom, expectedBuffer);
+            fillWithRandomBytes(fileSize, temporaryPathFrom);
 
-            final String fileName = "file_" + bufferSize + ".bin";
+            final String fileName = "file_" + fileSize + ".bin";
 
             final Path expectedPath = rootDirectory.resolve(fileName);
             assertFalse(Files.exists(expectedPath));
@@ -137,14 +141,52 @@ class TFTPTest {
 
             assertTrue(Files.exists(expectedPath));
 
-            assertEquals(expectedBuffer.length, Files.size(expectedPath));
-            assertArrayEquals(expectedBuffer, Files.readAllBytes(expectedPath));
+            assertEquals(fileSize, Files.size(expectedPath));
+            assertEquals(fileSize, Files.size(temporaryPathTo));
 
-            assertEquals(expectedBuffer.length, Files.size(temporaryPathTo));
-            assertArrayEquals(expectedBuffer, Files.readAllBytes(temporaryPathTo));
+            assertFilesSame(temporaryPathFrom, expectedPath);
+            assertFilesSame(temporaryPathFrom, temporaryPathTo);
         } finally {
             FileUtil.deleteQuietly(temporaryPathFrom);
             FileUtil.deleteQuietly(temporaryPathTo);
+        }
+    }
+
+    private static void fillWithRandomBytes(int bufferSize, Path temporaryPathFrom) throws IOException {
+        int left = bufferSize;
+        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(temporaryPathFrom))) {
+            while (left > 0) {
+                final byte[] randomBuffer = RandomUtil.bytes(Math.min(left, 4096));
+
+                outputStream.write(randomBuffer);
+                left -= randomBuffer.length;
+            }
+        }
+    }
+
+    private static void assertFilesSame(Path expectedPath, Path actualPath) throws IOException {
+        assertEquals(Files.size(expectedPath), Files.size(expectedPath));
+
+        int offset = 0;
+        final byte[] expectedBuffer = new byte[1024];
+        final byte[] actualBuffer = new byte[1024];
+        try (
+            InputStream expectedInputStream = new BufferedInputStream(Files.newInputStream(expectedPath));
+            InputStream actualInputStream = new BufferedInputStream(Files.newInputStream(actualPath));
+        ) {
+            int expectedRead;
+            int actualRead;
+            do {
+                expectedRead = expectedInputStream.readNBytes(expectedBuffer, 0, expectedBuffer.length);
+                actualRead   = actualInputStream.readNBytes(actualBuffer, 0, actualBuffer.length);
+
+                assertArrayEquals(
+                    Arrays.copyOf(expectedBuffer, expectedRead), Arrays.copyOf(actualBuffer, actualRead),
+                    "Files differ after offset: " + offset
+                );
+
+                offset += expectedRead;
+            } while (expectedRead > 0 && actualRead > 0);
         }
     }
 

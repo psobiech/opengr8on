@@ -60,14 +60,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
             final byte[] buffer = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
             do {
                 if (readNextBlock) {
-                    int offset = 0;
-
-                    int read;
-                    while (offset < buffer.length && (read = inputStream.read(buffer, offset, buffer.length - offset)) >= 0) {
-                        offset += read;
-                    }
-
-                    lastRead = offset;
+                    lastRead = inputStream.readNBytes(buffer, 0, buffer.length);
 
                     requestPacket = new TFTPDataPacket(requestAddress, requestPort, block, buffer, 0, lastRead);
                     tftp.send(requestPacket);
