@@ -526,9 +526,7 @@ public class Server implements Closeable {
             throw new LuaError("LUA is not initialized");
         }
 
-        return this.mainThread.globals()
-                              .load("return %s".formatted(script))
-                              .call();
+        return this.mainThread.luaCall(script);
     }
 
     private Optional<Response> onLuaScriptCommand(Request request, LuaScriptCommand.Request command) {

@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
@@ -154,6 +155,8 @@ public class LuaServer {
     public static class MainThreadWrapper implements Closeable {
         private final VirtualSystem virtualSystem;
 
+        private final ReentrantLock globalsLock = new ReentrantLock();
+
         private final Globals globals;
 
         private final Thread thread;
@@ -183,8 +186,14 @@ public class LuaServer {
             this.globals       = globals;
         }
 
-        public Globals globals() {
-            return globals;
+        public LuaValue luaCall(String script) {
+            globalsLock.lock();
+            try {
+                return globals.load("return %s".formatted(script))
+                              .call();
+            } finally {
+                globalsLock.unlock();
+            }
         }
 
         public VirtualSystem virtualSystem() {
