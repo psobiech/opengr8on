@@ -18,19 +18,17 @@
 
 package pl.psobiech.opengr8on.vclu.objects;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.VirtualObject;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
@@ -118,12 +116,7 @@ public class MqttTopic extends VirtualObject {
 
         final String message = arg2.checkjstring();
         try {
-            mqttClient.publish(
-                topic,
-                new MqttMessage(
-                    message.getBytes(StandardCharsets.UTF_8)
-                )
-            );
+            mqttClient.publish(topic, message);
 
             return LuaValue.TRUE;
         } catch (MqttException e) {
