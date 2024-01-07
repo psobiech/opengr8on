@@ -16,7 +16,7 @@ What works:
 
 - Most of OM integration and LUA scripting (Control, Events, Embedded features, User features, LUA Scripting)
 - Communication between CLU and CLU (accessing variables from other CLUs) - even physical ones
-- Tested under linux/amd64 and linux/arm64 (on Raspberry PI4)
+- Tested under linux/amd64 and linux/arm64 (on Raspberry PI4), unit tests now work also on Windows
 
 Does not work:
 
