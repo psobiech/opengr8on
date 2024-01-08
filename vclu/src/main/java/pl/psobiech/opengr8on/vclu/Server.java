@@ -633,8 +633,6 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
-        executorService.shutdownNow();
-
         tftpServer.close();
         mqttClient.close();
 
@@ -648,6 +646,8 @@ public class Server implements Closeable {
         }
 
         broadcastSocket.close();
+
+        ThreadUtil.close(executorService);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) { }

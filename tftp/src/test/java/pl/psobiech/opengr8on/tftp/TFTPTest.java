@@ -47,6 +47,7 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -93,6 +94,7 @@ class TFTPTest {
     @AfterAll
     static void tearDown() throws Exception {
         FileUtil.closeQuietly(client);
+        FileUtil.closeQuietly(server);
 
         serverFuture.cancel(true);
         try {
@@ -101,8 +103,7 @@ class TFTPTest {
             //
         }
 
-        FileUtil.closeQuietly(server);
-        executor.shutdownNow();
+        ThreadUtil.close(executor);
 
         FileUtil.deleteRecursively(rootDirectory);
     }

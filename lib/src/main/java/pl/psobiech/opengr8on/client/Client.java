@@ -244,8 +244,6 @@ public class Client implements Closeable {
 
     @Override
     public void close() {
-        executor.shutdownNow();
-
         socketLock.lock();
         try {
             socket.close();
@@ -253,6 +251,7 @@ public class Client implements Closeable {
             socketLock.unlock();
         }
 
+        ThreadUtil.close(executor);
     }
 
     public static String uuid(Command command) {

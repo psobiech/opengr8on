@@ -46,6 +46,7 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 
 public class TFTPServer implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
@@ -53,7 +54,7 @@ public class TFTPServer implements Closeable {
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
-    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     private final InetAddress localAddress;
 
@@ -102,7 +103,7 @@ public class TFTPServer implements Closeable {
 
         serverTFTP.open();
 
-        listener = executorService.submit(() -> {
+        listener = executor.submit(() -> {
                 LOGGER.debug("Starting TFTP Server on port " + serverTFTP.getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
                 FileUtil.mkdir(serverDirectory);
@@ -181,7 +182,7 @@ public class TFTPServer implements Closeable {
 
         LOGGER.debug("TFTP transfer " + requestPacket.getType() + " of " + requestPacket.getFileName() + " from/to " + path);
 
-        executorService.submit(() -> {
+        executor.submit(() -> {
             try (TFTP tftp = new TFTP(SocketUtil.udpRandomPort(localAddress))) {
                 tftp.open();
 
@@ -252,7 +253,7 @@ public class TFTPServer implements Closeable {
     public void close() {
         stop();
 
-        executorService.shutdownNow();
+        ThreadUtil.close(executor);
     }
 
     public Future<Void> stop() {

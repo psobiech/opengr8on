@@ -54,7 +54,7 @@ public class VirtualSystem implements Closeable {
 
     private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
 
-    private final ScheduledExecutorService executors = ThreadUtil.executor("LuaServer");
+    private final ScheduledExecutorService executor = ThreadUtil.executor("LuaServer");
 
     private final Path aDriveDirectory;
 
@@ -173,7 +173,7 @@ public class VirtualSystem implements Closeable {
         final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(address);
         final Inet4Address remoteIpAddress = IPv4AddressUtil.parseIPv4(remoteAddress);
 
-        clientReportFuture = executors.scheduleAtFixedRate(
+        clientReportFuture = executor.scheduleAtFixedRate(
             () -> {
                 try {
                     final String valuesAsString = "clientReport:" + sessionId + ":" + fetchValues(subscription);
@@ -235,11 +235,11 @@ public class VirtualSystem implements Closeable {
             clientReportFuture = null;
         }
 
-        executors.shutdownNow();
-
         for (VirtualObject object : objectsByName.values()) {
             FileUtil.closeQuietly(object);
         }
+
+        ThreadUtil.close(executor);
     }
 
     public record Subscription(String name, int index) {

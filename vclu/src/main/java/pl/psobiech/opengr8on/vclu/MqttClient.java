@@ -62,7 +62,7 @@ public class MqttClient implements Closeable {
 
     private static final long CONNECT_TIMEOUT_SECONDS = TimeUnit.SECONDS.toMillis(8);
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(4, ThreadUtil.threadFactory("mqtt", true));
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(4, ThreadUtil.threadFactory("mqtt", true));
 
     private MqttAsyncClient mqttClient;
 
@@ -77,8 +77,8 @@ public class MqttClient implements Closeable {
             mqttClient = new MqttAsyncClient(
                 mqttUrl, name,
                 null,
-                new ScheduledExecutorPingSender(executorService),
-                executorService
+                new ScheduledExecutorPingSender(executor),
+                executor
             );
 
             mqttClient.setManualAcks(true);
@@ -208,7 +208,7 @@ public class MqttClient implements Closeable {
     public void close() {
         stop();
 
-        executorService.shutdownNow();
+        ThreadUtil.close(executor);
     }
 
     public void stop() {

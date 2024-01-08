@@ -31,9 +31,10 @@ import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientReceive;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientSend;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 
 public class TFTPClient implements Closeable {
-    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     private final ReentrantLock tftpLock = new ReentrantLock();
 
@@ -77,6 +78,6 @@ public class TFTPClient implements Closeable {
     public void close() {
         tftp.close();
 
-        executorService.shutdownNow();
+        ThreadUtil.close(executor);
     }
 }

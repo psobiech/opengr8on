@@ -81,7 +81,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
 
-    private final ScheduledExecutorService executorService;
+    private final ScheduledExecutorService executor;
 
     private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
@@ -90,7 +90,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     public VirtualCLU(String name) {
         super(name);
 
-        this.executorService = ThreadUtil.executor(name);
+        this.executor = ThreadUtil.executor(name);
 
         register(Features.UPTIME, this::getUptime);
         set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
@@ -122,7 +122,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         register(Methods.CLEAR_LOG, this::clearLog);
 
         currentDateTime = getCurrentDateTime();
-        executorService.scheduleAtFixedRate(
+        executor.scheduleAtFixedRate(
             () -> {
                 final ZonedDateTime lastDateTime = currentDateTime;
                 currentDateTime = getCurrentDateTime();
@@ -269,7 +269,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     @Override
     public void close() {
-        executorService.shutdownNow();
+        ThreadUtil.close(executor);
     }
 
     private enum State {

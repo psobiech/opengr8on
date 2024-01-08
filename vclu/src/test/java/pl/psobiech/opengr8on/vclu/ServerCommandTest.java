@@ -51,6 +51,7 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -154,7 +155,7 @@ class ServerCommandTest {
         }
 
         FileUtil.closeQuietly(server);
-        executor.shutdownNow();
+        ThreadUtil.close(executor);
 
         FileUtil.deleteRecursively(rootDirectory);
     }

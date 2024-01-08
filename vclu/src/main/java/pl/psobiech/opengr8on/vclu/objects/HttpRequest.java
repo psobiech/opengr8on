@@ -60,7 +60,7 @@ public class HttpRequest extends VirtualObject {
 
     private static final int CONNECT_TIMEOUT = 4000;
 
-    private final ScheduledExecutorService executors;
+    private final ScheduledExecutorService executor;
 
     private HttpURLConnection connection;
 
@@ -69,7 +69,7 @@ public class HttpRequest extends VirtualObject {
     public HttpRequest(String name) {
         super(name);
 
-        executors = ThreadUtil.executor(name);
+        executor = ThreadUtil.executor(name);
 
         register(Features.ACTIVE, arg1 ->
             LuaValue.valueOf(responseFuture != null && !responseFuture.isDone())
@@ -84,7 +84,7 @@ public class HttpRequest extends VirtualObject {
         final HttpURLConnection newConnection = createConnection();
 
         this.connection = newConnection;
-        this.responseFuture = executors.schedule(
+        this.responseFuture = executor.schedule(
             () -> {
                 try {
                     final int statusCode = newConnection.getResponseCode();
@@ -265,7 +265,7 @@ public class HttpRequest extends VirtualObject {
             responseFuture.cancel(true);
         }
 
-        executors.shutdownNow();
+        ThreadUtil.close(executor);
     }
 
     private enum HttpType {

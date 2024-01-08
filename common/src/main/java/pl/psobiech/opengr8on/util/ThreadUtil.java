@@ -18,9 +18,13 @@
 
 package pl.psobiech.opengr8on.util;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
 public class ThreadUtil {
     static {
@@ -43,6 +47,18 @@ public class ThreadUtil {
 
     private ThreadUtil() {
         // NOP
+    }
+
+    public static boolean close(ExecutorService executor) {
+        executor.shutdownNow();
+
+        try {
+            return executor.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new UncheckedInterruptedException(e);
+        }
     }
 
     public static void shutdownHook(Runnable runnable) {
