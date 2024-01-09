@@ -20,7 +20,6 @@ package pl.psobiech.opengr8on.vclu;
 
 import java.io.Closeable;
 import java.net.Inet4Address;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +34,7 @@ import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
@@ -56,8 +54,6 @@ public class VirtualSystem implements Closeable {
 
     private final ScheduledExecutorService executor = ThreadUtil.executor("LuaServer");
 
-    private final Path aDriveDirectory;
-
     private final Inet4Address localAddress;
 
     private final CLUDevice device;
@@ -70,11 +66,10 @@ public class VirtualSystem implements Closeable {
 
     private ScheduledFuture<?> clientReportFuture = null;
 
-    public VirtualSystem(Path aDriveDirectory, Inet4Address localAddress, CLUDevice device, CipherKey cipherKey) {
-        this.aDriveDirectory = aDriveDirectory;
-        this.localAddress    = localAddress;
-        this.device          = device;
-        this.cipherKey       = cipherKey;
+    public VirtualSystem(Inet4Address localAddress, CLUDevice device, CipherKey cipherKey) {
+        this.localAddress = localAddress;
+        this.device       = device;
+        this.cipherKey    = cipherKey;
     }
 
     public VirtualObject getObject(String name) {
@@ -86,11 +81,11 @@ public class VirtualSystem implements Closeable {
     }
 
     @SuppressWarnings("resource")
-    public void newObject(int index, String name, int ipAddress) {
+    public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
             // TODO: temporarily we depend that the main CLU is initialized first-ish
             case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
-            case RemoteCLU.INDEX -> new RemoteCLU(name, IPv4AddressUtil.parseIPv4(ipAddress), localAddress, cipherKey);
+            case RemoteCLU.INDEX -> new RemoteCLU(name, ipAddress, localAddress, cipherKey);
             case Timer.INDEX -> new Timer(name);
             case Storage.INDEX -> new Storage(name);
             case MqttTopic.INDEX -> new MqttTopic(name, currentClu);
@@ -165,13 +160,10 @@ public class VirtualSystem implements Closeable {
         }
     }
 
-    public String clientRegister(String remoteAddress, String address, int port, int sessionId, List<Subscription> subscription) {
+    public String clientRegister(Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId, List<Subscription> subscription) {
         if (clientReportFuture != null) {
             clientReportFuture.cancel(true);
         }
-
-        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(address);
-        final Inet4Address remoteIpAddress = IPv4AddressUtil.parseIPv4(remoteAddress);
 
         clientReportFuture = executor.scheduleAtFixedRate(
             () -> {
@@ -229,6 +221,8 @@ public class VirtualSystem implements Closeable {
 
     @Override
     public void close() {
+        ThreadUtil.close(executor);
+
         if (clientReportFuture != null) {
             clientReportFuture.cancel(true);
 
@@ -236,10 +230,8 @@ public class VirtualSystem implements Closeable {
         }
 
         for (VirtualObject object : objectsByName.values()) {
-            FileUtil.closeQuietly(object);
+            IOUtil.closeQuietly(object);
         }
-
-        ThreadUtil.close(executor);
     }
 
     public record Subscription(String name, int index) {

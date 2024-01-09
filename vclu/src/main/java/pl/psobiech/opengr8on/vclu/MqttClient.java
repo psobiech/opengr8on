@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -42,7 +41,7 @@ import org.eclipse.paho.client.mqttv3.ScheduledExecutorPingSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
@@ -60,9 +59,10 @@ public class MqttClient implements Closeable {
 
     private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
 
-    private static final long CONNECT_TIMEOUT_SECONDS = TimeUnit.SECONDS.toMillis(8);
-
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(4, ThreadUtil.threadFactory("mqtt", true));
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(
+        4,
+        ThreadUtil.threadFactory("mqtt", true)
+    );
 
     private MqttAsyncClient mqttClient;
 
@@ -85,7 +85,7 @@ public class MqttClient implements Closeable {
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable throwable) {
-                    LOGGER.error("MQTT connectionLost", throwable);
+                    LOGGER.error("Connection to MQTT {} as {} was lost", mqttClient.getCurrentServerURI(), mqttClient.getClientId(), throwable);
 
                     onMqttConnectionChange(currentClu);
                 }
@@ -110,38 +110,12 @@ public class MqttClient implements Closeable {
 
                 @Override
                 public void deliveryComplete(IMqttDeliveryToken deliveryToken) {
-                    LOGGER.trace("MQTT deliveryComplete: {}", deliveryToken.getMessageId());
+                    // NOP
                 }
             });
 
-            final MqttConnectOptions options = new MqttConnectOptions();
-            options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
-            options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
-            options.setAutomaticReconnect(true);
-            options.setCleanSession(false);
-
-            final String userInfo = mqttUri.getUserInfo();
-            if (userInfo != null) {
-                final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
-                if (userInfoPartsOptional.isPresent()) {
-                    final String[] userInfoParts = userInfoPartsOptional.get();
-
-                    options.setUserName(userInfoParts[0]);
-                    options.setPassword(userInfoParts[1].toCharArray());
-                }
-            }
-
-            if (!mqttUri.getScheme().equals(SCHEME_TCP) && Files.exists(caCertificatePath)) {
-                options.setSocketFactory(
-                    TlsUtil.createSocketFactory(
-                        caCertificatePath,
-                        certificatePath, keyPath
-                    )
-                );
-            }
-
+            final MqttConnectOptions options = createConnectionOptions(mqttUri, caCertificatePath, certificatePath, keyPath);
             for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
-                // TODO: pass only a sub-interface
                 mqttTopic.setMqttClient(this);
             }
 
@@ -155,7 +129,7 @@ public class MqttClient implements Closeable {
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    LOGGER.info("Could not connect to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId(), exception);
+                    LOGGER.error("Could not connect to MQTT {} as {}", mqttClient.getCurrentServerURI(), mqttClient.getClientId(), exception);
 
                     onMqttConnectionChange(currentClu);
                 }
@@ -163,6 +137,36 @@ public class MqttClient implements Closeable {
         } catch (MqttException e) {
             throw new UnexpectedException(e);
         }
+    }
+
+    private static MqttConnectOptions createConnectionOptions(URI mqttUri, Path caCertificatePath, Path certificatePath, Path keyPath) {
+        final MqttConnectOptions options = new MqttConnectOptions();
+        options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
+        options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(false);
+
+        final String userInfo = mqttUri.getUserInfo();
+        if (userInfo != null) {
+            final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
+            if (userInfoPartsOptional.isPresent()) {
+                final String[] userInfoParts = userInfoPartsOptional.get();
+
+                options.setUserName(userInfoParts[0]);
+                options.setPassword(userInfoParts[1].toCharArray());
+            }
+        }
+
+        if (!SCHEME_TCP.equals(mqttUri.getScheme()) && Files.exists(caCertificatePath)) {
+            options.setSocketFactory(
+                TlsUtil.createSocketFactory(
+                    caCertificatePath,
+                    certificatePath, keyPath
+                )
+            );
+        }
+
+        return options;
     }
 
     private void onMqttConnectionChange(VirtualCLU currentClu) {
@@ -206,9 +210,9 @@ public class MqttClient implements Closeable {
 
     @Override
     public void close() {
-        stop();
-
         ThreadUtil.close(executor);
+
+        stop();
     }
 
     public void stop() {
@@ -219,7 +223,7 @@ public class MqttClient implements Closeable {
                 LOGGER.error(e.getMessage(), e);
             }
 
-            FileUtil.closeQuietly(mqttClient);
+            IOUtil.closeQuietly(mqttClient);
         }
 
         mqttClient = null;

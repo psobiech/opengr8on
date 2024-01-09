@@ -79,6 +79,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private static final int TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS = 60;
 
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
     private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
 
     private final ScheduledExecutorService executor;
@@ -166,14 +170,14 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     private LuaString getCurrentDateAsString(LuaValue arg1) {
         return valueOf(
             currentDateTime
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                .format(DATE_FORMATTER)
         );
     }
 
     private LuaString getCurrentTimeAsString(LuaValue arg1) {
         return valueOf(
             currentDateTime
-                .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                .format(TIME_FORMATTER)
         );
     }
 

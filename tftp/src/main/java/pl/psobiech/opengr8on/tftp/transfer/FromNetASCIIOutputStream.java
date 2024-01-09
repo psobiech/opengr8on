@@ -59,6 +59,7 @@ public final class FromNetASCIIOutputStream extends FilterOutputStream {
         try {
             if (NetAsciiUtil.NO_CONVERSION_REQUIRED) {
                 super.close();
+
                 return;
             }
 

@@ -43,6 +43,7 @@ import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
@@ -93,8 +94,10 @@ class TFTPTest {
 
     @AfterAll
     static void tearDown() throws Exception {
-        FileUtil.closeQuietly(client);
-        FileUtil.closeQuietly(server);
+        ThreadUtil.close(executor);
+
+        IOUtil.closeQuietly(client);
+        IOUtil.closeQuietly(server);
 
         serverFuture.cancel(true);
         try {
@@ -102,8 +105,6 @@ class TFTPTest {
         } catch (Exception e) {
             //
         }
-
-        ThreadUtil.close(executor);
 
         FileUtil.deleteRecursively(rootDirectory);
     }

@@ -23,6 +23,7 @@ public enum CLUFiles {
     OM_LUA("a", "OM.LUA"),
     MAIN_LUA("a", "MAIN.LUA"),
     //
+    INIT_LUA("a", "INIT.LUA"),
     EMERGNCY_LUA("a", "EMERGNCY.LUA"),
     //
     SETTINGS_USR("a", "settings.usr"),
@@ -41,8 +42,6 @@ public enum CLUFiles {
     CLOUD_PUBLIC_CSR("a", "CLOUD-PUBLIC.CSR"),
     CLOUD_PUBLIC_CRT("a", "CLOUD-PUBLIC.CRT"),
     CLOUD_ROOT_PEM("a", "CLOUD-ROOT.PEM"),
-    //
-    INIT_LUA("a", "INIT.LUA"),
     //
     // LOADALL_SO("a", "loadall.so"),
     // WATCHDOG_LOG("a", "watchdog.log"),

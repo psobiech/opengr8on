@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ToStringUtil;
@@ -102,6 +103,6 @@ public class TFTP implements Closeable {
 
     @Override
     public void close() {
-        socket.close();
+        IOUtil.closeQuietly(socket);
     }
 }

@@ -257,6 +257,8 @@ public class HttpRequest extends VirtualObject {
 
     @Override
     public void close() {
+        ThreadUtil.close(executor);
+
         if (connection != null) {
             connection.disconnect();
         }
@@ -264,8 +266,6 @@ public class HttpRequest extends VirtualObject {
         if (responseFuture != null) {
             responseFuture.cancel(true);
         }
-
-        ThreadUtil.close(executor);
     }
 
     private enum HttpType {

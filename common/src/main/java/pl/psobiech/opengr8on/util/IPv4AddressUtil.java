@@ -49,12 +49,6 @@ public final class IPv4AddressUtil {
 
     public static final Inet4Address BROADCAST_ADDRESS = parseIPv4("255.255.255.255");
 
-    public static final Set<Inet4Address> DEFAULT_BROADCAST_ADDRESSES = Set.of(
-        BROADCAST_ADDRESS,
-        parseIPv4("255.255.0.0"),
-        parseIPv4("255.0.0.0")
-    );
-
     public static final Set<String> HARDWARE_ADDRESS_PREFIX_BLACKLIST = Set.of(
         HexUtil.asString(0x000569), // VMware, Inc.
         HexUtil.asString(0x001c14), // VMware, Inc.

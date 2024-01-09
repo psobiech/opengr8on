@@ -165,9 +165,7 @@ public class SocketUtil {
         public void close() {
             socketLock.lock();
             try {
-                FileUtil.closeQuietly(this.socket);
-
-                this.socket = null;
+                IOUtil.closeQuietly(this.socket);
             } finally {
                 socketLock.unlock();
             }

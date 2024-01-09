@@ -52,6 +52,7 @@ public class TFTPServer implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
 
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
+
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -117,7 +118,7 @@ public class TFTPServer implements Closeable {
         return listener;
     }
 
-    public void awaitInitialized() throws InterruptedException {
+    void awaitInitialized() throws InterruptedException {
         synchronized (serverTFTP) {
             serverTFTP.wait();
         }
@@ -241,8 +242,8 @@ public class TFTPServer implements Closeable {
         }
 
         final Path path = Paths.get(matcher.group("path"));
-        final Path filePath = parentDirectory.resolve(path).toAbsolutePath().normalize();
-        if (!filePath.startsWith(rootDirectory)) {
+        final Path filePath = parentDirectory.resolve(path).normalize();
+        if (!FileUtil.isParentOf(rootDirectory, filePath)) {
             throw new TFTPPacketException(TFTPErrorType.ACCESS_VIOLATION, "Cannot access files outside of TFTP server root");
         }
 
@@ -251,9 +252,9 @@ public class TFTPServer implements Closeable {
 
     @Override
     public void close() {
-        stop();
-
         ThreadUtil.close(executor);
+
+        stop();
     }
 
     public Future<Void> stop() {

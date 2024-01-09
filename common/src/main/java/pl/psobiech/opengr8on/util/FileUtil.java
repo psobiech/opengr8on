@@ -130,7 +130,9 @@ public final class FileUtil {
 
     public static void touch(Path path) {
         try {
-            Files.newOutputStream(path, StandardOpenOption.CREATE).close();
+            IOUtil.closeQuietly(
+                Files.newOutputStream(path, StandardOpenOption.CREATE)
+            );
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
@@ -209,24 +211,6 @@ public final class FileUtil {
         FileUtil.deleteQuietly(rootDirectory);
     }
 
-    public static void closeQuietly(AutoCloseable... closeables) {
-        for (AutoCloseable closeable : closeables) {
-            closeQuietly(closeable);
-        }
-    }
-
-    public static void closeQuietly(AutoCloseable closeable) {
-        if (closeable == null) {
-            return;
-        }
-
-        try {
-            closeable.close();
-        } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
-        }
-    }
-
     public static String sanitize(String fileName) {
         fileName = StringUtils.stripToNull(fileName);
         if (fileName == null) {
@@ -246,6 +230,16 @@ public final class FileUtil {
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
+    }
+
+    public static boolean isParentOf(Path parentPath, Path path) {
+        return path.toAbsolutePath()
+                   .normalize()
+                   .startsWith(
+                       parentPath
+                           .toAbsolutePath()
+                           .normalize()
+                   );
     }
 
     public static class TemporaryFileTracker {

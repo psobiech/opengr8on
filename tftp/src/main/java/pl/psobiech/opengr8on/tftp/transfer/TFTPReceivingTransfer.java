@@ -106,10 +106,10 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                         lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
                         tftp.send(lastSentAck);
                     } else {
-                        // end of stream signal - The transfer is complete.
-                        outputStream.close();
-
                         try {
+                            // end of stream signal - The transfer is complete.
+                            outputStream.close();
+
                             FileUtil.mkdir(targetPath.getParent());
                             FileUtil.linkOrCopy(temporaryPath, targetPath);
                         } catch (Exception e) {

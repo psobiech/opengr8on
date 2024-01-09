@@ -30,6 +30,7 @@ import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientReceive;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientSend;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
@@ -76,8 +77,8 @@ public class TFTPClient implements Closeable {
 
     @Override
     public void close() {
-        tftp.close();
-
         ThreadUtil.close(executor);
+
+        IOUtil.closeQuietly(tftp);
     }
 }

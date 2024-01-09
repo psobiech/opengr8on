@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
@@ -244,14 +245,14 @@ public class Client implements Closeable {
 
     @Override
     public void close() {
+        ThreadUtil.close(executor);
+
         socketLock.lock();
         try {
-            socket.close();
+            IOUtil.closeQuietly(socket);
         } finally {
             socketLock.unlock();
         }
-
-        ThreadUtil.close(executor);
     }
 
     public static String uuid(Command command) {

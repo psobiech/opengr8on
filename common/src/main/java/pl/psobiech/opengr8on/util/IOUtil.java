@@ -16,26 +16,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.tftp.packets;
+package pl.psobiech.opengr8on.util;
 
-import java.net.InetAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import pl.psobiech.opengr8on.tftp.TFTPPacketType;
-import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+public final class IOUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IOUtil.class);
 
-public class TFTPReadRequestPacket extends TFTPRequestPacket {
-    public TFTPReadRequestPacket(Payload payload) throws TFTPPacketException {
-        super(TFTPPacketType.READ_REQUEST, payload);
+    private IOUtil() {
+        // NOP
     }
 
-    public TFTPReadRequestPacket(InetAddress destination, int port, String fileName, TFTPTransferMode mode) {
-        super(destination, port, TFTPPacketType.READ_REQUEST, fileName, mode);
+    public static void closeQuietly(AutoCloseable... closeables) {
+        for (AutoCloseable closeable : closeables) {
+            closeQuietly(closeable);
+        }
     }
 
-    @Override
-    public String toString() {
-        return super.toString() + " RRQ " + getFileName() + " " + getMode();
+    public static void closeQuietly(AutoCloseable closeable) {
+        if (closeable == null) {
+            return;
+        }
+
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            LOGGER.warn(e.getMessage(), e);
+        }
     }
 }

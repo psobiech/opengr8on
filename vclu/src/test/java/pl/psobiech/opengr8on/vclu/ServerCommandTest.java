@@ -47,6 +47,7 @@ import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
@@ -143,8 +144,10 @@ class ServerCommandTest {
 
     @AfterAll
     static void tearDown() throws Exception {
-        FileUtil.closeQuietly(client);
-        FileUtil.closeQuietly(broadcastClient);
+        ThreadUtil.close(executor);
+
+        IOUtil.closeQuietly(client);
+        IOUtil.closeQuietly(broadcastClient);
 
         serverFuture.cancel(true);
 
@@ -154,8 +157,7 @@ class ServerCommandTest {
             //
         }
 
-        FileUtil.closeQuietly(server);
-        ThreadUtil.close(executor);
+        IOUtil.closeQuietly(server);
 
         FileUtil.deleteRecursively(rootDirectory);
     }

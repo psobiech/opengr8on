@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPReceivingTransfer;
 
 public class TFTPServerReceive extends TFTPReceivingTransfer {

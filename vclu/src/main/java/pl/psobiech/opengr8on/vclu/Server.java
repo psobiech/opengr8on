@@ -57,6 +57,7 @@ import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
@@ -66,8 +67,8 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
-import pl.psobiech.opengr8on.vclu.lua.LuaServer;
-import pl.psobiech.opengr8on.vclu.lua.LuaServer.MainThreadWrapper;
+import pl.psobiech.opengr8on.vclu.lua.LuaThread;
+import pl.psobiech.opengr8on.vclu.lua.LuaThreadWrapper;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class Server implements Closeable {
@@ -87,15 +88,6 @@ public class Server implements Closeable {
 
     private static final long RETRY_DELAY = 100L;
 
-    private static final String SCHEME_TCP = "tcp";
-
-    private static final int CONNECTION_TIMEOUT_SECONDS = 4;
-
-    private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
-
-    private static final int MQTT_TIMEOUT = 1000;
-    public static final int MQTT_QOS_AT_LEAST_ONCE = 1;
-
     private final DatagramPacket requestPacket = new DatagramPacket(EMPTY_BUFFER, 0);
 
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
@@ -114,7 +106,7 @@ public class Server implements Closeable {
 
     private final ScheduledExecutorService mqttExecutorService = Executors.newScheduledThreadPool(2, ThreadUtil.threadFactory("mqtt", true));
 
-    private MainThreadWrapper mainThread;
+    private LuaThreadWrapper mainThread;
 
     private List<CipherKey> unicastCipherKeys;
 
@@ -435,30 +427,25 @@ public class Server implements Closeable {
 
     protected void startClu() {
         LOGGER.info("VCLU is starting...");
-        FileUtil.closeQuietly(this.mainThread);
+        IOUtil.closeQuietly(this.mainThread);
 
         final Path aDriveDirectory = rootDirectory.resolve("a");
-
-        FileUtil.linkOrCopy(
-            ResourceUtil.classPath(CLUFiles.INIT_LUA.getFileName()),
-            aDriveDirectory.resolve(CLUFiles.INIT_LUA.getFileName())
-        );
 
         FileUtil.linkOrCopy(
             ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
             aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
         );
 
-        this.mainThread = LuaServer.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
-        this.mainThread.start();
-
         try {
+            this.mainThread = LuaThread.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
+            this.mainThread.start();
+
             checkAlive();
         } catch (Exception e) {
             LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
-            FileUtil.closeQuietly(this.mainThread);
+            IOUtil.closeQuietly(this.mainThread);
 
-            this.mainThread = LuaServer.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
+            this.mainThread = LuaThread.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
             this.mainThread.start();
 
             checkAlive();
@@ -515,7 +502,7 @@ public class Server implements Closeable {
         }
     }
 
-    public void awaitInitialized() throws InterruptedException {
+    void awaitInitialized() throws InterruptedException {
         synchronized (this) {
             this.wait();
         }
@@ -633,21 +620,20 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
-        tftpServer.close();
-        mqttClient.close();
+        ThreadUtil.close(executorService);
 
-        mainThread.close();
+        IOUtil.closeQuietly(tftpServer);
+        IOUtil.closeQuietly(mqttClient);
+        IOUtil.closeQuietly(mainThread);
 
         socketLock.lock();
         try {
-            socket.close();
+            IOUtil.closeQuietly(socket);
         } finally {
             socketLock.unlock();
         }
 
-        broadcastSocket.close();
-
-        ThreadUtil.close(executorService);
+        IOUtil.closeQuietly(broadcastSocket);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) { }
