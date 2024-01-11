@@ -75,16 +75,6 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
     }
 
     @Override
-    public DatagramPacket newDatagram() {
-        final byte[] fileNameAsBytes = fileName.getBytes(StandardCharsets.US_ASCII);
-        final byte[] modeAsBytes = mode.valueAsBytes();
-
-        final byte[] data = new byte[HEADER_SIZE + fileNameAsBytes.length + 1 + modeAsBytes.length + 1];
-
-        return newDatagram(data);
-    }
-
-    @Override
     public DatagramPacket newDatagram(byte[] data) {
         data[0] = 0;
         data[OPERATOR_TYPE_OFFSET] = type.packetType();

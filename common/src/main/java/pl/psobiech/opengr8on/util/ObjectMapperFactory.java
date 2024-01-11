@@ -33,9 +33,18 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
+/**
+ * Shared serialization object mappers
+ */
 public final class ObjectMapperFactory {
+    /**
+     * Shared XML mapper
+     */
     public static final XmlMapper XML = ObjectMapperFactory.create(XmlMapper.class);
 
+    /**
+     * Shared JSON mapper
+     */
     public static final JsonMapper JSON = ObjectMapperFactory.create(JsonMapper.class);
 
     private ObjectMapperFactory() {

@@ -18,6 +18,9 @@
 
 package pl.psobiech.opengr8on.exceptions;
 
+/**
+ * Common runtime exception, when a not normally expected condition occurs
+ */
 public class UnexpectedException extends RuntimeException {
     public UnexpectedException(String message) {
         super(message);

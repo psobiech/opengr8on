@@ -113,5 +113,4 @@ class LuaFunctionWrapper extends LibFunction {
     private static LibFunction wrap(Logger logger, BaseLuaFunction luaFunction) {
         return new LuaFunctionWrapper(logger, luaFunction);
     }
-
 }

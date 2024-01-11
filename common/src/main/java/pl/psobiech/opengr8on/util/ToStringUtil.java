@@ -27,11 +27,17 @@ import java.util.stream.IntStream;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Common toString() operations
+ */
 public final class ToStringUtil {
     private ToStringUtil() {
         // NOP
     }
 
+    /**
+     * @return IPv4 and port as String
+     */
     public static String toString(Inet4Address address, Integer port) {
         final String addressAsString = toString(address);
         if (port == null) {
@@ -41,6 +47,9 @@ public final class ToStringUtil {
         return "%s:%d".formatted(addressAsString, port);
     }
 
+    /**
+     * @return IPv4 as String
+     */
     public static String toString(Inet4Address address) {
         if (address == null) {
             return null;
@@ -52,6 +61,9 @@ public final class ToStringUtil {
         );
     }
 
+    /**
+     * @return Long as String
+     */
     public static String toString(Long value) {
         if (value == null) {
             return null;
@@ -63,6 +75,9 @@ public final class ToStringUtil {
         );
     }
 
+    /**
+     * @return Integer as String
+     */
     public static String toString(Integer value) {
         if (value == null) {
             return null;
@@ -74,6 +89,9 @@ public final class ToStringUtil {
         );
     }
 
+    /**
+     * @return NetworkInterface as String
+     */
     public static String toString(NetworkInterface networkInterface) {
         if (networkInterface == null) {
             return null;
@@ -89,6 +107,9 @@ public final class ToStringUtil {
         return networkInterface.getName() + " (" + networkInterface.getDisplayName() + ") [" + toString(hardwareAddress) + "]";
     }
 
+    /**
+     * @return byte buffer as String
+     */
     public static String toString(byte[] buffer) {
         if (buffer == null) {
             return null;

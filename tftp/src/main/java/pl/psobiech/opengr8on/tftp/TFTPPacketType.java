@@ -19,7 +19,7 @@
 package pl.psobiech.opengr8on.tftp;
 
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
@@ -37,7 +37,7 @@ public enum TFTPPacketType {
     READ_REQUEST(1, TFTPReadRequestPacket::new),
     WRITE_REQUEST(2, TFTPWriteRequestPacket::new),
     DATA(3, TFTPDataPacket::new),
-    ACKNOWLEDGEMENT(4, TFTPAckPacket::new),
+    ACKNOWLEDGEMENT(4, TFTPAcknowledgementPacket::new),
     ERROR(5, TFTPErrorPacket::new),
     //
     ;

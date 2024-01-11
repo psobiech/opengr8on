@@ -28,7 +28,7 @@ import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
@@ -59,7 +59,7 @@ public class TFTPClientSend extends TFTPSendingTransfer {
         host = responsePacket.getAddress();
         port = responsePacket.getPort();
 
-        if (!(responsePacket instanceof TFTPAckPacket)) {
+        if (!(responsePacket instanceof TFTPAcknowledgementPacket)) {
             if (responsePacket instanceof TFTPErrorPacket errorPacket) {
                 throw new TFTPException(
                     errorPacket.getError(),

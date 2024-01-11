@@ -38,8 +38,6 @@ public class MqttTopic extends VirtualObject {
 
     public static final int INDEX = 999;
 
-    private final VirtualCLU currentClu;
-
     private final Set<String> topicFilters = new HashSet<>();
 
     private final LinkedBlockingDeque<Map.Entry<String, Message>> messageQueue = new LinkedBlockingDeque<>();
@@ -49,7 +47,6 @@ public class MqttTopic extends VirtualObject {
     public MqttTopic(String name, VirtualCLU currentClu) {
         super(name);
 
-        this.currentClu = currentClu;
         currentClu.addMqttSubscription(this);
 
         register(Methods.SUBSCRIBE, this::subscribe);
@@ -107,7 +104,6 @@ public class MqttTopic extends VirtualObject {
         }
 
         final String topic = arg1.checkjstring();
-
         if (isSubscribedTo(topic)) {
             LOGGER.warn("Attempt to publish to a topic that we are subscribed to: {}", topic);
 

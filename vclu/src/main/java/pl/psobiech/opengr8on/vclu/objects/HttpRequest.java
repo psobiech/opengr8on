@@ -69,7 +69,7 @@ public class HttpRequest extends VirtualObject {
     public HttpRequest(String name) {
         super(name);
 
-        executor = ThreadUtil.executor(name);
+        executor = ThreadUtil.virtualScheduler(name);
 
         register(Features.ACTIVE, arg1 ->
             LuaValue.valueOf(responseFuture != null && !responseFuture.isDone())

@@ -27,9 +27,7 @@ import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
-public class TFTPDataPacket extends TFTPBlockPacket {
-    public static final int MAX_DATA_LENGTH = 512;
-
+public class TFTPDataPacket extends TFTPBaseBlockPacket {
     private final int length;
 
     private final int offset;
@@ -67,11 +65,6 @@ public class TFTPDataPacket extends TFTPBlockPacket {
 
     public int getDataOffset() {
         return offset;
-    }
-
-    @Override
-    public DatagramPacket newDatagram() {
-        return newDatagram(new byte[HEADER_SIZE + length]);
     }
 
     @Override

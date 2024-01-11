@@ -24,15 +24,26 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
 public class ThreadUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtil.class);
+
     static {
-        System.setProperty("jdk.virtualThreadScheduler.parallelism", "8");
-        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "8");
-        System.setProperty("jdk.virtualThreadScheduler.minRunnable", "2");
+        final int availableProcessors = Runtime.getRuntime().availableProcessors();
+        final int parallelism = Math.max(4, availableProcessors);
+        final int maxPoolSize = Math.round(parallelism * 1.2f);
+        final int minRunnable = Math.min(2, availableProcessors);
+
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(parallelism));
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(maxPoolSize));
+        System.setProperty("jdk.virtualThreadScheduler.minRunnable", String.valueOf(minRunnable));
 
         System.setProperty("jdk.tracePinnedThreads", "full/short");
+
+        LOGGER.debug("Virtual Threads: %d-%d/%d".formatted(minRunnable, parallelism, maxPoolSize));
     }
 
     private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks", false);
@@ -40,7 +51,7 @@ public class ThreadUtil {
     private static final ScheduledExecutorService INSTANCE;
 
     static {
-        INSTANCE = executor("DEFAULT");
+        INSTANCE = virtualScheduler("DEFAULT");
 
         shutdownHook(INSTANCE::shutdownNow);
     }
@@ -49,36 +60,47 @@ public class ThreadUtil {
         // NOP
     }
 
+    /**
+     * Attempts to close the executor, by sending interrupt signal to all threads and waiting for a short period of time.
+     *
+     * @return if executor was closed within the default timeout or false if its still pending closure
+     */
     public static boolean close(ExecutorService executor) {
         executor.shutdownNow();
 
         try {
             return executor.awaitTermination(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
             throw new UncheckedInterruptedException(e);
         }
     }
 
+    /**
+     * @param runnable new runnable to be executed on application shutdown
+     */
     public static void shutdownHook(Runnable runnable) {
         Runtime.getRuntime().addShutdownHook(
             SHUTDOWN_HOOK_FACTORY.newThread(runnable)
         );
     }
 
+    /**
+     * @return shared scheduled executor service, working on Virtual Threads
+     */
     public static ScheduledExecutorService getInstance() {
         return INSTANCE;
     }
 
-    public static ScheduledExecutorService executor(String name) {
+    /**
+     * @return named scheduled executor, working on Virtual Threads
+     */
+    public static ScheduledExecutorService virtualScheduler(String name) {
         return Executors.newScheduledThreadPool(Integer.MAX_VALUE, virtualThreadFactory(name));
     }
 
-    public static ThreadFactory daemonThreadFactory(String groupName) {
-        return virtualThreadFactory(groupName);
-    }
-
+    /**
+     * @return named thread factory, that produces virtual threads
+     */
     public static ThreadFactory virtualThreadFactory(String groupName) {
         return Thread.ofVirtual()
                      .name(groupName)
@@ -86,6 +108,10 @@ public class ThreadUtil {
                      .factory();
     }
 
+    /**
+     * @param daemon should platform thread be marked as a daemon thread
+     * @return named thread factory, that produces platform threads
+     */
     public static ThreadFactory threadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()
                      .name(groupName)

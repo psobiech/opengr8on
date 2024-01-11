@@ -53,7 +53,7 @@ import pl.psobiech.opengr8on.util.Util;
 public class CLUClient extends Client implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
 
-    private static final Duration DEFAULT_TIMEOUT_DURATION = Duration.ofMillis(SocketUtil.DEFAULT_TIMEOUT);
+    private static final Duration DEFAULT_TIMEOUT_DURATION = Duration.ofMillis(SocketUtil.DEFAULT_TIMEOUT_MILLISECONDS);
 
     private final CLUDevice cluDevice;
 

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.tftp.transfer;
+package pl.psobiech.opengr8on.tftp.transfer.netascii;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * Because of the translation process, a call to <code>flush()</code> will not flush the last byte written if that byte was a carriage return. A call to
  * {@link #close close() }, however, will flush the carriage return.
  */
-
 public final class FromNetASCIIOutputStream extends FilterOutputStream {
     private final ReentrantLock lock = new ReentrantLock();
 

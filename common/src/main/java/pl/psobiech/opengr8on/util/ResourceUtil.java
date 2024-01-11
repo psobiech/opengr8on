@@ -38,6 +38,9 @@ import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripToEmpty;
 import static org.apache.commons.lang3.StringUtils.stripToNull;
 
+/**
+ * Common resource loading operations
+ */
 public class ResourceUtil {
     private static final String JAR_PATH_SEPARATOR = Pattern.quote("!");
 
@@ -49,10 +52,16 @@ public class ResourceUtil {
         // NOP
     }
 
+    /**
+     * @return path, that is located in local classpath/jar or local file system
+     */
     public static Path classPath(String path) {
         return classPath(URI.create("classpath:/" + path));
     }
 
+    /**
+     * @return path, that is located in local classpath/jar or local file system
+     */
     public static Path classPath(URI uri) {
         final String resourceUriPath = getResourceUriPath(uri);
 
@@ -82,6 +91,9 @@ public class ResourceUtil {
         }
     }
 
+    /**
+     * @return jar file system from jar path
+     */
     private static FileSystem getOrCreateJarFileSystemFor(String jarPath) {
         JAR_FILE_SYSTEMS_LOCK.lock();
         try {
@@ -102,9 +114,11 @@ public class ResourceUtil {
         }
     }
 
+    /**
+     * @return resource path for the given URI
+     */
     private static String getResourceUriPath(URI uri) {
         final String path = stripToEmpty(uri.getPath());
-
         final String host = stripToNull(uri.getHost());
         if (host == null) {
             return path;

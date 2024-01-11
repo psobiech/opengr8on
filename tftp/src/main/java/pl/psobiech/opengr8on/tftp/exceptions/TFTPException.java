@@ -24,6 +24,9 @@ import java.net.InetAddress;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 
+/**
+ * TFTP runtime exception, should abort any pending transfer without any response to the client
+ */
 public class TFTPException extends RuntimeException {
     private final TFTPErrorType error;
 

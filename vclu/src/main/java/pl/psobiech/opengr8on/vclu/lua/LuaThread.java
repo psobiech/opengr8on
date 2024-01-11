@@ -60,7 +60,7 @@ public class LuaThread {
     ) {
         final VirtualSystem virtualSystem = new VirtualSystem(
             cluDevice.getAddress(),
-            cluDevice, cipherKey
+            cipherKey
         );
 
         final Globals globals = new Globals();
@@ -92,8 +92,8 @@ public class LuaThread {
             }
         };
 
-        globals.STDOUT = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.INFO, Slf4jLoggingOutputStream.DEFAULT_BUFFER_LENGTH));
-        globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.ERROR, Slf4jLoggingOutputStream.DEFAULT_BUFFER_LENGTH));
+        globals.STDOUT = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.INFO));
+        globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.ERROR));
 
         return new LuaThreadWrapper(
             virtualSystem, globals,

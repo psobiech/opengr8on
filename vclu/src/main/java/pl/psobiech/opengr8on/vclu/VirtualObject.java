@@ -70,6 +70,8 @@ public class VirtualObject implements Closeable {
     public void register(IFeature feature, LuaOneArgFunction fn) {
         final int index = feature.index();
         featureFunctions.put(index, fn);
+
+        setValue(feature, fn.call(LuaValue.NIL));
     }
 
     public LuaValue get(IFeature feature) {

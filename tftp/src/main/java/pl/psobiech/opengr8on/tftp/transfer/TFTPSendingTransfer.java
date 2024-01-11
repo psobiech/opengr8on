@@ -34,10 +34,11 @@ import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
+import pl.psobiech.opengr8on.tftp.transfer.netascii.ToNetASCIIInputStream;
 
 public abstract class TFTPSendingTransfer extends TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPSendingTransfer.class);
@@ -74,7 +75,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
                     requestPort    = responsePacket.getPort();
                 }
 
-                if (!(responsePacket instanceof final TFTPAckPacket ack)) {
+                if (!(responsePacket instanceof final TFTPAcknowledgementPacket ack)) {
                     throw new TFTPException(
                         TFTPErrorType.UNDEFINED, "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                     );

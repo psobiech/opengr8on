@@ -36,6 +36,8 @@ import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgConsumer;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class InitLuaLib extends TwoArgFunction {
+    private static final String FETCH_VALUES_PREFIX = "values:";
+
     private final Logger logger;
 
     private final VirtualSystem virtualSystem;
@@ -213,14 +215,11 @@ public class InitLuaLib extends TwoArgFunction {
     }
 
     public LuaValue clientDestroy(Varargs args) {
-        final String address = args.checkjstring(1);
-        final int port = args.checkint(2);
+        // final String address = args.checkjstring(1);
+        // final int port = args.checkint(2);
         final int sessionId = args.checkint(3);
 
-        return virtualSystem.clientDestroy(
-            address, port,
-            sessionId
-        );
+        return virtualSystem.clientDestroy(sessionId);
     }
 
     public LuaValue fetchValues(Varargs args) {
@@ -228,7 +227,7 @@ public class InitLuaLib extends TwoArgFunction {
         if (!args.istable(1)) {
             logger.warn("Unknown fetchValues format: " + args);
 
-            return LuaValue.valueOf("values:nil");
+            return LuaValue.valueOf(FETCH_VALUES_PREFIX + "nil");
         }
 
         final LuaTable table = args.checktable(1);
@@ -236,7 +235,7 @@ public class InitLuaLib extends TwoArgFunction {
             final LuaValue value = table.get(key);
             if (!value.istable()) {
                 return LuaValue.valueOf(
-                    "values:{\"%s\"}"
+                    FETCH_VALUES_PREFIX + "{\"%s\"}"
                         .formatted(
                             globals.load("return %s".formatted(value))
                                    .call()
@@ -253,7 +252,7 @@ public class InitLuaLib extends TwoArgFunction {
         }
 
         return LuaValue.valueOf(
-            "values:" + virtualSystem.fetchValues(subscriptions)
+            FETCH_VALUES_PREFIX + virtualSystem.fetchValues(subscriptions)
         );
     }
 

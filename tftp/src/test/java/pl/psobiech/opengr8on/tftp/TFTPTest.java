@@ -115,7 +115,7 @@ class TFTPTest {
             0,
             1,
             1023, 1024, 1025, // multiple blocks
-            0xFFFF * TFTPPacket.SEGMENT_SIZE + 1025 // block number rollover
+            0xFFFF * TFTPPacket.MAX_DATA_LENGTH + 1025 // block number rollover
         }
     )
     void uploadBinary(int fileSize) throws Exception {

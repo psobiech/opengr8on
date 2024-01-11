@@ -24,6 +24,9 @@ import java.net.InetAddress;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 
+/**
+ * TFTP protocol exception, should cause an error to be sent to the remote client
+ */
 public class TFTPPacketException extends Exception {
     private final TFTPErrorType error;
 

@@ -35,9 +35,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
+/**
+ * Common socket operations. Currently only UDP.
+ */
 public class SocketUtil {
-    public static final int DEFAULT_TIMEOUT = 9_000;
+    /**
+     * Default timeout value
+     */
+    public static final int DEFAULT_TIMEOUT_MILLISECONDS = 9_000;
 
+    /**
+     * Reliability traffic flag value
+     */
     private static final int IPTOS_RELIABILITY = 0x04;
 
     private SocketUtil() {
@@ -52,32 +61,66 @@ public class SocketUtil {
 
     public static UDPSocket udpRandomPort(InetAddress address) {
         return new UDPSocket(
-            address, 0, true
+            address, true
         );
     }
 
+    /**
+     * UDP socket wrapper
+     */
     public static class UDPSocket implements Closeable {
+        /**
+         * Local network address
+         */
         private final InetAddress address;
 
+        /**
+         * Local port
+         */
         private final int port;
 
+        /**
+         * Is broadcast enabled
+         */
         private final boolean broadcast;
 
+        /**
+         * Socket access lock
+         */
         private final ReentrantLock socketLock = new ReentrantLock();
 
+        /**
+         * Raw network socket
+         */
         private DatagramSocket socket;
 
+        /**
+         * @param address local address to bind on (on random local port)
+         * @param broadcast should broadcasting be enabled on this socket
+         */
+        public UDPSocket(InetAddress address, boolean broadcast) {
+            this(address, 0, broadcast);
+        }
+
+        /**
+         * @param address local address to bind on
+         * @param port port to listen on
+         * @param broadcast should broadcasting be enabled on this socket
+         */
         public UDPSocket(InetAddress address, int port, boolean broadcast) {
             this.address = address;
             this.port = port;
             this.broadcast = broadcast;
         }
 
+        /**
+         * Open the socket for listening
+         */
         public void open() {
             socketLock.lock();
             try {
                 this.socket = new DatagramSocket(new InetSocketAddress(address, port));
-                this.socket.setSoTimeout(DEFAULT_TIMEOUT);
+                this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
                 this.socket.setTrafficClass(IPTOS_RELIABILITY);
 
                 this.socket.setBroadcast(broadcast);
@@ -88,10 +131,16 @@ public class SocketUtil {
             }
         }
 
+        /**
+         * @return current local address
+         */
         public InetAddress getLocalAddress() {
             return socket.getLocalAddress();
         }
 
+        /**
+         * @return current local port
+         */
         public int getLocalPort() {
             return socket.getLocalPort();
         }
@@ -107,6 +156,9 @@ public class SocketUtil {
             }
         }
 
+        /**
+         * Discards all pending data on the socket (transmission reset)
+         */
         public void discard(DatagramPacket packet) {
             socketLock.lock();
             try {
@@ -118,7 +170,7 @@ public class SocketUtil {
                 // NOP
             } finally {
                 try {
-                    socket.setSoTimeout(DEFAULT_TIMEOUT);
+                    socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
                 } catch (SocketException e) {
                     // NOP
                 }
@@ -127,6 +179,9 @@ public class SocketUtil {
             }
         }
 
+        /**
+         * @return payload received or empty if timeout was reached
+         */
         public Optional<Payload> tryReceive(DatagramPacket packet, Duration timeout) {
             socketLock.lock();
             try {
@@ -134,7 +189,7 @@ public class SocketUtil {
                     // defend against 0 to prevent infinite timeouts
                     socket.setSoTimeout(Math.max(1, Math.toIntExact(timeout.toMillis())));
                     socket.receive(packet);
-                    socket.setSoTimeout(DEFAULT_TIMEOUT);
+                    socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
                 } catch (SocketTimeoutException e) {
                     return Optional.empty();
                 } catch (SocketException e) {

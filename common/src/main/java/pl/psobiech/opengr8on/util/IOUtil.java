@@ -21,6 +21,9 @@ package pl.psobiech.opengr8on.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Common IO operations
+ */
 public final class IOUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(IOUtil.class);
 
@@ -28,12 +31,18 @@ public final class IOUtil {
         // NOP
     }
 
+    /**
+     * Attempts to silently close all closables
+     */
     public static void closeQuietly(AutoCloseable... closeables) {
         for (AutoCloseable closeable : closeables) {
             closeQuietly(closeable);
         }
     }
 
+    /**
+     * Attempts to silently close the closable
+     */
     public static void closeQuietly(AutoCloseable closeable) {
         if (closeable == null) {
             return;

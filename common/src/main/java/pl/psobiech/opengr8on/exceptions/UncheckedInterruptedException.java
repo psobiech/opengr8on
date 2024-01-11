@@ -20,6 +20,9 @@ package pl.psobiech.opengr8on.exceptions;
 
 import java.net.SocketException;
 
+/**
+ * Exception thrown when a thread was interrupted, should abort all processing of the given thread
+ */
 public class UncheckedInterruptedException extends RuntimeException {
     private static final String SOCKET_INTERRUPTED_MESSAGE = "Closed by interrupt";
 
@@ -35,6 +38,9 @@ public class UncheckedInterruptedException extends RuntimeException {
         Thread.currentThread().interrupt();
     }
 
+    /**
+     * @return true, if the SocketException was caused by InterruptedException
+     */
     public static boolean wasSocketInterrupted(SocketException e) {
         return e.getMessage().equalsIgnoreCase(SOCKET_INTERRUPTED_MESSAGE);
     }

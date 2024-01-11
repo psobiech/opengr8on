@@ -68,14 +68,6 @@ public class TFTPErrorPacket extends TFTPPacket {
     }
 
     @Override
-    public DatagramPacket newDatagram() {
-        final byte[] messageAsBytes = message.getBytes(StandardCharsets.US_ASCII);
-        final byte[] data = new byte[HEADER_SIZE + messageAsBytes.length + 1];
-
-        return newDatagram(data);
-    }
-
-    @Override
     public DatagramPacket newDatagram(byte[] data) {
         writeHeader(data);
 

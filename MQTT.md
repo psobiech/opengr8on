@@ -1,5 +1,7 @@
 # Configure VCLU
 
+[object_mqtt_topic_v1.xml](runtime%2Fdevice-interfaces%2Fobject_mqtt_topic_v1.xml)
+
 ## Plain text
 
 Configure MQTTUrl, eg. tcp://user:pass@localhost:1883

@@ -87,7 +87,7 @@ public class CLUDevice {
         this.name = name;
 
         this.serialNumber = serialNumber;
-        this.macAddress   = macAddress;
+        this.macAddress   = Util.mapNullSafe(macAddress, value -> value.replaceAll(":", ""));
         this.address      = address;
 
         this.cipherType = cipherType;

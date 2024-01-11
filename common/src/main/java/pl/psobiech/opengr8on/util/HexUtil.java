@@ -26,6 +26,9 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 import static org.apache.commons.lang3.StringUtils.upperCase;
 
+/**
+ * Common hexadecimal operations
+ */
 public final class HexUtil {
     static final int HEX_BASE = 16;
 
@@ -35,6 +38,9 @@ public final class HexUtil {
         // NOP
     }
 
+    /**
+     * @return parses hex string to long (strips 0x if present)
+     */
     public static long asLong(String hexAsString) {
         try {
             return Long.parseUnsignedLong(
@@ -46,6 +52,9 @@ public final class HexUtil {
         }
     }
 
+    /**
+     * @return parses hex string to integer (strips 0x if present)
+     */
     public static int asInt(String hexAsString) {
         try {
             return Integer.parseUnsignedInt(
@@ -57,6 +66,9 @@ public final class HexUtil {
         }
     }
 
+    /**
+     * @return parses hex string to raw byte array (strips 0x if present)
+     */
     public static byte[] asBytes(String hexAsString) {
         try {
             return Hex.decodeHex(
@@ -67,6 +79,9 @@ public final class HexUtil {
         }
     }
 
+    /**
+     * @return string without 0x prefix, if present
+     */
     private static String stripPrefix(String hexAsString) {
         if (hexAsString.startsWith(HEX_PREFIX)) {
             return hexAsString.substring(HEX_PREFIX.length());
@@ -75,22 +90,34 @@ public final class HexUtil {
         return hexAsString;
     }
 
+    /**
+     * @return hex value as string
+     */
     public static String asString(BigInteger value) {
         if (value == null) {
             return null;
         }
 
-        return format(value.toString(HEX_BASE));
+        return format((value).toString(HEX_BASE));
     }
 
+    /**
+     * @return hex value as string
+     */
     public static String asString(byte value) {
         return asString(value & 0xFF);
     }
 
+    /**
+     * @return hex value as string
+     */
     public static String asString(byte[] array) {
         return format(Hex.encodeHexString(array));
     }
 
+    /**
+     * @return hex value as string
+     */
     public static String asString(Integer value) {
         if (value == null) {
             return null;
@@ -99,6 +126,9 @@ public final class HexUtil {
         return format(Integer.toHexString(value));
     }
 
+    /**
+     * @return hex value as string
+     */
     public static String asString(Long value) {
         if (value == null) {
             return null;
@@ -107,12 +137,18 @@ public final class HexUtil {
         return format(Long.toHexString(value));
     }
 
+    /**
+     * @return hex formatted (uppercase and zero padded to even characters)
+     */
     private static String format(String valueAsString) {
         return evenZeroLeftPad(
             upperCase(valueAsString)
         );
     }
 
+    /**
+     * @return even zero padded hex string, e.g. 0 = 00
+     */
     private static String evenZeroLeftPad(String valueAsString) {
         if (valueAsString.length() % 2 == 0) {
             return valueAsString;

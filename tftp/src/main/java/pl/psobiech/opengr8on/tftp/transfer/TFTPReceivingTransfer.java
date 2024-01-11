@@ -32,12 +32,13 @@ import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAckPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
+import pl.psobiech.opengr8on.tftp.transfer.netascii.FromNetASCIIOutputStream;
 import pl.psobiech.opengr8on.util.FileUtil;
 
 public abstract class TFTPReceivingTransfer extends TFTPTransfer {
@@ -66,7 +67,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
             throw packetException;
         }
 
-        TFTPAckPacket lastSentAck = new TFTPAckPacket(requestAddress, requestPort, 0);
+        TFTPAcknowledgementPacket lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, 0);
         try (outputStream) {
             if (server) {
                 tftp.send(lastSentAck);
@@ -85,7 +86,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
                 if (server && acknowledgedBlock == 0 && responsePacket instanceof TFTPRequestPacket) {
                     // it must have missed our initial ack. Send another.
-                    lastSentAck = new TFTPAckPacket(requestAddress, requestPort, acknowledgedBlock);
+                    lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, acknowledgedBlock);
                     tftp.send(lastSentAck);
 
                     continue;
@@ -103,7 +104,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                     }
 
                     if (dataLength >= TFTPDataPacket.MAX_DATA_LENGTH) {
-                        lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
+                        lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, receivedBlock);
                         tftp.send(lastSentAck);
                     } else {
                         try {
@@ -116,7 +117,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                             throw new TFTPPacketException(TFTPErrorType.UNDEFINED, e.getMessage(), e);
                         }
 
-                        lastSentAck = new TFTPAckPacket(requestAddress, requestPort, receivedBlock);
+                        lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, receivedBlock);
                         tftp.send(lastSentAck);
 
                         if (!server) {

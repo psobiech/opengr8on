@@ -43,6 +43,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
+/**
+ * Cipher Key
+ */
 public class CipherKey {
     static {
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -83,14 +86,23 @@ public class CipherKey {
         this.ivParameterSpecification = ivParameterSpecification;
     }
 
+    /**
+     * @return initial cipher key, based on the given IV and a Private Key
+     */
     public static CipherKey getInitialCipherKey(byte[] iv, byte[] privateKey) {
         return new CipherKey(generateDefaultKey(privateKey), iv);
     }
 
+    /**
+     * @return default KEY from Private Key
+     */
     public static byte[] generateDefaultKey(byte[] privateKey) {
         return generateKey(DEFAULT_IV, privateKey);
     }
 
+    /**
+     * @return KEY, based on the given IV and a Private Key
+     */
     public static byte[] generateKey(byte[] iv, byte[] privateKey) {
         assert iv.length % 2 == 0;
         assert privateKey.length == iv.length / 2;
@@ -110,14 +122,23 @@ public class CipherKey {
         return result;
     }
 
+    /**
+     * @return new instance of the CipherKey, with same Key, but different IV
+     */
     public CipherKey withIV(byte[] iv) {
         return new CipherKey(keySpecification(), new IvParameterSpec(iv));
     }
 
+    /**
+     * @return decrypted content, if decryption succeeded
+     */
     public Optional<byte[]> decrypt(byte[] input) {
         return decrypt(input, 0, input.length);
     }
 
+    /**
+     * @return decrypted content, if decryption succeeded
+     */
     public Optional<byte[]> decrypt(byte[] input, int offset, int limit) {
         try {
             final Cipher cipher = Cipher.getInstance(CIPHER, BouncyCastleProvider.PROVIDER_NAME);
@@ -134,6 +155,9 @@ public class CipherKey {
         }
     }
 
+    /**
+     * @return encrypted message
+     */
     public byte[] encrypt(byte[] message) {
         try {
             final Cipher cipher = Cipher.getInstance(CIPHER, BouncyCastleProvider.PROVIDER_NAME);
@@ -146,6 +170,9 @@ public class CipherKey {
         }
     }
 
+    /**
+     * Performs encryption or decryption process using the provided cipher
+     */
     private static byte[] process(Cipher cipher, byte[] input, int offset, int limit)
         throws IllegalBlockSizeException, ShortBufferException, BadPaddingException {
         final byte[] inputBuffer = new byte[INPUT_BUFFER_SIZE];
@@ -180,6 +207,9 @@ public class CipherKey {
         }
     }
 
+    /**
+     * @return new (empty) buffer if capacity is exceeded or the same buffer otherwise
+     */
     private static byte[] ensureCapacity(byte[] buffer, int requiredCapacity) {
         if (requiredCapacity > buffer.length) {
             return new byte[requiredCapacity];

@@ -42,13 +42,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
+/**
+ * Common IPv4 address operations
+ */
 public final class IPv4AddressUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(IPv4AddressUtil.class);
 
+    /**
+     * Timeout to wait for host availability / ping
+     */
     private static final int PING_TIMEOUT = 2000;
 
+    /**
+     * Wildcard broadcast address
+     */
     public static final Inet4Address BROADCAST_ADDRESS = parseIPv4("255.255.255.255");
 
+    /**
+     * Interface mac address prefixes to ignore
+     */
     public static final Set<String> HARDWARE_ADDRESS_PREFIX_BLACKLIST = Set.of(
         HexUtil.asString(0x000569), // VMware, Inc.
         HexUtil.asString(0x001c14), // VMware, Inc.
@@ -56,6 +68,9 @@ public final class IPv4AddressUtil {
         HexUtil.asString(0x005056)  // VMware, Inc.
     );
 
+    /**
+     * Interface names to ignore
+     */
     public static final Set<String> NETWORK_INTERFACE_NAME_PREFIX_BLACKLIST = Set.of(
         "vmnet", "vboxnet"
     );
@@ -64,6 +79,9 @@ public final class IPv4AddressUtil {
         // NOP
     }
 
+    /**
+     * @return network interface matching name or ip address
+     */
     public static Optional<NetworkInterfaceDto> getLocalIPv4NetworkInterfaceByNameOrAddress(String nameOrAddress) {
         final List<NetworkInterfaceDto> networkInterfaces = getLocalIPv4NetworkInterfaces();
         for (NetworkInterfaceDto networkInterface : networkInterfaces) {
@@ -79,6 +97,9 @@ public final class IPv4AddressUtil {
         return Optional.empty();
     }
 
+    /**
+     * @return network interface matching name
+     */
     public static Optional<NetworkInterfaceDto> getLocalIPv4NetworkInterfaceByName(String name) {
         final List<NetworkInterfaceDto> networkInterfaces = getLocalIPv4NetworkInterfaces();
         for (NetworkInterfaceDto networkInterface : networkInterfaces) {
@@ -90,6 +111,9 @@ public final class IPv4AddressUtil {
         return Optional.empty();
     }
 
+    /**
+     * @return network interface ip address
+     */
     public static Optional<NetworkInterfaceDto> getLocalIPv4NetworkInterfaceByIpAddress(String ipAddress) {
         final List<NetworkInterfaceDto> networkInterfaces = getLocalIPv4NetworkInterfaces();
         for (NetworkInterfaceDto networkInterface : networkInterfaces) {
@@ -101,6 +125,9 @@ public final class IPv4AddressUtil {
         return Optional.empty();
     }
 
+    /**
+     * @return all up, local, IPv4 and not blacklisted network interfaces
+     */
     public static List<NetworkInterfaceDto> getLocalIPv4NetworkInterfaces() {
         final List<NetworkInterface> validNetworkInterfaces = allValidNetworkInterfaces();
         final List<NetworkInterfaceDto> networkInterfaces = new ArrayList<>(validNetworkInterfaces.size());
@@ -133,17 +160,9 @@ public final class IPv4AddressUtil {
         return networkInterfaces;
     }
 
-    private static int getNetworkMaskFromPrefix(short networkPrefixLength) {
-        int networkMask = 0x00;
-        for (int i = 0; i < Integer.SIZE - networkPrefixLength; i++) {
-            networkMask += (1 << i);
-        }
-
-        networkMask ^= 0xFFFFFFFF;
-
-        return networkMask;
-    }
-
+    /**
+     * @return all up, local and not blacklisted network interfaces
+     */
     private static List<NetworkInterface> allValidNetworkInterfaces() {
         final List<NetworkInterface> networkInterfaces;
         try {
@@ -174,6 +193,23 @@ public final class IPv4AddressUtil {
         return validNetworkInterfaces;
     }
 
+    /**
+     * @return network bitmask from prefix, e.g. /24 = 255.255.255.0 / 0xFFFFFF00
+     */
+    private static int getNetworkMaskFromPrefix(short networkPrefixLength) {
+        int networkMask = 0x00;
+        for (int i = 0; i < Integer.SIZE - networkPrefixLength; i++) {
+            networkMask += (1 << i);
+        }
+
+        networkMask ^= 0xFFFFFFFF;
+
+        return networkMask;
+    }
+
+    /**
+     * @return true, if the network interface is blacklisted (either by name or mac prefix)
+     */
     private static boolean isBlacklisted(NetworkInterface networkInterface) throws SocketException {
         final String networkInterfaceName = networkInterface.getName();
         for (String blacklistedNetworkInterfaceNamePrefix : NETWORK_INTERFACE_NAME_PREFIX_BLACKLIST) {
@@ -190,6 +226,9 @@ public final class IPv4AddressUtil {
         return isHardwareAddressBlacklisted(hardwareAddress);
     }
 
+    /**
+     * @return true, if the mac is blacklisted
+     */
     private static boolean isHardwareAddressBlacklisted(byte[] macAddress) {
         if (macAddress == null) {
             return true;
@@ -200,16 +239,9 @@ public final class IPv4AddressUtil {
         return HARDWARE_ADDRESS_PREFIX_BLACKLIST.contains(hardwareAddressPrefix);
     }
 
-    public static Inet4Address parseIPv4(String ipv4AddressAsString) {
-        try {
-            return (Inet4Address) InetAddress.getByAddress(
-                getIPv4AsBytes(ipv4AddressAsString)
-            );
-        } catch (UnknownHostException e) {
-            throw new UnexpectedException(e);
-        }
-    }
-
+    /**
+     * @return parses IPv4 integer value to Inet4Address
+     */
     public static Inet4Address parseIPv4(int ipv4AddressAsNumber) {
         try {
             final byte[] buffer = asBytes(ipv4AddressAsNumber);
@@ -220,6 +252,9 @@ public final class IPv4AddressUtil {
         }
     }
 
+    /**
+     * @return IPv4 string representation from integer value of IPv4 address
+     */
     public static String getIPv4FromNumber(int ipv4AsNumber) {
         final byte[] buffer = asBytes(ipv4AsNumber);
 
@@ -228,6 +263,9 @@ public final class IPv4AddressUtil {
                         .collect(Collectors.joining("."));
     }
 
+    /**
+     * @return individual bytes of an IPv4 address
+     */
     private static byte[] asBytes(int ipv4AsNumber) {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
 
@@ -237,24 +275,37 @@ public final class IPv4AddressUtil {
         return byteBuffer.array();
     }
 
+    /**
+     * @return IPv4 integer value from Inet4Address
+     */
     public static int getIPv4AsNumber(Inet4Address inetAddress) {
         return getIPv4AsNumber(inetAddress.getAddress());
     }
 
-    public static int getIPv4AsNumber(String ipv4AddressAsString) {
-        return getIPv4AsNumber(getIPv4AsBytes(ipv4AddressAsString));
-    }
-
-    public static int getIPv4AsNumber(byte[] ipv4AddressAsBytes) {
-        if (ipv4AddressAsBytes.length != Integer.BYTES) {
-            throw new UnexpectedException("Invalid IPv4 address: " + Arrays.toString(ipv4AddressAsBytes));
+    /**
+     * @return parses IPv4 string representation to Inet4Address
+     */
+    public static Inet4Address parseIPv4(String ipv4AddressAsString) {
+        try {
+            return (Inet4Address) InetAddress.getByAddress(
+                asBytes(ipv4AddressAsString)
+            );
+        } catch (UnknownHostException e) {
+            throw new UnexpectedException(e);
         }
-
-        return ByteBuffer.wrap(ipv4AddressAsBytes)
-                         .getInt();
     }
 
-    private static byte[] getIPv4AsBytes(String ipv4AddressAsString) {
+    /**
+     * @return IPv4 integer value from IPv4 string value
+     */
+    public static int getIPv4AsNumber(String ipv4AddressAsString) {
+        return getIPv4AsNumber(asBytes(ipv4AddressAsString));
+    }
+
+    /**
+     * @return bytes of IPv4 address
+     */
+    private static byte[] asBytes(String ipv4AddressAsString) {
         final String[] ipAddressParts = Util.splitAtLeast(ipv4AddressAsString, "\\.", Integer.BYTES)
                                             .orElseThrow(() -> new UnexpectedException("Invalid IPv4 address: " + ipv4AddressAsString));
 
@@ -266,6 +317,21 @@ public final class IPv4AddressUtil {
         return addressAsBytes;
     }
 
+    /**
+     * @return IPv4 integer value from separate IPv4 bytes
+     */
+    public static int getIPv4AsNumber(byte[] ipv4AddressAsBytes) {
+        if (ipv4AddressAsBytes.length != Integer.BYTES) {
+            throw new UnexpectedException("Invalid IPv4 address: " + Arrays.toString(ipv4AddressAsBytes));
+        }
+
+        return ByteBuffer.wrap(ipv4AddressAsBytes)
+                         .getInt();
+    }
+
+    /**
+     * @return true, if the provided internet address is reachable within {@link #PING_TIMEOUT}
+     */
     public static boolean ping(InetAddress inetAddress) {
         try {
             return inetAddress.isReachable(PING_TIMEOUT);
@@ -304,32 +370,55 @@ public final class IPv4AddressUtil {
             this.networkInterface = networkInterface;
         }
 
+        /**
+         * @return local address, e.g. 192.168.31.121
+         */
         public Inet4Address getAddress() {
             return address;
         }
 
+        /**
+         * @return network address, e.g. 192.168.31.0 (for /24)
+         */
         public Inet4Address getNetworkAddress() {
             return parseIPv4(networkAddress);
         }
 
+        /**
+         * @return network address, e.g. 192.168.31.255 (for /24)
+         */
         public Inet4Address getBroadcastAddress() {
             return broadcastAddress;
         }
 
+        /**
+         * @return integer network mask, eg. 0xFFFFFF00 for /24
+         */
         public int getNetworkMask() {
             return networkMask;
         }
 
+        /**
+         * @return raw network interface
+         */
         public NetworkInterface getNetworkInterface() {
             return networkInterface;
         }
 
+        /**
+         * @return true, if the address is withing the network of this interface
+         */
         public boolean valid(Inet4Address address) {
             final int ipAsNumber = getIPv4AsNumber(address);
 
             return ipAsNumber > networkAddress && ipAsNumber < IPv4AddressUtil.getIPv4AsNumber(broadcastAddress);
         }
 
+        /**
+         * @param currentAddress local address, so the address is "available" since it's already allocated to the remote host
+         * @param exclusionList list of addresses to omit
+         * @return optionally, IPv4 address that is available
+         */
         public Optional<Inet4Address> nextAvailable(
             Inet4Address startingAddress,
             Duration timeout,
@@ -344,6 +433,11 @@ public final class IPv4AddressUtil {
             return Optional.of(addresses.getFirst());
         }
 
+        /**
+         * @param currentAddress local address, so the address is "available" since it's already allocated to the remote host
+         * @param exclusionList list of addresses to omit
+         * @return list of at most `limit` available addresses (might be less than the requested amount)
+         */
         public List<Inet4Address> nextAvailableExcluding(
             Inet4Address startingAddress,
             Duration timeout,

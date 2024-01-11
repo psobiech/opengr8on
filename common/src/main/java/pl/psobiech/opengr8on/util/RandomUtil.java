@@ -21,14 +21,20 @@ package pl.psobiech.opengr8on.util;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Random;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
+/**
+ * Common random operations
+ */
 public final class RandomUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RandomUtil.class);
+
+    private static final ReentrantLock RANDOM_LOCK = new ReentrantLock();
 
     private static final ThreadLocal<SecureRandom> WEAK_RANDOM_THREAD_LOCAL = ThreadLocal.withInitial(RandomUtil::createWeakRandom);
 
@@ -57,8 +63,13 @@ public final class RandomUtil {
         HEX_DICTIONARY = chars;
     }
 
-    private static synchronized SecureRandom createWeakRandom() {
-        return new SecureRandom();
+    private static SecureRandom createWeakRandom() {
+        RANDOM_LOCK.lock();
+        try {
+            return new SecureRandom();
+        } finally {
+            RANDOM_LOCK.unlock();
+        }
     }
 
     private RandomUtil() {

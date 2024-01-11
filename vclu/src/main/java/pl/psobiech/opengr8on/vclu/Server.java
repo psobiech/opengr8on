@@ -102,7 +102,7 @@ public class Server implements Closeable {
 
     protected final UDPSocket socket;
 
-    private final ScheduledExecutorService executorService = ThreadUtil.executor("cluServer");
+    private final ScheduledExecutorService executorService = ThreadUtil.virtualScheduler("cluServer");
 
     private final ScheduledExecutorService mqttExecutorService = Executors.newScheduledThreadPool(2, ThreadUtil.threadFactory("mqtt", true));
 
@@ -468,8 +468,6 @@ public class Server implements Closeable {
                 try {
                     Thread.sleep(RETRY_DELAY);
                 } catch (InterruptedException e2) {
-                    Thread.currentThread().interrupt();
-
                     throw new UncheckedInterruptedException(e2);
                 }
             }

@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
@@ -58,6 +57,8 @@ public class MqttClient implements Closeable {
     private static final int CONNECTION_TIMEOUT_SECONDS = 4;
 
     private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
+
+    private static final int MAX_INFLIGHT = 64;
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(
         4,
@@ -92,18 +93,17 @@ public class MqttClient implements Closeable {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    LOGGER.trace("MQTT messageArrived {}: {}", topic, ToStringUtil.toString(message.getPayload()));
-
                     for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
                         mqttTopic.onMessage(
                             topic, message.getPayload(),
-                            () -> {
-                                try {
-                                    mqttClient.messageArrivedComplete(message.getId(), message.getQos());
-                                } catch (MqttException e) {
-                                    LOGGER.error(e.getMessage(), e);
-                                }
-                            }
+                            () ->
+                                executor.submit(() -> {
+                                    try {
+                                        mqttClient.messageArrivedComplete(message.getId(), message.getQos());
+                                    } catch (MqttException e) {
+                                        LOGGER.error(e.getMessage(), e);
+                                    }
+                                })
                         );
                     }
                 }
@@ -145,6 +145,7 @@ public class MqttClient implements Closeable {
         options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
         options.setAutomaticReconnect(true);
         options.setCleanSession(false);
+        options.setMaxInflight(MAX_INFLIGHT);
 
         final String userInfo = mqttUri.getUserInfo();
         if (userInfo != null) {

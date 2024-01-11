@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
@@ -52,11 +51,11 @@ public class VirtualSystem implements Closeable {
 
     private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
 
-    private final ScheduledExecutorService executor = ThreadUtil.executor("LuaServer");
+    private static final String CLIENT_REPORT_PREFIX = "clientReport:";
+
+    private final ScheduledExecutorService executor = ThreadUtil.virtualScheduler("LuaServer");
 
     private final Inet4Address localAddress;
-
-    private final CLUDevice device;
 
     private final CipherKey cipherKey;
 
@@ -66,9 +65,8 @@ public class VirtualSystem implements Closeable {
 
     private ScheduledFuture<?> clientReportFuture = null;
 
-    public VirtualSystem(Inet4Address localAddress, CLUDevice device, CipherKey cipherKey) {
+    public VirtualSystem(Inet4Address localAddress, CipherKey cipherKey) {
         this.localAddress = localAddress;
-        this.device       = device;
         this.cipherKey    = cipherKey;
     }
 
@@ -154,8 +152,6 @@ public class VirtualSystem implements Closeable {
         try {
             Thread.sleep(millis, nanos);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
             throw new UncheckedInterruptedException(e);
         }
     }
@@ -168,7 +164,7 @@ public class VirtualSystem implements Closeable {
         clientReportFuture = executor.scheduleAtFixedRate(
             () -> {
                 try {
-                    final String valuesAsString = "clientReport:" + sessionId + ":" + fetchValues(subscription);
+                    final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
 
                     try (CLUClient client = new CLUClient(localAddress, ipAddress, cipherKey, port)) {
                         client.clientReport(valuesAsString);
@@ -188,10 +184,10 @@ public class VirtualSystem implements Closeable {
             1, 1, TimeUnit.SECONDS
         );
 
-        return "clientReport:" + sessionId + ":" + fetchValues(subscription);
+        return CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
     }
 
-    public LuaValue clientDestroy(String ipAddress, int port, int sessionId) {
+    public LuaValue clientDestroy(int sessionId) {
         if (clientReportFuture != null) {
             clientReportFuture.cancel(true);
         }

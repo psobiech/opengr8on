@@ -25,10 +25,13 @@ import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
-public class TFTPAckPacket extends TFTPBlockPacket {
+/**
+ * Block acknowledgement packet
+ */
+public class TFTPAcknowledgementPacket extends TFTPBaseBlockPacket {
     private static final int PACKET_SIZE = HEADER_SIZE;
 
-    public TFTPAckPacket(Payload datagram) throws TFTPPacketException {
+    public TFTPAcknowledgementPacket(Payload datagram) throws TFTPPacketException {
         super(TFTPPacketType.ACKNOWLEDGEMENT, datagram.address(), datagram.port(), getBlockNumber(datagram));
 
         final byte[] buffer = datagram.buffer();
@@ -37,13 +40,8 @@ public class TFTPAckPacket extends TFTPBlockPacket {
         }
     }
 
-    public TFTPAckPacket(InetAddress destination, int port, int blockNumber) {
+    public TFTPAcknowledgementPacket(InetAddress destination, int port, int blockNumber) {
         super(TFTPPacketType.ACKNOWLEDGEMENT, destination, port, blockNumber);
-    }
-
-    @Override
-    public DatagramPacket newDatagram() {
-        return newDatagram(new byte[PACKET_SIZE]);
     }
 
     @Override

@@ -26,57 +26,73 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
+/**
+ * Redirect stream output to slf4j logger. Splits newlines to separate log events.
+ * Based on Log4j implementation, but without infinite scaling buffer.
+ */
 public class Slf4jLoggingOutputStream extends OutputStream {
-    protected static final char[] LINE_SEPARATOR = System.lineSeparator().toCharArray();
+    private static final char[] LINE_SEPARATOR = System.lineSeparator().toCharArray();
 
     /**
      * The default number of bytes in the buffer.
      */
-    public static final int DEFAULT_BUFFER_LENGTH = 2048;
-
-    protected final Logger logger;
+    public static final int DEFAULT_MAXIMUM_BUFFER_SIZE = 10240;
 
     /**
-     * Used to maintain the contract of {@link #close()}.
+     * Initial buffer size
      */
-    protected boolean hasBeenClosed = false;
+    private static final int INITIAL_BUFFER_SIZE = 2048;
+
+    /**
+     * Maximum size of the buffer
+     */
+    private final int maxBufferSize;
 
     /**
      * The internal buffer where data is stored.
      */
-    protected byte[] buffer;
+    private byte[] buffer;
 
     /**
-     * The number of valid bytes in the buffer.
+     * Logger where the output should be redirected
      */
-    protected int offset;
+    private final Logger logger;
 
+    /**
+     * Requested log level
+     */
     private final Level level;
 
     /**
-     * Creates the LoggingOutputStream to flush to the given Category.
-     *
-     * @param logger the Logger to write to
-     * @throws IllegalArgumentException if cat == null or priority == null
+     * The number of bytes written to the buffer
      */
-    public Slf4jLoggingOutputStream(Logger logger, Level level, int bufferLength) throws IllegalArgumentException {
-        this.logger = logger;
+    private int offset;
 
-        this.level = level;
-
-        buffer = new byte[bufferLength];
-        offset = 0;
+    /**
+     * @param logger the Logger to write to
+     * @param level log level of the log
+     */
+    public Slf4jLoggingOutputStream(Logger logger, Level level) {
+        this(logger, level, DEFAULT_MAXIMUM_BUFFER_SIZE);
     }
 
     /**
-     * Writes the specified byte to this output stream. The general contract for <code>write</code> is that one byte is written to the output stream. The byte
-     * to be written is the eight low-order bits of the argument <code>b</code>. The 24 high-order bits of <code>b</code> are ignored.
-     *
-     * @param b the <code>byte</code> to write
+     * @param logger the Logger to write to
+     * @param level log level of the log
+     * @param maxBufferSize buffer that determines the maximum length of line to be flushed as a single log
      */
+    public Slf4jLoggingOutputStream(Logger logger, Level level, int maxBufferSize) {
+        this.logger = logger;
+        this.level  = level;
+
+        this.maxBufferSize = maxBufferSize;
+        this.buffer        = new byte[Math.min(maxBufferSize, INITIAL_BUFFER_SIZE)];
+        this.offset        = 0;
+    }
+
     @Override
     public void write(int b) throws IOException {
-        if (hasBeenClosed) {
+        if (buffer == null) {
             throw new IOException("The stream has been closed.");
         }
 
@@ -88,6 +104,7 @@ public class Slf4jLoggingOutputStream extends OutputStream {
         // flush on line ending
         if (b == LINE_SEPARATOR[LINE_SEPARATOR.length - 1]) {
             if (LINE_SEPARATOR.length == 2) {
+                // omit previous line separator part if line separator has 2 characters
                 offset -= 1;
             }
 
@@ -96,32 +113,31 @@ public class Slf4jLoggingOutputStream extends OutputStream {
             return;
         }
 
-        // instead of writing past the buffer, just flush
-        // (we do risk breaking utf-8 encoding though, but it's better than a possibility of a memory leak if we increase the buffer indefinitely)
-        if (offset == buffer.length) {
-            flush();
+        final int currentBufferLength = buffer.length;
+        if (offset == currentBufferLength) {
+            if (currentBufferLength < maxBufferSize) {
+                // expand the buffer size, up to the maximum
+                final int newBufferSize = Math.min(currentBufferLength * 2, maxBufferSize);
+
+                buffer = Arrays.copyOf(buffer, newBufferSize);
+            } else {
+                // instead of writing past the buffer, just flush (we do risk breaking utf-8 encoding though,
+                // but imho it's better than a possibility of a memory leak if we increase the buffer indefinitely)
+
+                flush();
+            }
         }
 
         buffer[offset++] = (byte) b;
     }
 
-    /**
-     * Closes this output stream and releases any system resources associated with this stream. The general contract of
-     * <code>close</code> is that it closes the output stream. A closed
-     * stream cannot perform output operations and cannot be reopened.
-     */
     @Override
     public void close() {
         flush();
 
-        hasBeenClosed = true;
+        buffer = null;
     }
 
-    /**
-     * Flushes this output stream and forces any buffered output bytes to be written out. The general contract of <code>flush</code> is that calling it is an
-     * indication that, if any bytes previously written have been buffered by the implementation of the output stream, such bytes should immediately be written
-     * to their intended destination.
-     */
     @Override
     public void flush() {
         if (offset == 0) {

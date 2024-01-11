@@ -22,7 +22,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import pl.psobiech.opengr8on.util.Util;
+import pl.psobiech.opengr8on.util.HexUtil;
 
 public class CLUDeviceConfig extends DeviceConfig {
     @JsonProperty("mac")
@@ -43,11 +43,11 @@ public class CLUDeviceConfig extends DeviceConfig {
         super(
             serialNumber,
             hardwareType, hardwareVersion,
-            firmwareType, firmwareVersion,
+            firmwareType, firmwareVersion, HexUtil.asString(firmwareVersion) + "-0000",
             status
         );
 
-        this.macAddress = Util.mapNullSafe(macAddress, value -> value.replaceAll(":", ""));
+        this.macAddress = macAddress;
         this.tfBusDevices = tfBusDevices;
     }
 

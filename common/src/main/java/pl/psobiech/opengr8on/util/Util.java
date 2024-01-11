@@ -18,7 +18,6 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,23 +25,12 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.lang.Math.round;
-
 public final class Util {
-    public static final int ONE_HUNDRED_PERCENT = 100;
-
-    private static final double ONE_HUNDRED_PERCENT_DOUBLE = ONE_HUNDRED_PERCENT;
-
     private Util() {
         // NOP
     }
@@ -99,23 +87,6 @@ public final class Util {
         return Optional.of(split);
     }
 
-    public static int percentage(long elementCount, long totalElementCount) {
-        return (int) max(0, min(ONE_HUNDRED_PERCENT_DOUBLE, round((elementCount * ONE_HUNDRED_PERCENT_DOUBLE) / (double) totalElementCount)));
-    }
-
-    /**
-     * @return tries to convert a Serializable to Number formatted as string (with 2 decimal places), defaults to {@link String#valueOf(Object)}
-     */
-    public static String formatNumber(Number value) {
-        if (value == null) {
-            return null;
-        }
-
-        final DecimalFormat scoreDecimalFormat = new DecimalFormat("0.##");
-
-        return scoreDecimalFormat.format(((Number) value).doubleValue());
-    }
-
     public static <E> List<E> nullAsEmpty(List<E> list) {
         if (list == null) {
             return Collections.emptyList();
@@ -163,28 +134,6 @@ public final class Util {
         return nullValue;
     }
 
-    public static <F, T> List<T> mapNullSafe(List<F> from, Function<F, T> mapper) {
-        return mapNullSafeListWithDefault(from, mapper, Collections.emptyList());
-    }
-
-    public static <F, T> List<T> mapNullSafeListWithDefault(List<F> from, Function<F, T> mapper, List<T> nullValue) {
-        return Optional.ofNullable(from)
-                       .map(f ->
-                           f.stream()
-                            .map(mapper)
-                            .collect(Collectors.toList())
-                       )
-                       .orElse(nullValue);
-    }
-
-    public static <T> T nullAsDefault(T value, T defaultValue) {
-        return Objects.requireNonNullElse(value, defaultValue);
-    }
-
-    public static <T> T nullAsDefaultGet(T value, Supplier<? extends T> defaultValueSupplier) {
-        return Objects.requireNonNullElseGet(value, defaultValueSupplier);
-    }
-
     public static <E extends Enum<E>> EnumSet<E> asEnum(List<String> valueList, Class<E> enumClass) {
         if (valueList == null) {
             return null;
@@ -193,35 +142,5 @@ public final class Util {
         return valueList.stream()
                         .map(valueAsString -> Enum.valueOf(enumClass, valueAsString))
                         .collect(Collectors.toCollection(() -> EnumSet.noneOf(enumClass)));
-    }
-
-    /**
-     * @return lazy initiated singleton (thread safe)
-     */
-    public static <T> Supplier<T> lazy(Supplier<T> supplier) {
-        return cache(supplier);
-    }
-
-    /**
-     * @return lazy initiated singleton (thread safe)
-     */
-    public static <T> Supplier<T> cache(Supplier<T> constructor) {
-        final AtomicReference<T> reference = new AtomicReference<>();
-
-        return () -> {
-            final T currentValue = reference.get();
-            if (currentValue != null) {
-                return currentValue;
-            }
-
-            return reference.updateAndGet(value -> {
-                if (value != null) {
-                    // new value was already allocated by some other thread between notnull check and here, we preserve the other thread value
-                    return value;
-                }
-
-                return constructor.get();
-            });
-        };
     }
 }

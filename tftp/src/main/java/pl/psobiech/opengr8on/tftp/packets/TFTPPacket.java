@@ -30,7 +30,7 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 public abstract class TFTPPacket {
     protected static final int OPERATOR_TYPE_OFFSET = 1;
 
-    public static final int SEGMENT_SIZE = 512;
+    public static final int MAX_DATA_LENGTH = 512;
 
     final TFTPPacketType type;
 
@@ -60,8 +60,6 @@ public abstract class TFTPPacket {
     public TFTPPacketType getType() {
         return type;
     }
-
-    public abstract DatagramPacket newDatagram();
 
     public abstract DatagramPacket newDatagram(byte[] data);
 

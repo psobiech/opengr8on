@@ -28,14 +28,23 @@ import java.util.UUID;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 public interface Command {
+    /**
+     * Initial buffer size to allocate for commands
+     */
     int INITIAL_BUFFER_SIZE = 256;
 
+    /**
+     * Minimum size of IPv4 address, e.g. "0.0.0.0".length
+     */
     int MIN_IP_SIZE = 7;
 
     int IV_SIZE = 16;
 
     int KEY_SIZE = 16;
 
+    /**
+     * Mac address size, without :, e.g. 000000000000
+     */
     int MAC_SIZE = 12;
 
     int MIN_SERIAL_NUMBER_SIZE = 4;
@@ -56,14 +65,23 @@ public interface Command {
         return value1.equals(asString(buffer, offset, value1.length()));
     }
 
+    /**
+     * @return whole buffer as String
+     */
     static String asString(byte[] buffer) {
         return asString(buffer, 0);
     }
 
+    /**
+     * @return rest of the buffer from offset as String
+     */
     static String asString(byte[] buffer, int offset) {
         return asStringOfRange(buffer, offset, buffer.length);
     }
 
+    /**
+     * @return String, between offset and limit in the buffer
+     */
     static String asString(byte[] buffer, int offset, int limit) {
         return asStringOfRange(buffer, offset, offset + limit);
     }
@@ -72,10 +90,16 @@ public interface Command {
         return new String(Arrays.copyOfRange(buffer, from, to)).trim();
     }
 
+    /**
+     * @return Command unique UUID (to correlate request / responses)
+     */
     default String uuid(UUID uuid) {
         return Client.uuid(uuid, this);
     }
 
+    /**
+     * @return objects serialized as byte array
+     */
     static byte[] serialize(Object... objects) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE)) {
             for (Object object : objects) {
@@ -88,6 +112,9 @@ public interface Command {
         }
     }
 
+    /**
+     * @return object serialized as byte array
+     */
     private static byte[] serializeObject(Object object) {
         if (object instanceof byte[]) {
             return (byte[]) object;
@@ -108,5 +135,8 @@ public interface Command {
         throw new UnexpectedException("Unsupported object type: " + object);
     }
 
+    /**
+     * @return command as byte array
+     */
     byte[] asByteArray();
 }

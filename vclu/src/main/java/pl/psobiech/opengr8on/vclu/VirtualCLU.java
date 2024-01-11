@@ -28,7 +28,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -49,34 +48,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     public static final int INDEX = 0;
 
-    private static final int UTC_TIMEZONE_ID = 22;
-
-    private static final Map<Integer, ZoneId> TIME_ZONES = Map.ofEntries(
-        Map.entry(0, ZoneId.of("Europe/Warsaw")),
-        Map.entry(1, ZoneId.of("Europe/London")),
-        Map.entry(2, ZoneId.of("Europe/Moscow")),
-        Map.entry(3, ZoneId.of("Europe/Istanbul")),
-        Map.entry(4, ZoneId.of("Europe/Athens")),
-        Map.entry(5, ZoneId.of("Asia/Dubai")),
-        Map.entry(6, ZoneId.of("Asia/Jakarta")),
-        Map.entry(7, ZoneId.of("Asia/Hong_Kong")),
-        Map.entry(8, ZoneId.of("Australia/Sydney")),
-        Map.entry(9, ZoneId.of("Australia/Perth")),
-        Map.entry(10, ZoneId.of("Australia/Brisbane")),
-        Map.entry(11, ZoneId.of("Pacific/Auckland")),
-        Map.entry(12, ZoneId.of("Pacific/Honolulu")),
-        Map.entry(13, ZoneId.of("America/Anchorage")),
-        Map.entry(14, ZoneId.of("America/Chicago")),
-        Map.entry(15, ZoneId.of("America/New_York")),
-        Map.entry(16, ZoneId.of("America/Barbados")),
-        Map.entry(17, ZoneId.of("America/Sao_Paulo")),
-        Map.entry(18, ZoneId.of("America/Bogota")),
-        Map.entry(19, ZoneId.of("America/Buenos_Aires")),
-        Map.entry(20, ZoneId.of("America/Chicago")),
-        Map.entry(21, ZoneId.of("America/Los_Angeles")),
-        Map.entry(UTC_TIMEZONE_ID, ZoneOffset.UTC)
-    );
-
     private static final int TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS = 60;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -89,12 +60,12 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
-    private volatile ZonedDateTime currentDateTime;
+    private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
     public VirtualCLU(String name) {
         super(name);
 
-        this.executor = ThreadUtil.executor(name);
+        this.executor = ThreadUtil.virtualScheduler(name);
 
         register(Features.UPTIME, this::getUptime);
         set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
@@ -107,7 +78,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         register(Features.HOUR, this::getCurrentHour);
         register(Features.MINUTE, this::getCurrentMinute);
         register(Features.TIMESTAMP, this::getCurrentEpochSeconds);
-        set(Features.TIME_ZONE, valueOf(UTC_TIMEZONE_ID));
+        set(Features.TIME_ZONE, valueOf(CLUTimeZone.UTC.value()));
 
         set(Features.MQTT_URL, valueOf("ssl://localhost:8883"));
         register(Features.USE_MQTT, arg1 -> {
@@ -125,7 +96,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
 
-        currentDateTime = getCurrentDateTime();
         executor.scheduleAtFixedRate(
             () -> {
                 final ZonedDateTime lastDateTime = currentDateTime;
@@ -237,7 +207,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
             return ZoneOffset.UTC;
         }
 
-        return TIME_ZONES.getOrDefault(zoneIdLuaValue.checkint(), ZoneOffset.UTC);
+        return CLUTimeZone.valueOf(zoneIdLuaValue.checkint())
+                          .zoneId();
     }
 
     private LuaNumber getCurrentEpochSeconds(LuaValue arg1) {

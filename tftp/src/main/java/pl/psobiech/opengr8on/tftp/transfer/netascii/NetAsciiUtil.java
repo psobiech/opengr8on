@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.tftp.transfer;
+package pl.psobiech.opengr8on.tftp.transfer.netascii;
 
 import java.nio.charset.StandardCharsets;
 

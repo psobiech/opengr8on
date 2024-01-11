@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.tftp.transfer;
+package pl.psobiech.opengr8on.tftp.transfer.netascii;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -27,7 +27,6 @@ import java.io.InputStream;
  * linefeed), which is the NETASCII standard for representing a newline. You would use this class to implement ASCII file transfers requiring conversion to
  * NETASCII.
  */
-
 public final class ToNetASCIIInputStream extends FilterInputStream {
     private static final int NOTHING_SPECIAL = 0;
 

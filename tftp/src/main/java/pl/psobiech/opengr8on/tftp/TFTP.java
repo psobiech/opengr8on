@@ -40,7 +40,7 @@ public class TFTP implements Closeable {
 
     static final int MIN_PACKET_SIZE = 4;
 
-    static final int MAX_PACKET_SIZE = TFTPPacket.SEGMENT_SIZE + 4;
+    static final int MAX_PACKET_SIZE = TFTPPacket.MAX_DATA_LENGTH + 4;
 
     private final byte[] receiveBuffer = new byte[MAX_PACKET_SIZE];
 

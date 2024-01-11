@@ -18,6 +18,9 @@
 
 package pl.psobiech.opengr8on.client;
 
+/**
+ * Default CLU files
+ */
 public enum CLUFiles {
     USER_LUA("a", "USER.LUA"),
     OM_LUA("a", "OM.LUA"),

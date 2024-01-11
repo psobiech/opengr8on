@@ -22,13 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.luaj.vm2.LuaValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.vclu.VirtualObject;
 
 public class Timer extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Timer.class);
-
     public static final int INDEX = 6;
 
     private final AtomicLong counter = new AtomicLong(0);

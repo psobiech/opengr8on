@@ -36,17 +36,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
+/**
+ * Common nio file operations
+ */
 public final class FileUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUtil.class);
 
     private static final String TMPDIR_PROPERTY = "java.io.tmpdir";
 
     private static final String TEMPORARY_FILE_PREFIX = "tmp_";
+
+    private static final String TEMPORARY_FILE_SUFFIX = ".tmp";
 
     private static final Pattern DISALLOWED_FILENAME_CHARACTERS = Pattern.compile("[/\\\\:*?\"<>|\0]+");
 
@@ -78,10 +82,16 @@ public final class FileUtil {
         // NOP
     }
 
+    /**
+     * @return a temporary directory, with unique name
+     */
     public static Path temporaryDirectory() {
         return temporaryDirectory(null);
     }
 
+    /**
+     * @return a directory with unique name, as subdirectory of the supplied parentPath
+     */
     public static Path temporaryDirectory(Path parentPath) {
         try {
             return Files.createTempDirectory(
@@ -94,24 +104,36 @@ public final class FileUtil {
         }
     }
 
+    /**
+     * @return a temporary file with unique name
+     */
     public static Path temporaryFile() {
-        return temporaryFile(null, null);
+        return temporaryFile(null, TEMPORARY_FILE_SUFFIX);
     }
 
-    public static Path temporaryFile(String fileName) {
-        return temporaryFile(null, fileName);
+    /**
+     * @return a temporary file with unique name, suffixed with fileNameSuffix
+     */
+    public static Path temporaryFile(String fileNameSuffix) {
+        return temporaryFile(null, fileNameSuffix);
     }
 
+    /**
+     * @return a temporary file with unique name, located in the provided parentPath
+     */
     public static Path temporaryFile(Path parentPath) {
-        return temporaryFile(parentPath, null);
+        return temporaryFile(parentPath, TEMPORARY_FILE_SUFFIX);
     }
 
-    public static Path temporaryFile(Path parentPath, String fileName) {
+    /**
+     * @return a temporary file with unique name, located in the provided parentPath, suffixed with fileNameSuffix
+     */
+    public static Path temporaryFile(Path parentPath, String fileNameSuffix) {
         try {
             return FILE_TRACKER.tracked(
                 Files.createTempFile(
                          parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
-                         TEMPORARY_FILE_PREFIX, sanitize(fileName)
+                         TEMPORARY_FILE_PREFIX, sanitize(fileNameSuffix)
                      )
                      .toAbsolutePath()
             );
@@ -120,6 +142,9 @@ public final class FileUtil {
         }
     }
 
+    /**
+     * @param path directory structure to create
+     */
     public static void mkdir(Path path) {
         try {
             Files.createDirectories(path);
@@ -128,6 +153,9 @@ public final class FileUtil {
         }
     }
 
+    /**
+     * @param path to be touched (created, opened for writing and closed)
+     */
     public static void touch(Path path) {
         try {
             IOUtil.closeQuietly(
@@ -138,12 +166,14 @@ public final class FileUtil {
         }
     }
 
+    /**
+     * Tries to hardlink the file if possible (when both paths are located on the same filesystem that supports hardlinks and the target does not exist), otherwise
+     * reverts to copying the file contents
+     */
     public static void linkOrCopy(Path from, Path to) {
-        deleteQuietly(to);
-
-        if (!SystemUtils.IS_OS_WINDOWS && !Files.exists(to)) {
+        if (!Files.exists(to)) {
             try {
-                Files.createLink(to, from);
+                link(from, to);
 
                 return;
             } catch (Exception e) {
@@ -153,18 +183,36 @@ public final class FileUtil {
         }
 
         try {
-            Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+            final Path toTemporaryPath = to.getParent()
+                                           .resolve(
+                                               to.getFileName() + TEMPORARY_FILE_SUFFIX
+                                           );
+
+            Files.copy(from, toTemporaryPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(toTemporaryPath, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
     }
 
+    private static void link(Path from, Path to) throws IOException {
+        Files.createLink(to, from);
+    }
+
+    /**
+     * Tries to delete files if they exist, only logging errors when operation fails. Mostly to be used in finally blocks on temporary files. Directories are
+     * only deleted if they are empty!
+     */
     public static void deleteQuietly(Path... paths) {
         for (Path path : paths) {
             deleteQuietly(path);
         }
     }
 
+    /**
+     * Tries to delete file if it exists, only logging errors when operation fails. Mostly to be used in finally blocks on temporary files. Directories are only
+     * deleted if they are empty!
+     */
     public static void deleteQuietly(Path path) {
         if (path == null) {
             return;
@@ -183,9 +231,16 @@ public final class FileUtil {
         }
     }
 
+    /**
+     * Removes the directory along with contents. Can only be used for temporary directory removal.
+     */
     public static void deleteRecursively(Path rootDirectory) {
         if (rootDirectory == null) {
             return;
+        }
+
+        if (!isParentOf(TEMPORARY_DIRECTORY, rootDirectory)) {
+            throw new UnexpectedException("Recursive directory removal, should only be used for temporary directories.");
         }
 
         try {
@@ -211,6 +266,9 @@ public final class FileUtil {
         FileUtil.deleteQuietly(rootDirectory);
     }
 
+    /**
+     * @return file name with all possibly whitespaces or disallowed characters replaced with underscore ('_')
+     */
     public static String sanitize(String fileName) {
         fileName = StringUtils.stripToNull(fileName);
         if (fileName == null) {
@@ -224,6 +282,9 @@ public final class FileUtil {
                                     .replaceAll("_");
     }
 
+    /**
+     * @return size of the file
+     */
     public static long size(Path path) {
         try {
             return Files.size(path);
@@ -232,6 +293,10 @@ public final class FileUtil {
         }
     }
 
+    /**
+     * @return true, if path is subdirectory of parentPath
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isParentOf(Path parentPath, Path path) {
         return path.toAbsolutePath()
                    .normalize()

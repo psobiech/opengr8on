@@ -20,6 +20,7 @@ package pl.psobiech.opengr8on.client.device;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
 
@@ -39,6 +40,9 @@ public class DeviceConfig {
     @JsonProperty("fwApiVer")
     protected final int firmwareVersion;
 
+    @JsonProperty("fwVer")
+    protected final String fwVer;
+
     @JsonProperty("status")
     protected final String status;
 
@@ -46,14 +50,15 @@ public class DeviceConfig {
     public DeviceConfig(
         String serialNumber,
         int hardwareType, long hardwareVersion,
-        int firmwareType, int firmwareVersion,
+        int firmwareType, int firmwareVersion, String fwVer,
         String status
     ) {
-        this.serialNumber    = Util.mapNullSafe(serialNumber, Long::parseLong);
+        this.serialNumber    = Util.mapNullSafe(serialNumber, HexUtil::asLong);
         this.hardwareType    = hardwareType;
         this.hardwareVersion = hardwareVersion;
         this.firmwareType    = firmwareType;
         this.firmwareVersion = firmwareVersion;
+        this.fwVer           = fwVer;
         this.status          = status;
     }
 
