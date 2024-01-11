@@ -172,9 +172,9 @@ public class InitLuaLib extends TwoArgFunction {
     }
 
     public LuaValue clientRegister(Varargs args) {
-        final int sessionId = args.checkint(4);
+        final int sessionId = args.checkint(5);
 
-        final LuaValue registrationObject = args.arg(5);
+        final LuaValue registrationObject = args.arg(6);
         if (!registrationObject.istable()) {
             logger.warn("Unknown clientRegister format: " + args);
 
@@ -201,9 +201,9 @@ public class InitLuaLib extends TwoArgFunction {
             );
         }
 
-        final Inet4Address remoteAddress = IPv4AddressUtil.parseIPv4(args.checkjstring(1));
-        final Inet4Address address = IPv4AddressUtil.parseIPv4(args.checkjstring(2));
-        final int port = args.checkint(3);
+        final Inet4Address remoteAddress = IPv4AddressUtil.parseIPv4(args.checkjstring(2));
+        final Inet4Address address = IPv4AddressUtil.parseIPv4(args.checkjstring(3));
+        final int port = args.checkint(4);
 
         return LuaValue.valueOf(
             virtualSystem.clientRegister(
@@ -217,20 +217,20 @@ public class InitLuaLib extends TwoArgFunction {
     public LuaValue clientDestroy(Varargs args) {
         // final String address = args.checkjstring(1);
         // final int port = args.checkint(2);
-        final int sessionId = args.checkint(3);
+        final int sessionId = args.checkint(4);
 
         return virtualSystem.clientDestroy(sessionId);
     }
 
     public LuaValue fetchValues(Varargs args) {
         final ArrayList<Subscription> subscriptions = new ArrayList<>();
-        if (!args.istable(1)) {
+        if (!args.istable(2)) {
             logger.warn("Unknown fetchValues format: " + args);
 
             return LuaValue.valueOf(FETCH_VALUES_PREFIX + "nil");
         }
 
-        final LuaTable table = args.checktable(1);
+        final LuaTable table = args.checktable(2);
         for (LuaValue key : table.keys()) {
             final LuaValue value = table.get(key);
             if (!value.istable()) {
