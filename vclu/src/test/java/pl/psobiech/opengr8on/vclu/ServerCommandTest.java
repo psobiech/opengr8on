@@ -37,6 +37,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
@@ -54,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 class ServerCommandTest {
     private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
 
@@ -185,16 +186,16 @@ class ServerCommandTest {
     }
 
     @Test
-    void setAddressUnsupported() throws Exception {
-        final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
-        assertFalse(addressOptional.isPresent());
-    }
-
-    @Test
     void setAddressUsingBroadcast() throws Exception {
         final Optional<Inet4Address> addressOptional = broadcastClient.setAddress(LOCALHOST, LOCALHOST);
         assertTrue(addressOptional.isPresent());
         assertEquals(LOCALHOST, addressOptional.get());
+    }
+
+    @Test
+    void setAddressUnsupported() throws Exception {
+        final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
+        assertFalse(addressOptional.isPresent());
     }
 
     @Test

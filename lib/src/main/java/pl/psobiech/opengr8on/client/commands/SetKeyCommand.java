@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.util.FileUtil;
 
 public class SetKeyCommand {
     private static final Response RESPONSE = new Response();
@@ -58,7 +59,7 @@ public class SetKeyCommand {
     public static boolean requestMatches(byte[] buffer) {
         if (
             buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
-            && buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES + 2 /* \r\n */
+            && buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES + FileUtil.CRLF.length()
         ) {
             return false;
         }
@@ -93,7 +94,7 @@ public class SetKeyCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length != Response.COMMAND.length()
-            && buffer.length != Response.COMMAND.length() + 2 /* \r\n */) {
+            && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 

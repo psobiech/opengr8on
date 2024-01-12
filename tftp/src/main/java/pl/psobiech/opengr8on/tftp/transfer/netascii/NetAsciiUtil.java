@@ -20,6 +20,8 @@ package pl.psobiech.opengr8on.tftp.transfer.netascii;
 
 import java.nio.charset.StandardCharsets;
 
+import pl.psobiech.opengr8on.util.FileUtil;
+
 public final class NetAsciiUtil {
     public static final int END_OF_STREAM = -1;
 
@@ -31,7 +33,7 @@ public final class NetAsciiUtil {
 
     static {
         LINE_SEPARATOR         = System.lineSeparator();
-        NO_CONVERSION_REQUIRED = LINE_SEPARATOR.equals("\r\n");
+        NO_CONVERSION_REQUIRED = LINE_SEPARATOR.equals(FileUtil.CRLF);
         LINE_SEPARATOR_BYTES   = LINE_SEPARATOR.getBytes(StandardCharsets.US_ASCII);
     }
 

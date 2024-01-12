@@ -167,7 +167,13 @@ public class CLUClient extends Client implements Closeable {
 
     public Optional<Boolean> checkAlive() {
         return execute(LuaScriptCommand.CHECK_ALIVE)
-            .map(returnValue -> Boolean.parseBoolean(returnValue) || Objects.equals(getCluDevice().getSerialNumber(), HexUtil.asLong(returnValue)));
+            .map(returnValue ->
+                !"emergency".equals(returnValue)
+                && (
+                    Boolean.parseBoolean(returnValue)
+                    || Objects.equals(getCluDevice().getSerialNumber(), HexUtil.asLong(returnValue))
+                )
+            );
     }
 
     public Optional<String> execute(String script) {

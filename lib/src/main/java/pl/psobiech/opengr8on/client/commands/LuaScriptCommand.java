@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
@@ -164,7 +165,8 @@ public class LuaScriptCommand {
                 ":",
                 StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
                 ":",
-                script + "\r\n"
+                script,
+                FileUtil.CRLF
             );
         }
 

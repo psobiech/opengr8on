@@ -21,6 +21,7 @@ package pl.psobiech.opengr8on.client.commands;
 import java.util.Optional;
 
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.util.FileUtil;
 
 public class StartTFTPdCommand {
     private static final Request REQUEST = new Request();
@@ -45,7 +46,7 @@ public class StartTFTPdCommand {
 
     public static boolean requestMatches(byte[] buffer) {
         if (buffer.length != Request.COMMAND.length()
-            && buffer.length != Request.COMMAND.length() + 2 /* \r\n */) {
+            && buffer.length != Request.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 
@@ -68,7 +69,7 @@ public class StartTFTPdCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length != Response.COMMAND.length()
-            && buffer.length != Response.COMMAND.length() + 2 /* \r\n */) {
+            && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 

@@ -435,19 +435,20 @@ public class Server implements Closeable {
 
         final Path aDriveDirectory = rootDirectory.resolve("a");
 
-        FileUtil.linkOrCopy(
-            ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
-            aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
-        );
-
         try {
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
             this.mainThread.start();
 
             checkAlive();
         } catch (Exception e) {
-            LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
             IOUtil.closeQuietly(this.mainThread);
+
+            LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
+
+            FileUtil.linkOrCopy(
+                ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
+                aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
+            );
 
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
             this.mainThread.start();

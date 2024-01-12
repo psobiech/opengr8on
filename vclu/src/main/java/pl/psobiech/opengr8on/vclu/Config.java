@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.device.CLUDeviceConfig;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
@@ -42,12 +43,6 @@ public class Config {
     private static final int FIRMWARE_TYPE = 0x03;
 
     private static final int FIRMWARE_VERSION = 0x00aa55aa;
-
-    private static final int CR = 0x0D;
-
-    private static final int LF = 0x0A;
-
-    private static final String CRLF = Character.toString(CR) + Character.toString(LF);
 
     private Config() {
         // NOP
@@ -140,13 +135,13 @@ public class Config {
 
         Files.writeString(
             configTxtPath,
-            asConfigTxtHexValue(0x00000000) + CRLF
-            + asConfigTxtHexValue(cluDevice.getSerialNumber()) + CRLF
-            + macAddress + CRLF
-            + asConfigTxtHexValue(cluDevice.getFirmwareType()) + CRLF
-            + asConfigTxtHexValue(cluDevice.getFirmwareVersion()) + CRLF
-            + asConfigTxtHexValue(cluDevice.getHardwareType()) + CRLF
-            + asConfigTxtHexValue(cluDevice.getHardwareVersion()) + CRLF
+            asConfigTxtHexValue(0x00000000) + FileUtil.CRLF
+            + asConfigTxtHexValue(cluDevice.getSerialNumber()) + FileUtil.CRLF
+            + macAddress + FileUtil.CRLF
+            + asConfigTxtHexValue(cluDevice.getFirmwareType()) + FileUtil.CRLF
+            + asConfigTxtHexValue(cluDevice.getFirmwareVersion()) + FileUtil.CRLF
+            + asConfigTxtHexValue(cluDevice.getHardwareType()) + FileUtil.CRLF
+            + asConfigTxtHexValue(cluDevice.getHardwareVersion()) + FileUtil.CRLF
         );
     }
 

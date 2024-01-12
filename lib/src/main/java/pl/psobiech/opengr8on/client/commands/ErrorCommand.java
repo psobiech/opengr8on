@@ -21,6 +21,7 @@ package pl.psobiech.opengr8on.client.commands;
 import java.util.Optional;
 
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.util.FileUtil;
 
 public class ErrorCommand {
     private static final Response RESPONSE = new Response();
@@ -43,7 +44,7 @@ public class ErrorCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length != Response.COMMAND.length()
-            && buffer.length != Response.COMMAND.length() + 2 /* \r\n */) {
+            && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 

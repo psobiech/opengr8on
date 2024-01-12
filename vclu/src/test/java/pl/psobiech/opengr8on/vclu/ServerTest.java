@@ -55,7 +55,7 @@ import pl.psobiech.opengr8on.util.ThreadUtil;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 class ServerTest {
     private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
 
@@ -133,6 +133,17 @@ class ServerTest {
 
     @Test
     @Timeout(30)
+    void normalMode() throws Exception {
+        runServer(client -> {
+            final Optional<Boolean> aliveOptional = client.checkAlive();
+
+            assertTrue(aliveOptional.isPresent());
+            assertTrue(aliveOptional.get());
+        });
+    }
+
+    @Test
+    @Timeout(30)
     void emergencyMode() throws Exception {
         Files.delete(aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName()));
 
@@ -141,17 +152,6 @@ class ServerTest {
 
             assertTrue(aliveOptional.isPresent());
             assertEquals("emergency", aliveOptional.get());
-        });
-    }
-
-    @Test
-    @Timeout(30)
-    void normalMode() throws Exception {
-        runServer(client -> {
-            final Optional<Boolean> aliveOptional = client.checkAlive();
-
-            assertTrue(aliveOptional.isPresent());
-            assertTrue(aliveOptional.get());
         });
     }
 

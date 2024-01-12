@@ -28,6 +28,7 @@ import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand.Request;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand.Response;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -74,7 +75,7 @@ class LuaScriptCommandTest {
 
         assertArrayEquals(input.asByteArray(), output.asByteArray());
         assertArrayEquals(
-            "\r\n".getBytes(),
+            FileUtil.CRLF.getBytes(),
             Arrays.copyOfRange(output.asByteArray(), output.asByteArray().length - 2, output.asByteArray().length)
         );
     }
@@ -104,7 +105,7 @@ class LuaScriptCommandTest {
         assertFalse(LuaScriptCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(LuaScriptCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                    = new byte[100];
+        buffer                                                                                                = new byte[100];
         buffer[Request.COMMAND.length()]                                                                      = ':';
         buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS]                                      = ':';
         buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS] = ':';
@@ -115,7 +116,7 @@ class LuaScriptCommandTest {
         assertFalse(LuaScriptCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(LuaScriptCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                     = new byte[100];
+        buffer                                                                                                 = new byte[100];
         buffer[Response.COMMAND.length()]                                                                      = ':';
         buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS]                                      = ':';
         buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS] = ':';

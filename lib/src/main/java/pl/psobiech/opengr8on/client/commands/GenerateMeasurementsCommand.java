@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 
@@ -143,7 +144,8 @@ public class GenerateMeasurementsCommand {
                 ":",
                 StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), Command.MAX_SESSION_CHARACTERS, '0'),
                 ":",
-                unknown + "\r\n"
+                unknown,
+                FileUtil.CRLF
             );
         }
 

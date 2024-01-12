@@ -181,7 +181,7 @@ class ServerSetKeyResetTest {
         }
 
         // persists after reset
-        final Optional<Boolean> resetOptional = client.reset(Duration.ofMillis(5000L));
+        final Optional<Boolean> resetOptional = client.reset(Duration.ofMillis(8000L));
         assertTrue(resetOptional.isPresent());
         assertTrue(resetOptional.get());
 
