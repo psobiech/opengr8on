@@ -22,7 +22,11 @@ import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -55,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Execution(ExecutionMode.CONCURRENT)
-class ServerCommandTest {
+class ServerDiscoverCommandTest {
     private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
 
     private static ExecutorService executor = Executors.newCachedThreadPool();
@@ -159,55 +163,76 @@ class ServerCommandTest {
     }
 
     @Test
-    void checkAlive() throws Exception {
-        final Optional<Boolean> aliveOptional = client.checkAlive();
+    void discovery() throws Exception {
+        final Future<Boolean> checkAliveFuture = executor.submit(() -> {
+            do {
+                final Optional<Boolean> aliveOptional = client.checkAlive();
+                if (!Thread.interrupted() && aliveOptional.isEmpty() || !aliveOptional.get()) {
+                    return false;
+                }
+            } while (!Thread.interrupted());
 
-        assertTrue(aliveOptional.isPresent());
-        assertTrue(aliveOptional.get());
-    }
+            return true;
+        });
 
-    @Test
-    void checkAliveWrongKey() throws Exception {
-        // should not accept random KEY
-        final CipherKey randomCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, randomCipherKey, LOCALHOST, socket.getLocalPort())) {
+        // should not accept CLU KEY
+        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
             final Optional<Boolean> aliveOptional = otherClient.checkAlive();
 
             assertFalse(aliveOptional.isPresent());
         }
-    }
 
-    @Test
-    void setAddress() throws Exception {
-        final Optional<Inet4Address> addressOptional = client.setAddress(LOCALHOST, LOCALHOST);
-        assertTrue(addressOptional.isPresent());
-        assertEquals(LOCALHOST, addressOptional.get());
-    }
+        final List<CLUDevice> devices = broadcastClient.discover(
+                                                           projectCipherKey,
+                                                           Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
+                                                           Duration.ofMillis(2000L),
+                                                           2
+                                                       )
+                                                       .toList();
 
-    @Test
-    void setAddressUnsupported() throws Exception {
-        final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
-        assertFalse(addressOptional.isPresent());
-    }
+        assertEquals(1, devices.size());
 
-    @Test
-    void setAddressUsingBroadcast() throws Exception {
-        final Optional<Inet4Address> addressOptional = broadcastClient.setAddress(LOCALHOST, LOCALHOST);
-        assertTrue(addressOptional.isPresent());
-        assertEquals(LOCALHOST, addressOptional.get());
-    }
+        checkAliveFuture.cancel(true);
+        try {
+            assertTrue(checkAliveFuture.get());
+        } catch (CancellationException e) {
+            // NOP
+        }
 
-    @Test
-    void startTFTPdServer() throws Exception {
-        final Optional<Boolean> responseOptional = client.startTFTPdServer();
-        assertTrue(responseOptional.isPresent());
-        assertTrue(responseOptional.get());
-    }
+        final CLUDevice discoveredDevice = devices.getFirst();
+        assertEquals(cluDevice.getName(), discoveredDevice.getName());
+        assertEquals(cluDevice.getSerialNumber(), discoveredDevice.getSerialNumber());
+        assertEquals(cluDevice.getAddress(), discoveredDevice.getAddress());
+        assertEquals(cluDevice.getMacAddress(), discoveredDevice.getMacAddress());
+        assertEquals(cluDevice.getCipherType(), discoveredDevice.getCipherType());
+        assertEquals(cluDevice.getPrivateKey(), discoveredDevice.getPrivateKey());
+        assertEquals(cluDevice.getCipherKey(), discoveredDevice.getCipherKey());
 
-    @Test
-    void stopTFTPdServer() throws Exception {
-        final Optional<Boolean> responseOptional = client.stopTFTPdServer();
-        assertTrue(responseOptional.isPresent());
-        assertTrue(responseOptional.get());
+        // should start accepting CLU KEY
+        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
+            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+            assertTrue(aliveOptional.isPresent());
+            assertTrue(aliveOptional.get());
+        }
+
+        // should still accept PROJECT KEY
+        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, socket.getLocalPort())) {
+            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+            assertTrue(aliveOptional.isPresent());
+            assertTrue(aliveOptional.get());
+        }
+
+        final Optional<Boolean> aliveAfterResetOptional = client.reset(Duration.ofMillis(5000L));
+        assertTrue(aliveAfterResetOptional.isPresent());
+        assertTrue(aliveAfterResetOptional.get());
+
+        // should stop accepting CLU KEY after reset
+        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
+            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+            assertFalse(aliveOptional.isPresent());
+        }
     }
 }

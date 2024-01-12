@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.system.clu;
 
 import java.io.Closeable;
 import java.lang.management.ManagementFactory;
@@ -38,7 +38,8 @@ import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
+import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import static org.luaj.vm2.LuaValue.valueOf;
@@ -122,7 +123,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     }
 
     public String getMqttUrl() {
-        return LuaUtil.stringify(get(Features.MQTT_URL));
+        return LuaUtil.stringifyRaw(get(Features.MQTT_URL));
     }
 
     public void setMqttConnected(boolean value) {

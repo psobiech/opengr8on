@@ -21,17 +21,20 @@ package pl.psobiech.opengr8on.vclu.util;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaBoolean;
+import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
 public class LuaUtil {
+    private static final String NIL_AS_STRING = "nil";
+
     private LuaUtil() {
         // NOP
     }
 
     public static Map<String, String> tableStringString(LuaValue luaValue) {
-        if (luaValue == null || luaValue.isnil()) {
+        if (isNil(luaValue)) {
             return Map.of();
         }
 
@@ -63,8 +66,11 @@ public class LuaUtil {
         return map;
     }
 
+    /**
+     * @return true, if the luaValue is true, != 0, "true"
+     */
     public static boolean trueish(LuaValue luaValue) {
-        if (luaValue == null || luaValue.isnil()) {
+        if (isNil(luaValue)) {
             return false;
         }
 
@@ -73,41 +79,58 @@ public class LuaUtil {
                || (luaValue.isstring() && Boolean.parseBoolean(luaValue.checkjstring()));
     }
 
-    public static String toString(LuaValue luaValue) {
-        if (luaValue == null || luaValue.isnil()) {
-            return "nil";
+    /**
+     * @return luaValue converted to String, with String quoted or nil
+     */
+    public static String stringify(LuaValue luaValue) {
+        if (isNil(luaValue)) {
+            return NIL_AS_STRING;
+        }
+
+        if (luaValue instanceof LuaNumber) {
+            return String.valueOf(luaValue.checknumber());
+        }
+
+        if (luaValue instanceof LuaBoolean) {
+            return String.valueOf(luaValue.checkboolean());
         }
 
         if (luaValue.isstring()) {
             return "\"" + luaValue.checkjstring() + "\"";
         }
 
-        return stringify(luaValue);
+        return String.valueOf(luaValue);
     }
 
-    public static String stringify(LuaValue luaValue) {
-        return stringify(luaValue, null);
+    public static boolean isNil(LuaValue luaValue) {
+        return luaValue == null || luaValue.isnil();
     }
 
-    public static String stringify(LuaValue luaValue, String nilValue) {
-        if (luaValue == null || luaValue.isnil()) {
+    /**
+     * @return luaValue converted to String, or null
+     */
+    public static String stringifyRaw(LuaValue luaValue) {
+        return stringifyRaw(luaValue, null);
+    }
+
+    /**
+     * @return luaValue converted to String, or nilValue
+     */
+    public static String stringifyRaw(LuaValue luaValue, String nilValue) {
+        if (isNil(luaValue)) {
             return nilValue;
         }
 
-        if (luaValue instanceof LuaString) {
-            return luaValue.checkjstring();
+        if (luaValue instanceof LuaNumber) {
+            return String.valueOf(luaValue.checknumber());
         }
 
-        if (luaValue.isnumber()) {
-            return String.valueOf(luaValue.checknumber());
+        if (luaValue instanceof LuaBoolean) {
+            return String.valueOf(luaValue.checkboolean());
         }
 
         if (luaValue.isstring()) {
             return luaValue.checkjstring();
-        }
-
-        if (luaValue.isboolean()) {
-            return String.valueOf(luaValue.checkboolean());
         }
 
         return String.valueOf(luaValue);

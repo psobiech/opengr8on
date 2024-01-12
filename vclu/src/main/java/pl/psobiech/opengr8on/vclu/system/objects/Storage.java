@@ -16,42 +16,57 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.objects;
-
-import java.net.Inet4Address;
-import java.util.Optional;
+package pl.psobiech.opengr8on.vclu.system.objects;
 
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.vclu.VirtualObject;
 
-public class RemoteCLU extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
+public class Storage extends VirtualObject {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Storage.class);
 
-    public static final int INDEX = 1;
+    public static final int INDEX = 44;
 
-    public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey) {
+    public Storage(String name) {
         super(name);
 
-        register(Methods.EXECUTE, args -> {
-            final String script = args.checkjstring(1);
+        register(Features.UNKNOWN, arg1 -> {
+            return LuaValue.ZERO;
+        });
 
-            try (CLUClient client = new CLUClient(localAddress, address, cipherKey)) {
-                final Optional<String> execute = client.execute(script);
-                if (execute.isPresent()) {
-                    return LuaValue.valueOf(execute.get());
-                }
-            }
+        register(Methods.STORE, arg1 -> {
+            final String persistentVariableName = arg1.checkjstring();
 
+            // TODO: make variable persistent across restarts
+
+            return LuaValue.NIL;
+        });
+
+        register(Methods.ERASE, arg1 -> {
             return LuaValue.NIL;
         });
     }
 
+    private enum Features implements IFeature {
+        UNKNOWN(1),
+        //
+        ;
+
+        private final int index;
+
+        Features(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+    }
+
     private enum Methods implements IMethod {
-        EXECUTE(0),
+        ERASE(3),
+        STORE(4),
         //
         ;
 

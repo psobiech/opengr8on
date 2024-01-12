@@ -31,31 +31,33 @@ public interface Command {
     /**
      * Initial buffer size to allocate for commands
      */
-    int INITIAL_BUFFER_SIZE = 256;
+    int INITIAL_BUFFER_BYTES = 256;
 
     /**
      * Minimum size of IPv4 address, e.g. "0.0.0.0".length
      */
-    int MIN_IP_SIZE = 7;
+    int MIN_IP_CHARACTERS = 7;
 
-    int IV_SIZE = 16;
+    int IV_BYTES = 16;
 
-    int KEY_SIZE = 16;
+    int KEY_BYTES = 16;
 
     /**
      * Mac address size, without :, e.g. 000000000000
      */
-    int MAC_SIZE = 12;
+    int MAC_CHARACTERS = 12;
 
-    int MIN_SERIAL_NUMBER_SIZE = 4;
+    int MIN_SERIAL_NUMBER_CHARACTERS = 4;
 
-    int MAX_SERIAL_NUMBER_SIZE = 8;
+    int MAX_SERIAL_NUMBER_CHARACTERS = 8;
 
-    int MIN_SESSION_SIZE = 6;
+    int MIN_SESSION_CHARACTERS = 6;
 
-    int RANDOM_SIZE = 30;
+    int MAX_SESSION_CHARACTERS = 8;
 
-    int RANDOM_ENCRYPTED_SIZE = 32;
+    int RANDOM_BYTES = 30;
+
+    int RANDOM_ENCRYPTED_BYTES = 32;
 
     static boolean equals(String value1, byte[] buffer, int offset) {
         if (value1 == null) {
@@ -101,7 +103,7 @@ public interface Command {
      * @return objects serialized as byte array
      */
     static byte[] serialize(Object... objects) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE)) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream(INITIAL_BUFFER_BYTES)) {
             for (Object object : objects) {
                 outputStream.write(serializeObject(object));
             }

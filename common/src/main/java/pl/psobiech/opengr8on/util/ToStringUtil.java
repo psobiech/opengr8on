@@ -116,7 +116,7 @@ public final class ToStringUtil {
         }
 
         final String asciiValues = new String(buffer)
-            .replaceAll("[^\\p{Graph}]", ".");
+            .replaceAll("[^\\p{Graph} ]", ".");
 
         final String hexString = StringUtils.stripToEmpty(
             IntStream.range(0, buffer.length)

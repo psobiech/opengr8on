@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.system;
 
 import java.io.Closeable;
 import java.net.Inet4Address;
@@ -35,11 +35,13 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.vclu.objects.HttpRequest;
-import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
-import pl.psobiech.opengr8on.vclu.objects.RemoteCLU;
-import pl.psobiech.opengr8on.vclu.objects.Storage;
-import pl.psobiech.opengr8on.vclu.objects.Timer;
+import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.HttpRequest;
+import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.Storage;
+import pl.psobiech.opengr8on.vclu.system.objects.Timer;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class VirtualSystem implements Closeable {
@@ -81,12 +83,11 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
-            // TODO: temporarily we depend that the main CLU is initialized first-ish
             case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
             case RemoteCLU.INDEX -> new RemoteCLU(name, ipAddress, localAddress, cipherKey);
             case Timer.INDEX -> new Timer(name);
             case Storage.INDEX -> new Storage(name);
-            case MqttTopic.INDEX -> new MqttTopic(name, currentClu);
+            case MqttTopic.INDEX -> new MqttTopic(name, this);
             default -> new VirtualObject(name);
         };
 
@@ -97,7 +98,7 @@ public class VirtualSystem implements Closeable {
     public void newGate(int index, String name) {
         final VirtualObject virtualObject = switch (index) {
             case HttpRequest.INDEX -> new HttpRequest(name);
-            case MqttTopic.INDEX -> new MqttTopic(name, currentClu);
+            case MqttTopic.INDEX -> new MqttTopic(name, this);
             default -> new VirtualObject(name);
         };
 
@@ -207,7 +208,7 @@ public class VirtualSystem implements Closeable {
                 sb.append(",");
             }
 
-            sb.append(LuaUtil.toString(
+            sb.append(LuaUtil.stringify(
                 getObject(name).get(index)
             ));
         }

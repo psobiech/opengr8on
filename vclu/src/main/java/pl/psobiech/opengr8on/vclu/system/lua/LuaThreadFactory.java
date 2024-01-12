@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua;
+package pl.psobiech.opengr8on.vclu.system.lua;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,18 +44,18 @@ import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.Slf4jLoggingOutputStream;
-import pl.psobiech.opengr8on.vclu.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
-public class LuaThread {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LuaThread.class);
+public class LuaThreadFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LuaThreadFactory.class);
 
-    private static final Logger LOGGER_STDOUT = LoggerFactory.getLogger(LuaThread.class.getName() + "$stdout");
+    private static final Logger LOGGER_STDOUT = LoggerFactory.getLogger(LuaThreadFactory.class.getName() + "$stdout");
 
-    private LuaThread() {
+    private LuaThreadFactory() {
         // NOP
     }
 
-    public static LuaThreadWrapper create(
+    public static LuaThread create(
         Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
     ) {
         final VirtualSystem virtualSystem = new VirtualSystem(
@@ -95,7 +95,7 @@ public class LuaThread {
         globals.STDOUT = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.INFO));
         globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.ERROR));
 
-        return new LuaThreadWrapper(
+        return new LuaThread(
             virtualSystem, globals,
             loadScript(aDriveDirectory, cluFile, globals)
         );

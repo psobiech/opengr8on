@@ -87,7 +87,7 @@ public class Client implements Closeable {
     }
 
     public Stream<CLUDevice> discover(CipherKey projectCipherKey, Map<Long, byte[]> privateKeys, Duration timeout, int limit) {
-        final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_SIZE);
+        final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
         final DiscoverCLUsCommand.Request request = DiscoverCLUsCommand.request(
             projectCipherKey.encrypt(randomBytes), projectCipherKey.getIV(), localAddress
         );

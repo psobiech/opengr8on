@@ -44,7 +44,8 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.Util;
-import pl.psobiech.opengr8on.vclu.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 public class MqttClient implements Closeable {

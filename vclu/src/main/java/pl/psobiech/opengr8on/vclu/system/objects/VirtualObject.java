@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.io.Closeable;
 import java.util.Hashtable;
@@ -28,9 +28,9 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.vclu.lua.fn.BaseLuaFunction;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaOneArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
 
 public class VirtualObject implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualObject.class);

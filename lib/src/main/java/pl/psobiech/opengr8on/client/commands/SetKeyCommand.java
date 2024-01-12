@@ -39,12 +39,12 @@ public class SetKeyCommand {
             return Optional.empty();
         }
 
-        final byte[] encrypted = Arrays.copyOf(buffer, Command.RANDOM_ENCRYPTED_SIZE);
-        final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_SIZE + 1, Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.KEY_SIZE);
+        final byte[] encrypted = Arrays.copyOf(buffer, Command.RANDOM_ENCRYPTED_BYTES);
+        final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_BYTES + 1, Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.KEY_BYTES);
         final byte[] key = Arrays.copyOfRange(
             buffer,
-            Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length() + 1,
-            Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length() + 1 + Command.KEY_SIZE
+            Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1,
+            Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
         );
 
         return Optional.of(
@@ -57,15 +57,15 @@ public class SetKeyCommand {
 
     public static boolean requestMatches(byte[] buffer) {
         if (
-            buffer.length != Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length() + 1 + Command.KEY_SIZE
-            && buffer.length != Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length() + 1 + Command.KEY_SIZE + 2 /* \r\n */
+            buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
+            && buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES + 2 /* \r\n */
         ) {
             return false;
         }
 
-        if (buffer[Command.RANDOM_ENCRYPTED_SIZE] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length()] != ':'
+        if (buffer[Command.RANDOM_ENCRYPTED_BYTES] != ':'
+            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
+            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] != ':'
         ) {
             return false;
         }
@@ -73,7 +73,7 @@ public class SetKeyCommand {
         return Request.COMMAND.equals(
             Command.asString(
                 buffer,
-                Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1,
+                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
                 Request.COMMAND.length()
             )
         );

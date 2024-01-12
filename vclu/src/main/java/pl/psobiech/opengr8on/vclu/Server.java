@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,6 +44,7 @@ import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
 import pl.psobiech.opengr8on.client.commands.ErrorCommand;
+import pl.psobiech.opengr8on.client.commands.GenerateMeasurementsCommand;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.client.commands.ResetCommand;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand;
@@ -59,7 +59,6 @@ import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
@@ -67,8 +66,9 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
-import pl.psobiech.opengr8on.vclu.lua.LuaThread;
-import pl.psobiech.opengr8on.vclu.lua.LuaThreadWrapper;
+import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
+import pl.psobiech.opengr8on.vclu.system.lua.LuaThreadFactory;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class Server implements Closeable {
@@ -104,9 +104,7 @@ public class Server implements Closeable {
 
     private final ScheduledExecutorService executorService = ThreadUtil.virtualScheduler("cluServer");
 
-    private final ScheduledExecutorService mqttExecutorService = Executors.newScheduledThreadPool(2, ThreadUtil.threadFactory("mqtt", true));
-
-    private LuaThreadWrapper mainThread;
+    private LuaThread mainThread;
 
     private List<CipherKey> unicastCipherKeys;
 
@@ -267,10 +265,10 @@ public class Server implements Closeable {
         final byte[] encrypted = command.getEncrypted();
         final byte[] iv = command.getIV();
         final byte[] hash = DiscoverCLUsCommand.hash(projectCipherKey.decrypt(encrypted)
-                                                                     .orElse(RandomUtil.bytes(Command.RANDOM_SIZE)));
+                                                                     .orElse(RandomUtil.bytes(Command.RANDOM_BYTES)));
 
         final CipherKey temporaryCipherKey = cluDevice.getCipherKey()
-                                                      .withIV(RandomUtil.bytes(Command.IV_SIZE));
+                                                      .withIV(RandomUtil.bytes(Command.IV_BYTES));
 
         cluDevice.setCipherKey(temporaryCipherKey);
         broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey, temporaryCipherKey);
@@ -333,6 +331,13 @@ public class Server implements Closeable {
                     return onStartFTPdCommand(request, commandOptional.get());
                 }
             }
+
+            if (GenerateMeasurementsCommand.requestMatches(buffer)) {
+                final Optional<GenerateMeasurementsCommand.Request> commandOptional = GenerateMeasurementsCommand.requestFromByteArray(buffer);
+                if (commandOptional.isPresent()) {
+                    return onGenerateMeasurementsCommand(request, commandOptional.get());
+                }
+            }
         }
 
         return sendError(request);
@@ -389,14 +394,13 @@ public class Server implements Closeable {
 
     private void persistKeys() {
         try {
-            ObjectMapperFactory.JSON.writerFor(CluKeys.class)
-                                    .writeValue(
-                                        rootDirectory.resolve("../keys.json").toFile(),
-                                        new CluKeys(
-                                            projectCipherKey.getSecretKey(), projectCipherKey.getIV(),
-                                            cluDevice.getCipherKey().getIV(), cluDevice.getPrivateKey()
-                                        )
-                                    );
+            Config.writeKeys(
+                rootDirectory.getParent(),
+                new CluKeys(
+                    projectCipherKey.getSecretKey(), projectCipherKey.getIV(),
+                    cluDevice.getCipherKey().getIV(), cluDevice.getPrivateKey()
+                )
+            );
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
@@ -437,7 +441,7 @@ public class Server implements Closeable {
         );
 
         try {
-            this.mainThread = LuaThread.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
+            this.mainThread = LuaThreadFactory.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
             this.mainThread.start();
 
             checkAlive();
@@ -445,7 +449,7 @@ public class Server implements Closeable {
             LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
             IOUtil.closeQuietly(this.mainThread);
 
-            this.mainThread = LuaThread.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
+            this.mainThread = LuaThreadFactory.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
             this.mainThread.start();
 
             checkAlive();
@@ -547,7 +551,7 @@ public class Server implements Closeable {
                 LuaScriptCommand.response(
                     cluDevice.getAddress(),
                     command.getSessionId(),
-                    LuaUtil.stringify(luaValue, "nil")
+                    LuaUtil.stringifyRaw(luaValue, "nil")
                 )
             )
         );
@@ -566,6 +570,26 @@ public class Server implements Closeable {
             new Response(
                 request.cipherKey(),
                 StartTFTPdCommand.response()
+            )
+        );
+    }
+
+    private Optional<Response> onGenerateMeasurementsCommand(Request request, GenerateMeasurementsCommand.Request command) {
+        try {
+            tftpServer.start();
+        } catch (SocketException e) {
+            LOGGER.error(e.getMessage(), e);
+
+            return sendError(request);
+        }
+
+        return Optional.of(
+            new Response(
+                projectCipherKey,
+                GenerateMeasurementsCommand.response(
+                    cluDevice.getAddress(), command.getSessionId(),
+                    "ok"
+                )
             )
         );
     }

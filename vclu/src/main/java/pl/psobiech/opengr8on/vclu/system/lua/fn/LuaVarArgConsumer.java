@@ -16,20 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua.fn;
+package pl.psobiech.opengr8on.vclu.system.lua.fn;
 
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 
-public interface LuaThreeArgFunction extends BaseLuaFunction {
+public interface LuaVarArgConsumer extends BaseLuaFunction {
     @Override
     default LuaValue invoke(Varargs args) {
-        final LuaValue firstArg = args.arg(1);
-        final LuaValue secondArg = args.arg(2);
-        final LuaValue thirdArg = args.arg(3);
+        call(args);
 
-        return call(firstArg, secondArg, thirdArg);
+        return LuaValue.NIL;
     }
 
-    LuaValue call(LuaValue arg1, LuaValue arg2, LuaValue arg3);
+    void call(Varargs args);
 }

@@ -55,7 +55,7 @@ public class ResetCommand {
     }
 
     public static boolean requestMatches(byte[] buffer) {
-        if (buffer.length < Request.COMMAND.length() + 1 + Command.MIN_IP_SIZE) {
+        if (buffer.length < Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS) {
             return false;
         }
 
@@ -93,7 +93,7 @@ public class ResetCommand {
     }
 
     public static boolean responseMatches(byte[] buffer) {
-        if (buffer.length < Response.COMMAND.length() + 1 + Command.MIN_IP_SIZE) {
+        if (buffer.length < Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS) {
             return false;
         }
 

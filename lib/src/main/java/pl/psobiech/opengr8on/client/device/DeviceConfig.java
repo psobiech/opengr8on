@@ -82,6 +82,10 @@ public class DeviceConfig {
         return firmwareVersion;
     }
 
+    public String getFirmwareVersionString() {
+        return fwVer;
+    }
+
     public String getStatus() {
         return status;
     }

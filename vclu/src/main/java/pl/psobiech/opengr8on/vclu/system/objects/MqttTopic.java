@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.objects;
+package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -29,8 +29,7 @@ import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.vclu.MqttClient;
-import pl.psobiech.opengr8on.vclu.VirtualCLU;
-import pl.psobiech.opengr8on.vclu.VirtualObject;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class MqttTopic extends VirtualObject {
@@ -38,16 +37,18 @@ public class MqttTopic extends VirtualObject {
 
     public static final int INDEX = 999;
 
+    private final VirtualSystem virtualSystem;
+
     private final Set<String> topicFilters = new HashSet<>();
 
     private final LinkedBlockingDeque<Map.Entry<String, Message>> messageQueue = new LinkedBlockingDeque<>();
 
     private MqttClient mqttClient;
 
-    public MqttTopic(String name, VirtualCLU currentClu) {
+    public MqttTopic(String name, VirtualSystem virtualSystem) {
         super(name);
 
-        currentClu.addMqttSubscription(this);
+        this.virtualSystem = virtualSystem;
 
         register(Methods.SUBSCRIBE, this::subscribe);
         register(Methods.UNSUBSCRIBE, this::unsubscribe);
@@ -61,6 +62,9 @@ public class MqttTopic extends VirtualObject {
 
     @Override
     public void setup() {
+        virtualSystem.getCurrentClu()
+                     .addMqttSubscription(this);
+
         triggerEvent(Events.INIT);
     }
 
@@ -182,7 +186,7 @@ public class MqttTopic extends VirtualObject {
     }
 
     private String getMessage() {
-        return LuaUtil.stringify(get(Features.MESSAGE));
+        return LuaUtil.stringifyRaw(get(Features.MESSAGE));
     }
 
     private void clearMessage() {

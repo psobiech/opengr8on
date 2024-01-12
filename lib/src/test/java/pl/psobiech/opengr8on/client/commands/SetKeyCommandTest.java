@@ -70,10 +70,10 @@ class SetKeyCommandTest {
         assertFalse(SetKeyCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(SetKeyCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                     = new byte[100];
-        buffer[Command.RANDOM_ENCRYPTED_SIZE]                                                      = ':';
-        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE]                                = ':';
-        buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length()] = ':';
+        buffer                                                                                      = new byte[100];
+        buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                       = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] = ':';
         assertFalse(SetKeyCommand.requestFromByteArray(buffer).isPresent());
 
         //

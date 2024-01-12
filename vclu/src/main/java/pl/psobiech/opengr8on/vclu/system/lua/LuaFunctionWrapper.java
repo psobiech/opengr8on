@@ -16,25 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua;
+package pl.psobiech.opengr8on.vclu.system.lua;
 
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.LibFunction;
 import org.slf4j.Logger;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.vclu.lua.fn.BaseLuaFunction;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaNoArgConsumer;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgConsumer;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaThreeArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaTwoArgFunction;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgConsumer;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaNoArgConsumer;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaThreeArgConsumer;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaThreeArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgConsumer;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgFunction;
 
 /**
  * Function wrapper that logs any exceptions that otherwise would be swallowed in the LUA thread
  */
-class LuaFunctionWrapper extends LibFunction {
+public class LuaFunctionWrapper extends LibFunction {
     private final Logger logger;
 
     private final BaseLuaFunction fn;

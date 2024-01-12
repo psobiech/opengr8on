@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua;
+package pl.psobiech.opengr8on.vclu.system.lua;
 
 import java.net.Inet4Address;
 import java.util.ArrayList;
@@ -30,9 +30,9 @@ import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.slf4j.Logger;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.vclu.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.VirtualSystem.Subscription;
-import pl.psobiech.opengr8on.vclu.lua.fn.LuaVarArgConsumer;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem.Subscription;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgConsumer;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class InitLuaLib extends TwoArgFunction {
@@ -164,7 +164,7 @@ public class InitLuaLib extends TwoArgFunction {
         final StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= args.narg(); i++) {
             sb.append(
-                LuaUtil.stringify(args.arg(i))
+                LuaUtil.stringifyRaw(args.arg(i))
             );
         }
 
@@ -235,18 +235,23 @@ public class InitLuaLib extends TwoArgFunction {
             final LuaValue value = table.get(key);
             if (!value.istable()) {
                 return LuaValue.valueOf(
-                    FETCH_VALUES_PREFIX + "{\"%s\"}"
+                    FETCH_VALUES_PREFIX + "{%s}"
                         .formatted(
-                            globals.load("return %s".formatted(value))
-                                   .call()
+                            LuaUtil.stringify(
+                                // TODO: sanitize input
+                                globals.load("return %s".formatted(value))
+                                       .call()
+                            )
                         )
                 );
             }
 
+            final LuaTable valueTable = value.checktable();
+
             subscriptions.add(
                 new Subscription(
-                    value.checktable().get(1).checktable().get("name").checkjstring(),
-                    value.checktable().get(2).checkint()
+                    valueTable.get(1).checktable().get("name").checkjstring(),
+                    valueTable.get(2).checkint()
                 )
             );
         }

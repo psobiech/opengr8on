@@ -105,6 +105,9 @@ public class ThreadUtil {
         return Thread.ofVirtual()
                      .name(groupName)
                      .inheritInheritableThreadLocals(true)
+                     .uncaughtExceptionHandler((t, e) -> {
+                         LOGGER.error("%s: %s".formatted(t.getName(), e.getMessage()), e);
+                     })
                      .factory();
     }
 
@@ -117,6 +120,9 @@ public class ThreadUtil {
                      .name(groupName)
                      .daemon(daemon)
                      .inheritInheritableThreadLocals(true)
+                     .uncaughtExceptionHandler((t, e) -> {
+                         LOGGER.error("%s: %s".formatted(t.getName(), e.getMessage()), e);
+                     })
                      .factory();
     }
 }

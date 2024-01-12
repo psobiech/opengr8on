@@ -106,9 +106,9 @@ public class Main {
                                                        .orElseThrow(() -> new UnexpectedException("Provide a project location"));
 
             final CLUDevice device = fetchDevice(networkInterface, ipAddress, projectCipherKey, interfaceRegistry);
-            // try (CLUClient client = new CLUClient(networkInterface, device, projectCipherKey)) {
-            //     // NOP
-            // }
+            try (CLUClient client = new CLUClient(networkInterface.getAddress(), device, projectCipherKey)) {
+                client.startTFTPdServer().get();
+            }
         } else if (commandLine.hasOption(CLIParameters.EXECUTE_OPTION)) {
             final String command = commandLine.getOptionValue(CLIParameters.EXECUTE_OPTION);
 
@@ -244,13 +244,12 @@ public class Main {
                 LOGGER.debug(device.toString());
                 LOGGER.debug(configJson.toString());
 
-                final CLU cluDefinition = interfaceRegistry.getCLU(
-                                                               configJson.getHardwareType(), configJson.getHardwareVersion(),
-                                                               configJson.getFirmwareType(), configJson.getFirmwareVersion()
-                                                           )
-                                                           .get();
+                interfaceRegistry.getCLU(
+                                     configJson.getHardwareType(), configJson.getHardwareVersion(),
+                                     configJson.getFirmwareType(), configJson.getFirmwareVersion()
+                                 )
+                                 .ifPresent(cluDefinition -> LOGGER.debug(cluDefinition.getTypeName()));
 
-                LOGGER.debug(cluDefinition.getTypeName());
             } finally {
                 FileUtil.deleteQuietly(temporaryFile);
             }

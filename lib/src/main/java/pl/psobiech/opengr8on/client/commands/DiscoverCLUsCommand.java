@@ -51,10 +51,10 @@ public class DiscoverCLUsCommand {
             return Optional.empty();
         }
 
-        final byte[] encrypted = Arrays.copyOfRange(buffer, 0, Command.RANDOM_ENCRYPTED_SIZE);
-        final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_SIZE + 1, Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE);
+        final byte[] encrypted = Arrays.copyOfRange(buffer, 0, Command.RANDOM_ENCRYPTED_BYTES);
+        final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_BYTES + 1, Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES);
 
-        final String requestAsString = Command.asString(buffer, Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1);
+        final String requestAsString = Command.asString(buffer, Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1);
         final Optional<String[]> requestPartsOptional = Util.splitExact(requestAsString, ":", 2);
         if (requestPartsOptional.isEmpty()) {
             return Optional.empty();
@@ -71,20 +71,20 @@ public class DiscoverCLUsCommand {
     }
 
     public static boolean requestMatches(byte[] buffer) {
-        if (buffer.length < Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length() + 1 + Command.MIN_IP_SIZE) {
+        if (buffer.length < Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS) {
             return false;
         }
 
-        if (buffer[Command.RANDOM_ENCRYPTED_SIZE] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Request.COMMAND.length()] != ':') {
+        if (buffer[Command.RANDOM_ENCRYPTED_BYTES] != ':'
+            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
+            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] != ':') {
             return false;
         }
 
         return Request.COMMAND.equals(
             Command.asString(
                 buffer,
-                Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1,
+                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
                 Request.COMMAND.length()
             )
         );
@@ -120,10 +120,10 @@ public class DiscoverCLUsCommand {
             return Optional.empty();
         }
 
-        final byte[] encrypted = Arrays.copyOfRange(buffer, 0, Command.RANDOM_ENCRYPTED_SIZE);
-        final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_SIZE + 1, Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE);
+        final byte[] encrypted = Arrays.copyOfRange(buffer, 0, Command.RANDOM_ENCRYPTED_BYTES);
+        final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_BYTES + 1, Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES);
 
-        final String responseAsString = Command.asString(buffer, Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1);
+        final String responseAsString = Command.asString(buffer, Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1);
         final Optional<String[]> responsePartsOptional = Util.splitExact(responseAsString, ":", 3);
         if (responsePartsOptional.isEmpty()) {
             return Optional.empty();
@@ -142,20 +142,20 @@ public class DiscoverCLUsCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length
-            < Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_SIZE + 1 + Command.MAC_SIZE) {
+            < Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS + 1 + Command.MAC_CHARACTERS) {
             return false;
         }
 
-        if (buffer[Command.RANDOM_ENCRYPTED_SIZE] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1 + Response.COMMAND.length()] != ':') {
+        if (buffer[Command.RANDOM_ENCRYPTED_BYTES] != ':'
+            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
+            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length()] != ':') {
             return false;
         }
 
         return Response.COMMAND.equals(
             Command.asString(
                 buffer,
-                Command.RANDOM_ENCRYPTED_SIZE + 1 + Command.IV_SIZE + 1,
+                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
                 Response.COMMAND.length()
             )
         );
@@ -258,7 +258,7 @@ public class DiscoverCLUsCommand {
                 ":",
                 COMMAND,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_SIZE, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_CHARACTERS, '0'),
                 ":",
                 macAddress
             );

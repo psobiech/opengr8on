@@ -16,13 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.objects;
+package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.luaj.vm2.LuaValue;
-import pl.psobiech.opengr8on.vclu.VirtualObject;
 
 public class Timer extends VirtualObject {
     public static final int INDEX = 6;

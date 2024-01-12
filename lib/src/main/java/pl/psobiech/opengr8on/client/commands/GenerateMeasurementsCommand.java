@@ -25,21 +25,26 @@ import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.Util;
 
-public class SetIpCommand {
-    private static final int SERIAL_NUMBER_PART = 1;
+public class GenerateMeasurementsCommand {
+    private static final int IP_ADDRESS_PART = 1;
 
-    private static final int IP_ADDRESS_PART = 2;
+    private static final int SESSION_ID_PART = 2;
 
-    private static final int GATEWAY_IP_ADDRESS_PART = 3;
+    private static final int UNKNOWN_PART = 3;
 
-    private SetIpCommand() {
+    private static final int RETURN_VALUE_PART = 3;
+
+    private GenerateMeasurementsCommand() {
         // NOP
     }
 
-    public static Request request(Long serialNumber, Inet4Address ipAddress, Inet4Address gatewayIpAddress) {
-        return new Request(serialNumber, ipAddress, gatewayIpAddress);
+    public static Request request(Inet4Address ipAddress, Integer sessionId, String unknown) {
+        return new Request(
+            ipAddress,
+            sessionId,
+            unknown
+        );
     }
 
     public static Optional<Request> requestFromByteArray(byte[] buffer) {
@@ -47,26 +52,22 @@ public class SetIpCommand {
             return Optional.empty();
         }
 
-        final Optional<String[]> requestPartsOptional = Util.splitExact(Command.asString(buffer), ":", 4);
-        if (requestPartsOptional.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final String[] requestParts = requestPartsOptional.get();
-        final Long serialNumber = HexUtil.asLong(requestParts[SERIAL_NUMBER_PART]);
+        final String[] requestParts = Command.asString(buffer).split(":", 4);
         final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(requestParts[IP_ADDRESS_PART]);
-        final Inet4Address gatewayIpAddress = IPv4AddressUtil.parseIPv4(requestParts[GATEWAY_IP_ADDRESS_PART]);
+        final Integer sessionId = HexUtil.asInt(requestParts[SESSION_ID_PART]);
+        final String unknown = requestParts[UNKNOWN_PART];
 
         return Optional.of(
             new Request(
-                serialNumber,
-                ipAddress, gatewayIpAddress
+                ipAddress,
+                sessionId,
+                unknown
             )
         );
     }
 
     public static boolean requestMatches(byte[] buffer) {
-        if (buffer.length < Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_IP_CHARACTERS) {
+        if (buffer.length < Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS + 1 + 1 /* script */) {
             return false;
         }
 
@@ -79,8 +80,10 @@ public class SetIpCommand {
         );
     }
 
-    public static Response response(Long serialNumber, Inet4Address ipAddress) {
-        return new Response(serialNumber, ipAddress);
+    public static Response response(Inet4Address ipAddress, int sessionId, String returnValue) {
+        return new Response(
+            ipAddress, sessionId, returnValue
+        );
     }
 
     public static Optional<Response> responseFromByteArray(byte[] buffer) {
@@ -88,25 +91,22 @@ public class SetIpCommand {
             return Optional.empty();
         }
 
-        final Optional<String[]> responsePartsOptional = Util.splitExact(Command.asString(buffer), ":", 3);
-        if (responsePartsOptional.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final String[] responseParts = responsePartsOptional.get();
-        final Long serialNumber = HexUtil.asLong(responseParts[1]);
-        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(responseParts[2]);
+        final String[] responseParts = Command.asString(buffer).split(":", 4);
+        final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(responseParts[IP_ADDRESS_PART]);
+        final Integer sessionId = HexUtil.asInt(responseParts[SESSION_ID_PART]);
+        final String returnValue = responseParts[RETURN_VALUE_PART];
 
         return Optional.of(
             new Response(
-                serialNumber,
-                ipAddress
+                ipAddress,
+                sessionId,
+                returnValue
             )
         );
     }
 
     public static boolean responseMatches(byte[] buffer) {
-        if (buffer.length < Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS + 1 + Command.MIN_IP_CHARACTERS) {
+        if (buffer.length < Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS + 1 + 1 /* returnValue */) {
             return false;
         }
 
@@ -120,18 +120,18 @@ public class SetIpCommand {
     }
 
     public static class Request implements Command {
-        protected static final String COMMAND = "req_set_clu_ip";
-
-        private final Long serialNumber;
+        static final String COMMAND = "req_gen_measurements";
 
         private final Inet4Address ipAddress;
 
-        private final Inet4Address gatewayIpAddress;
+        private final Integer sessionId;
 
-        private Request(Long serialNumber, Inet4Address ipAddress, Inet4Address gatewayIpAddress) {
-            this.serialNumber = serialNumber;
+        private final String unknown;
+
+        private Request(Inet4Address ipAddress, Integer sessionId, String unknown) {
             this.ipAddress = ipAddress;
-            this.gatewayIpAddress = gatewayIpAddress;
+            this.sessionId = sessionId;
+            this.unknown   = unknown;
         }
 
         @Override
@@ -139,37 +139,40 @@ public class SetIpCommand {
             return Command.serialize(
                 COMMAND,
                 ":",
-                StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(serialNumber), MAX_SERIAL_NUMBER_CHARACTERS, '0')),
-                ":",
                 ipAddress,
                 ":",
-                gatewayIpAddress
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), Command.MAX_SESSION_CHARACTERS, '0'),
+                ":",
+                unknown + "\r\n"
             );
-        }
-
-        public Long getSerialNumber() {
-            return serialNumber;
         }
 
         public Inet4Address getIpAddress() {
             return ipAddress;
         }
 
-        public Inet4Address getGatewayIpAddress() {
-            return gatewayIpAddress;
+        public Integer getSessionId() {
+            return sessionId;
+        }
+
+        public String getUnknown() {
+            return unknown;
         }
     }
 
     public static class Response implements Command {
-        protected static final String COMMAND = "resp_set_clu_ip";
-
-        private final Long serialNumber;
+        static final String COMMAND = "meas_file_download";
 
         private final Inet4Address ipAddress;
 
-        private Response(Long serialNumber, Inet4Address ipAddress) {
-            this.serialNumber = serialNumber;
-            this.ipAddress    = ipAddress;
+        private final Integer sessionId;
+
+        private final String returnValue;
+
+        private Response(Inet4Address ipAddress, Integer sessionId, String returnValue) {
+            this.ipAddress   = ipAddress;
+            this.sessionId   = sessionId;
+            this.returnValue = returnValue;
         }
 
         @Override
@@ -177,18 +180,24 @@ public class SetIpCommand {
             return Command.serialize(
                 COMMAND,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_CHARACTERS, '0'),
+                ipAddress,
                 ":",
-                ipAddress
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
+                ":",
+                returnValue
             );
-        }
-
-        public Long getSerialNumber() {
-            return serialNumber;
         }
 
         public Inet4Address getIpAddress() {
             return ipAddress;
+        }
+
+        public Integer getSessionId() {
+            return sessionId;
+        }
+
+        public String getReturnValue() {
+            return returnValue;
         }
     }
 }

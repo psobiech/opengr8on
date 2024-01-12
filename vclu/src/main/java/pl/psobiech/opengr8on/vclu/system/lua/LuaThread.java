@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.lua;
+package pl.psobiech.opengr8on.vclu.system.lua;
 
 import java.io.Closeable;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,10 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.vclu.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
-public class LuaThreadWrapper implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LuaThreadWrapper.class);
+public class LuaThread implements Closeable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LuaThread.class);
 
     private final VirtualSystem virtualSystem;
 
@@ -42,7 +42,7 @@ public class LuaThreadWrapper implements Closeable {
 
     private final Thread thread;
 
-    public LuaThreadWrapper(VirtualSystem virtualSystem, Globals globals, LuaClosure mainLuaClosure) {
+    public LuaThread(VirtualSystem virtualSystem, Globals globals, LuaClosure mainLuaClosure) {
         this.thread = Thread.ofVirtual()
                             .name(getClass().getSimpleName())
                             .unstarted(

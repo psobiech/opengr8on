@@ -121,7 +121,7 @@ public class CLUClient extends Client implements Closeable {
     }
 
     public Optional<Boolean> updateCipherKey(CipherKey newCipherKey) {
-        final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_SIZE);
+        final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         return request(
             newCipherKey,

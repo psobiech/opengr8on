@@ -30,6 +30,10 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 public class LuaScriptCommand {
     public static final String CHECK_ALIVE = "checkAlive()";
 
+    public static final String GET_VARS = "getVar";
+
+    public static final String SET_VARS = "setVar";
+
     private static final int IP_ADDRESS_PART = 1;
 
     private static final int SESSION_ID_PART = 2;
@@ -68,7 +72,7 @@ public class LuaScriptCommand {
     }
 
     public static boolean requestMatches(byte[] buffer) {
-        if (buffer.length < Request.COMMAND.length() + 1 + Command.MIN_IP_SIZE + 1 + Command.MIN_SESSION_SIZE + 1 + 1 /* script */) {
+        if (buffer.length < Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS + 1 + 1 /* script */) {
             return false;
         }
 
@@ -123,7 +127,7 @@ public class LuaScriptCommand {
     }
 
     public static boolean responseMatches(byte[] buffer) {
-        if (buffer.length < Response.COMMAND.length() + 1 + Command.MIN_IP_SIZE + 1 + Command.MIN_SESSION_SIZE + 1 + 1 /* script */) {
+        if (buffer.length < Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS + 1 + 1 /* returnValue */) {
             return false;
         }
 
@@ -158,7 +162,7 @@ public class LuaScriptCommand {
                 ":",
                 ipAddress,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SERIAL_NUMBER_SIZE, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
                 ":",
                 script + "\r\n"
             );
@@ -199,7 +203,7 @@ public class LuaScriptCommand {
                 ":",
                 ipAddress,
                 ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SERIAL_NUMBER_SIZE, '0'),
+                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
                 ":",
                 returnValue
             );

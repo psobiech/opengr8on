@@ -105,9 +105,9 @@ class LuaScriptCommandTest {
         assertFalse(LuaScriptCommand.requestFromByteArray(new byte[100]).isPresent());
 
         buffer                                                                                    = new byte[100];
-        buffer[Request.COMMAND.length()]                                                          = ':';
-        buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_SIZE]                                = ':';
-        buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_SIZE + 1 + Command.MIN_SESSION_SIZE] = ':';
+        buffer[Request.COMMAND.length()]                                                                      = ':';
+        buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS]                                      = ':';
+        buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS] = ':';
         assertFalse(LuaScriptCommand.requestFromByteArray(buffer).isPresent());
 
         //
@@ -116,9 +116,9 @@ class LuaScriptCommandTest {
         assertFalse(LuaScriptCommand.responseFromByteArray(new byte[100]).isPresent());
 
         buffer                                                                                     = new byte[100];
-        buffer[Response.COMMAND.length()]                                                          = ':';
-        buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_SIZE]                                = ':';
-        buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_SIZE + 1 + Command.MIN_SESSION_SIZE] = ':';
+        buffer[Response.COMMAND.length()]                                                                      = ':';
+        buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS]                                      = ':';
+        buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS] = ':';
         assertFalse(LuaScriptCommand.responseFromByteArray(buffer).isPresent());
     }
 }

@@ -1,6 +1,5 @@
 [![GitHub Release](https://img.shields.io/github/v/release/psobiech/opengr8on?label=release)](https://github.com/psobiech/opengr8on/releases)
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/psobiech/opengr8on?sort=semver&label=docker%20version)
-](https://github.com/psobiech/opengr8on/pkgs/container/opengr8on)
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/psobiech/opengr8on?sort=semver&label=docker%20version)](https://github.com/psobiech/opengr8on/pkgs/container/opengr8on)
 [![Docker Image Size with architecture (latest by date/latest semver)](https://img.shields.io/docker/image-size/psobiech/opengr8on?label=docker%20size)](https://github.com/psobiech/opengr8on/pkgs/container/opengr8on)
 ![jacoco.svg](badges%2Fjacoco.svg)
 [![AGPLv3 License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
