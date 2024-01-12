@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.luaj.vm2.LuaBoolean;
+import org.luaj.vm2.LuaDouble;
+import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
@@ -134,5 +136,55 @@ public class LuaUtil {
         }
 
         return String.valueOf(luaValue);
+    }
+
+    /**
+     * @return String value of object (if supported)
+     */
+    public static Object asObject(LuaValue luaValue) {
+        if (isNil(luaValue)) {
+            return null;
+        }
+
+        if (luaValue instanceof LuaDouble) {
+            return luaValue.checkdouble();
+        }
+
+        if (luaValue instanceof LuaInteger) {
+            return luaValue.checkint();
+        }
+
+        if (luaValue instanceof LuaBoolean) {
+            return luaValue.checkboolean();
+        }
+
+        if (luaValue.isstring()) {
+            return luaValue.checkjstring();
+        }
+
+        return String.valueOf(luaValue);
+    }
+
+    /**
+     * @return String value of object (if supported)
+     */
+    public static LuaValue valueOf(Object object) {
+        if (object instanceof String number) {
+            return LuaValue.valueOf(number);
+        }
+
+        if (object instanceof Integer number) {
+            return LuaValue.valueOf(number);
+        }
+
+        if (object instanceof Double number) {
+            return LuaValue.valueOf(number);
+        }
+
+        if (object instanceof Boolean bool) {
+            return LuaValue.valueOf(bool);
+        }
+
+        return LuaValue.valueOf(String.valueOf(object));
     }
 }

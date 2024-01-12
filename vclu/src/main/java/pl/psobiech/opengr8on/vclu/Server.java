@@ -441,7 +441,7 @@ public class Server implements Closeable {
         );
 
         try {
-            this.mainThread = LuaThreadFactory.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
+            this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
             this.mainThread.start();
 
             checkAlive();
@@ -449,7 +449,7 @@ public class Server implements Closeable {
             LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
             IOUtil.closeQuietly(this.mainThread);
 
-            this.mainThread = LuaThreadFactory.create(aDriveDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
+            this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
             this.mainThread.start();
 
             checkAlive();

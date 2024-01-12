@@ -64,6 +64,8 @@ public class RemoteCLU extends VirtualObject {
 
     @Override
     public void close() {
+        ThreadUtil.close(executor);
+
         IOUtil.closeQuietly(client);
     }
 

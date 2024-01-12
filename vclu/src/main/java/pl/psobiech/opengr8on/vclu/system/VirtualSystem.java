@@ -20,6 +20,7 @@ package pl.psobiech.opengr8on.vclu.system;
 
 import java.io.Closeable;
 import java.net.Inet4Address;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
@@ -63,13 +65,18 @@ public class VirtualSystem implements Closeable {
 
     private final Map<String, VirtualObject> objectsByName = new HashMap<>();
 
+    private final Path rootDirectory;
+
+    private LuaThread luaThread;
+
     private VirtualCLU currentClu = null;
 
     private ScheduledFuture<?> clientReportFuture = null;
 
-    public VirtualSystem(Inet4Address localAddress, CipherKey cipherKey) {
-        this.localAddress = localAddress;
-        this.cipherKey    = cipherKey;
+    public VirtualSystem(Path rootDirectory, Inet4Address localAddress, CipherKey cipherKey) {
+        this.rootDirectory = rootDirectory;
+        this.localAddress  = localAddress;
+        this.cipherKey     = cipherKey;
     }
 
     public VirtualObject getObject(String name) {
@@ -86,7 +93,7 @@ public class VirtualSystem implements Closeable {
             case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
             case RemoteCLU.INDEX -> new RemoteCLU(name, ipAddress, localAddress, cipherKey);
             case Timer.INDEX -> new Timer(name);
-            case Storage.INDEX -> new Storage(name);
+            case Storage.INDEX -> new Storage(name, luaThread, rootDirectory.getParent().resolve("storage"));
             case MqttTopic.INDEX -> new MqttTopic(name, this);
             default -> new VirtualObject(name);
         };
@@ -229,6 +236,10 @@ public class VirtualSystem implements Closeable {
         for (VirtualObject object : objectsByName.values()) {
             IOUtil.closeQuietly(object);
         }
+    }
+
+    public void setLuaThread(LuaThread luaThread) {
+        this.luaThread = luaThread;
     }
 
     public record Subscription(String name, int index) {

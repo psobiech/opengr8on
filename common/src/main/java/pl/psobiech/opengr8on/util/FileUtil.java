@@ -167,8 +167,21 @@ public final class FileUtil {
     }
 
     /**
-     * Tries to hardlink the file if possible (when both paths are located on the same filesystem that supports hardlinks and the target does not exist), otherwise
-     * reverts to copying the file contents
+     * @param path to be truncated (created, truncated and closed)
+     */
+    public static void truncate(Path path) {
+        try {
+            IOUtil.closeQuietly(
+                Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+            );
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
+        }
+    }
+
+    /**
+     * Tries to hardlink the file if possible (when both paths are located on the same filesystem that supports hardlinks and the target does not exist),
+     * otherwise reverts to copying the file contents
      */
     public static void linkOrCopy(Path from, Path to) {
         if (!Files.exists(to)) {

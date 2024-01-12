@@ -26,7 +26,6 @@ TODOs:
 
 - implement missing objects
 - measurements
-- persistent storage
 - create fortified mode (when CLU does not accept new keys or commands using default keys)
 
 ## Virtual Objects

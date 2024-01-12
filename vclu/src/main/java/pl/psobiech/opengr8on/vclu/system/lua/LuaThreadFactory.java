@@ -56,9 +56,13 @@ public class LuaThreadFactory {
     }
 
     public static LuaThread create(
-        Path aDriveDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
+        Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
     ) {
+
+        final Path aDriveDirectory = rootDirectory.resolve("a");
+
         final VirtualSystem virtualSystem = new VirtualSystem(
+            rootDirectory,
             cluDevice.getAddress(),
             cipherKey
         );

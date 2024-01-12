@@ -47,6 +47,8 @@ public class LuaThread implements Closeable {
                             .name(getClass().getSimpleName())
                             .unstarted(
                                 () -> {
+                                    virtualSystem.setLuaThread(LuaThread.this);
+
                                     try {
                                         mainLuaClosure.call();
                                     } catch (LuaError e) {
