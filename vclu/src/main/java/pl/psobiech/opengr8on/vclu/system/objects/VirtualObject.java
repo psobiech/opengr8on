@@ -22,12 +22,14 @@ import java.io.Closeable;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
@@ -45,8 +47,11 @@ public class VirtualObject implements Closeable {
 
     private final Map<Integer, LuaFunction> eventFunctions = new Hashtable<>();
 
+    protected final ScheduledExecutorService executor;
+
     public VirtualObject(String name) {
-        this.name = name;
+        this.name     = name;
+        this.executor = ThreadUtil.virtualScheduler(name);
     }
 
     public String getName() {
@@ -65,6 +70,11 @@ public class VirtualObject implements Closeable {
      */
     public void loop() {
         // NOP
+    }
+
+    @Override
+    public void close() {
+        ThreadUtil.close(executor);
     }
 
     public void register(IFeature feature, LuaOneArgFunction fn) {
@@ -158,7 +168,7 @@ public class VirtualObject implements Closeable {
         }
 
         try {
-            luaFunction.call();
+            executor.submit(() -> luaFunction.call());
 
             return true;
         } catch (Exception e) {
@@ -174,11 +184,6 @@ public class VirtualObject implements Closeable {
 
     public void addEventHandler(int address, LuaFunction luaFunction) {
         eventFunctions.put(address, luaFunction);
-    }
-
-    @Override
-    public void close() {
-        // NOP
     }
 
     public interface IFeature {

@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
@@ -46,8 +44,6 @@ public class Storage extends VirtualObject {
     public static final int INDEX = 44;
 
     private final LuaThread luaThread;
-
-    private final ScheduledExecutorService executor;
 
     private final Path storagePath;
 
@@ -59,13 +55,10 @@ public class Storage extends VirtualObject {
         super(name);
 
         this.luaThread = luaThread;
-        this.executor  = ThreadUtil.virtualScheduler(name);
 
         FileUtil.mkdir(storageRootPath);
 
         this.storagePath = storageRootPath.resolve("storage.json");
-
-        restore();
 
         register(Features.UNKNOWN, arg1 -> {
             return LuaValue.ZERO;
@@ -172,11 +165,6 @@ public class Storage extends VirtualObject {
         } finally {
             variablesLock.unlock();
         }
-    }
-
-    @Override
-    public void close() {
-        ThreadUtil.close(executor);
     }
 
     private enum Features implements IFeature {

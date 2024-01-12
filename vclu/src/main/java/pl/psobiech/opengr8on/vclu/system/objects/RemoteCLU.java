@@ -36,14 +36,11 @@ public class RemoteCLU extends VirtualObject {
 
     public static final int INDEX = 1;
 
-    private final ScheduledExecutorService executor;
-
     private final CLUClient client;
 
     public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey) {
         super(name);
 
-        this.executor = ThreadUtil.virtualScheduler(name);
         this.client   = new CLUClient(localAddress, address, cipherKey);
 
         register(Methods.EXECUTE, args -> {
@@ -64,7 +61,7 @@ public class RemoteCLU extends VirtualObject {
 
     @Override
     public void close() {
-        ThreadUtil.close(executor);
+        super.close();
 
         IOUtil.closeQuietly(client);
     }

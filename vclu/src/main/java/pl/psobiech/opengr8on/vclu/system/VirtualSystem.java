@@ -21,12 +21,16 @@ package pl.psobiech.opengr8on.vclu.system;
 import java.io.Closeable;
 import java.net.Inet4Address;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -113,32 +117,13 @@ public class VirtualSystem implements Closeable {
     }
 
     public void setup() {
-        for (VirtualObject value : objectsByName.values()) {
-            try {
-                value.setup();
-            } catch (Exception e) {
-                LOGGER.error(e.getMessage(), e);
-            }
-        }
+        forAllObjects(VirtualObject::setup);
     }
 
     public void loop() {
         final long startTime = System.nanoTime();
-        for (VirtualObject object : objectsByName.values()) {
-            final long objectStartTime = System.nanoTime();
-            try {
-                object.loop();
-            } catch (Exception e) {
-                LOGGER.error(e.getMessage(), e);
-            } finally {
-                final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
-                if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
-                    LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
-                }
-            }
 
-            Thread.yield();
-        }
+        forAllObjects(VirtualObject::loop);
 
         // best effort to run loop with fixed rate
         final long timeLeft = LOOP_TIME_NANOS - (System.nanoTime() - startTime);
@@ -147,6 +132,42 @@ public class VirtualSystem implements Closeable {
         }
 
         sleepNanos(Math.max(0, timeLeft));
+    }
+
+    public void forAllObjects(Consumer<VirtualObject> runnable) {
+        final ArrayList<Future<?>> futures = new ArrayList<>(objectsByName.size());
+
+        for (VirtualObject object : objectsByName.values()) {
+            futures.add(
+                executor.submit(() -> {
+                    final long objectStartTime = System.nanoTime();
+                    try {
+                        runnable.accept(object);
+                    } catch (Exception e) {
+                        LOGGER.error(e.getMessage(), e);
+                    } finally {
+                        final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
+                        if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
+                            LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                        }
+                    }
+                })
+            );
+        }
+
+        Thread.yield();
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                throw new UncheckedInterruptedException(e);
+            } catch (ExecutionException e) {
+                final Throwable cause = e.getCause();
+
+                LOGGER.error(cause.getMessage(), cause);
+            }
+        }
     }
 
     public void sleep(long millis) {
