@@ -20,6 +20,7 @@ package pl.psobiech.opengr8on.util;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -66,6 +67,10 @@ public class ThreadUtil {
      * @return if executor was closed within the default timeout or false if its still pending closure
      */
     public static boolean close(ExecutorService executor) {
+        if (executor == null) {
+            return true;
+        }
+
         executor.shutdownNow();
 
         try {
@@ -73,6 +78,17 @@ public class ThreadUtil {
         } catch (InterruptedException e) {
             throw new UncheckedInterruptedException(e);
         }
+    }
+
+    /**
+     * Attempts to cancel the future (by sending interrupt signal)
+     */
+    public static void cancel(Future<?> future) {
+        if (future == null) {
+            return;
+        }
+
+        future.cancel(true);
     }
 
     /**
@@ -89,6 +105,13 @@ public class ThreadUtil {
      */
     public static ScheduledExecutorService getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * @return named scheduled executor, working on Virtual Threads
+     */
+    public static ScheduledExecutorService virtualScheduler(Class<?> clazz) {
+        return virtualScheduler(clazz.getSimpleName());
     }
 
     /**

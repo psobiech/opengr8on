@@ -149,7 +149,7 @@ class ServerDiscoverCommandTest {
         IOUtil.closeQuietly(client);
         IOUtil.closeQuietly(broadcastClient);
 
-        serverFuture.cancel(true);
+        ThreadUtil.cancel(serverFuture);
 
         try {
             serverFuture.get();
@@ -192,7 +192,7 @@ class ServerDiscoverCommandTest {
 
         assertEquals(1, devices.size());
 
-        checkAliveFuture.cancel(true);
+        ThreadUtil.cancel(checkAliveFuture);
         try {
             assertTrue(checkAliveFuture.get());
         } catch (CancellationException e) {

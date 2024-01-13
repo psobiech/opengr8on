@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -40,6 +39,7 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.HttpRequest;
@@ -71,16 +71,18 @@ public class VirtualSystem implements Closeable {
 
     private final Path rootDirectory;
 
+    private final ClientRegistry clientRegistry;
+
     private LuaThread luaThread;
 
     private VirtualCLU currentClu = null;
-
-    private ScheduledFuture<?> clientReportFuture = null;
 
     public VirtualSystem(Path rootDirectory, Inet4Address localAddress, CipherKey cipherKey) {
         this.rootDirectory = rootDirectory;
         this.localAddress  = localAddress;
         this.cipherKey     = cipherKey;
+
+        this.clientRegistry = new ClientRegistry(localAddress, cipherKey);
     }
 
     public VirtualObject getObject(String name) {
@@ -134,6 +136,79 @@ public class VirtualSystem implements Closeable {
         sleepNanos(Math.max(0, timeLeft));
     }
 
+    public void sleep(long millis) {
+        sleepNanos(TimeUnit.MILLISECONDS.toNanos(millis));
+    }
+
+    public void sleepNanos(long nanoSeconds) {
+        final long millis = nanoSeconds / NANOS_IN_MILLISECOND;
+        final int nanos = (int) (nanoSeconds % NANOS_IN_MILLISECOND);
+
+        try {
+            Thread.sleep(millis, nanos);
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
+        }
+    }
+
+    public String clientRegister(
+        Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId,
+        List<Subscription> subscription
+    ) {
+        clientRegistry.register(
+            ipAddress, port, sessionId,
+            client -> {
+                final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
+
+                client.clientReport(valuesAsString);
+
+                if (!ipAddress.equals(remoteIpAddress)) {
+                    // when having docker network interfaces,
+                    // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
+                    try (CLUClient remoteClient = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
+                        remoteClient.clientReport(valuesAsString);
+                    }
+                }
+            }
+        );
+
+        return CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
+    }
+
+    public LuaValue clientDestroy(Inet4Address ipAddress, int port, int sessionId) {
+        clientRegistry.destroy(ipAddress, port, sessionId);
+
+        return LuaValue.valueOf(sessionId);
+    }
+
+    public String fetchValues(List<Subscription> subscription) {
+        final StringBuilder sb = new StringBuilder();
+        for (Subscription entry : subscription) {
+            final VirtualObject object = entry.object();
+            final int index = entry.index();
+
+            if (!sb.isEmpty()) {
+                sb.append(",");
+            }
+
+            sb.append(
+                LuaUtil.stringify(
+                    object.get(index)
+                )
+            );
+        }
+
+        return "{" + sb + "}";
+    }
+
+    @Override
+    public void close() {
+        ThreadUtil.close(executor);
+        IOUtil.closeQuietly(clientRegistry);
+
+        forAllObjects(IOUtil::closeQuietly);
+    }
+
     public void forAllObjects(Consumer<VirtualObject> runnable) {
         final ArrayList<Future<?>> futures = new ArrayList<>(objectsByName.size());
 
@@ -170,99 +245,7 @@ public class VirtualSystem implements Closeable {
         }
     }
 
-    public void sleep(long millis) {
-        sleepNanos(TimeUnit.MILLISECONDS.toNanos(millis));
-    }
-
-    public void sleepNanos(long nanoSeconds) {
-        final long millis = nanoSeconds / NANOS_IN_MILLISECOND;
-        final int nanos = (int) (nanoSeconds % NANOS_IN_MILLISECOND);
-
-        try {
-            Thread.sleep(millis, nanos);
-        } catch (InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
-        }
-    }
-
-    public String clientRegister(Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId, List<Subscription> subscription) {
-        if (clientReportFuture != null) {
-            clientReportFuture.cancel(true);
-        }
-
-        clientReportFuture = executor.scheduleAtFixedRate(
-            () -> {
-                try {
-                    final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
-
-                    try (CLUClient client = new CLUClient(localAddress, ipAddress, cipherKey, port)) {
-                        client.clientReport(valuesAsString);
-                    }
-
-                    if (!ipAddress.equals(remoteIpAddress)) {
-                        // when having docker network interfaces,
-                        // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
-                        try (CLUClient client = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
-                            client.clientReport(valuesAsString);
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-            },
-            1, 1, TimeUnit.SECONDS
-        );
-
-        return CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
-    }
-
-    public LuaValue clientDestroy(int sessionId) {
-        if (clientReportFuture != null) {
-            clientReportFuture.cancel(true);
-        }
-
-        clientReportFuture = null;
-
-        return LuaValue.valueOf(sessionId);
-    }
-
-    public String fetchValues(List<Subscription> subscription) {
-        final StringBuilder sb = new StringBuilder();
-        for (Subscription entry : subscription) {
-            final String name = entry.name();
-            final int index = entry.index();
-
-            if (!sb.isEmpty()) {
-                sb.append(",");
-            }
-
-            sb.append(LuaUtil.stringify(
-                getObject(name).get(index)
-            ));
-        }
-
-        return "{" + sb + "}";
-    }
-
-    @Override
-    public void close() {
-        ThreadUtil.close(executor);
-
-        if (clientReportFuture != null) {
-            clientReportFuture.cancel(true);
-
-            clientReportFuture = null;
-        }
-
-        for (VirtualObject object : objectsByName.values()) {
-            IOUtil.closeQuietly(object);
-        }
-    }
-
     public void setLuaThread(LuaThread luaThread) {
         this.luaThread = luaThread;
-    }
-
-    public record Subscription(String name, int index) {
     }
 }

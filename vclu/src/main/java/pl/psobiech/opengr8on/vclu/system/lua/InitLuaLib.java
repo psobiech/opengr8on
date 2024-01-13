@@ -30,9 +30,10 @@ import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.slf4j.Logger;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
+import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.system.VirtualSystem.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgConsumer;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class InitLuaLib extends TwoArgFunction {
@@ -191,13 +192,14 @@ public class InitLuaLib extends TwoArgFunction {
                 continue;
             }
 
-            final LuaTable object = keyValue.checktable().get(1).checktable();
-            final String objectName = object.get("name").checkjstring();
+            final LuaTable objectTable = keyValue.checktable().get(1).checktable();
+            final String objectName = objectTable.get("name").checkjstring();
+            final VirtualObject object = virtualSystem.getObject(objectName);
 
             final int index = keyValue.checktable().get(2).checkint();
 
             subscriptions.add(
-                new Subscription(objectName, index)
+                new Subscription(object, index)
             );
         }
 
@@ -215,11 +217,11 @@ public class InitLuaLib extends TwoArgFunction {
     }
 
     public LuaValue clientDestroy(Varargs args) {
-        // final String address = args.checkjstring(1);
-        // final int port = args.checkint(2);
+        final Inet4Address address = IPv4AddressUtil.parseIPv4(args.checkjstring(2));
+        final int port = args.checkint(3);
         final int sessionId = args.checkint(4);
 
-        return virtualSystem.clientDestroy(sessionId);
+        return virtualSystem.clientDestroy(address, port, sessionId);
     }
 
     public LuaValue fetchValues(Varargs args) {
@@ -247,10 +249,13 @@ public class InitLuaLib extends TwoArgFunction {
             }
 
             final LuaTable valueTable = value.checktable();
+            final LuaTable objectTable = valueTable.get(1).checktable();
+            final String objectName = objectTable.get("name").checkjstring();
+            final VirtualObject object = virtualSystem.getObject(objectName);
 
             subscriptions.add(
                 new Subscription(
-                    valueTable.get(1).checktable().get("name").checkjstring(),
+                    object,
                     valueTable.get(2).checkint()
                 )
             );

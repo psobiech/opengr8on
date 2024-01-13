@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -229,10 +228,8 @@ public class HttpRequest extends VirtualObject {
             connection = null;
         }
 
-        if (responseFuture != null) {
-            responseFuture.cancel(true);
-            responseFuture = null;
-        }
+        ThreadUtil.cancel(responseFuture);
+        responseFuture = null;
 
         return LuaValue.NIL;
     }
@@ -258,9 +255,7 @@ public class HttpRequest extends VirtualObject {
             connection.disconnect();
         }
 
-        if (responseFuture != null) {
-            responseFuture.cancel(true);
-        }
+        ThreadUtil.cancel(responseFuture);
     }
 
     private enum HttpType {

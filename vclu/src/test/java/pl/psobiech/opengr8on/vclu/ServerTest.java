@@ -193,7 +193,7 @@ class ServerTest {
         } finally {
             IOUtil.closeQuietly(client);
 
-            future.cancel(true);
+            ThreadUtil.cancel(future);
 
             try {
                 future.get();

@@ -147,7 +147,7 @@ class ServerSetKeyResetTest {
         IOUtil.closeQuietly(client);
         IOUtil.closeQuietly(broadcastClient);
 
-        serverFuture.cancel(true);
+        ThreadUtil.cancel(serverFuture);
 
         try {
             serverFuture.get();
