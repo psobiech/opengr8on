@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -327,7 +328,11 @@ public final class FileUtil {
     }
 
     public static class TemporaryFileTracker {
+        private final ReentrantLock stacktracesLock = new ReentrantLock();
+
         private final Map<String, UnexpectedException> stacktraces = new HashMap<>();
+
+        private final ReentrantLock reachablePathsLock = new ReentrantLock();
 
         private final Map<Path, Boolean> reachablePaths = new WeakHashMap<>();
 
@@ -338,16 +343,20 @@ public final class FileUtil {
         public void log() {
             final Map<Path, UnexpectedException> unreachablePaths = new HashMap<>();
 
-            synchronized (stacktraces) {
+            stacktracesLock.lock();
+            try {
                 final Iterator<Entry<String, UnexpectedException>> iterator = stacktraces.entrySet().iterator();
                 while (iterator.hasNext()) {
                     final Entry<String, UnexpectedException> entry = iterator.next();
 
                     final Path path = Paths.get(entry.getKey());
-                    synchronized (reachablePaths) {
+                    reachablePathsLock.lock();
+                    try {
                         if (reachablePaths.containsKey(path)) {
                             continue;
                         }
+                    } finally {
+                        reachablePathsLock.unlock();
                     }
 
                     iterator.remove();
@@ -356,6 +365,8 @@ public final class FileUtil {
                         unreachablePaths.put(path, entry.getValue());
                     }
                 }
+            } finally {
+                stacktracesLock.unlock();
             }
 
             for (Entry<Path, UnexpectedException> entry : unreachablePaths.entrySet()) {
@@ -375,12 +386,18 @@ public final class FileUtil {
 
             final UnexpectedException stacktrace =
                 new UnexpectedException("Temporary Path went out of scope, and the file was not removed: " + absolutePathAsString);
-            synchronized (stacktraces) {
+            stacktracesLock.lock();
+            try {
                 stacktraces.put(absolutePathAsString, stacktrace);
+            } finally {
+                stacktracesLock.unlock();
             }
 
-            synchronized (reachablePaths) {
+            reachablePathsLock.lock();
+            try {
                 reachablePaths.put(absolutePath, Boolean.TRUE);
+            } finally {
+                reachablePathsLock.unlock();
             }
 
             return absolutePath;

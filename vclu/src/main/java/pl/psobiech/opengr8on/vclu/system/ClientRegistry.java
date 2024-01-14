@@ -60,8 +60,6 @@ public class ClientRegistry implements Closeable {
         final String registrationKey = createKey(ipAddress, port, sessionId);
         final CLUClient client = new CLUClient(localAddress, ipAddress, cipherKey, port);
 
-        clients.put(registrationKey, client);
-
         final Future<?> previousFuture = registrations.put(
             registrationKey,
             executor.scheduleAtFixedRate(
@@ -77,6 +75,7 @@ public class ClientRegistry implements Closeable {
         );
 
         ThreadUtil.cancel(previousFuture);
+        IOUtil.closeQuietly(clients.put(registrationKey, client));
     }
 
     public void destroy(Inet4Address ipAddress, int port, int sessionId) {

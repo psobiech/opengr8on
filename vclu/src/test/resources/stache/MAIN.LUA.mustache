@@ -6,13 +6,11 @@ collectgarbage("collect")
 require "om"
 collectgarbage("collect")
 
-
 function checkAlive()
-	return "00000000"
+	return "{{serialNumberHex}}"
 end
 
 SYSTEM.Init()
-
 
 repeat
 	SYSTEM.Loop()

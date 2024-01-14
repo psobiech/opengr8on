@@ -22,6 +22,7 @@ import java.net.Inet4Address;
 import java.util.Objects;
 
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.xml.interfaces.CLUClassNameEnum;
@@ -34,6 +35,8 @@ public class CLUDevice {
     private final String macAddress;
 
     private Inet4Address address;
+
+    private final int port;
 
     private final CipherTypeEnum cipherType;
 
@@ -61,16 +64,34 @@ public class CLUDevice {
     public CLUDevice(Long serialNumber, String macAddress, Inet4Address address, CipherTypeEnum cipherType, byte[] iv, byte[] privateKey) {
         this(
             Util.mapNullSafe(serialNumber, value -> CLUClassNameEnum.CLU.name() + value),
-            serialNumber, macAddress, address,
+            serialNumber, macAddress, address, Client.COMMAND_PORT,
             cipherType,
             iv, privateKey
         );
     }
 
-    public CLUDevice(String name, Long serialNumber, String macAddress, Inet4Address address, CipherTypeEnum cipherType, byte[] iv, byte[] privateKey) {
+    public CLUDevice(Long serialNumber, String macAddress, Inet4Address address, int port, CipherTypeEnum cipherType, byte[] iv, byte[] privateKey) {
+        this(
+            Util.mapNullSafe(serialNumber, value -> CLUClassNameEnum.CLU.name() + value),
+            serialNumber, macAddress, address, port,
+            cipherType,
+            iv, privateKey
+        );
+    }
+
+    public CLUDevice(
+        String name,
+        Long serialNumber,
+        String macAddress,
+        Inet4Address address,
+        int port,
+        CipherTypeEnum cipherType,
+        byte[] iv,
+        byte[] privateKey
+    ) {
         this(
             name,
-            serialNumber, macAddress, address,
+            serialNumber, macAddress, address, port,
             cipherType,
             iv, privateKey,
             (iv != null && privateKey != null) ? CipherKey.getInitialCipherKey(iv, privateKey) : null
@@ -79,7 +100,7 @@ public class CLUDevice {
 
     public CLUDevice(
         String name,
-        Long serialNumber, String macAddress, Inet4Address address,
+        Long serialNumber, String macAddress, Inet4Address address, int port,
         CipherTypeEnum cipherType,
         byte[] iv, byte[] privateKey,
         CipherKey cipherKey
@@ -89,6 +110,7 @@ public class CLUDevice {
         this.serialNumber = serialNumber;
         this.macAddress   = Util.mapNullSafe(macAddress, value -> value.replaceAll(":", ""));
         this.address      = address;
+        this.port         = port;
 
         this.cipherType = cipherType;
 
@@ -116,6 +138,10 @@ public class CLUDevice {
 
     public void setAddress(Inet4Address address) {
         this.address = address;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public CipherTypeEnum getCipherType() {

@@ -641,6 +641,10 @@ public class Server implements Closeable {
         }
     }
 
+    public CLUDevice getDevice() {
+        return cluDevice;
+    }
+
     @Override
     public void close() {
         ThreadUtil.close(executorService);

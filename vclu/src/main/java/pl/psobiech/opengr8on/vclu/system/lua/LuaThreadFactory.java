@@ -63,7 +63,7 @@ public class LuaThreadFactory {
 
         final VirtualSystem virtualSystem = new VirtualSystem(
             rootDirectory,
-            cluDevice.getAddress(),
+            cluDevice.getAddress(), cluDevice.getPort(),
             cipherKey
         );
 

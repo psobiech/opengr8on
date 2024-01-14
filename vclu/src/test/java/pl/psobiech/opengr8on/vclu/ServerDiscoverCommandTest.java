@@ -18,10 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.net.Inet4Address;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -31,208 +27,97 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import io.jstach.jstachio.JStachio;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.CLUFiles;
-import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
-import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
-import pl.psobiech.opengr8on.tftp.TFTPServer;
-import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.HexUtil;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.ResourceUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
-@Execution(ExecutionMode.CONCURRENT)
-class ServerDiscoverCommandTest {
-    private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
-
-    private static ExecutorService executor = Executors.newCachedThreadPool();
-
-    private static Path rootDirectory;
-
-    private static Path aDriveDirectory;
-
-    private static UDPSocket broadcastSocket;
-
-    private static UDPSocket socket;
-
-    private static TFTPServer tftpServer;
-
-    private static CipherKey projectCipherKey;
-
-    private static CLUDevice cluDevice;
-
-    private static Server server;
-
-    private static Future<Void> serverFuture;
-
-    private static CLUClient client;
-
-    private static CLUClient broadcastClient;
-
-    @BeforeAll
-    static void setUp() throws Exception {
-        executor = Executors.newCachedThreadPool();
-
-        rootDirectory   = FileUtil.temporaryDirectory();
-        aDriveDirectory = rootDirectory.resolve("a");
-
-        FileUtil.mkdir(aDriveDirectory);
-
-        broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
-        socket          = new UDPSocket(LOCALHOST, 0, false);
-        tftpServer      = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
-
-        projectCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
-
-        cluDevice = new CLUDevice(
-            HexUtil.asLong(RandomUtil.hexString(8)),
-            RandomUtil.hexString(12),
-            LOCALHOST,
-            CipherTypeEnum.PROJECT,
-            RandomUtil.bytes(16),
-            RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
-        );
-
-        FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
-        FileUtil.linkOrCopy(
-            ResourceUtil.classPath(CLUFiles.OM_LUA.getFileName()),
-            aDriveDirectory.resolve(CLUFiles.OM_LUA.getFileName())
-        );
-
-        final Path mainLuaPath = aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName());
-        Files.writeString(
-            mainLuaPath,
-            JStachio.render(new MainLuaTemplate(StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(cluDevice.getSerialNumber()), 8, '0'))))
-        );
-
-        server = new Server(
-            rootDirectory,
-            projectCipherKey,
-            cluDevice,
-            broadcastSocket, socket,
-            tftpServer
-        );
-
-        serverFuture = executor.submit(() -> {
-            Thread.sleep(100);
-            server.listen();
-
-            return null;
-        });
-        server.awaitInitialized();
-
-        client          = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, socket.getLocalPort());
-        broadcastClient = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, broadcastSocket.getLocalPort());
-    }
-
-    @AfterAll
-    static void tearDown() throws Exception {
-        ThreadUtil.close(executor);
-
-        IOUtil.closeQuietly(client);
-        IOUtil.closeQuietly(broadcastClient);
-
-        ThreadUtil.cancel(serverFuture);
-
-        try {
-            serverFuture.get();
-        } catch (Exception e) {
-            //
-        }
-
-        IOUtil.closeQuietly(server);
-
-        FileUtil.deleteRecursively(rootDirectory);
-    }
+class ServerDiscoverCommandTest extends BaseServerTest {
+    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     @Test
     void discovery() throws Exception {
-        final Future<Boolean> checkAliveFuture = executor.submit(() -> {
-            do {
-                final Optional<Boolean> aliveOptional = client.checkAlive();
-                if (!Thread.interrupted() && aliveOptional.isEmpty() || !aliveOptional.get()) {
-                    return false;
-                }
-            } while (!Thread.interrupted());
+        execute((projectCipherKey, server, client) -> {
+            final CLUDevice cluDevice = client.getCluDevice();
 
-            return true;
+            final Future<Boolean> checkAliveFuture = executor.submit(() -> {
+                do {
+                    final Optional<Boolean> aliveOptional = client.checkAlive();
+                    if (!Thread.interrupted() && aliveOptional.isEmpty() || !aliveOptional.get()) {
+                        return false;
+                    }
+                } while (!Thread.interrupted());
+
+                return true;
+            });
+
+            // should not accept CLU KEY
+            try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getPort())) {
+                final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+                assertFalse(aliveOptional.isPresent());
+            }
+
+            final List<CLUDevice> devices;
+            try (CLUClient broadcastClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getBroadcastPort())) {
+                devices = broadcastClient.discover(
+                                             projectCipherKey,
+                                             Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
+                                             Duration.ofMillis(2000L),
+                                             2
+                                         )
+                                         .toList();
+            }
+
+            assertEquals(1, devices.size());
+
+            ThreadUtil.cancel(checkAliveFuture);
+            try {
+                assertTrue(checkAliveFuture.get());
+            } catch (CancellationException e) {
+                // NOP
+            }
+
+            final CLUDevice discoveredDevice = devices.getFirst();
+            assertEquals(cluDevice.getName(), discoveredDevice.getName());
+            assertEquals(cluDevice.getSerialNumber(), discoveredDevice.getSerialNumber());
+            assertEquals(cluDevice.getAddress(), discoveredDevice.getAddress());
+            assertEquals(cluDevice.getMacAddress(), discoveredDevice.getMacAddress());
+            assertEquals(cluDevice.getCipherType(), discoveredDevice.getCipherType());
+            assertEquals(cluDevice.getPrivateKey(), discoveredDevice.getPrivateKey());
+            assertEquals(cluDevice.getCipherKey(), discoveredDevice.getCipherKey());
+
+            // should start accepting CLU KEY
+            try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getPort())) {
+                final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+                assertTrue(aliveOptional.isPresent());
+                assertTrue(aliveOptional.get());
+            }
+
+            // should still accept PROJECT KEY
+            try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, server.getPort())) {
+                final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+                assertTrue(aliveOptional.isPresent());
+                assertTrue(aliveOptional.get());
+            }
+
+            final Optional<Boolean> aliveAfterResetOptional = client.reset(Duration.ofMillis(5000L));
+            assertTrue(aliveAfterResetOptional.isPresent());
+            assertTrue(aliveAfterResetOptional.get());
+
+            // should stop accepting CLU KEY after reset
+            try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getPort())) {
+                final Optional<Boolean> aliveOptional = otherClient.checkAlive();
+
+                assertFalse(aliveOptional.isPresent());
+            }
         });
-
-        // should not accept CLU KEY
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
-            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
-
-            assertFalse(aliveOptional.isPresent());
-        }
-
-        final List<CLUDevice> devices = broadcastClient.discover(
-                                                           projectCipherKey,
-                                                           Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
-                                                           Duration.ofMillis(2000L),
-                                                           2
-                                                       )
-                                                       .toList();
-
-        assertEquals(1, devices.size());
-
-        ThreadUtil.cancel(checkAliveFuture);
-        try {
-            assertTrue(checkAliveFuture.get());
-        } catch (CancellationException e) {
-            // NOP
-        }
-
-        final CLUDevice discoveredDevice = devices.getFirst();
-        assertEquals(cluDevice.getName(), discoveredDevice.getName());
-        assertEquals(cluDevice.getSerialNumber(), discoveredDevice.getSerialNumber());
-        assertEquals(cluDevice.getAddress(), discoveredDevice.getAddress());
-        assertEquals(cluDevice.getMacAddress(), discoveredDevice.getMacAddress());
-        assertEquals(cluDevice.getCipherType(), discoveredDevice.getCipherType());
-        assertEquals(cluDevice.getPrivateKey(), discoveredDevice.getPrivateKey());
-        assertEquals(cluDevice.getCipherKey(), discoveredDevice.getCipherKey());
-
-        // should start accepting CLU KEY
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
-            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
-
-            assertTrue(aliveOptional.isPresent());
-            assertTrue(aliveOptional.get());
-        }
-
-        // should still accept PROJECT KEY
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, socket.getLocalPort())) {
-            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
-
-            assertTrue(aliveOptional.isPresent());
-            assertTrue(aliveOptional.get());
-        }
-
-        final Optional<Boolean> aliveAfterResetOptional = client.reset(Duration.ofMillis(5000L));
-        assertTrue(aliveAfterResetOptional.isPresent());
-        assertTrue(aliveAfterResetOptional.get());
-
-        // should stop accepting CLU KEY after reset
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, socket.getLocalPort())) {
-            final Optional<Boolean> aliveOptional = otherClient.checkAlive();
-
-            assertFalse(aliveOptional.isPresent());
-        }
     }
 }

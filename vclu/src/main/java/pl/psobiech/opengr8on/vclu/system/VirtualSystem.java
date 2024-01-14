@@ -65,6 +65,8 @@ public class VirtualSystem implements Closeable {
 
     private final Inet4Address localAddress;
 
+    private final int port;
+
     private final CipherKey cipherKey;
 
     private final Map<String, VirtualObject> objectsByName = new HashMap<>();
@@ -77,9 +79,10 @@ public class VirtualSystem implements Closeable {
 
     private VirtualCLU currentClu = null;
 
-    public VirtualSystem(Path rootDirectory, Inet4Address localAddress, CipherKey cipherKey) {
+    public VirtualSystem(Path rootDirectory, Inet4Address localAddress, int port, CipherKey cipherKey) {
         this.rootDirectory = rootDirectory;
         this.localAddress  = localAddress;
+        this.port          = port;
         this.cipherKey     = cipherKey;
 
         this.clientRegistry = new ClientRegistry(localAddress, cipherKey);
@@ -97,7 +100,7 @@ public class VirtualSystem implements Closeable {
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
             case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
-            case RemoteCLU.INDEX -> new RemoteCLU(name, ipAddress, localAddress, cipherKey);
+            case RemoteCLU.INDEX -> new RemoteCLU(name, ipAddress, localAddress, cipherKey, port);
             case Timer.INDEX -> new Timer(name);
             case Storage.INDEX -> new Storage(name, luaThread, rootDirectory.getParent().resolve("storage"));
             case MqttTopic.INDEX -> new MqttTopic(name, this);

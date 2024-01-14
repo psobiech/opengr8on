@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu;
+package pl.psobiech.opengr8on.vclu.main;
 
 import io.jstach.jstache.JStache;
 
-@JStache(path = "classpath:/MAIN.LUA.mustache")
+@JStache(path = "classpath:/stache/MAIN.LUA.mustache")
 public record MainLuaTemplate(String serialNumberHex) { }

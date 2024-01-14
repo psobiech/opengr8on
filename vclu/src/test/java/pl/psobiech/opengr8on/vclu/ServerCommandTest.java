@@ -20,158 +20,73 @@ package pl.psobiech.opengr8on.vclu;
 
 import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import io.jstach.jstachio.JStachio;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
-import pl.psobiech.opengr8on.tftp.TFTPServer;
-import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
-import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.ResourceUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
-import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.main.MainLuaTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
-@Execution(ExecutionMode.SAME_THREAD)
-class ServerCommandTest {
-    private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
-
-    private static ExecutorService executor = Executors.newCachedThreadPool();
-
-    private static Path rootDirectory;
-
-    private static Path aDriveDirectory;
-
-    private static UDPSocket broadcastSocket;
-
-    private static UDPSocket socket;
-
-    private static TFTPServer tftpServer;
+class ServerCommandTest extends BaseServerTest {
+    private static MockServer server;
 
     private static CipherKey projectCipherKey;
 
-    private static CLUDevice cluDevice;
-
-    private static Server server;
-
-    private static Future<Void> serverFuture;
-
-    private static CLUClient client;
-
-    private static CLUClient broadcastClient;
-
     @BeforeAll
     static void setUp() throws Exception {
-        executor = Executors.newCachedThreadPool();
-
-        rootDirectory   = FileUtil.temporaryDirectory();
-        aDriveDirectory = rootDirectory.resolve("a");
-
-        FileUtil.mkdir(aDriveDirectory);
-
-        broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
-        socket          = new UDPSocket(LOCALHOST, 0, false);
-        tftpServer      = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
-
+        final long serialNumber = HexUtil.asLong(RandomUtil.hexString(8));
         projectCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
 
-        cluDevice = new CLUDevice(
-            HexUtil.asLong(RandomUtil.hexString(8)),
-            RandomUtil.hexString(12),
-            LOCALHOST,
-            CipherTypeEnum.PROJECT,
-            RandomUtil.bytes(16),
-            RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
-        );
-
-        FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
-        FileUtil.linkOrCopy(
-            ResourceUtil.classPath(CLUFiles.OM_LUA.getFileName()),
-            aDriveDirectory.resolve(CLUFiles.OM_LUA.getFileName())
-        );
-
-        final Path mainLuaPath = aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName());
-        Files.writeString(
-            mainLuaPath,
-            JStachio.render(new MainLuaTemplate(StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(cluDevice.getSerialNumber()), 8, '0'))))
-        );
-
-        server = new Server(
-            rootDirectory,
+        server = new MockServer(
             projectCipherKey,
-            cluDevice,
-            broadcastSocket, socket,
-            tftpServer
+            new CLUDevice(
+                serialNumber,
+                RandomUtil.hexString(12),
+                MockServer.LOCALHOST,
+                CipherTypeEnum.PROJECT,
+                RandomUtil.bytes(16),
+                RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
+            )
         );
 
-        serverFuture = executor.submit(() -> {
-            Thread.sleep(100);
-            server.listen();
-
-            return null;
-        });
-        server.awaitInitialized();
-
-        client          = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, socket.getLocalPort());
-        broadcastClient = new CLUClient(LOCALHOST, cluDevice, projectCipherKey, LOCALHOST, broadcastSocket.getLocalPort());
+        server.start();
     }
 
     @AfterAll
     static void tearDown() throws Exception {
-        ThreadUtil.close(executor);
-
-        IOUtil.closeQuietly(client);
-        IOUtil.closeQuietly(broadcastClient);
-
-        ThreadUtil.cancel(serverFuture);
-
-        try {
-            serverFuture.get();
-        } catch (Exception e) {
-            //
-        }
-
         IOUtil.closeQuietly(server);
-
-        FileUtil.deleteRecursively(rootDirectory);
     }
 
     @Test
     void checkAlive() throws Exception {
-        final Optional<Boolean> aliveOptional = client.checkAlive();
+        try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
+            final Optional<Boolean> aliveOptional = client.checkAlive();
 
-        assertTrue(aliveOptional.isPresent());
-        assertTrue(aliveOptional.get());
+            assertTrue(aliveOptional.isPresent());
+            assertTrue(aliveOptional.get());
+        }
     }
 
     @Test
     void checkAliveWrongKey() throws Exception {
         // should not accept random KEY
         final CipherKey randomCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
-        try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, randomCipherKey, LOCALHOST, socket.getLocalPort())) {
+        try (CLUClient otherClient = new CLUClient(LOCALHOST, server.getServer().getDevice(), randomCipherKey, LOCALHOST, server.getPort())) {
             final Optional<Boolean> aliveOptional = otherClient.checkAlive();
 
             assertFalse(aliveOptional.isPresent());
@@ -180,35 +95,50 @@ class ServerCommandTest {
 
     @Test
     void setAddress() throws Exception {
-        final Optional<Inet4Address> addressOptional = client.setAddress(LOCALHOST, LOCALHOST);
-        assertTrue(addressOptional.isPresent());
-        assertEquals(LOCALHOST, addressOptional.get());
+        try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
+            final Optional<Inet4Address> addressOptional = client.setAddress(LOCALHOST, LOCALHOST);
+
+            assertTrue(addressOptional.isPresent());
+            assertEquals(LOCALHOST, addressOptional.get());
+        }
     }
 
     @Test
     void setAddressUsingBroadcast() throws Exception {
-        final Optional<Inet4Address> addressOptional = broadcastClient.setAddress(LOCALHOST, LOCALHOST);
-        assertTrue(addressOptional.isPresent());
-        assertEquals(LOCALHOST, addressOptional.get());
+        try (CLUClient broadcastClient = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getBroadcastPort())) {
+            final Optional<Inet4Address> addressOptional = broadcastClient.setAddress(LOCALHOST, LOCALHOST);
+
+            assertTrue(addressOptional.isPresent());
+            assertEquals(LOCALHOST, addressOptional.get());
+        }
     }
 
     @Test
     void setAddressUnsupported() throws Exception {
-        final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
-        assertFalse(addressOptional.isPresent());
+        try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
+            final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
+
+            assertFalse(addressOptional.isPresent());
+        }
     }
 
     @Test
     void startTFTPdServer() throws Exception {
-        final Optional<Boolean> responseOptional = client.startTFTPdServer();
-        assertTrue(responseOptional.isPresent());
-        assertTrue(responseOptional.get());
+        try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
+            final Optional<Boolean> responseOptional = client.startTFTPdServer();
+
+            assertTrue(responseOptional.isPresent());
+            assertTrue(responseOptional.get());
+        }
     }
 
     @Test
     void stopTFTPdServer() throws Exception {
-        final Optional<Boolean> responseOptional = client.stopTFTPdServer();
-        assertTrue(responseOptional.isPresent());
-        assertTrue(responseOptional.get());
+        try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
+            final Optional<Boolean> responseOptional = client.stopTFTPdServer();
+
+            assertTrue(responseOptional.isPresent());
+            assertTrue(responseOptional.get());
+        }
     }
 }

@@ -20,7 +20,6 @@ package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.net.Inet4Address;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -29,7 +28,6 @@ import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.ThreadUtil;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
@@ -38,10 +36,10 @@ public class RemoteCLU extends VirtualObject {
 
     private final CLUClient client;
 
-    public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey) {
+    public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(name);
 
-        this.client   = new CLUClient(localAddress, address, cipherKey);
+        this.client   = new CLUClient(localAddress, address, cipherKey, port);
 
         register(Methods.EXECUTE, args -> {
             final String script = args.checkjstring(1);
