@@ -37,12 +37,15 @@ public class RemoteCLU extends VirtualObject {
     private final CLUClient client;
 
     public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
-        super(name);
+        super(
+            name,
+            IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class
+        );
 
-        this.client   = new CLUClient(localAddress, address, cipherKey, port);
+        this.client = new CLUClient(localAddress, address, cipherKey, port);
 
-        register(Methods.EXECUTE, args -> {
-            final String script = args.checkjstring(1);
+        register(Methods.EXECUTE, arg1 -> {
+            final String script = arg1.checkjstring();
 
             if (script.startsWith(LuaScriptCommand.SET_VARS)) {
                 executor.submit(() -> client.execute(script));

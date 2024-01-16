@@ -18,15 +18,13 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
-import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.vclu.MockServer.ServerContext;
 
 class BaseServerTest {
@@ -35,18 +33,18 @@ class BaseServerTest {
     }
 
     void execute(Consumer<MockServer> prepare, ServerContext fn) throws Exception {
-        final long serialNumber = HexUtil.asLong(RandomUtil.hexString(8));
-        final CipherKey projectCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
+        final long serialNumber = Mocks.serialNumber();
+        final CipherKey projectCipherKey = Mocks.cipherKey();
 
         final MockServer server = new MockServer(
             projectCipherKey,
             new CLUDevice(
                 serialNumber,
-                RandomUtil.hexString(12),
+                Mocks.macAddress(),
                 MockServer.LOCALHOST,
                 CipherTypeEnum.PROJECT,
-                RandomUtil.bytes(16),
-                RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
+                Mocks.iv(),
+                Mocks.pin()
             )
         );
 

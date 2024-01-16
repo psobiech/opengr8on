@@ -18,16 +18,21 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
@@ -46,7 +51,10 @@ public class MqttTopic extends VirtualObject {
     private MqttClient mqttClient;
 
     public MqttTopic(String name, VirtualSystem virtualSystem) {
-        super(name);
+        super(
+            name,
+            Features.class, Methods.class, Events.class
+        );
 
         this.virtualSystem = virtualSystem;
 
@@ -114,16 +122,24 @@ public class MqttTopic extends VirtualObject {
             return LuaValue.FALSE;
         }
 
-        final String message = arg2.checkjstring();
         try {
-            mqttClient.publish(topic, message);
+            mqttClient.publish(topic, asPayload(arg2));
 
             return LuaValue.TRUE;
-        } catch (MqttException e) {
+        } catch (IOException | MqttException e) {
             LOGGER.error(e.getMessage(), e);
         }
 
         return LuaValue.FALSE;
+    }
+
+    private static byte[] asPayload(LuaValue luaValue) throws JsonProcessingException {
+        if (luaValue.istable()) {
+            return ObjectMapperFactory.JSON.writeValueAsBytes(LuaUtil.asObject(luaValue));
+        }
+
+        return luaValue.checkjstring()
+                       .getBytes(StandardCharsets.UTF_8);
     }
 
     public void onMessage(String topic, byte[] payload, Runnable acknowledged) {
@@ -151,7 +167,7 @@ public class MqttTopic extends VirtualObject {
         return topicFilters;
     }
 
-    private LuaValue onNextMessage(LuaValue arg1) {
+    private LuaValue onNextMessage() {
         clearTopic();
         clearMessage();
 
@@ -165,19 +181,32 @@ public class MqttTopic extends VirtualObject {
             final Entry<String, Message> entry = messageQueue.poll();
             if (entry != null) {
                 final String topic = entry.getKey();
+                final Message message = entry.getValue();
 
                 set(Features.TOPIC, LuaValue.valueOf(topic));
-
-                // TODO: JSON parsing into LUA tables
-                final Message message = entry.getValue();
-                final String payload = new String(message.payload());
-                set(Features.MESSAGE, LuaValue.valueOf(payload));
-
+                set(Features.MESSAGE, fromPayload(message));
                 if (triggerEvent(Events.MESSAGE)) {
                     message.acknowledgement()
                            .run();
                 }
             }
+        }
+    }
+
+    private static LuaValue fromPayload(Message message) {
+        final byte[] messagePayload = message.payload();
+
+        try {
+            final JsonNode jsonNode = ObjectMapperFactory.JSON.readTree(messagePayload);
+            if (jsonNode.isTextual()) {
+                return LuaValue.valueOf(jsonNode.asText());
+            }
+
+            return LuaUtil.fromJson(jsonNode);
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage(), e);
+
+            return LuaValue.valueOf(new String(messagePayload));
         }
     }
 

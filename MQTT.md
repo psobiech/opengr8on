@@ -19,32 +19,39 @@ cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/mqtt/key.pem # required on
 Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 if using client certificate authentication)
 Run VCLU and enable UseMQTT in OM.
 
-## MqttTopic
+## Examples
 
 Example publish:
 
 ```lua
-CLU1703856280877->myTopic->Publish("topic", "message")
+-- Publishes simple text message
+CLU0->myTopic->Publish("topic", "message")
+
+-- Publishes JSON message: { "data": { "value": 1 } }
+CLU0->myTopic->Publish("topic", { data = { value = 1 } })
 ```
 
 Example onInit script with auto subscription:
 
 ```lua
 -- subscribe to the topic (supports MQTT topic patterns)
-CLU1703856280877->myTopic->Subscribe("zigbee2mqtt/#")
+CLU0->myTopic->Subscribe("zigbee2mqtt/#")
 ```
 
 Example onMessage script:
 
 ```lua
--- read current message message
-CLU1703856280877->AddToLog(CLU1703856280877->myTopic->Topic .. ": " .. CLU1703856280877->myTopic->Message)
+-- read current message
+logDebug(CLU0->myTopic->Topic, ": ", CLU0->myTopic->Message)
+
+-- read current message `jsonKey` value
+logDebug(CLU0->myTopic->Topic, ": ", CLU0->myTopic->Message["jsonKey"])
 
 -- publish the same message to some other topic
-CLU1703856280877->myTopic->Publish("innytopic", CLU1703856280877->myTopic->Message)
+CLU0->myTopic->Publish("innytopic", CLU0->myTopic->Message)
 
 -- unblock next message in the queue
-CLU1703856280877->myTopic->NextMessage()
+CLU0->myTopic->NextMessage()
 ```
 
 # Configure MQTT broker
@@ -117,14 +124,11 @@ cp ./easy-rsa/easyrsa3/pki/private/localhost.key ./mqtt/config/certs/
 persistence true
 persistence_location /mosquitto/data/
 log_dest stdout
-
 per_listener_settings true
-
 # Plain MQTT
 #listener 1883
 #allow_anonymous false
 #password_file /mosquitto/config/passwd
-
 # MQTT over TLS/SSL
 listener 8883
 cafile /mosquitto/config/certs/ca.crt
@@ -135,7 +139,6 @@ require_certificate false
 #password_file /mosquitto/config/passwd
 tls_version tlsv1.2
 ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
-
 # WebSockets over TLS/SSL
 listener 9883
 protocol websockets
@@ -155,21 +158,21 @@ ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
 version: '3.8'
 
 services:
-    mosquitto:
-        image: eclipse-mosquitto:2
-        ports:
-            - 8883:8883
-            - 9883:9883
-        volumes:
-            - ./config:/mosquitto/config
-            - ./data:/mosquitto/data
-            - ./log:/mosquitto/log
-        networks:
-            - mosquitto
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - 8883:8883
+      - 9883:9883
+    volumes:
+      - ./config:/mosquitto/config
+      - ./data:/mosquitto/data
+      - ./log:/mosquitto/log
+    networks:
+      - mosquitto
 networks:
-    mosquitto:
-        name: mosquitto
-        driver: bridge
+  mosquitto:
+    name: mosquitto
+    driver: bridge
 ```
 
 ## Run MQTT broker

@@ -4,7 +4,6 @@
 ![jacoco.svg](badges%2Fjacoco.svg)
 [![AGPLv3 License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
-
 # Virtual CLU
 
 As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager is programmed, before buying the device itself.
@@ -32,13 +31,48 @@ TODOs:
 
 ### MqttTopic (and mosquitto configuration)
 
+Implemented: Yes
+
+* Automatically converts JSON to Lua Tables
+
 [MQTT.md](MQTT.md)
 
 ### Timer
 
+Implemented: Yes
+
 ### HttpRequest
 
+Implemented: Yes
+
+* Automatically converts JSON/XML/FROM_DATA to Lua Tables, depending on Content-Type headers
+
+### HttpListener
+
+Implemented: No
+
+### Calendar
+
+Implemented: No
+
+### Scheduler
+
+Implemented: No
+
+### SunriseSunsetCalendar
+
+Implemented: No
+
+### PresenceSensor
+
+Implemented: No
+
+### EventScheduler
+
+Implemented: No
+
 ## TFTP
+
 [README.md](tftp%2FREADME.md)
 
 ## Example Client

@@ -134,6 +134,20 @@ public final class RandomUtil {
     }
 
     /**
+     * @return random int (weak rng)
+     */
+    public static int integer() {
+        return random(false).nextInt();
+    }
+
+    /**
+     * @return random int (weak rng)
+     */
+    public static long longInteger() {
+        return random(false).nextLong();
+    }
+
+    /**
      * @return random array of bytes
      */
     public static byte[] bytes(Random random, int size) {

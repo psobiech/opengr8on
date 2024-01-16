@@ -47,6 +47,6 @@ public class TFTPClientReceive extends TFTPReceivingTransfer {
     public void execute(TFTP tftp) throws IOException, TFTPPacketException {
         tftp.send(tftpPacket);
 
-        incomingTransfer(tftp, false, tftpPacket.getMode(), tftpPacket.getAddress(), tftpPacket.getPort(), file);
+        incomingTransfer(tftp, false, tftpPacket.getMode(), tftpPacket.getAddress(), tftpPacket.getPort(), tftpPacket, file);
     }
 }

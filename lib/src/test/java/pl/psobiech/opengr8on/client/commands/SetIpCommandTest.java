@@ -36,7 +36,7 @@ class SetIpCommandTest {
     @Test
     void correctRequest() {
         final Request input = SetIpCommand.request(
-            HexUtil.asLong(RandomUtil.hexString(8)), Mocks.ipAddress(), Mocks.ipAddress()
+            Mocks.serialNumber(), Mocks.ipAddress(), Mocks.ipAddress()
         );
 
         //
@@ -52,7 +52,7 @@ class SetIpCommandTest {
     @Test
     void correctResponse() {
         final Response input = SetIpCommand.response(
-            HexUtil.asLong(RandomUtil.hexString(8)), Mocks.ipAddress()
+            Mocks.serialNumber(), Mocks.ipAddress()
         );
 
         //

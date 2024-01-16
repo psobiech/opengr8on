@@ -42,6 +42,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.RandomUtil;
 
 /**
  * Cipher Key
@@ -68,6 +69,10 @@ public class CipherKey {
     private final SecretKeySpec keySpecification;
 
     private final IvParameterSpec ivParameterSpecification;
+
+    public CipherKey() {
+        this(RandomUtil.bytes(Command.KEY_BYTES), RandomUtil.bytes(Command.IV_BYTES));
+    }
 
     public CipherKey(byte[] keyAsBytes, byte[] ivAsBytes) {
         this(new SecretKeySpec(keyAsBytes, ALGORITHM), new IvParameterSpec(ivAsBytes));

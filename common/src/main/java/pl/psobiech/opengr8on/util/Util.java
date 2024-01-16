@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -142,5 +143,37 @@ public final class Util {
         return valueList.stream()
                         .map(valueAsString -> Enum.valueOf(enumClass, valueAsString))
                         .collect(Collectors.toCollection(() -> EnumSet.noneOf(enumClass)));
+    }
+
+    public static <T> String stringifyList(List<T> list, String delimiter, Function<T, String> toString) {
+        final StringBuilder sb = new StringBuilder();
+        for (T value : list) {
+            if (!sb.isEmpty()) {
+                sb.append(delimiter);
+            }
+
+            sb.append(toString.apply(value));
+        }
+
+        return sb.toString();
+    }
+
+    public static <V1, V2> String stringifyMap(
+        Map<V1, V2> map,
+        String delimiter, String entryDelimiter,
+        Function<V1, String> toStringKey, Function<V2, String> toStringValue
+    ) {
+        final StringBuilder sb = new StringBuilder();
+        for (Entry<V1, V2> entry : map.entrySet()) {
+            if (!sb.isEmpty()) {
+                sb.append(delimiter);
+            }
+
+            sb.append(toStringKey.apply(entry.getKey()))
+              .append(entryDelimiter)
+              .append(toStringValue.apply(entry.getValue()));
+        }
+
+        return sb.toString();
     }
 }

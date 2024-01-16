@@ -19,8 +19,8 @@
 package pl.psobiech.opengr8on.client;
 
 import java.net.Inet4Address;
+import java.nio.charset.StandardCharsets;
 
-import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 
@@ -41,6 +41,14 @@ public class Mocks {
         return RandomUtil.bytes(16);
     }
 
+    public static Inet4Address localIpAddress() {
+        final int ipAsNumber = IPv4AddressUtil.getIPv4AsNumber("127.0.0.1");
+
+        return IPv4AddressUtil.parseIPv4(
+            ipAsNumber + RandomUtil.random(false).nextInt(255)
+        );
+    }
+
     public static Inet4Address ipAddress() {
         final int ipAsNumber = IPv4AddressUtil.getIPv4AsNumber("192.168.31.1");
 
@@ -49,11 +57,19 @@ public class Mocks {
         );
     }
 
-    public static Long serialNumber() {
-        return HexUtil.asLong(RandomUtil.hexString(8));
+    public static long serialNumber() {
+        return RandomUtil.longInteger();
     }
 
-    public static Integer sessionId() {
-        return HexUtil.asInt(RandomUtil.hexString(8));
+    public static int sessionId() {
+        return RandomUtil.integer();
+    }
+
+    public static String macAddress() {
+        return RandomUtil.hexString(12);
+    }
+
+    public static byte[] pin() {
+        return RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII);
     }
 }

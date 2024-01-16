@@ -32,16 +32,18 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaSupplier;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class VirtualObject implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VirtualObject.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     protected final String name;
 
     private final Map<Integer, LuaValue> featureValues = new Hashtable<>();
 
-    private final Map<Integer, LuaOneArgFunction> featureFunctions = new Hashtable<>();
+    private final Map<Integer, BaseLuaFunction> featureFunctions = new Hashtable<>();
 
     private final Map<Integer, BaseLuaFunction> methodFunctions = new Hashtable<>();
 
@@ -49,9 +51,31 @@ public class VirtualObject implements Closeable {
 
     protected final ScheduledExecutorService executor;
 
+    private final Class<? extends Enum<? extends IFeature>> featureClass;
+
+    private final Class<? extends Enum<? extends IMethod>> methodClass;
+
+    private final Class<? extends Enum<? extends IEvent>> eventClass;
+
     public VirtualObject(String name) {
-        this.name     = name;
+        this(
+            name,
+            IFeature.EMPTY.class, IMethod.EMPTY.class, IEvent.EMPTY.class
+        );
+    }
+
+    public VirtualObject(
+        String name,
+        Class<? extends Enum<? extends IFeature>> featureClass,
+        Class<? extends Enum<? extends IMethod>> methodClass,
+        Class<? extends Enum<? extends IEvent>> eventClass
+    ) {
+        this.name = name;
         this.executor = ThreadUtil.virtualScheduler(name);
+
+        this.featureClass = featureClass;
+        this.methodClass  = methodClass;
+        this.eventClass   = eventClass;
     }
 
     public String getName() {
@@ -77,11 +101,33 @@ public class VirtualObject implements Closeable {
         ThreadUtil.close(executor);
     }
 
-    public void register(IFeature feature, LuaOneArgFunction fn) {
-        final int index = feature.index();
-        featureFunctions.put(index, fn);
+    public void register(IFeature feature, LuaSupplier fn) {
+        registerFeature(feature.index(), fn);
+    }
 
-        setValue(feature, fn.call(LuaValue.NIL));
+    public void register(IFeature feature, LuaOneArgFunction fn) {
+        registerFeature(feature.index(), fn);
+    }
+
+    private void registerFeature(int index, BaseLuaFunction fn) {
+        final BaseLuaFunction proxyFn = (a) -> {
+            final LuaValue returnValue = fn.invoke(a);
+
+            LOGGER.debug(
+                "{}.get({}) = {}",
+                name,
+                IFeature.byIndex(index, featureClass)
+                        .map(Enum::name)
+                        .orElseGet(() -> String.valueOf(index)),
+                LuaUtil.stringify(returnValue)
+            );
+
+            return returnValue;
+        };
+
+        featureFunctions.put(index, proxyFn);
+
+        setValue(index, proxyFn.invoke(LuaValue.NIL));
     }
 
     public LuaValue get(IFeature feature) {
@@ -89,12 +135,12 @@ public class VirtualObject implements Closeable {
     }
 
     public LuaValue get(int index) {
-        final LuaOneArgFunction luaFunction = featureFunctions.get(index);
+        final BaseLuaFunction luaFunction = featureFunctions.get(index);
         if (luaFunction == null) {
             return getValue(index);
         }
 
-        final LuaValue returnValue = luaFunction.call(LuaValue.NIL);
+        final LuaValue returnValue = luaFunction.invoke(LuaValue.NIL);
         setValue(index, returnValue);
 
         return returnValue;
@@ -117,14 +163,14 @@ public class VirtualObject implements Closeable {
     }
 
     public void set(int index, LuaValue luaValue) {
-        final LuaOneArgFunction luaFunction = featureFunctions.get(index);
+        final BaseLuaFunction luaFunction = featureFunctions.get(index);
         if (luaFunction == null) {
             setValue(index, luaValue);
 
             return;
         }
 
-        setValue(index, luaFunction.call(luaValue));
+        setValue(index, luaFunction.invoke(luaValue));
     }
 
     public void setValue(IFeature feature, LuaValue luaValue) {
@@ -132,15 +178,32 @@ public class VirtualObject implements Closeable {
     }
 
     public void setValue(int index, LuaValue luaValue) {
+        LOGGER.debug(
+            "{}.set({}, {})",
+            name,
+            IFeature.byIndex(index, featureClass)
+                    .map(Enum::name)
+                    .orElseGet(() -> String.valueOf(index)),
+            LuaUtil.stringify(luaValue)
+        );
+
         featureValues.put(index, luaValue);
     }
 
+    public void register(IMethod feature, LuaSupplier fn) {
+        registerMethod(feature.index(), fn);
+    }
+
     public void register(IMethod feature, LuaOneArgFunction fn) {
-        methodFunctions.put(feature.index(), fn);
+        registerMethod(feature.index(), fn);
     }
 
     public void register(IMethod feature, LuaTwoArgFunction fn) {
-        methodFunctions.put(feature.index(), fn);
+        registerMethod(feature.index(), fn);
+    }
+
+    private void registerMethod(int index, BaseLuaFunction fn) {
+        methodFunctions.put(index, fn);
     }
 
     public LuaValue execute(IMethod method, Varargs luaValue) {
@@ -150,10 +213,26 @@ public class VirtualObject implements Closeable {
     public LuaValue execute(int index, Varargs args) {
         final BaseLuaFunction luaFunction = methodFunctions.get(index);
         if (luaFunction == null) {
-            LOGGER.warn("Not implemented: " + name + ":execute(" + index + ")");
+            LOGGER.warn(
+                "{}.execute({}, {}) -- NOT IMPLEMENTED",
+                name,
+                IMethod.byIndex(index, methodClass)
+                       .map(Enum::name)
+                       .orElseGet(() -> String.valueOf(index)),
+                LuaUtil.stringifyRaw(args)
+            );
 
             return LuaValue.NIL;
         }
+
+        LOGGER.debug(
+            "{}.execute({}, {})",
+            name,
+            IMethod.byIndex(index, methodClass)
+                   .map(Enum::name)
+                   .orElseGet(() -> String.valueOf(index)),
+            LuaUtil.stringifyRaw(args)
+        );
 
         return luaFunction.invoke(args);
     }
@@ -162,12 +241,14 @@ public class VirtualObject implements Closeable {
         final int address = event.address();
         final LuaFunction luaFunction = eventFunctions.get(address);
         if (luaFunction == null) {
-            LOGGER.trace("Not registered: " + name + ":addEvent(" + address + ")");
+            LOGGER.trace("{}.triggerEvent({}) -- NOT REGISTERED", name, event.name());
 
             return false;
         }
 
         try {
+            LOGGER.debug("{}.triggerEvent({})", name, event.name());
+
             executor.submit(() -> luaFunction.call());
 
             return true;
@@ -179,7 +260,7 @@ public class VirtualObject implements Closeable {
     }
 
     public void addEventHandler(IEvent event, LuaFunction luaFunction) {
-        eventFunctions.put(event.address(), luaFunction);
+        addEventHandler(event.address(), luaFunction);
     }
 
     public void addEventHandler(int address, LuaFunction luaFunction) {
@@ -188,6 +269,8 @@ public class VirtualObject implements Closeable {
 
     public interface IFeature {
         int index();
+
+        String name();
 
         static <E extends Enum<? extends IFeature>> Optional<E> byIndex(int index, Class<E> clazz) {
             for (E enumConstant : clazz.getEnumConstants()) {
@@ -199,10 +282,22 @@ public class VirtualObject implements Closeable {
 
             return Optional.empty();
         }
+
+        enum EMPTY implements IFeature {
+            //
+            ;
+
+            @Override
+            public int index() {
+                return 0;
+            }
+        }
     }
 
     public interface IMethod {
         int index();
+
+        String name();
 
         static <E extends Enum<? extends IMethod>> Optional<E> byIndex(int index, Class<E> clazz) {
             for (E enumConstant : clazz.getEnumConstants()) {
@@ -214,10 +309,22 @@ public class VirtualObject implements Closeable {
 
             return Optional.empty();
         }
+
+        enum EMPTY implements IMethod {
+            //
+            ;
+
+            @Override
+            public int index() {
+                return 0;
+            }
+        }
     }
 
     public interface IEvent {
         int address();
+
+        String name();
 
         static <E extends Enum<? extends IEvent>> Optional<E> byAddress(int address, Class<E> clazz) {
             for (E enumConstant : clazz.getEnumConstants()) {
@@ -228,6 +335,16 @@ public class VirtualObject implements Closeable {
             }
 
             return Optional.empty();
+        }
+
+        enum EMPTY implements IEvent {
+            //
+            ;
+
+            @Override
+            public int address() {
+                return 0;
+            }
         }
     }
 }

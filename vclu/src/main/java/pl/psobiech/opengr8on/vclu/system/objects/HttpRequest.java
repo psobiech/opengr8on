@@ -26,21 +26,25 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.luaj.vm2.LuaTable;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import static org.apache.commons.lang3.StringUtils.upperCase;
@@ -54,18 +58,23 @@ public class HttpRequest extends VirtualObject {
 
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
 
+    private static final String HEADER_ACCEPT = "Accept";
+
     private static final double MAXIMUM_RESPONSE_LENGTH = 10 * 1024; // 10kB
 
     private static final int CONNECT_TIMEOUT = 4000;
 
     private HttpURLConnection connection;
 
-    private ScheduledFuture<?> responseFuture;
+    private Future<?> responseFuture;
 
     public HttpRequest(String name) {
-        super(name);
+        super(
+            name,
+            Features.class, Methods.class, Events.class
+        );
 
-        register(Features.ACTIVE, arg1 ->
+        register(Features.ACTIVE, () ->
             LuaValue.valueOf(responseFuture != null && !responseFuture.isDone())
         );
 
@@ -74,70 +83,109 @@ public class HttpRequest extends VirtualObject {
         register(Methods.CLEAR, this::onClear);
     }
 
-    private LuaValue onSendRequest(LuaValue arg1) {
+    private LuaValue onSendRequest() {
+        onAbortRequest();
+
         final HttpURLConnection newConnection = createConnection();
 
+        final HttpType requestType = HttpType.values()[get(Features.REQUEST_TYPE).checkint()];
+        final LuaValue requestBodyValue = get(Features.REQUEST_BODY);
+
         this.connection = newConnection;
-        this.responseFuture = executor.schedule(
+        this.responseFuture = executor.submit(
             () -> {
                 try {
+                    final String requestBodyAsString = stringifyBody(requestType, requestBodyValue);
+
+                    newConnection.connect();
+                    if (newConnection.getDoOutput() && requestBodyAsString != null) {
+                        sendString(requestBodyAsString, newConnection);
+                    }
+
+                    triggerEvent(Events.REQUEST_SENT);
+
                     final int statusCode = newConnection.getResponseCode();
+
+                    final HttpType responseType = Optional.ofNullable(newConnection.getHeaderField(HEADER_CONTENT_TYPE))
+                                                          .map(HttpType::ofContentType)
+                                                          .orElse(HttpType.OTHER);
+
+                    set(Features.RESPONSE_STATUS, LuaValue.valueOf(statusCode));
+                    set(Features.RESPONSE_TYPE, LuaValue.valueOf(responseType.ordinal()));
+                    set(Features.RESPONSE_HEADERS, LuaUtil.fromObject(getHeaders(newConnection)));
+
                     final long contentLength = newConnection.getContentLengthLong();
                     if (contentLength > MAXIMUM_RESPONSE_LENGTH) {
                         throw new UnexpectedException("Response was too large: " + contentLength);
                     }
-
-                    final Map<String, List<String>> responseHeaders = newConnection.getHeaderFields();
-                    final HttpType responseType = Optional.ofNullable(responseHeaders.get(HEADER_CONTENT_TYPE))
-                                                          .filter(strings -> !strings.isEmpty())
-                                                          .map(List::getFirst)
-                                                          .map(HttpType::ofContentType)
-                                                          .orElse(HttpType.OTHER);
 
                     final String responseBody;
                     try (InputStream inputStream = new BufferedInputStream(newConnection.getInputStream())) {
                         responseBody = new String(inputStream.readAllBytes());
                     }
 
-                    set(Features.RESPONSE_STATUS, LuaValue.valueOf(statusCode));
-                    set(Features.RESPONSE_TYPE, LuaValue.valueOf(responseType.ordinal()));
-                    set(Features.RESPONSE_HEADERS, asTable(responseHeaders));
-
-                    // TODO: deserialize xml/json to tables
-                    set(Features.RESPONSE_BODY, LuaValue.valueOf(responseBody));
+                    set(
+                        Features.RESPONSE_BODY,
+                        parseResponseBody(responseType, responseBody)
+                    );
 
                     triggerEvent(Events.RESPONSE);
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage(), e);
-                }
-            },
-            0, TimeUnit.SECONDS
-        );
 
-        triggerEvent(Events.REQUEST_SENT);
+                    clear(Features.RESPONSE_STATUS);
+                    clear(Features.RESPONSE_HEADERS);
+                    clear(Features.RESPONSE_BODY);
+                }
+            }
+        );
 
         return LuaValue.NIL;
     }
 
-    private static LuaTable asTable(Map<String, List<String>> responseHeaders) {
-        final LuaTable luaTable = LuaTable.tableOf();
+    private String stringifyBody(HttpType requestType, LuaValue requestBodyValue) throws JsonProcessingException {
+        return switch (requestType) {
+            case NONE -> null;
+            case JSON -> ObjectMapperFactory.JSON.writeValueAsString(LuaUtil.asObject(requestBodyValue));
+            case XML -> ObjectMapperFactory.XML.writeValueAsString(LuaUtil.asObject(requestBodyValue));
+            case FORM_DATA -> urlEncode(LuaUtil.tableStringString(requestBodyValue));
+            default -> requestBodyValue.checkjstring();
+        };
+    }
 
-        for (Entry<String, List<String>> entry : responseHeaders.entrySet()) {
-            final String key = entry.getKey();
-            if (key == null) {
-                continue;
-            }
+    private static void sendString(String value, HttpURLConnection newConnection) throws IOException {
+        try (OutputStream outputStream = new BufferedOutputStream(newConnection.getOutputStream())) {
+            outputStream.write(
+                value
+                    .getBytes(StandardCharsets.UTF_8)
+            );
+        }
+    }
 
+    private static LuaValue parseResponseBody(HttpType responseType, String responseBody) throws JsonProcessingException {
+        return switch (responseType) {
+            case NONE -> LuaValue.NIL;
+            case JSON -> LuaUtil.fromJson(ObjectMapperFactory.JSON.readTree(responseBody));
+            case XML -> LuaUtil.fromJson(ObjectMapperFactory.XML.readTree(responseBody));
+            case FORM_DATA -> LuaUtil.fromObject(urlDecode(responseBody));
+            default -> LuaValue.valueOf(responseBody);
+        };
+    }
+
+    private static Map<String, String> getHeaders(HttpURLConnection newConnection) {
+        final Map<String, String> headers = new HashMap<>();
+        for (Entry<String, List<String>> entry : newConnection.getHeaderFields().entrySet()) {
             final List<String> values = entry.getValue();
             if (values.isEmpty()) {
                 continue;
             }
 
             final String value = values.getFirst();
-            luaTable.set(key, value);
+
+            headers.put(entry.getKey(), value);
         }
 
-        return luaTable;
+        return headers;
     }
 
     private HttpURLConnection createConnection() {
@@ -162,9 +210,10 @@ public class HttpRequest extends VirtualObject {
 
             newConnection.setRequestMethod(requestMethod);
 
-            final HttpType requestType = HttpType.values()[get(Features.REQUEST_TYPE).checkint()];
-            if (requestType != HttpType.NONE) {
-                newConnection.setRequestProperty(HEADER_CONTENT_TYPE, requestType.contentType());
+            final HttpType responseType = HttpType.values()[get(Features.RESPONSE_TYPE).checkint()];
+            final String responseContentType = responseType.contentType();
+            if (responseContentType != null) {
+                newConnection.setRequestProperty(HEADER_ACCEPT, responseContentType);
             }
 
             final Map<String, String> headers = LuaUtil.tableStringString(get(Features.REQUEST_HEADERS));
@@ -172,13 +221,10 @@ public class HttpRequest extends VirtualObject {
                 newConnection.setRequestProperty(entry.getKey(), entry.getValue());
             }
 
-            newConnection.connect();
-            if (newConnection.getDoOutput()) {
-                // TODO: maybe serialize to json/xml when we detect table
-                final String requestBody = get(Features.REQUEST_BODY).checkjstring();
-                try (OutputStream outputStream = new BufferedOutputStream(newConnection.getOutputStream())) {
-                    outputStream.write(requestBody.getBytes(StandardCharsets.UTF_8));
-                }
+            final HttpType requestType = HttpType.values()[get(Features.REQUEST_TYPE).checkint()];
+            final String requestContentType = requestType.contentType();
+            if (requestContentType != null) {
+                newConnection.setRequestProperty(HEADER_CONTENT_TYPE, requestContentType);
             }
 
             return newConnection;
@@ -187,34 +233,62 @@ public class HttpRequest extends VirtualObject {
         }
     }
 
+    private static Map<String, String> urlDecode(String queryParameters) {
+        if (queryParameters.indexOf(0) == '?') {
+            queryParameters = queryParameters.substring(1);
+        }
+
+        // TODO: multi-value/array support? for now last one wins
+        final Map<String, String> map = new HashMap<>();
+        final String[] parts = queryParameters.split("&");
+        for (String part : parts) {
+            if (part == null || part.isEmpty()) {
+                continue;
+            }
+
+            final String[] keyValue = part.split("=", 2);
+            if (keyValue.length == 0) {
+                map.put(urlDecodeComponent(part), "");
+
+                continue;
+            }
+
+            if (keyValue.length == 1) {
+                map.put(urlDecodeComponent(keyValue[0]), "");
+
+                continue;
+            }
+
+            final String key = keyValue[0];
+            final String value = keyValue[1];
+
+            map.put(
+                urlDecodeComponent(key),
+                urlDecodeComponent(value)
+            );
+        }
+
+        return map;
+    }
+
+    private static String urlDecodeComponent(String key) {
+        return URLDecoder.decode(key, StandardCharsets.UTF_8);
+    }
+
     private String getQueryParametersString() {
         final LuaValue luaValue = get(Features.QUERY);
-        if (luaValue == null || luaValue.isnil()) {
+        if (LuaUtil.isNil(luaValue)) {
             return "";
         }
 
+        final String queryString;
         if (luaValue.istable()) {
-            final Map<String, String> table = LuaUtil.tableStringString(luaValue);
-
-            final StringBuilder sb = new StringBuilder();
-            for (Entry<String, String> entry : table.entrySet()) {
-                if (!sb.isEmpty()) {
-                    sb.append("&");
-                }
-
-                sb.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8))
-                  .append("=")
-                  .append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
-            }
-
-            if (sb.isEmpty()) {
-                return "";
-            }
-
-            return "?" + sb;
+            queryString = urlEncode(LuaUtil.tableStringString(luaValue));
+        } else {
+            // assume its already url encoded
+            queryString = luaValue.checkjstring();
         }
 
-        final String queryString = luaValue.checkjstring();
         if (queryString.isEmpty()) {
             return "";
         }
@@ -222,19 +296,32 @@ public class HttpRequest extends VirtualObject {
         return "?" + queryString;
     }
 
-    private LuaValue onAbortRequest(LuaValue arg1) {
+    private static String urlEncode(Map<String, String> map) {
+        return Util.stringifyMap(
+            map,
+            "&", "=",
+            HttpRequest::urlEncodeComponent,
+            HttpRequest::urlEncodeComponent
+        );
+    }
+
+    private static String urlEncodeComponent(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private LuaValue onAbortRequest() {
+        ThreadUtil.cancel(responseFuture);
         if (connection != null) {
             connection.disconnect();
-            connection = null;
         }
 
-        ThreadUtil.cancel(responseFuture);
         responseFuture = null;
+        connection     = null;
 
         return LuaValue.NIL;
     }
 
-    private LuaValue onClear(LuaValue arg1) {
+    private LuaValue onClear() {
         // TODO: which exactly features to clear?
         clear(Features.REQUEST_BODY);
         clear(Features.REQUEST_HEADERS);
@@ -263,7 +350,7 @@ public class HttpRequest extends VirtualObject {
         TEXT("text/plain"),
         JSON("application/json"),
         XML("application/xml"),
-        FORM_DATA("multipart/form-data"),
+        FORM_DATA("application/x-www-form-urlencoded"),
         OTHER(null),
         //
         ;

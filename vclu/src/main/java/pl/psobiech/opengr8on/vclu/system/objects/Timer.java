@@ -33,19 +33,22 @@ public class Timer extends VirtualObject {
     private volatile State state = State.STOPPED;
 
     public Timer(String name) {
-        super(name);
+        super(
+            name,
+            Features.class, Methods.class, Events.class
+        );
 
         set(Features.TIME, LuaValue.ZERO);
         set(Features.MODE, LuaValue.ZERO);
-        register(Features.STATE, arg1 -> LuaValue.valueOf(state.ordinal()));
-        register(Features.VALUE, arg1 -> LuaValue.valueOf(TimeUnit.NANOSECONDS.toMillis(counter.get())));
+        register(Features.STATE, () -> LuaValue.valueOf(state.ordinal()));
+        register(Features.VALUE, () -> LuaValue.valueOf(TimeUnit.NANOSECONDS.toMillis(counter.get())));
 
         register(Methods.START, this::onStart);
         register(Methods.STOP, this::onStop);
         register(Methods.PAUSE, this::onPause);
     }
 
-    private LuaValue onStart(LuaValue luaValue) {
+    private LuaValue onStart() {
         if (state != State.PAUSED) {
             counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
         }
@@ -58,7 +61,7 @@ public class Timer extends VirtualObject {
         return LuaValue.NIL;
     }
 
-    private LuaValue onStop(LuaValue luaValue) {
+    private LuaValue onStop() {
         state = State.STOPPED;
 
         counter.set(0);
@@ -67,7 +70,7 @@ public class Timer extends VirtualObject {
         return LuaValue.NIL;
     }
 
-    private LuaValue onPause(LuaValue luaValue) {
+    private LuaValue onPause() {
         state = State.PAUSED;
 
         triggerEvent(Events.PAUSE);
@@ -87,13 +90,30 @@ public class Timer extends VirtualObject {
 
         final long value = counter.addAndGet(-delta);
         if (value <= 0) {
-            if (get(Features.MODE).checkint() == 1) {
+            if (get(Features.MODE).checkint() == Mode.INTERVAL.mode()) {
                 counter.addAndGet(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
             } else {
-                onStop(LuaValue.NIL);
+                onStop();
             }
 
             triggerEvent(Events.TIMER);
+        }
+    }
+
+    private enum Mode {
+        COUNT_DOWN(0),
+        INTERVAL(1),
+        //
+        ;
+
+        private final int mode;
+
+        Mode(int mode) {
+            this.mode = mode;
+        }
+
+        public int mode() {
+            return mode;
         }
     }
 

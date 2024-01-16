@@ -20,7 +20,6 @@ package pl.psobiech.opengr8on.tftp.packets;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;

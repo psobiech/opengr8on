@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.vclu.system.clu;
+package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.io.Closeable;
 import java.lang.management.ManagementFactory;
@@ -28,7 +28,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.luaj.vm2.LuaInteger;
@@ -37,9 +36,7 @@ import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
-import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import static org.luaj.vm2.LuaValue.valueOf;
@@ -57,16 +54,15 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
 
-    private final ScheduledExecutorService executor;
-
     private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
     public VirtualCLU(String name) {
-        super(name);
-
-        this.executor = ThreadUtil.virtualScheduler(name);
+        super(
+            name,
+            Features.class, Methods.class, Events.class
+        );
 
         register(Features.UPTIME, this::getUptime);
         set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
@@ -79,12 +75,14 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         register(Features.HOUR, this::getCurrentHour);
         register(Features.MINUTE, this::getCurrentMinute);
         register(Features.TIMESTAMP, this::getCurrentEpochSeconds);
-        set(Features.TIME_ZONE, valueOf(CLUTimeZone.UTC.value()));
+        set(Features.TIME_ZONE, LuaValue.valueOf(CLUTimeZone.UTC.value()));
 
         set(Features.MQTT_URL, valueOf("ssl://localhost:8883"));
         register(Features.USE_MQTT, arg1 -> {
-            if (arg1.isnil()) {
-                return getValue(Features.USE_MQTT);
+            if (LuaUtil.isNil(arg1)) {
+                return LuaValue.valueOf(
+                    LuaUtil.trueish(getValue(Features.USE_MQTT))
+                );
             }
 
             // Sometimes OM uses true/false and sometimes 0/1
@@ -96,30 +94,23 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
-
-        executor.scheduleAtFixedRate(
-            () -> {
-                final ZonedDateTime lastDateTime = currentDateTime;
-                currentDateTime = getCurrentDateTime();
-
-                if (!currentDateTime.getZone().equals(lastDateTime.getZone())
-                    || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
-                    triggerEvent(Events.TIME_CHANGE);
-                }
-            },
-            1, 1, TimeUnit.SECONDS
-        );
     }
 
     @Override
-    public void setup() {
-        set(Features.STATE, LuaValue.valueOf(State.OK.value));
+    public void loop() {
+        final ZonedDateTime lastDateTime = currentDateTime;
+        currentDateTime = getCurrentDateTime();
 
-        triggerEvent(Events.INIT);
+        if (!currentDateTime.getZone().equals(lastDateTime.getZone())
+            || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
+            triggerEvent(Events.TIME_CHANGE);
+        }
     }
 
     public boolean isMqttEnabled() {
-        return LuaUtil.trueish(get(Features.USE_MQTT));
+        return LuaUtil.trueish(
+            get(Features.USE_MQTT)
+        );
     }
 
     public String getMqttUrl() {
@@ -130,7 +121,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         set(Features.MQTT_CONNECTION, LuaValue.valueOf(value));
     }
 
-    private LuaNumber getUptime(LuaValue arg1) {
+    private LuaNumber getUptime() {
         return valueOf(
             TimeUnit.MILLISECONDS.toSeconds(
                 runtimeBean.getUptime()
@@ -138,42 +129,42 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         );
     }
 
-    private LuaString getCurrentDateAsString(LuaValue arg1) {
+    private LuaString getCurrentDateAsString() {
         return valueOf(
             currentDateTime
                 .format(DATE_FORMATTER)
         );
     }
 
-    private LuaString getCurrentTimeAsString(LuaValue arg1) {
+    private LuaString getCurrentTimeAsString() {
         return valueOf(
             currentDateTime
                 .format(TIME_FORMATTER)
         );
     }
 
-    private LuaInteger getCurrentDayOfMonth(LuaValue arg1) {
+    private LuaInteger getCurrentDayOfMonth() {
         return valueOf(
             currentDateTime
                 .getDayOfMonth()
         );
     }
 
-    private LuaInteger getCurrentMonth(LuaValue arg1) {
+    private LuaInteger getCurrentMonth() {
         return valueOf(
             currentDateTime
                 .getMonthValue()
         );
     }
 
-    private LuaInteger getCurrentYear(LuaValue arg1) {
+    private LuaInteger getCurrentYear() {
         return valueOf(
             currentDateTime
                 .getYear()
         );
     }
 
-    private LuaInteger getCurrentDayOfWeek(LuaValue arg1) {
+    private LuaInteger getCurrentDayOfWeek() {
         return valueOf(
             currentDateTime
                 .getDayOfWeek()
@@ -181,14 +172,14 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         );
     }
 
-    private LuaInteger getCurrentHour(LuaValue arg1) {
+    private LuaInteger getCurrentHour() {
         return valueOf(
             currentDateTime
                 .getHour()
         );
     }
 
-    private LuaInteger getCurrentMinute(LuaValue arg1) {
+    private LuaInteger getCurrentMinute() {
         return valueOf(
             currentDateTime
                 .getMinute()
@@ -212,24 +203,24 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                           .zoneId();
     }
 
-    private LuaNumber getCurrentEpochSeconds(LuaValue arg1) {
+    private LuaNumber getCurrentEpochSeconds() {
         return valueOf(
             currentDateTime.toInstant()
                            .getEpochSecond()
         );
     }
 
-    private LuaValue addToLog(LuaValue arg) {
-        set(Features.LOG, arg);
+    private LuaValue addToLog(LuaValue arg1) {
+        set(Features.LOG, arg1);
 
-        if (!arg.isnil()) {
-            LOGGER.info(name + ": " + arg.checkjstring());
+        if (!arg1.isnil()) {
+            LOGGER.info(name + ": " + arg1.checkjstring());
         }
 
         return LuaValue.NIL;
     }
 
-    private LuaValue clearLog(LuaValue arg) {
+    private LuaValue clearLog() {
         set(Features.LOG, LuaValue.NIL);
 
         return LuaValue.NIL;
@@ -243,12 +234,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return mqttTopics;
     }
 
-    @Override
-    public void close() {
-        ThreadUtil.close(executor);
-    }
-
-    private enum State {
+    public enum State {
         STARTING(0),
         OK(1),
         ERROR(2),
@@ -262,9 +248,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         State(int value) {
             this.value = value;
         }
+
+        public int value() {
+            return value;
+        }
     }
 
-    private enum Features implements IFeature {
+    public enum Features implements IFeature {
         UPTIME(0),
         LOG(1),
         STATE(2),
@@ -316,7 +306,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         }
     }
 
-    private enum Events implements IEvent {
+    public enum Events implements IEvent {
         INIT(0),
         TIME_CHANGE(13),
         //

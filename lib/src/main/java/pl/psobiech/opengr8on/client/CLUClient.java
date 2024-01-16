@@ -177,7 +177,7 @@ public class CLUClient extends Client implements Closeable {
     }
 
     public Optional<String> execute(String script) {
-        final Integer sessionId = HexUtil.asInt(RandomUtil.hexString(8));
+        final Integer sessionId = RandomUtil.integer();
         final LuaScriptCommand.Request command = LuaScriptCommand.request(localAddress, sessionId, script);
 
         return request(command, DEFAULT_TIMEOUT_DURATION)
@@ -235,7 +235,7 @@ public class CLUClient extends Client implements Closeable {
     }
 
     public void clientReport(String value) {
-        final LuaScriptCommand.Response response = LuaScriptCommand.response(cluDevice.getAddress(), HexUtil.asInt(RandomUtil.hexString(8)), value);
+        final LuaScriptCommand.Response response = LuaScriptCommand.response(cluDevice.getAddress(), RandomUtil.integer(), value);
         final String uuid = response.uuid(UUID.randomUUID());
 
         socketLock.lock();

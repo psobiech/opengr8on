@@ -60,6 +60,23 @@
       <artifactId>jstachio</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.moquette</groupId>
+      <artifactId>moquette-broker</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>pl.psobiech.opengr8on</groupId>
+      <artifactId>lib</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

@@ -36,7 +36,7 @@ class CipherKeyTest {
     @Test
     void sanity() {
         final CipherKey cipherKey = Mocks.cipherKey();
-        final byte[] expected = RandomUtil.bytes(30);
+        final byte[] expected = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         //
 

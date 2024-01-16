@@ -52,7 +52,10 @@ public class Storage extends VirtualObject {
     private final Map<String, LuaValue> variables = new HashMap<>();
 
     public Storage(String name, LuaThread luaThread, Path storageRootPath) {
-        super(name);
+        super(
+            name,
+            Features.class, Methods.class, IEvent.EMPTY.class
+        );
 
         this.luaThread = luaThread;
 
@@ -60,9 +63,7 @@ public class Storage extends VirtualObject {
 
         this.storagePath = storageRootPath.resolve("storage.json");
 
-        register(Features.UNKNOWN, arg1 -> {
-            return LuaValue.ZERO;
-        });
+        register(Features.UNKNOWN, () -> LuaValue.ZERO);
 
         register(Methods.STORE, arg1 -> {
             final String variableName = arg1.checkjstring();
@@ -111,7 +112,7 @@ public class Storage extends VirtualObject {
         try {
             final Map<String, Object> storedVariables = ObjectMapperFactory.JSON.readValue(storagePath.toFile(), HashMap.class);
             for (Entry<String, Object> entry : storedVariables.entrySet()) {
-                variables.put(entry.getKey(), LuaUtil.valueOf(entry.getValue()));
+                variables.put(entry.getKey(), LuaUtil.fromObject(entry.getValue()));
             }
         } catch (IOException e) {
             throw new UnexpectedException(e);
