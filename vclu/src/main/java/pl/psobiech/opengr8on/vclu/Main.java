@@ -41,6 +41,11 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
+    static {
+        Thread.currentThread()
+              .setName("init");
+    }
+
     private Main() {
         // NOP
     }

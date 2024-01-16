@@ -20,7 +20,6 @@ package pl.psobiech.opengr8on.vclu;
 
 import java.io.Closeable;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -44,8 +43,8 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.Util;
-import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 public class MqttClient implements Closeable {
@@ -61,6 +60,7 @@ public class MqttClient implements Closeable {
 
     private static final int MAX_INFLIGHT = 64;
 
+    // the mqtt client requires at least 4 threads (does not support virtual threads - uses not reentrant locks)
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(
         4,
         ThreadUtil.threadFactory("mqtt", true)
@@ -203,9 +203,9 @@ public class MqttClient implements Closeable {
         mqttClient.unsubscribe(topicFilter);
     }
 
-    public void publish(String topic, String message) throws MqttException {
+    public void publish(String topic, byte[] payload) throws MqttException {
         mqttClient.publish(
-            topic, message.getBytes(StandardCharsets.UTF_8),
+            topic, payload,
             MQTT_QOS_AT_LEAST_ONCE, false
         );
     }

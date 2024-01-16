@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPReceivingTransfer;
 
 public class TFTPServerReceive extends TFTPReceivingTransfer {
@@ -51,6 +52,8 @@ public class TFTPServerReceive extends TFTPReceivingTransfer {
 
     @Override
     public void execute(TFTP tftp) throws IOException, TFTPPacketException {
-        incomingTransfer(tftp, true, mode, requestAddress, requestPort, path);
+        final TFTPAcknowledgementPacket lastPacket = new TFTPAcknowledgementPacket(requestAddress, requestPort, 0);
+
+        incomingTransfer(tftp, true, mode, requestAddress, requestPort, lastPacket, path);
     }
 }

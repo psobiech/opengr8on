@@ -20,7 +20,6 @@ package pl.psobiech.opengr8on.vclu;
 
 import java.io.Closeable;
 import java.net.Inet4Address;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
@@ -40,7 +40,6 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
@@ -70,11 +69,11 @@ public class MockServer implements Closeable {
             projectCipherKey,
             new CLUDevice(
                 serialNumber,
-                RandomUtil.hexString(12),
+                Mocks.macAddress(),
                 MockServer.LOCALHOST,
                 CipherTypeEnum.PROJECT,
-                RandomUtil.bytes(16),
-                RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
+                Mocks.iv(),
+                Mocks.pin()
             )
         );
     }
@@ -88,6 +87,9 @@ public class MockServer implements Closeable {
         this.broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
         this.socket          = new UDPSocket(LOCALHOST, 0, false);
         this.tftpServer      = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
+
+        this.tftpServer.start();
+        this.tftpServer.stop();
 
         FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
         FileUtil.linkOrCopy(
@@ -152,6 +154,10 @@ public class MockServer implements Closeable {
 
     public int getBroadcastPort() {
         return broadcastSocket.getLocalPort();
+    }
+
+    public int getTFTPdPort() {
+        return tftpServer.getPort();
     }
 
     public Server getServer() {

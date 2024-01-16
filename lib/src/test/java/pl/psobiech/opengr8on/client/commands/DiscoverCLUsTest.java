@@ -33,7 +33,6 @@ import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand.Request;
 import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand.Response;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
-import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
@@ -73,7 +72,7 @@ class DiscoverCLUsTest {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         final long serialNumber = Mocks.serialNumber();
-        final String macAddress = RandomUtil.hexString(12);
+        final String macAddress = Mocks.macAddress();
 
         final Response input = response(
             cluCipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
@@ -114,7 +113,7 @@ class DiscoverCLUsTest {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         final long serialNumber = Mocks.serialNumber();
-        final String macAddress = RandomUtil.hexString(12);
+        final String macAddress = Mocks.macAddress();
 
         final Response input = response(
             cipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
@@ -152,7 +151,7 @@ class DiscoverCLUsTest {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         final long serialNumber = Mocks.serialNumber();
-        final String macAddress = RandomUtil.hexString(12);
+        final String macAddress = Mocks.macAddress();
 
         final Response input = response(
             cipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
@@ -198,7 +197,7 @@ class DiscoverCLUsTest {
     @Test
     void correctRequest() {
         final Request input = request(
-            RandomUtil.bytes(32), RandomUtil.bytes(16), Mocks.ipAddress()
+            RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.iv(), Mocks.ipAddress()
         );
 
         //
@@ -214,8 +213,8 @@ class DiscoverCLUsTest {
     @Test
     void correctResponse() {
         final Response input = response(
-            RandomUtil.bytes(32), RandomUtil.bytes(16),
-            HexUtil.asLong(RandomUtil.hexString(8)), RandomUtil.hexString(12)
+            RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.iv(),
+            Mocks.serialNumber(), Mocks.macAddress()
         );
 
         //
@@ -237,7 +236,7 @@ class DiscoverCLUsTest {
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                                                                 = new byte[100];
+        buffer                                                                                                                                  = new byte[100];
         buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                                                                  = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                                                           = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()]                                            = ':';
@@ -249,7 +248,7 @@ class DiscoverCLUsTest {
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                                                                  = new byte[100];
+        buffer                                                                                                                                   = new byte[100];
         buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                                                                   = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                                                            = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length()]                                            = ':';

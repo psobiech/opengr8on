@@ -24,8 +24,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
-import pl.psobiech.opengr8on.util.RandomUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,7 +39,7 @@ class ServerSetKeyResetTest extends BaseServerTest {
         execute((projectCipherKey, server, client) -> {
             final CLUDevice cluDevice = client.getCluDevice();
 
-            final CipherKey newCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
+            final CipherKey newCipherKey = Mocks.cipherKey();
 
             final Optional<Boolean> aliveOptional = client.updateCipherKey(newCipherKey);
             assertTrue(aliveOptional.isPresent());

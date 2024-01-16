@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -32,29 +33,31 @@ import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 public class ThreadUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtil.class);
 
+    private static final int MIN_RUNNABLE;
+
     static {
         final int availableProcessors = Runtime.getRuntime().availableProcessors();
         final int parallelism = Math.max(4, availableProcessors);
         final int maxPoolSize = Math.round(parallelism * 1.2f);
-        final int minRunnable = Math.min(2, availableProcessors);
+        MIN_RUNNABLE = Math.min(2, availableProcessors);
 
         System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(parallelism));
         System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(maxPoolSize));
-        System.setProperty("jdk.virtualThreadScheduler.minRunnable", String.valueOf(minRunnable));
+        System.setProperty("jdk.virtualThreadScheduler.minRunnable", String.valueOf(MIN_RUNNABLE));
 
         System.setProperty("jdk.tracePinnedThreads", "full/short");
 
-        LOGGER.debug("Virtual Threads: %d-%d/%d".formatted(minRunnable, parallelism, maxPoolSize));
+        LOGGER.debug("Virtual Threads: %d-%d/%d".formatted(MIN_RUNNABLE, parallelism, maxPoolSize));
     }
 
-    private static final ThreadFactory SHUTDOWN_HOOK_FACTORY = threadFactory("shutdownHooks", false);
+    private static final ThreadFactory SHUTDOWN_THREAD_FACTORY = threadFactory("ShutdownThreads", false);
 
     private static final ScheduledExecutorService INSTANCE;
 
     static {
         INSTANCE = virtualScheduler("DEFAULT");
 
-        shutdownHook(INSTANCE::shutdownNow);
+        addShutdownHook(INSTANCE::shutdownNow);
     }
 
     private ThreadUtil() {
@@ -74,7 +77,7 @@ public class ThreadUtil {
         executor.shutdownNow();
 
         try {
-            return executor.awaitTermination(2, TimeUnit.SECONDS);
+            return executor.awaitTermination(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new UncheckedInterruptedException(e);
         }
@@ -94,10 +97,11 @@ public class ThreadUtil {
     /**
      * @param runnable new runnable to be executed on application shutdown
      */
-    public static void shutdownHook(Runnable runnable) {
-        Runtime.getRuntime().addShutdownHook(
-            SHUTDOWN_HOOK_FACTORY.newThread(runnable)
-        );
+    public static void addShutdownHook(Runnable runnable) {
+        Runtime.getRuntime()
+               .addShutdownHook(
+                   SHUTDOWN_THREAD_FACTORY.newThread(runnable)
+               );
     }
 
     /**
@@ -118,7 +122,14 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Virtual Threads
      */
     public static ScheduledExecutorService virtualScheduler(String name) {
-        return Executors.newScheduledThreadPool(Integer.MAX_VALUE, virtualThreadFactory(name));
+        return new ScheduledThreadPoolExecutor(MIN_RUNNABLE, virtualThreadFactory(name));
+    }
+
+    /**
+     * @return named scheduled executor, working on Virtual Threads
+     */
+    public static ExecutorService virtualExecutor(String name) {
+        return Executors.newThreadPerTaskExecutor(virtualThreadFactory(name));
     }
 
     /**
@@ -126,7 +137,7 @@ public class ThreadUtil {
      */
     public static ThreadFactory virtualThreadFactory(String groupName) {
         return Thread.ofVirtual()
-                     .name(groupName)
+                     .name(groupName + "-", 1)
                      .inheritInheritableThreadLocals(true)
                      .uncaughtExceptionHandler((t, e) -> {
                          LOGGER.error("%s: %s".formatted(t.getName(), e.getMessage()), e);
@@ -140,7 +151,7 @@ public class ThreadUtil {
      */
     public static ThreadFactory threadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()
-                     .name(groupName)
+                     .name(groupName + "-", 1)
                      .daemon(daemon)
                      .inheritInheritableThreadLocals(true)
                      .uncaughtExceptionHandler((t, e) -> {

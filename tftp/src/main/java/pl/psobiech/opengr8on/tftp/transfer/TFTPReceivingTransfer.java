@@ -48,7 +48,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
         TFTP tftp, boolean server,
         TFTPTransferMode mode,
         InetAddress requestAddress, int requestPort,
-        Path targetPath
+        TFTPPacket lastSentPacket, Path targetPath
     ) throws IOException, TFTPPacketException {
         final Path temporaryPath = FileUtil.temporaryFile();
 
@@ -67,16 +67,15 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
             throw packetException;
         }
 
-        TFTPAcknowledgementPacket lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, 0);
         try (outputStream) {
             if (server) {
-                tftp.send(lastSentAck);
+                tftp.send(lastSentPacket);
             }
 
             boolean firstPacket = !server;
             int acknowledgedBlock = 0;
             do {
-                final TFTPPacket responsePacket = readResponsePacket(tftp, firstPacket, requestAddress, requestPort, lastSentAck);
+                final TFTPPacket responsePacket = readResponsePacket(tftp, firstPacket, requestAddress, requestPort, lastSentPacket);
                 if (firstPacket) {
                     firstPacket = false;
 
@@ -86,8 +85,8 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
                 if (server && acknowledgedBlock == 0 && responsePacket instanceof TFTPRequestPacket) {
                     // it must have missed our initial ack. Send another.
-                    lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, acknowledgedBlock);
-                    tftp.send(lastSentAck);
+                    lastSentPacket = new TFTPAcknowledgementPacket(requestAddress, requestPort, acknowledgedBlock);
+                    tftp.send(lastSentPacket);
 
                     continue;
                 }
@@ -104,8 +103,8 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                     }
 
                     if (dataLength >= TFTPDataPacket.MAX_DATA_LENGTH) {
-                        lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, receivedBlock);
-                        tftp.send(lastSentAck);
+                        lastSentPacket = new TFTPAcknowledgementPacket(requestAddress, requestPort, receivedBlock);
+                        tftp.send(lastSentPacket);
                     } else {
                         try {
                             // end of stream signal - The transfer is complete.
@@ -117,8 +116,8 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                             throw new TFTPPacketException(TFTPErrorType.UNDEFINED, e.getMessage(), e);
                         }
 
-                        lastSentAck = new TFTPAcknowledgementPacket(requestAddress, requestPort, receivedBlock);
-                        tftp.send(lastSentAck);
+                        lastSentPacket = new TFTPAcknowledgementPacket(requestAddress, requestPort, receivedBlock);
+                        tftp.send(lastSentPacket);
 
                         if (!server) {
                             return;
@@ -146,7 +145,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                                 continue;
                             }
 
-                            tftp.send(lastSentAck);
+                            tftp.send(lastSentPacket);
                         } while (!Thread.interrupted());
 
                         return;

@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
@@ -52,6 +53,8 @@ public abstract class TFTPTransfer {
         InetAddress requestAddress, int requestPort,
         TFTPPacket lastPacket
     ) throws IOException, TFTPPacketException {
+        int retires = 3;
+
         do {
             final Optional<TFTPPacket> responsePacketOptional = tftp.receive(DEFAULT_TIMEOUT);
             if (responsePacketOptional.isEmpty()) {
@@ -77,7 +80,11 @@ public abstract class TFTPTransfer {
             }
 
             return responsePacket;
-        } while (!Thread.interrupted());
+        } while (!Thread.interrupted() && --retires > 0);
+
+        if (retires == 0) {
+            throw new TFTPException(TFTPErrorType.UNDEFINED, "Retries exceeded, transfer aborted");
+        }
 
         throw new InterruptedIOException();
     }

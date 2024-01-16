@@ -18,8 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.nio.charset.StandardCharsets;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,12 +25,11 @@ import org.junit.jupiter.api.Timeout;
 import org.luaj.vm2.LuaValue;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
@@ -47,18 +44,18 @@ class Server2ServerTest {
 
     @BeforeAll
     static void setUp() throws Exception {
-        projectCipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
+        projectCipherKey = Mocks.cipherKey();
 
-        final long serialNumber2 = HexUtil.asLong(RandomUtil.hexString(8));
+        final long serialNumber2 = Mocks.serialNumber();
         server2 = new MockServer(
             projectCipherKey,
             new CLUDevice(
                 serialNumber2,
-                RandomUtil.hexString(12),
+                Mocks.macAddress(),
                 MockServer.LOCALHOST,
                 CipherTypeEnum.PROJECT,
-                RandomUtil.bytes(16),
-                RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
+                Mocks.iv(),
+                Mocks.pin()
             )
         );
 
@@ -69,16 +66,16 @@ class Server2ServerTest {
 
         server2.start();
 
-        final long serialNumber1 = HexUtil.asLong(RandomUtil.hexString(8));
+        final long serialNumber1 = Mocks.serialNumber();
         server1 = new MockServer(
             projectCipherKey,
             new CLUDevice(
                 serialNumber1,
-                RandomUtil.hexString(12),
+                Mocks.macAddress(),
                 MockServer.LOCALHOST, server2.getPort(),
                 CipherTypeEnum.PROJECT,
-                RandomUtil.bytes(16),
-                RandomUtil.hexString(8).getBytes(StandardCharsets.US_ASCII)
+                Mocks.iv(),
+                Mocks.pin()
             )
         );
 

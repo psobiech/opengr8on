@@ -161,7 +161,7 @@ public class Config {
     private static String asConfigTxtHexValue(long value) {
         return StringUtils.lowerCase(
             StringUtils.leftPad(
-                HexUtil.asString(value), 8, '0'
+                HexUtil.asString(value), Integer.BYTES * 2, '0'
             )
         );
     }

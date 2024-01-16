@@ -120,7 +120,7 @@ public final class ToStringUtil {
 
         final String hexString = StringUtils.stripToEmpty(
             IntStream.range(0, buffer.length)
-                     .mapToObj(i -> (i % 2 == 0 ? " " : "") + HexUtil.asString(buffer[i]))
+                     .mapToObj(i -> (i % 4 == 0 ? " " : "") + HexUtil.asString(buffer[i]))
                      .collect(Collectors.joining())
         );
 

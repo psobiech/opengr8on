@@ -42,7 +42,9 @@ public class LuaThread implements Closeable {
 
     private final Thread thread;
 
-    public LuaThread(VirtualSystem virtualSystem, Globals globals, LuaClosure mainLuaClosure) {
+    private final boolean emergency;
+
+    public LuaThread(VirtualSystem virtualSystem, Globals globals, boolean emergency, LuaClosure mainLuaClosure) {
         this.thread = Thread.ofVirtual()
                             .name(getClass().getSimpleName())
                             .unstarted(
@@ -67,6 +69,7 @@ public class LuaThread implements Closeable {
 
         this.virtualSystem = virtualSystem;
         this.globals       = globals;
+        this.emergency     = emergency;
     }
 
     public LuaValue luaCall(String script) {
@@ -85,6 +88,10 @@ public class LuaThread implements Closeable {
 
     public void start() {
         thread.start();
+    }
+
+    public boolean isEmergency() {
+        return emergency;
     }
 
     @Override

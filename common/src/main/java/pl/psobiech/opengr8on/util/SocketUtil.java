@@ -235,8 +235,8 @@ public class SocketUtil {
         @Override
         public String toString() {
             return "Payload{" +
-                   "address=" + ToStringUtil.toString(address, port) +
-                   ", buffer=" + ToStringUtil.toString(buffer) +
+                   "buffer=" + ToStringUtil.toString(buffer) +
+                   ", address=" + ToStringUtil.toString(address, port) +
                    '}';
         }
     }

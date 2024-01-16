@@ -20,9 +20,24 @@ package pl.psobiech.opengr8on.vclu;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 
+import io.moquette.broker.ClientDescriptor;
+import io.moquette.broker.Server;
+import io.moquette.broker.config.MemoryConfig;
+import io.moquette.interception.AbstractInterceptHandler;
+import io.moquette.interception.messages.InterceptAcknowledgedMessage;
+import io.moquette.interception.messages.InterceptPublishMessage;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.mqtt.MqttMessageBuilders;
+import io.netty.handler.codec.mqtt.MqttQoS;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import pl.psobiech.opengr8on.client.CLUFiles;
@@ -68,25 +83,96 @@ class ServerTest extends BaseServerTest {
     @Test
     @Timeout(30)
     void fullMode() throws Exception {
-        execute(
-            server -> {
-                FileUtil.linkOrCopy(
-                    ResourceUtil.classPath("full/" + CLUFiles.USER_LUA.getFileName()),
-                    server.getADriveDirectory().resolve(CLUFiles.USER_LUA.getFileName())
-                );
-                FileUtil.linkOrCopy(
-                    ResourceUtil.classPath("full/" + CLUFiles.OM_LUA.getFileName()),
-                    server.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
-                );
-            },
-            (projectCipherKey, server, client) -> {
-                Thread.sleep(2000L);
+        final Server mqttServer = new Server();
 
-                final Optional<Boolean> aliveOptional = client.checkAlive();
+        final Properties properties = new Properties();
+        properties.setProperty("port", Integer.toString(1883));
+        properties.setProperty("host", MockServer.LOCALHOST.getHostAddress());
+        properties.setProperty("password_file", "");
+        properties.setProperty("allow_anonymous", Boolean.TRUE.toString());
+        properties.setProperty("authenticator_class", "");
+        properties.setProperty("authorizator_class", "");
 
-                assertTrue(aliveOptional.isPresent());
-                assertTrue(aliveOptional.get());
-            }
-        );
+        final List<String> testTopicMessages = Collections.synchronizedList(new LinkedList<>());
+
+        mqttServer.startServer(new MemoryConfig(properties));
+        try {
+            mqttServer.addInterceptHandler(new AbstractInterceptHandler() {
+                @Override
+                public String getID() {
+                    return "test";
+                }
+
+                @Override
+                public void onPublish(InterceptPublishMessage msg) {
+                    if (msg.getTopicName().equals("test")) {
+                        testTopicMessages.add(msg.getPayload().toString(StandardCharsets.UTF_8));
+                    }
+                }
+
+                @Override
+                public void onMessageAcknowledged(InterceptAcknowledgedMessage msg) {
+                    //
+                }
+            });
+
+            execute(
+                server -> {
+                    FileUtil.linkOrCopy(
+                        ResourceUtil.classPath("full/" + CLUFiles.USER_LUA.getFileName()),
+                        server.getADriveDirectory().resolve(CLUFiles.USER_LUA.getFileName())
+                    );
+                    FileUtil.linkOrCopy(
+                        ResourceUtil.classPath("full/" + CLUFiles.OM_LUA.getFileName()),
+                        server.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
+                    );
+                },
+                (projectCipherKey, server, client) -> {
+                    final Optional<Boolean> aliveOptional = client.checkAlive();
+
+                    assertTrue(aliveOptional.isPresent());
+                    assertTrue(aliveOptional.get());
+
+                    final Collection<ClientDescriptor> clientDescriptors = mqttServer.listConnectedClients();
+                    while (clientDescriptors.isEmpty()) {
+                        Thread.sleep(100L);
+                    }
+
+                    assertEquals("CLU0", clientDescriptors.iterator().next().getClientID());
+
+                    mqttServer.internalPublish(
+                        MqttMessageBuilders.publish()
+                                           .topicName("zigbee2mqtt/testTopic")
+                                           .retained(false)
+                                           .messageId(1)
+                                           .qos(MqttQoS.AT_LEAST_ONCE)
+                                           .payload(Unpooled.copiedBuffer("mqttTest".getBytes(StandardCharsets.UTF_8)))
+                                           .build(),
+                        "BROKER"
+                    );
+
+                    mqttServer.internalPublish(
+                        MqttMessageBuilders.publish()
+                                           .topicName("zigbee2mqtt/otherTopic")
+                                           .retained(false)
+                                           .messageId(2)
+                                           .qos(MqttQoS.AT_LEAST_ONCE)
+                                           .payload(Unpooled.copiedBuffer("mqttTestOther".getBytes(StandardCharsets.UTF_8)))
+                                           .build(),
+                        "BROKER"
+                    );
+
+                    while (testTopicMessages.size() < 2) {
+                        Thread.sleep(100L);
+                    }
+
+                    assertEquals(2, testTopicMessages.size());
+                    assertEquals("mqttTest", testTopicMessages.get(0));
+                    assertEquals("mqttTestOther", testTopicMessages.get(1));
+                }
+            );
+        } finally {
+            mqttServer.stopServer();
+        }
     }
 }

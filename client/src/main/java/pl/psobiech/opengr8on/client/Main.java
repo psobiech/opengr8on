@@ -40,7 +40,6 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.xml.interfaces.CLU;
 import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
@@ -81,7 +80,7 @@ public class Main {
             final InterfaceRegistry interfaceRegistry = CLIParameters.getInterfaceRegistry(commandLine);
             final CipherKey projectCipherKey = CLIParameters.getProjectCipherKey(commandLine)
                                                             .orElseGet(() -> {
-                                                                final CipherKey cipherKey = new CipherKey(RandomUtil.bytes(16), RandomUtil.bytes(16));
+                                                                final CipherKey cipherKey = new CipherKey();
                                                                 LOGGER.debug("Generated random project key: {}", cipherKey);
 
                                                                 return cipherKey;

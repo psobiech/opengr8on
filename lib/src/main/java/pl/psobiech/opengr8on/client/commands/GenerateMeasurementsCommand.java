@@ -36,6 +36,8 @@ public class GenerateMeasurementsCommand {
 
     private static final int RETURN_VALUE_PART = 3;
 
+    public static final String RESPONSE_OK = "ok";
+
     private GenerateMeasurementsCommand() {
         // NOP
     }

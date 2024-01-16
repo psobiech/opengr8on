@@ -47,9 +47,9 @@ import pl.psobiech.opengr8on.util.Slf4jLoggingOutputStream;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
 public class LuaThreadFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LuaThreadFactory.class);
+    private static final Logger LOGGER_LUA = LoggerFactory.getLogger(LuaThread.class);
 
-    private static final Logger LOGGER_STDOUT = LoggerFactory.getLogger(LuaThreadFactory.class.getName() + "$stdout");
+    private static final Logger LOGGER_LUA_OUT = LoggerFactory.getLogger(LuaThread.class.getName() + "$OUT");
 
     private LuaThreadFactory() {
         // NOP
@@ -81,7 +81,7 @@ public class LuaThreadFactory {
         // globals.load(new JseIoLib());
         // globals.load(new JseOsLib()); // dangerous, allows OS access from LUA
         // globals.load(new LuajavaLib()); // dangerous, allows full Java access from LUA
-        globals.load(new InitLuaLib(LOGGER, virtualSystem, globals));
+        globals.load(new InitLuaLib(LOGGER_LUA, virtualSystem, globals));
 
         globals.finder = fileName -> {
             try {
@@ -96,11 +96,12 @@ public class LuaThreadFactory {
             }
         };
 
-        globals.STDOUT = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.INFO));
-        globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_STDOUT, Level.ERROR));
+        globals.STDOUT = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_LUA_OUT, Level.INFO));
+        globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_LUA_OUT, Level.ERROR));
 
         return new LuaThread(
             virtualSystem, globals,
+            cluFile == CLUFiles.EMERGNCY_LUA,
             loadScript(aDriveDirectory, cluFile, globals)
         );
     }

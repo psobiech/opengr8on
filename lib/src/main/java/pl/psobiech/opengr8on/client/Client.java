@@ -65,7 +65,7 @@ public class Client implements Closeable {
 
     protected final UDPSocket socket;
 
-    private final ExecutorService executor = ThreadUtil.virtualScheduler("cluClient");
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUClient");
 
     protected final Inet4Address localAddress;
 
@@ -176,13 +176,13 @@ public class Client implements Closeable {
     protected void send(String uuid, CipherKey cipherKey, Inet4Address ipAddress, byte[] buffer) {
         final Payload requestPayload = Payload.of(ipAddress, port, buffer);
         LOGGER.trace(
-            "\n%s\n--D->\t%s // %s"
+            "%s\t--D->\t%s // %s"
                 .formatted(uuid, requestPayload, cipherKey)
         );
 
         final byte[] encryptedRequest = cipherKey.encrypt(requestPayload.buffer());
         //        LOGGER.trace(
-        //            "\n%s\n--E->\t%s // %s"
+        //            "%s\t--E->\t%s // %s"
         //                .formatted(uuid, Payload.of(ipAddress, port, encryptedRequest), cipherKey)
         //        );
 
@@ -204,7 +204,7 @@ public class Client implements Closeable {
         final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
         if (encryptedPayload.isEmpty()) {
             LOGGER.trace(
-                "\n%s\n-----\tTIMEOUT // %s"
+                "%s\t-----\tTIMEOUT // %s"
                     .formatted(uuid, responseCipherKey)
             );
 
@@ -229,12 +229,12 @@ public class Client implements Closeable {
         if (LOGGER.isTraceEnabled()) {
             if (payload.isPresent()) {
                 LOGGER.trace(
-                    "\n%s\n<-D--\t%s // %s"
+                    "%s\t<-D--\t%s // %s"
                         .formatted(uuid, payload.get(), responseCipherKey)
                 );
             } else {
                 LOGGER.trace(
-                    "\n%s\n<-E--\t%s // %s"
+                    "%s\t<-E--\t%s // %s"
                         .formatted(uuid, encryptedPayload, responseCipherKey)
                 );
             }
@@ -267,6 +267,6 @@ public class Client implements Closeable {
         final String className = clazz.getName();
         final String[] classParts = className.split("\\.");
 
-        return "%s\t%s".formatted(uuid, classParts[classParts.length - 1]);
+        return "%s\t%s".formatted(classParts[classParts.length - 1], uuid);
     }
 }

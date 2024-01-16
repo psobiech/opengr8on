@@ -51,6 +51,8 @@ public interface Command {
 
     int MAX_SERIAL_NUMBER_CHARACTERS = 8;
 
+    int PIN_CHARACTERS = 8;
+
     int MIN_SESSION_CHARACTERS = 6;
 
     int MAX_SESSION_CHARACTERS = 8;

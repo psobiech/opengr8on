@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import pl.psobiech.opengr8on.client.Command;
+import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.commands.SetKeyCommand.Request;
 import pl.psobiech.opengr8on.client.commands.SetKeyCommand.Response;
 import pl.psobiech.opengr8on.util.RandomUtil;
@@ -34,7 +35,7 @@ class SetKeyCommandTest {
     @Test
     void correctRequest() {
         final Request input = SetKeyCommand.request(
-            RandomUtil.bytes(32), RandomUtil.bytes(16), RandomUtil.bytes(16)
+            RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.key(), Mocks.iv()
         );
 
         //
@@ -70,7 +71,7 @@ class SetKeyCommandTest {
         assertFalse(SetKeyCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(SetKeyCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                      = new byte[100];
+        buffer                                                                                       = new byte[100];
         buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                       = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] = ':';

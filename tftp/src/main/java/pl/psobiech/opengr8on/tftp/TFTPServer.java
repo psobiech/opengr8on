@@ -30,7 +30,6 @@ import java.time.Duration;
 import java.util.Enumeration;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,7 +54,7 @@ public class TFTPServer implements Closeable {
 
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
-    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("TFTPServer");
 
     private final InetAddress localAddress;
 
@@ -105,7 +104,7 @@ public class TFTPServer implements Closeable {
         serverTFTP.open();
 
         listener = executor.submit(() -> {
-                LOGGER.debug("Starting TFTP Server on port " + serverTFTP.getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
+                LOGGER.debug("Starting TFTP Server on port " + getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
                 FileUtil.mkdir(serverDirectory);
 
@@ -130,7 +129,7 @@ public class TFTPServer implements Closeable {
                 serverTFTP.notifyAll();
             }
 
-            final int port = serverTFTP.getPort();
+            final int port = getPort();
 
             do {
                 TFTPPacket incomingPacket = null;
@@ -159,6 +158,10 @@ public class TFTPServer implements Closeable {
 
             LOGGER.debug("Stopped TFTP Server on port " + port);
         }
+    }
+
+    public int getPort() {
+        return serverTFTP.getPort();
     }
 
     private void onPacketException(TFTPPacketException e, TFTPPacket incomingPacket) {

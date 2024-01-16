@@ -40,13 +40,15 @@ import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
-import pl.psobiech.opengr8on.vclu.system.clu.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.Storage;
 import pl.psobiech.opengr8on.vclu.system.objects.Timer;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.Features;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.State;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
@@ -61,7 +63,7 @@ public class VirtualSystem implements Closeable {
 
     private static final String CLIENT_REPORT_PREFIX = "clientReport:";
 
-    private final ScheduledExecutorService executor = ThreadUtil.virtualScheduler("LuaServer");
+    private final ScheduledExecutorService executor = ThreadUtil.virtualScheduler("VSYSTEM");
 
     private final Inet4Address localAddress;
 
@@ -123,6 +125,16 @@ public class VirtualSystem implements Closeable {
 
     public void setup() {
         forAllObjects(VirtualObject::setup);
+
+        final State state;
+        if (luaThread.isEmergency()) {
+            state = State.EMERGENCY;
+        } else {
+            state = State.OK;
+        }
+
+        currentClu.set(Features.STATE, LuaValue.valueOf(state.value()));
+        currentClu.triggerEvent(VirtualCLU.Events.INIT);
     }
 
     public void loop() {
@@ -184,32 +196,26 @@ public class VirtualSystem implements Closeable {
         return LuaValue.valueOf(sessionId);
     }
 
-    public String fetchValues(List<Subscription> subscription) {
-        final StringBuilder sb = new StringBuilder();
-        for (Subscription entry : subscription) {
-            final VirtualObject object = entry.object();
-            final int index = entry.index();
+    @SuppressWarnings("resource")
+    public String fetchValues(List<Subscription> subscriptions) {
+        return LuaUtil.stringifyList(
+            subscriptions,
+            subscription -> {
+                final VirtualObject object = subscription.object();
+                final int index = subscription.index();
+                final LuaValue value = object.get(index);
 
-            if (!sb.isEmpty()) {
-                sb.append(",");
+                return LuaUtil.stringify(value);
             }
-
-            sb.append(
-                LuaUtil.stringify(
-                    object.get(index)
-                )
-            );
-        }
-
-        return "{" + sb + "}";
+        );
     }
 
     @Override
     public void close() {
+        forAllObjects(IOUtil::closeQuietly);
+
         ThreadUtil.close(executor);
         IOUtil.closeQuietly(clientRegistry);
-
-        forAllObjects(IOUtil::closeQuietly);
     }
 
     public void forAllObjects(Consumer<VirtualObject> runnable) {

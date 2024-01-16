@@ -45,17 +45,6 @@ class ServerDiscoverCommandTest extends BaseServerTest {
         execute((projectCipherKey, server, client) -> {
             final CLUDevice cluDevice = client.getCluDevice();
 
-            final Future<Boolean> checkAliveFuture = executor.submit(() -> {
-                do {
-                    final Optional<Boolean> aliveOptional = client.checkAlive();
-                    if (!Thread.interrupted() && aliveOptional.isEmpty() || !aliveOptional.get()) {
-                        return false;
-                    }
-                } while (!Thread.interrupted());
-
-                return true;
-            });
-
             // should not accept CLU KEY
             try (CLUClient otherClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getPort())) {
                 final Optional<Boolean> aliveOptional = otherClient.checkAlive();
@@ -63,12 +52,25 @@ class ServerDiscoverCommandTest extends BaseServerTest {
                 assertFalse(aliveOptional.isPresent());
             }
 
+            final Future<Boolean> checkAliveFuture = executor.submit(() -> {
+                do {
+                    final Optional<Boolean> aliveOptional = client.checkAlive();
+                    if (!Thread.interrupted() && aliveOptional.isEmpty() || !aliveOptional.get()) {
+                        return false;
+                    }
+
+                    Thread.sleep(100L);
+                } while (!Thread.interrupted());
+
+                return true;
+            });
+
             final List<CLUDevice> devices;
             try (CLUClient broadcastClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getBroadcastPort())) {
                 devices = broadcastClient.discover(
                                              projectCipherKey,
                                              Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
-                                             Duration.ofMillis(2000L),
+                                             Duration.ofMillis(4000L),
                                              2
                                          )
                                          .toList();

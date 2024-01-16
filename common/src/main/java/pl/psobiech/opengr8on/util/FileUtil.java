@@ -82,7 +82,7 @@ public final class FileUtil {
                   .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
 
         mkdir(TEMPORARY_DIRECTORY);
-        ThreadUtil.shutdownHook(() -> FileUtil.deleteRecursively(TEMPORARY_DIRECTORY));
+        ThreadUtil.addShutdownHook(() -> FileUtil.deleteRecursively(TEMPORARY_DIRECTORY));
     }
 
     private FileUtil() {
