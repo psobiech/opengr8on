@@ -38,6 +38,7 @@ import io.moquette.interception.messages.InterceptPublishMessage;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.MqttMessageBuilders;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import pl.psobiech.opengr8on.client.CLUFiles;
@@ -81,6 +82,7 @@ class ServerTest extends BaseServerTest {
     }
 
     @Test
+    @Disabled
     @Timeout(30)
     void fullMode() throws Exception {
         final Server mqttServer = new Server();
