@@ -70,8 +70,8 @@ jobs:
       - name: Package runtime
         if: steps.tag.outputs.tag != ''
         run: |
-          mv vclu/target/vclu-jar-with-dependencies.jar vclu/target/vclu.jar
-          mv client/target/client-jar-with-dependencies.jar client/target/client.jar
+          mv modules/vclu/target/vclu-jar-with-dependencies.jar modules/vclu/target/vclu.jar
+          mv modules/client/target/client-jar-with-dependencies.jar modules/client/target/client.jar
           zip -r runtime-${{ steps.tag.outputs.tag }}.zip ./runtime
           cd ./runtime && zip -r ../device-interfaces-${{ steps.tag.outputs.tag }}.zip ./device-interfaces
       - name: Release
@@ -83,8 +83,8 @@ jobs:
           files: |
             runtime-${{ steps.tag.outputs.tag }}.zip
             device-interfaces-${{ steps.tag.outputs.tag }}.zip
-            vclu/target/vclu.jar
-            client/target/client.jar
+            modules/vclu/target/vclu.jar
+            modules/client/target/client.jar
       - name: Submit Dependency Snapshot
         if: github.ref == 'refs/heads/develop'
         uses: advanced-security/maven-dependency-submission-action@v3

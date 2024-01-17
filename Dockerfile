@@ -5,20 +5,21 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN mkdir -p /opt/build
 WORKDIR /opt/build
 
-RUN apt update && \
-    apt install -y maven && \
+RUN apt-get update && \
+    apt-get install -y maven && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 FROM app-builder AS app-deps
 
 COPY pom.xml .
-COPY parent/pom.xml parent/
-COPY common/pom.xml common/
-COPY lib/pom.xml lib/
-COPY tftp/pom.xml tftp/
-COPY client/pom.xml client/
-COPY vclu/pom.xml vclu/
+COPY modules/parent/pom.xml modules/parent/
+COPY modules/common/pom.xml modules/common/
+COPY modules/lib/pom.xml modules/lib/
+COPY modules/parsers/pom.xml modules/parsers/
+COPY modules/tftp/pom.xml modules/tftp/
+COPY modules/client/pom.xml modules/client/
+COPY modules/vclu/pom.xml modules/vclu/
 
 COPY assembly/jar-with-dependencies.xml assembly/
 
@@ -28,11 +29,13 @@ RUN mvn -B -T 4 compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.t
 
 FROM app-deps AS app-build
 
-COPY tftp tftp
-COPY common common
-COPY lib lib
-COPY client client
-COPY vclu vclu
+COPY modules/tftp modules/tftp
+COPY modules/common modules/common
+COPY modules/lib modules/lib
+COPY modules/parsers modules/parsers
+COPY modules/client modules/client
+COPY modules/vclu modules/vclu
+COPY .git .git
 
 RUN mvn -B -T 4 clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
@@ -44,8 +47,8 @@ WORKDIR /opt/build
 #COPY --from=app-build /opt/build/vclu/target/vclu.jar .
 
 RUN $JAVA_HOME/bin/jlink \
-         --add-modules java.base,java.xml,java.naming,java.management,jdk.zipfs \
-#         --add-modules $(jdeps --ignore-missing-deps --print-module-deps vclu.jar),java.base,java.xml,java.naming,java.management,java.sql,java.instrument,jdk.zipfs,jdk.unsupported \
+         --add-modules java.base,java.net.http,java.xml,java.naming,java.management,jdk.zipfs,jdk.crypto.ec \
+#         --add-modules $(jdeps --ignore-missing-deps --print-module-deps vclu.jar),java.base,java.xml,java.naming,java.management,java.sql,java.instrument,jdk.zipfs \
          --strip-debug \
          --no-man-pages \
          --no-header-files \
@@ -61,7 +64,7 @@ RUN mkdir -p /opt/docker/runtime
 WORKDIR /opt/docker
 
 COPY --from=jre-build /opt/build/jre $JAVA_HOME
-COPY --from=app-build /opt/build/vclu/target/vclu-jar-with-dependencies.jar /opt/docker/vclu.jar
+COPY --from=app-build /opt/build/modules/vclu/target/vclu-jar-with-dependencies.jar /opt/docker/vclu.jar
 #COPY runtime .
 
 ENTRYPOINT [ \

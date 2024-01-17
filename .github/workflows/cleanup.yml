@@ -30,13 +30,19 @@ jobs:
           delete-only-untagged-versions: 'true'
       - uses: actions/delete-package-versions@v4
         with:
-          package-name: 'pl.psobiech.opengr8on.client'
+          package-name: 'pl.psobiech.opengr8on.lib'
           package-type: 'maven'
           min-versions-to-keep: 1
           delete-only-untagged-versions: 'true'
       - uses: actions/delete-package-versions@v4
         with:
-          package-name: 'pl.psobiech.opengr8on.lib'
+          package-name: 'pl.psobiech.opengr8on.parsers'
+          package-type: 'maven'
+          min-versions-to-keep: 1
+          delete-only-untagged-versions: 'true'
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'pl.psobiech.opengr8on.client'
           package-type: 'maven'
           min-versions-to-keep: 1
           delete-only-untagged-versions: 'true'

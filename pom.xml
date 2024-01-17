@@ -30,14 +30,15 @@
   <name>OpenGr8on Aggregator</name>
 
   <modules>
-    <module>parent</module>
+    <module>modules/parent</module>
 
-    <module>common</module>
-    <module>tftp</module>
+    <module>modules/common</module>
+    <module>modules/tftp</module>
 
-    <module>lib</module>
-    <module>client</module>
-    <module>vclu</module>
+    <module>modules/lib</module>
+    <module>modules/parsers</module>
+    <module>modules/client</module>
+    <module>modules/vclu</module>
   </modules>
 
   <repositories>
