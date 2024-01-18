@@ -222,7 +222,7 @@ public class VirtualSystem implements Closeable {
                 final int index = subscription.index();
                 final LuaValue value = object.get(index);
 
-                return LuaUtil.stringify(value);
+                return LuaUtil.stringifyRaw(value, "nil");
             }
         );
     }
