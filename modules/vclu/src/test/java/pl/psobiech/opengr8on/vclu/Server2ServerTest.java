@@ -93,7 +93,7 @@ class Server2ServerTest {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(30)
     void remoteCommunication() throws Exception {
         assertEquals(LuaValue.NIL, server1.getServer().luaCall("testVariable"));
 

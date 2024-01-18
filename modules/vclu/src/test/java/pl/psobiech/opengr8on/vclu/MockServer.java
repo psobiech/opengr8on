@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import io.jstach.jstachio.JStachio;
 import org.apache.commons.lang3.StringUtils;
@@ -58,13 +57,11 @@ public class MockServer implements Closeable {
 
     private final UDPSocket broadcastSocket;
 
-    private final UDPSocket globalBroadcastSocket;
+    private final UDPSocket commandSocket;
 
-    private final UDPSocket socket;
+    private final UDPSocket responseSocket;
 
     private final Server server;
-
-    private Future<Void> serverFuture;
 
     public MockServer(CipherKey projectCipherKey, long serialNumber) throws Exception {
         this(
@@ -81,15 +78,15 @@ public class MockServer implements Closeable {
     }
 
     public MockServer(CipherKey projectCipherKey, CLUDevice cluDevice) throws Exception {
-        this.rootDirectory   = FileUtil.temporaryDirectory();
+        this.rootDirectory = FileUtil.temporaryDirectory();
         this.aDriveDirectory = rootDirectory.resolve("a");
 
         FileUtil.mkdir(aDriveDirectory);
 
-        this.broadcastSocket       = new UDPSocket(LOCALHOST, 0, false);
-        this.globalBroadcastSocket = new UDPSocket(LOCALHOST, 0, false);
-        this.socket                = new UDPSocket(LOCALHOST, 0, false);
-        this.tftpServer            = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
+        this.broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
+        this.commandSocket   = new UDPSocket(LOCALHOST, 0, false);
+        this.responseSocket  = new UDPSocket(LOCALHOST, 0, false);
+        this.tftpServer      = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
 
         this.tftpServer.start();
         this.tftpServer.stop();
@@ -110,12 +107,12 @@ public class MockServer implements Closeable {
             rootDirectory,
             projectCipherKey,
             cluDevice,
-            broadcastSocket, globalBroadcastSocket, socket,
+            broadcastSocket, commandSocket, responseSocket,
             tftpServer
         );
     }
 
-    public void start() throws InterruptedException {
+    public void start() {
         server.start();
     }
 
@@ -146,7 +143,7 @@ public class MockServer implements Closeable {
     }
 
     public int getPort() {
-        return socket.getLocalPort();
+        return commandSocket.getLocalPort();
     }
 
     public int getBroadcastPort() {
@@ -163,13 +160,6 @@ public class MockServer implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.cancel(serverFuture);
-        try {
-            serverFuture.get();
-        } catch (Exception e) {
-            //
-        }
-
         ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(server);

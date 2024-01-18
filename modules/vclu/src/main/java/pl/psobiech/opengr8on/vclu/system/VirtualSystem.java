@@ -229,11 +229,10 @@ public class VirtualSystem implements Closeable {
 
     @Override
     public void close() {
-        forAllObjects(IOUtil::closeQuietly);
+        IOUtil.closeQuietly(clientRegistry);
+        IOUtil.closeQuietly(objectsByName.values());
 
         ThreadUtil.closeQuietly(executor);
-
-        IOUtil.closeQuietly(clientRegistry);
     }
 
     public void forAllObjects(Consumer<VirtualObject> runnable) {

@@ -44,11 +44,6 @@ public class SocketUtil {
      */
     public static final int DEFAULT_TIMEOUT_MILLISECONDS = 9_000;
 
-    /**
-     * Reliability traffic flag value
-     */
-    private static final int IPTOS_RELIABILITY = 0x04;
-
     private SocketUtil() {
         // NOP
     }
@@ -121,8 +116,6 @@ public class SocketUtil {
             try {
                 this.socket = new DatagramSocket(new InetSocketAddress(address, port));
                 this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
-                this.socket.setTrafficClass(IPTOS_RELIABILITY);
-
                 this.socket.setBroadcast(broadcast);
             } catch (IOException e) {
                 throw new UnexpectedException(e);

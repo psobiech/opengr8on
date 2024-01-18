@@ -22,6 +22,7 @@ import java.net.Inet4Address;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -43,6 +44,8 @@ public class RemoteCLU extends VirtualObject {
 
     private final CLUClient client;
 
+    private Future<?> lastfuture = null;
+
     public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(
             name,
@@ -56,8 +59,16 @@ public class RemoteCLU extends VirtualObject {
         register(Methods.EXECUTE, arg1 -> {
             final String script = arg1.checkjstring();
 
+            if (lastfuture != null && !lastfuture.isDone()) {
+                try {
+                    lastfuture.get();
+                } catch (Exception e) {
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
+
             if (script.startsWith(LuaScriptCommand.SET_VARS)) {
-                executor.submit(() -> client.execute(script));
+                lastfuture = executor.submit(() -> client.execute(script));
             } else {
                 final Optional<String> returnValueOptional;
                 try {

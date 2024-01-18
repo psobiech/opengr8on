@@ -70,7 +70,7 @@ public class VirtualObject implements Closeable {
         Class<? extends Enum<? extends IMethod>> methodClass,
         Class<? extends Enum<? extends IEvent>> eventClass
     ) {
-        this.name      = name;
+        this.name = name;
         this.scheduler = ThreadUtil.virtualScheduler(name);
 
         this.featureClass = featureClass;
@@ -249,7 +249,7 @@ public class VirtualObject implements Closeable {
         try {
             LOGGER.debug("{}.triggerEvent({})", name, event.name());
 
-            scheduler.submit(() -> luaFunction.call());
+            scheduler.execute(luaFunction::call);
 
             return true;
         } catch (Exception e) {

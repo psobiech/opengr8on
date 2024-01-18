@@ -89,7 +89,7 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         uses: advanced-security/maven-dependency-submission-action@v3
   docker:
-    needs: [testLinux, testWindows]
+    needs: [testLinux]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

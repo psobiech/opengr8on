@@ -82,6 +82,8 @@ public class Server implements Closeable {
 
     private static final long RETRY_DELAY = 100L;
 
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("CLUServer");
+
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
 
     private final Path parentDirectory;
@@ -92,13 +94,11 @@ public class Server implements Closeable {
 
     private final CLUDevice cluDevice;
 
-    protected final UDPSocket globalBroadcastSocket;
-
     protected final UDPSocket broadcastSocket;
 
     protected final UDPSocket commandSocket;
 
-    private final ExecutorService executor = ThreadUtil.daemonExecutor("CLUServer");
+    private final UDPSocket responseSocket;
 
     private LuaThread mainThread;
 
@@ -117,16 +117,16 @@ public class Server implements Closeable {
             rootDirectory, projectCipherKey, cluDevice,
             // TODO: networkInterface.getBroadcastAddress() does not work with OM
             SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
-            SocketUtil.udpListener(networkInterface.getBroadcastAddress(), Client.COMMAND_PORT),
             SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
+            SocketUtil.udpRandomPort(cluDevice.getAddress()),
             new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
         );
     }
 
     protected Server(
         Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
-        UDPSocket globalBroadcastSocket, UDPSocket broadcastSocket,
-        UDPSocket commandSocket,
+        UDPSocket broadcastSocket,
+        UDPSocket commandSocket, UDPSocket responseSocket,
         TFTPServer tftpServer
     ) {
         this.rootDirectory   = rootDirectory.toAbsolutePath().normalize();
@@ -134,9 +134,9 @@ public class Server implements Closeable {
         this.aDriveDirectory = rootDirectory.resolve("a");
         this.cluDevice       = cluDevice;
 
-        this.globalBroadcastSocket = globalBroadcastSocket;
-        this.broadcastSocket       = broadcastSocket;
-        this.commandSocket         = commandSocket;
+        this.broadcastSocket = broadcastSocket;
+        this.commandSocket   = commandSocket;
+        this.responseSocket  = responseSocket;
 
         this.tftpServer = tftpServer;
 
@@ -149,7 +149,7 @@ public class Server implements Closeable {
     public void start() {
         commandSocket.open();
         broadcastSocket.open();
-        globalBroadcastSocket.open();
+        responseSocket.open();
 
         executor.execute(() -> {
                 do {
@@ -159,43 +159,6 @@ public class Server implements Closeable {
                         final Optional<Request> requestOptional = awaitRequestPayload(
                             String.valueOf(uuid),
                             broadcastSocket, Duration.ofMillis(TIMEOUT_MILLIS),
-                            broadcastCipherKeys
-                        );
-                        if (requestOptional.isEmpty()) {
-                            continue;
-                        }
-
-                        final Request request = requestOptional.get();
-                        final Optional<Response> responseOptional = onBroadcastCommand(uuid, request);
-                        if (responseOptional.isEmpty()) {
-                            LOGGER.trace(
-                                "%s\tIGNORED\t<-D--\t%s // %s"
-                                    .formatted(uuid, request.payload(), request.cipherKey())
-                            );
-
-                            continue;
-                        }
-
-                        respond(uuid, request, responseOptional.get());
-                    } catch (UncheckedInterruptedException e) {
-                        LOGGER.trace(e.getMessage(), e);
-
-                        break;
-                    } catch (Exception e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                } while (!Thread.interrupted());
-            }
-        );
-
-        executor.execute(() -> {
-                do {
-                    try {
-                        final UUID uuid = UUID.randomUUID();
-
-                        final Optional<Request> requestOptional = awaitRequestPayload(
-                            String.valueOf(uuid),
-                            globalBroadcastSocket, Duration.ofMillis(TIMEOUT_MILLIS),
                             broadcastCipherKeys
                         );
                         if (requestOptional.isEmpty()) {
@@ -717,11 +680,7 @@ public class Server implements Closeable {
             requestPayload.address(), requestPayload.port()
         );
 
-        try (UDPSocket socket = SocketUtil.udpRandomPort(commandSocket.getLocalAddress())) {
-            socket.open();
-
-            socket.send(requestPacket);
-        }
+        responseSocket.send(requestPacket);
     }
 
     public CLUDevice getDevice() {
@@ -733,7 +692,7 @@ public class Server implements Closeable {
         ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(tftpServer, mqttClient, mainThread);
-        IOUtil.closeQuietly(commandSocket, broadcastSocket, globalBroadcastSocket);
+        IOUtil.closeQuietly(commandSocket, broadcastSocket, responseSocket);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) { }
