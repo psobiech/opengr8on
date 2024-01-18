@@ -29,13 +29,13 @@ TODOs:
 
 ## Virtual Objects
 
-### MqttTopic (and mosquitto configuration)
+### MqttTopic
 
 Implemented: Yes
 
 * Automatically converts JSON to Lua Tables
 
-[MQTT.md](MQTT.md)
+[MQTT.md](modules/MQTT.md) (+ mosquitto broker configuration)
 
 ### Timer
 
@@ -73,11 +73,11 @@ Implemented: No
 
 ## TFTP
 
-[README.md](tftp%2FREADME.md)
+[TFTP.md](modules%2FTFTP.md)[README.md](tftp%2FREADME.md)
 
 ## Example Client
 
-[client/README.md](client%2FREADME.md)
+[CLIENT.md](modules%2FCLIENT.md)[client/README.md](client%2FREADME.md)
 
 ## Quickstart
 
