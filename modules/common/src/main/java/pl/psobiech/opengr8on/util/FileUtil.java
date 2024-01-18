@@ -49,6 +49,8 @@ public final class FileUtil {
 
     private static final String TMPDIR_PROPERTY = "java.io.tmpdir";
 
+    private static final Path ROOT_TEMPORARY_DIRECTORY_PATH = Paths.get(System.getProperty(TMPDIR_PROPERTY)).toAbsolutePath();
+
     private static final String TEMPORARY_FILE_PREFIX = "tmp_";
 
     private static final String TEMPORARY_FILE_SUFFIX = ".tmp";
@@ -69,11 +71,7 @@ public final class FileUtil {
 
     static {
         try {
-            TEMPORARY_DIRECTORY = Files.createTempDirectory(
-                Paths.get(System.getProperty(TMPDIR_PROPERTY))
-                     .toAbsolutePath(),
-                TEMPORARY_FILE_PREFIX
-            );
+            TEMPORARY_DIRECTORY = Files.createTempDirectory(ROOT_TEMPORARY_DIRECTORY_PATH, TEMPORARY_FILE_PREFIX);
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
@@ -82,7 +80,11 @@ public final class FileUtil {
                   .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
 
         mkdir(TEMPORARY_DIRECTORY);
-        ThreadUtil.addShutdownHook(() -> FileUtil.deleteRecursively(TEMPORARY_DIRECTORY));
+        ThreadUtil.addShutdownHook(() -> {
+            LOGGER.debug("Cleaning up directory: {}", TEMPORARY_DIRECTORY);
+
+            FileUtil.deleteRecursively(TEMPORARY_DIRECTORY);
+        });
     }
 
     private FileUtil() {

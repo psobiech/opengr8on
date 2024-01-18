@@ -89,8 +89,7 @@ class Server2ServerTest {
 
     @AfterAll
     static void tearDown() throws Exception {
-        IOUtil.closeQuietly(server1);
-        IOUtil.closeQuietly(server2);
+        IOUtil.closeQuietly(server1, server2);
     }
 
     @Test

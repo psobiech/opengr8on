@@ -99,7 +99,7 @@ public class Storage extends VirtualObject {
     public void setup() {
         restore();
 
-        executor.scheduleAtFixedRate(this::updateAndStore, 1, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::updateAndStore, 1, 1, TimeUnit.SECONDS);
     }
 
     @SuppressWarnings("unchecked")

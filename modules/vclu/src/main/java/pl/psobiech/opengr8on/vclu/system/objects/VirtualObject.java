@@ -49,7 +49,7 @@ public class VirtualObject implements Closeable {
 
     private final Map<Integer, LuaFunction> eventFunctions = new Hashtable<>();
 
-    protected final ScheduledExecutorService executor;
+    protected final ScheduledExecutorService scheduler;
 
     private final Class<? extends Enum<? extends IFeature>> featureClass;
 
@@ -70,8 +70,8 @@ public class VirtualObject implements Closeable {
         Class<? extends Enum<? extends IMethod>> methodClass,
         Class<? extends Enum<? extends IEvent>> eventClass
     ) {
-        this.name = name;
-        this.executor = ThreadUtil.virtualScheduler(name);
+        this.name      = name;
+        this.scheduler = ThreadUtil.virtualScheduler(name);
 
         this.featureClass = featureClass;
         this.methodClass  = methodClass;
@@ -98,7 +98,7 @@ public class VirtualObject implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(scheduler);
     }
 
     public void register(IFeature feature, LuaSupplier fn) {
@@ -249,7 +249,7 @@ public class VirtualObject implements Closeable {
         try {
             LOGGER.debug("{}.triggerEvent({})", name, event.name());
 
-            executor.submit(() -> luaFunction.call());
+            scheduler.submit(() -> luaFunction.call());
 
             return true;
         } catch (Exception e) {

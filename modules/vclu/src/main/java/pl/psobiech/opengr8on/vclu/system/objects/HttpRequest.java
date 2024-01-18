@@ -92,7 +92,7 @@ public class HttpRequest extends VirtualObject {
                                     .proxy(ProxySelector.getDefault())
                                     .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_NONE))
                                     .connectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MILLIS))
-                                    .executor(executor)
+                                    .executor(scheduler)
                                     .version(Version.HTTP_2)
                                     .build();
 
@@ -113,7 +113,7 @@ public class HttpRequest extends VirtualObject {
 
         final java.net.http.HttpRequest request = createRequest(requestType, requestBodyAsString);
 
-        this.responseFuture = executor.submit(
+        this.responseFuture = scheduler.submit(
             () -> {
                 try {
                     LOGGER.trace("HTTP Request {} {} / BODY: {}", request.method(), request.uri(), requestBodyAsString);

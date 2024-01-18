@@ -36,8 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
+import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
@@ -177,19 +180,31 @@ public class VirtualSystem implements Closeable {
             client -> {
                 final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
 
-                client.clientReport(valuesAsString);
+                sendResponse(client, valuesAsString);
 
                 if (!ipAddress.equals(remoteIpAddress)) {
                     // when having docker network interfaces,
                     // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
                     try (CLUClient remoteClient = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
-                        remoteClient.clientReport(valuesAsString);
+                        sendResponse(remoteClient, valuesAsString);
                     }
                 }
             }
         );
 
         return CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
+    }
+
+    /**
+     * Sends the execute LUA response to the given CLU
+     */
+    public void sendResponse(CLUClient client, String value) {
+        final CLUDevice cluDevice = client.getCluDevice();
+
+        final int sessionId = RandomUtil.integer();
+        final LuaScriptCommand.Response response = LuaScriptCommand.response(cluDevice.getAddress(), sessionId, value);
+
+        client.send(response);
     }
 
     public LuaValue clientDestroy(Inet4Address ipAddress, int port, int sessionId) {
@@ -216,7 +231,8 @@ public class VirtualSystem implements Closeable {
     public void close() {
         forAllObjects(IOUtil::closeQuietly);
 
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(executor);
+
         IOUtil.closeQuietly(clientRegistry);
     }
 

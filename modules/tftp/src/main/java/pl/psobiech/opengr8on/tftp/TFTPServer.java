@@ -43,6 +43,7 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
@@ -54,7 +55,7 @@ public class TFTPServer implements Closeable {
 
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
-    private final ExecutorService executor = ThreadUtil.virtualExecutor("TFTPServer");
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("TFTPServer");
 
     private final InetAddress localAddress;
 
@@ -124,12 +125,12 @@ public class TFTPServer implements Closeable {
     }
 
     private void listen() {
+        final int port = getPort();
+
         try (serverTFTP) {
             synchronized (serverTFTP) {
                 serverTFTP.notifyAll();
             }
-
-            final int port = getPort();
 
             do {
                 TFTPPacket incomingPacket = null;
@@ -155,6 +156,8 @@ public class TFTPServer implements Closeable {
                     LOGGER.error(e.getMessage(), e);
                 }
             } while (!Thread.interrupted());
+        } finally {
+            IOUtil.closeQuietly(serverTFTP);
 
             LOGGER.debug("Stopped TFTP Server on port " + port);
         }
@@ -255,20 +258,16 @@ public class TFTPServer implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.close(executor);
-
         stop();
+
+        ThreadUtil.closeQuietly(executor);
     }
 
-    public Future<Void> stop() {
-        final Future<Void> currentListener = listener;
+    public void stop() {
+        ThreadUtil.cancel(listener);
         listener = null;
 
-        if (currentListener != null) {
-            currentListener.cancel(true);
-        }
-
-        return currentListener;
+        IOUtil.closeQuietly(serverTFTP);
     }
 
     public enum ServerMode {

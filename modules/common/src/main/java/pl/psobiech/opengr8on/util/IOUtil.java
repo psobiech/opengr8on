@@ -18,6 +18,8 @@
 
 package pl.psobiech.opengr8on.util;
 
+import java.util.Collection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,15 @@ public final class IOUtil {
 
     private IOUtil() {
         // NOP
+    }
+
+    /**
+     * Attempts to silently close all closables
+     */
+    public static void closeQuietly(Collection<? extends AutoCloseable> closeables) {
+        for (AutoCloseable closeable : closeables) {
+            closeQuietly(closeable);
+        }
     }
 
     /**

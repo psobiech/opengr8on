@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.AfterAll;
@@ -59,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TFTPTest {
     private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
 
-    private static ExecutorService executor = Executors.newCachedThreadPool();
+    private static ExecutorService executor;
 
     private static Path rootDirectory;
 
@@ -71,13 +70,9 @@ class TFTPTest {
 
     private static TFTPClient client;
 
-    private String LF = Character.toString(0x0A);
-
-    private String CR = Character.toString(0x0D);
-
     @BeforeAll
     static void setUp() throws Exception {
-        executor = Executors.newCachedThreadPool();
+        executor = ThreadUtil.daemonExecutor("TFTPTest");
 
         rootDirectory = FileUtil.temporaryDirectory();
         FileUtil.mkdir(rootDirectory);
@@ -89,22 +84,14 @@ class TFTPTest {
         server.awaitInitialized();
 
         client = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), socket.getLocalPort());
-        client.open();
     }
 
     @AfterAll
     static void tearDown() throws Exception {
-        ThreadUtil.close(executor);
+        ThreadUtil.cancel(serverFuture);
+        ThreadUtil.closeQuietly(executor);
 
-        IOUtil.closeQuietly(client);
-        IOUtil.closeQuietly(server);
-
-        serverFuture.cancel(true);
-        try {
-            serverFuture.get();
-        } catch (Exception e) {
-            //
-        }
+        IOUtil.closeQuietly(client, server);
 
         FileUtil.deleteRecursively(rootDirectory);
     }
@@ -195,7 +182,7 @@ class TFTPTest {
     @Test
     void uploadDownloadTextAsciiLF() throws Exception {
         final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
-        final String inputString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String inputString = "Some test string" + FileUtil.LF + "and a second line" + FileUtil.LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
@@ -231,7 +218,7 @@ class TFTPTest {
     @Test
     void uploadDownloadTextAsciiCRLF() throws Exception {
         final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
-        final String inputString = "Some test string" + CR + LF + "and a second line" + CR + LF + " ;-)";
+        final String inputString = "Some test string" + FileUtil.CR + FileUtil.LF + "and a second line" + FileUtil.CR + FileUtil.LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
@@ -267,7 +254,7 @@ class TFTPTest {
     @Test
     void downloadTextAsciiLF() throws Exception {
         final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
-        final String inputString = "Some test string" + LF + "and a second line" + LF + " ;-)";
+        final String inputString = "Some test string" + FileUtil.LF + "and a second line" + FileUtil.LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();
@@ -295,7 +282,7 @@ class TFTPTest {
     @Test
     void downloadTextAsciiCRLF() throws Exception {
         final String expectedString = "Some test string" + System.lineSeparator() + "and a second line" + System.lineSeparator() + " ;-)";
-        final String inputString = "Some test string" + CR + LF + "and a second line" + CR + LF + " ;-)";
+        final String inputString = "Some test string" + FileUtil.CR + FileUtil.LF + "and a second line" + FileUtil.CR + FileUtil.LF + " ;-)";
 
         final Path temporaryPathFrom = FileUtil.temporaryFile();
         final Path temporaryPathTo = FileUtil.temporaryFile();

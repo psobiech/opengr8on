@@ -39,7 +39,7 @@ import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 public class ClientRegistry implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistry.class);
 
-    private final ScheduledExecutorService executor = ThreadUtil.virtualScheduler(getClass());
+    private final ScheduledExecutorService scheduler = ThreadUtil.daemonScheduler(getClass());
 
     private final Inet4Address localAddress;
 
@@ -62,7 +62,7 @@ public class ClientRegistry implements Closeable {
 
         final Future<?> previousFuture = registrations.put(
             registrationKey,
-            executor.scheduleAtFixedRate(
+            scheduler.scheduleAtFixedRate(
                 () -> {
                     try {
                         fn.accept(client);
@@ -91,11 +91,9 @@ public class ClientRegistry implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(scheduler);
 
-        for (CLUClient client : clients.values()) {
-            IOUtil.closeQuietly(client);
-        }
+        IOUtil.closeQuietly(clients.values());
     }
 
     public record Subscription(VirtualObject object, int index) {

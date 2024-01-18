@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -61,11 +60,8 @@ public class MqttClient implements Closeable {
 
     private static final int MAX_INFLIGHT = 64;
 
-    // the mqtt client requires at least 4 threads (does not support virtual threads - uses not reentrant locks)
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(
-        4,
-        ThreadUtil.threadFactory("mqtt", true)
-    );
+    // the mqtt client requires at least 4 threads (also it does not support virtual threads)
+    private final ScheduledExecutorService executor = ThreadUtil.daemonScheduler(4, "MQTT");
 
     private MqttAsyncClient mqttClient;
 
@@ -219,7 +215,7 @@ public class MqttClient implements Closeable {
     public void close() {
         stop();
 
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(executor);
     }
 
     public void stop() {
@@ -229,10 +225,9 @@ public class MqttClient implements Closeable {
             } catch (MqttException e) {
                 LOGGER.error(e.getMessage(), e);
             }
-
-            IOUtil.closeQuietly(mqttClient);
         }
 
+        IOUtil.closeQuietly(mqttClient);
         mqttClient = null;
     }
 }

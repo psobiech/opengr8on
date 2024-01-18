@@ -29,10 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ExecutorService;
 
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
@@ -59,6 +56,7 @@ import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
+import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
@@ -78,31 +76,29 @@ public class Server implements Closeable {
 
     protected static final int BUFFER_SIZE = 2048;
 
-    private static final byte[] EMPTY_BUFFER = new byte[0];
-
-    private static final int TIMEOUT_BROADCAST_MILLIS = 1000;
-
     private static final int TIMEOUT_MILLIS = 1000;
 
     private static final int RESTART_RETRIES = 8;
 
     private static final long RETRY_DELAY = 100L;
 
-    private final DatagramPacket requestPacket = new DatagramPacket(EMPTY_BUFFER, 0);
-
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
+
+    private final Path parentDirectory;
 
     private final Path rootDirectory;
 
+    private final Path aDriveDirectory;
+
     private final CLUDevice cluDevice;
+
+    protected final UDPSocket globalBroadcastSocket;
 
     protected final UDPSocket broadcastSocket;
 
-    protected final ReentrantLock socketLock = new ReentrantLock();
+    protected final UDPSocket commandSocket;
 
-    protected final UDPSocket socket;
-
-    private final ScheduledExecutorService executorService = ThreadUtil.virtualScheduler("CLUServer");
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("CLUServer");
 
     private LuaThread mainThread;
 
@@ -116,11 +112,12 @@ public class Server implements Closeable {
 
     private final MqttClient mqttClient = new MqttClient();
 
-    public Server(Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
+    public Server(Path rootDirectory, CipherKey projectCipherKey, NetworkInterfaceDto networkInterface, CLUDevice cluDevice) {
         this(
             rootDirectory, projectCipherKey, cluDevice,
             // TODO: networkInterface.getBroadcastAddress() does not work with OM
             SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
+            SocketUtil.udpListener(networkInterface.getBroadcastAddress(), Client.COMMAND_PORT),
             SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
             new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
         );
@@ -128,13 +125,20 @@ public class Server implements Closeable {
 
     protected Server(
         Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
-        UDPSocket broadcastSocket, UDPSocket socket, TFTPServer tftpServer
+        UDPSocket globalBroadcastSocket, UDPSocket broadcastSocket,
+        UDPSocket commandSocket,
+        TFTPServer tftpServer
     ) {
         this.rootDirectory   = rootDirectory.toAbsolutePath().normalize();
+        this.parentDirectory = rootDirectory.getParent();
+        this.aDriveDirectory = rootDirectory.resolve("a");
         this.cluDevice       = cluDevice;
-        this.broadcastSocket = broadcastSocket;
-        this.socket          = socket;
-        this.tftpServer      = tftpServer;
+
+        this.globalBroadcastSocket = globalBroadcastSocket;
+        this.broadcastSocket       = broadcastSocket;
+        this.commandSocket         = commandSocket;
+
+        this.tftpServer = tftpServer;
 
         this.projectCipherKey = projectCipherKey;
 
@@ -142,74 +146,123 @@ public class Server implements Closeable {
         this.unicastCipherKeys   = List.of(projectCipherKey);
     }
 
-    public void listen() throws InterruptedException {
-        socket.open();
+    public void start() {
+        commandSocket.open();
         broadcastSocket.open();
+        globalBroadcastSocket.open();
 
-        executorService
-            .scheduleAtFixedRate(() -> {
+        executor.execute(() -> {
+                do {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
                         final Optional<Request> requestOptional = awaitRequestPayload(
                             String.valueOf(uuid),
-                            broadcastSocket, Duration.ofMillis(TIMEOUT_BROADCAST_MILLIS),
+                            broadcastSocket, Duration.ofMillis(TIMEOUT_MILLIS),
                             broadcastCipherKeys
                         );
                         if (requestOptional.isEmpty()) {
-                            return;
+                            continue;
                         }
 
                         final Request request = requestOptional.get();
                         final Optional<Response> responseOptional = onBroadcastCommand(uuid, request);
                         if (responseOptional.isEmpty()) {
-                            return;
+                            LOGGER.trace(
+                                "%s\tIGNORED\t<-D--\t%s // %s"
+                                    .formatted(uuid, request.payload(), request.cipherKey())
+                            );
+
+                            continue;
                         }
 
                         respond(uuid, request, responseOptional.get());
                     } catch (UncheckedInterruptedException e) {
                         LOGGER.trace(e.getMessage(), e);
+
+                        break;
                     } catch (Exception e) {
                         LOGGER.error(e.getMessage(), e);
                     }
-                },
-                TIMEOUT_BROADCAST_MILLIS, TIMEOUT_BROADCAST_MILLIS, TimeUnit.MILLISECONDS
-            );
+                } while (!Thread.interrupted());
+            }
+        );
 
-        executorService
-            .scheduleAtFixedRate(() -> {
+        executor.execute(() -> {
+                do {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
                         final Optional<Request> requestOptional = awaitRequestPayload(
                             String.valueOf(uuid),
-                            socket, Duration.ofMillis(TIMEOUT_MILLIS),
-                            unicastCipherKeys
+                            globalBroadcastSocket, Duration.ofMillis(TIMEOUT_MILLIS),
+                            broadcastCipherKeys
                         );
                         if (requestOptional.isEmpty()) {
-                            return;
+                            continue;
                         }
 
                         final Request request = requestOptional.get();
-                        final Optional<Response> responseOptional = onCommand(uuid, request);
+                        final Optional<Response> responseOptional = onBroadcastCommand(uuid, request);
                         if (responseOptional.isEmpty()) {
-                            return;
+                            LOGGER.trace(
+                                "%s\tIGNORED\t<-D--\t%s // %s"
+                                    .formatted(uuid, request.payload(), request.cipherKey())
+                            );
+
+                            continue;
                         }
 
                         respond(uuid, request, responseOptional.get());
                     } catch (UncheckedInterruptedException e) {
                         LOGGER.trace(e.getMessage(), e);
+
+                        break;
                     } catch (Exception e) {
                         LOGGER.error(e.getMessage(), e);
                     }
-                },
-                TIMEOUT_BROADCAST_MILLIS, TIMEOUT_MILLIS, TimeUnit.MILLISECONDS
-            );
+                } while (!Thread.interrupted());
+            }
+        );
+
+        executor.execute(() -> {
+                do {
+                    try {
+                        final UUID uuid = UUID.randomUUID();
+
+                        final Optional<Request> requestOptional = awaitRequestPayload(
+                            String.valueOf(uuid),
+                            commandSocket, Duration.ofMillis(TIMEOUT_MILLIS),
+                            unicastCipherKeys
+                        );
+                        if (requestOptional.isEmpty()) {
+                            continue;
+                        }
+
+                        final Request request = requestOptional.get();
+                        final Optional<Response> responseOptional = onCommand(uuid, request);
+                        if (responseOptional.isEmpty()) {
+                            LOGGER.trace(
+                                "%s\tIGNORED\t<-D--\t%s // %s"
+                                    .formatted(uuid, request.payload(), request.cipherKey())
+                            );
+
+                            continue;
+                        }
+
+                        respond(uuid, request, responseOptional.get());
+                    } catch (UncheckedInterruptedException e) {
+                        LOGGER.trace(e.getMessage(), e);
+
+                        break;
+                    } catch (Exception e) {
+                        LOGGER.error(e.getMessage(), e);
+                    }
+                } while (!Thread.interrupted());
+            }
+        );
 
         startClu();
-
-        // sleep until interrupted
-        new CountDownLatch(1).await();
     }
 
     private Optional<Request> awaitRequestPayload(String uuid, UDPSocket socket, Duration timeout, List<CipherKey> responseCipherKeys) {
@@ -249,14 +302,9 @@ public class Server implements Closeable {
         if (SetIpCommand.requestMatches(buffer)) {
             final Optional<SetIpCommand.Request> commandOptional = SetIpCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onSetIpCommand(uuid, request, commandOptional.get());
+                return onSetIpCommand(true, uuid, request, commandOptional.get());
             }
         }
-
-        LOGGER.trace(
-            "%s\tIGNORED\t<-D--\t%s // %s"
-                .formatted(uuid, payload, request.cipherKey())
-        );
 
         return Optional.empty();
     }
@@ -301,7 +349,7 @@ public class Server implements Closeable {
         if (SetIpCommand.requestMatches(buffer)) {
             final Optional<SetIpCommand.Request> commandOptional = SetIpCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onSetIpCommand(uuid, request, commandOptional.get());
+                return onSetIpCommand(false, uuid, request, commandOptional.get());
             }
         }
 
@@ -357,11 +405,11 @@ public class Server implements Closeable {
         return sendError(request);
     }
 
-    private Optional<Response> onSetIpCommand(UUID uuid, Request request, SetIpCommand.Request command) {
+    private Optional<Response> onSetIpCommand(boolean broadcast, UUID uuid, Request request, SetIpCommand.Request command) {
         logCommand(uuid, request, command);
 
         if (Objects.equals(cluDevice.getSerialNumber(), command.getSerialNumber())) {
-            // we cant change IP address
+            // we cant change IP address, so we only accept current ip address
             if (command.getIpAddress().equals(cluDevice.getAddress())) {
                 return Optional.of(
                     new Response(
@@ -373,6 +421,11 @@ public class Server implements Closeable {
                     )
                 );
             }
+        }
+
+        // For broadcasts, the message needs to be silently ignored
+        if (broadcast) {
+            return Optional.empty();
         }
 
         return sendError(request);
@@ -413,7 +466,7 @@ public class Server implements Closeable {
     private void persistKeys() {
         try {
             Config.writeKeys(
-                rootDirectory.getParent(),
+                parentDirectory,
                 new CluKeys(
                     projectCipherKey.getSecretKey(), projectCipherKey.getIV(),
                     cluDevice.getCipherKey().getIV(), cluDevice.getPrivateKey()
@@ -440,7 +493,6 @@ public class Server implements Closeable {
     }
 
     private void restartClu() {
-        LOGGER.warn("Restoring CIPHER KEY...");
         unicastCipherKeys = List.of(projectCipherKey);
 
         mqttClient.stop();
@@ -450,10 +502,8 @@ public class Server implements Closeable {
     }
 
     protected void startClu() {
-        LOGGER.info("Open Gr8ton VCLU (v{}) is starting...", ServerVersion.get());
         IOUtil.closeQuietly(this.mainThread);
-
-        final Path aDriveDirectory = rootDirectory.resolve("a");
+        LOGGER.info("OpenGr8ton VCLU (v{}) is starting on {}", ServerVersion.get(), commandSocket.getLocalAddress());
 
         try {
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
@@ -502,10 +552,6 @@ public class Server implements Closeable {
     }
 
     private void initialize() {
-        synchronized (this) {
-            this.notifyAll();
-        }
-
         final VirtualCLU currentClu = mainThread.virtualSystem().getCurrentClu();
         if (currentClu == null) {
             LOGGER.warn("VCLU is not properly initialized...");
@@ -514,7 +560,7 @@ public class Server implements Closeable {
         }
 
         if (currentClu.isMqttEnabled()) {
-            final Path mqttPath = rootDirectory.getParent().resolve("mqtt");
+            final Path mqttPath = parentDirectory.resolve("mqtt");
 
             mqttClient.start(
                 currentClu.getMqttUrl(), currentClu.getName(),
@@ -522,12 +568,6 @@ public class Server implements Closeable {
                 mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
                 currentClu
             );
-        }
-    }
-
-    void awaitInitialized() throws InterruptedException {
-        synchronized (this) {
-            this.wait();
         }
     }
 
@@ -624,8 +664,6 @@ public class Server implements Closeable {
     private Optional<Response> onGenerateMeasurementsCommand(UUID uuid, Request request, GenerateMeasurementsCommand.Response command) {
         logCommand(uuid, request, command);
 
-        tftpServer.stop();
-
         return Optional.of(
             new Response(
                 projectCipherKey,
@@ -651,16 +689,14 @@ public class Server implements Closeable {
     }
 
     private void respond(UUID uuid, Request request, Response response) {
+        final Command command = response.command();
+
         respond(
-            uuid,
+            command.uuid(uuid),
             response.cipherKey(),
             request.payload().address(), request.payload().port(),
-            response.command()
+            command.asByteArray()
         );
-    }
-
-    protected void respond(UUID uuid, CipherKey cipherKey, Inet4Address ipAddress, int port, Command command) {
-        respond(command.uuid(uuid), cipherKey, ipAddress, port, command.asByteArray());
     }
 
     protected void respond(String uuid, CipherKey cipherKey, Inet4Address ipAddress, int port, byte[] buffer) {
@@ -676,17 +712,15 @@ public class Server implements Closeable {
         //                .formatted(uuid, Payload.of(ipAddress, port, encryptedRequest), cipherKey)
         //        );
 
-        socketLock.lock();
-        try {
-            requestPacket.setData(encryptedRequest);
-            requestPacket.setAddress(requestPayload.address());
-            requestPacket.setPort(requestPayload.port());
+        final DatagramPacket requestPacket = new DatagramPacket(
+            encryptedRequest, encryptedRequest.length,
+            requestPayload.address(), requestPayload.port()
+        );
+
+        try (UDPSocket socket = SocketUtil.udpRandomPort(commandSocket.getLocalAddress())) {
+            socket.open();
 
             socket.send(requestPacket);
-
-            requestPacket.setData(EMPTY_BUFFER);
-        } finally {
-            socketLock.unlock();
         }
     }
 
@@ -696,20 +730,10 @@ public class Server implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.close(executorService);
+        ThreadUtil.closeQuietly(executor);
 
-        IOUtil.closeQuietly(tftpServer);
-        IOUtil.closeQuietly(mqttClient);
-        IOUtil.closeQuietly(mainThread);
-
-        socketLock.lock();
-        try {
-            IOUtil.closeQuietly(socket);
-        } finally {
-            socketLock.unlock();
-        }
-
-        IOUtil.closeQuietly(broadcastSocket);
+        IOUtil.closeQuietly(tftpServer, mqttClient, mainThread);
+        IOUtil.closeQuietly(commandSocket, broadcastSocket, globalBroadcastSocket);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) { }

@@ -115,6 +115,25 @@ or
 
 > java -jar vclu/target/vclu.jar 192.168.31.44
 
+## Port binding permission issues
+
+The application requires to bind to port TFTP 69, which on Linux is a protected port (<1024).
+To bypass this limitation and not need to run the application as root, you can:
+
+### Change protected port range (recommended)
+
+```bash
+# Enabled binding to any port by any application - does not persist after reboot
+echo 1 | sudo tee /proc/sys/net/ipv4/ip_unprivileged_port_start
+```
+
+### Allow all java applications to bind on protected ports (not recommended)
+
+```bash
+# Enabled binding for all java applications to any port - java updates will clear the flag
+sudo setcap 'cap_net_bind_service=+ep' "$JAVA_HOME/bin/java"
+```
+
 # Licenses
 
 Documentation (docs/ directory) is under CC BY-SA 4.0 license.

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
 class ServerDiscoverCommandTest extends BaseServerTest {
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("ServerDiscoverCommandTest");
 
     @Test
     void discovery() throws Exception {

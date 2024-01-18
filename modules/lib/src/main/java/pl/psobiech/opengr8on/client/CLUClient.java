@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,13 +90,20 @@ public class CLUClient extends Client implements Closeable {
         this.cipherKey = cipherKey;
 
         this.tftpClient = new TFTPClient(SocketUtil.udpRandomPort(localAddress));
-        tftpClient.open();
     }
 
+    /**
+     * @return current CLU address
+     */
     public Inet4Address getAddress() {
         return getCluDevice().getAddress();
     }
 
+    /**
+     * Attempts to update the CLU address
+     *
+     * @return new or old CLU address (in case the address was rejected) or empty() in case of a timeout
+     */
     public Optional<Inet4Address> setAddress(Inet4Address newAddress, Inet4Address gatewayAddress) {
         final SetIpCommand.Request command = SetIpCommand.request(cluDevice.getSerialNumber(), newAddress, gatewayAddress);
 
@@ -116,10 +122,11 @@ public class CLUClient extends Client implements Closeable {
             });
     }
 
-    public CipherKey getCipherKey() {
-        return cipherKey;
-    }
-
+    /**
+     * Attempts to update the CLU cipher key
+     *
+     * @return true, if the cipher key was update or empty() in case of a timeout
+     */
     public Optional<Boolean> updateCipherKey(CipherKey newCipherKey) {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
@@ -140,14 +147,32 @@ public class CLUClient extends Client implements Closeable {
             );
     }
 
+    /**
+     * @return current cipher key used for communication
+     */
+    public CipherKey getCipherKey() {
+        return cipherKey;
+    }
+
+    /**
+     * Updates the cipher key used for communication
+     */
     public void setCipherKey(CipherKey cipherKey) {
         this.cipherKey = cipherKey;
     }
 
+    /**
+     * @return current CLU device
+     */
     public CLUDevice getCluDevice() {
         return cluDevice;
     }
 
+    /**
+     * Attempts to reboot the CLU and waits for the given timeout until the CLU is operational again
+     *
+     * @return true, if CLU reset succeeded and CLU is again operational
+     */
     public Optional<Boolean> reset(Duration timeout) {
         final ResetCommand.Request command = ResetCommand.request(localAddress);
 
@@ -165,6 +190,9 @@ public class CLUClient extends Client implements Closeable {
         );
     }
 
+    /**
+     * @return true, if CLU is operational
+     */
     public Optional<Boolean> checkAlive() {
         return execute(LuaScriptCommand.CHECK_ALIVE)
             .map(returnValue ->
@@ -176,6 +204,11 @@ public class CLUClient extends Client implements Closeable {
             );
     }
 
+    /**
+     * Attempts to execute LUA script on the CLU
+     *
+     * @return response of the LUA Script
+     */
     public Optional<String> execute(String script) {
         final Integer sessionId = RandomUtil.integer();
         final LuaScriptCommand.Request command = LuaScriptCommand.request(localAddress, sessionId, script);
@@ -184,17 +217,30 @@ public class CLUClient extends Client implements Closeable {
             .flatMap(payload -> LuaScriptCommand.parse(sessionId, payload));
     }
 
+    /**
+     * @return true, if the TFTPd server was started
+     */
     public Optional<Boolean> startTFTPdServer() {
         return request(StartTFTPdCommand.request(), DEFAULT_TIMEOUT_DURATION)
             .flatMap(payload -> StartTFTPdCommand.responseFromByteArray(payload.buffer()))
             .map(response -> true);
     }
 
+    /**
+     * @return always returns true, because CLUs do not seem to support this command
+     */
     public Optional<Boolean> stopTFTPdServer() {
         // not implemented? req_stop_ftp/req_tftp_stop don't work
         return Optional.of(true);
     }
 
+    /**
+     * Uploads file from path to the location on the CLU, using TFTPd server (requires the startTFTPdServer command to be issued first). Does not adjust line
+     * endings.
+     *
+     * @param path path of the file contents
+     * @param location remote location, eg. a:\MAIN.LUA
+     */
     public void uploadFile(Path path, String location) {
         try {
             tftpClient.upload(
@@ -208,6 +254,12 @@ public class CLUClient extends Client implements Closeable {
         }
     }
 
+    /**
+     * Downloads a file from location on the CLU to local path. Does not adjust line endings.
+     *
+     * @param location remote location, eg. a:\MAIN.LUA
+     * @param path target path for the file contents
+     */
     public Optional<Path> downloadFile(String location, Path path) {
         try {
             tftpClient.download(
@@ -234,22 +286,16 @@ public class CLUClient extends Client implements Closeable {
         }
     }
 
-    public void clientReport(String value) {
-        final LuaScriptCommand.Response response = LuaScriptCommand.response(cluDevice.getAddress(), RandomUtil.integer(), value);
-        final String uuid = response.uuid(UUID.randomUUID());
-
-        socketLock.lock();
-        try {
-            send(uuid, cipherKey, cluDevice.getAddress(), response.asByteArray());
-        } finally {
-            socketLock.unlock();
-        }
-    }
-
+    /**
+     * Sends a command and awaits for a response for the timeout duration
+     */
     public Optional<Payload> request(Command command, Duration timeout) {
         return request(cipherKey, command, timeout);
     }
 
+    /**
+     * Sends a command and awaits for a response for the timeout duration (using the provided cipher key for decryption)
+     */
     public Optional<Payload> request(CipherKey responseCipherKey, Command command, Duration timeout) {
         final String uuid = uuid(command);
 
@@ -265,5 +311,14 @@ public class CLUClient extends Client implements Closeable {
         } finally {
             socketLock.unlock();
         }
+    }
+
+    /**
+     * Sends command, without waiting for any response
+     */
+    public void send(Command command) {
+        final String uuid = uuid(command);
+
+        send(uuid, cipherKey, cluDevice.getAddress(), command.asByteArray());
     }
 }

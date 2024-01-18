@@ -18,15 +18,10 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Random;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 /**
  * Common random operations
@@ -34,13 +29,7 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 public final class RandomUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RandomUtil.class);
 
-    private static final ReentrantLock RANDOM_LOCK = new ReentrantLock();
-
-    private static final ThreadLocal<SecureRandom> WEAK_RANDOM_THREAD_LOCAL = ThreadLocal.withInitial(RandomUtil::createWeakRandom);
-
-    private static final SecureRandom STRONG_RANDOM;
-
-    private static final int UNIQUE_MAX_RETRIES = 32;
+    public static final SecureRandom RANDOM = new SecureRandom();
 
     private static final int BYTE_MASK = 0xFF;
 
@@ -49,12 +38,6 @@ public final class RandomUtil {
     private static final char[] HEX_DICTIONARY;
 
     static {
-        try {
-            STRONG_RANDOM = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {
-            throw new UnexpectedException("No strong random PRNG available", e);
-        }
-
         final char[] chars = new char[HexUtil.HEX_BASE];
         for (int i = 0; i < chars.length; i++) {
             chars[i] = Integer.toHexString(i).charAt(0);
@@ -63,55 +46,24 @@ public final class RandomUtil {
         HEX_DICTIONARY = chars;
     }
 
-    private static SecureRandom createWeakRandom() {
-        RANDOM_LOCK.lock();
-        try {
-            return new SecureRandom();
-        } finally {
-            RANDOM_LOCK.unlock();
-        }
-    }
-
     private RandomUtil() {
         // NOP
-    }
-
-    public static String unique(int length, Function<Integer, String> generatorFunction, Function<String, Boolean> existsFunction) {
-        int retries = UNIQUE_MAX_RETRIES;
-
-        String candidate;
-        do {
-            if (--retries < 0) {
-                throw new UnexpectedException("Cannot generate unique value");
-            }
-
-            candidate = generatorFunction.apply(length);
-        } while (existsFunction.apply(candidate) && !Thread.interrupted());
-
-        return candidate;
-    }
-
-    /**
-     * @return random hex string (weak rng)
-     */
-    public static String hexString(int length) {
-        return dictionaryString(random(false), length, HEX_DICTIONARY);
     }
 
     /**
      * @return random hex string
      */
-    public static String hexString(Random random, int length) {
-        return dictionaryString(random, length, HEX_DICTIONARY);
+    public static String hexString(int length) {
+        return dictionaryString(length, HEX_DICTIONARY);
     }
 
     /**
      * @return random dictionary string
      */
-    private static String dictionaryString(Random random, int length, char[] dictionary) {
+    private static String dictionaryString(int length, char[] dictionary) {
         final StringBuilder sb = new StringBuilder();
 
-        final byte[] randomBytes = bytes(random, Math.floorDiv(length + 1, 2));
+        final byte[] randomBytes = bytes(Math.floorDiv(length + 1, 2));
         for (byte randomByte : randomBytes) {
             final int unsignedByte = randomByte & BYTE_MASK;
 
@@ -127,41 +79,33 @@ public final class RandomUtil {
     }
 
     /**
-     * @return random array of bytes (weak rng)
-     */
-    public static byte[] bytes(int size) {
-        return bytes(random(false), size);
-    }
-
-    /**
-     * @return random int (weak rng)
-     */
-    public static int integer() {
-        return random(false).nextInt();
-    }
-
-    /**
-     * @return random int (weak rng)
-     */
-    public static long longInteger() {
-        return random(false).nextLong();
-    }
-
-    /**
      * @return random array of bytes
      */
-    public static byte[] bytes(Random random, int size) {
+    public static byte[] bytes(int size) {
         final byte[] salt = new byte[size];
-        random.nextBytes(salt);
+        RANDOM.nextBytes(salt);
 
         return salt;
     }
 
-    public static SecureRandom random(boolean strong) {
-        if (strong) {
-            return RandomUtil.STRONG_RANDOM;
-        }
+    /**
+     * @return random int (lower than max)
+     */
+    public static int integer(int maxExclusive) {
+        return RANDOM.nextInt(maxExclusive);
+    }
 
-        return RandomUtil.WEAK_RANDOM_THREAD_LOCAL.get();
+    /**
+     * @return random int
+     */
+    public static int integer() {
+        return RANDOM.nextInt();
+    }
+
+    /**
+     * @return random int
+     */
+    public static long longInteger() {
+        return RANDOM.nextLong();
     }
 }

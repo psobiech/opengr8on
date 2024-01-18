@@ -94,7 +94,7 @@ public class TlsUtil {
             caTrustManagerFactory.init(caKeyStore);
 
             final SSLContext tlsContext = SSLContext.getInstance("TLSv1.2");
-            tlsContext.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.random(true));
+            tlsContext.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.RANDOM);
 
             return tlsContext.getSocketFactory();
         } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {

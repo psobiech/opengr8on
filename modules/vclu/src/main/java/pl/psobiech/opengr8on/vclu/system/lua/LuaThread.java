@@ -103,10 +103,9 @@ public class LuaThread implements Closeable {
         try {
             thread.join();
         } catch (InterruptedException e) {
-            LOGGER.warn(e.getMessage(), e);
+            LOGGER.trace(e.getMessage(), e);
         }
 
-        IOUtil.closeQuietly(globals.STDOUT);
-        IOUtil.closeQuietly(globals.STDERR);
+        IOUtil.closeQuietly(globals.STDOUT, globals.STDERR);
     }
 }

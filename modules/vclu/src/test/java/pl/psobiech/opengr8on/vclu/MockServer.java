@@ -58,6 +58,8 @@ public class MockServer implements Closeable {
 
     private final UDPSocket broadcastSocket;
 
+    private final UDPSocket globalBroadcastSocket;
+
     private final UDPSocket socket;
 
     private final Server server;
@@ -79,14 +81,15 @@ public class MockServer implements Closeable {
     }
 
     public MockServer(CipherKey projectCipherKey, CLUDevice cluDevice) throws Exception {
-        this.rootDirectory = FileUtil.temporaryDirectory();
+        this.rootDirectory   = FileUtil.temporaryDirectory();
         this.aDriveDirectory = rootDirectory.resolve("a");
 
         FileUtil.mkdir(aDriveDirectory);
 
-        this.broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
-        this.socket          = new UDPSocket(LOCALHOST, 0, false);
-        this.tftpServer      = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
+        this.broadcastSocket       = new UDPSocket(LOCALHOST, 0, false);
+        this.globalBroadcastSocket = new UDPSocket(LOCALHOST, 0, false);
+        this.socket                = new UDPSocket(LOCALHOST, 0, false);
+        this.tftpServer            = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
 
         this.tftpServer.start();
         this.tftpServer.stop();
@@ -107,19 +110,13 @@ public class MockServer implements Closeable {
             rootDirectory,
             projectCipherKey,
             cluDevice,
-            broadcastSocket, socket,
+            broadcastSocket, globalBroadcastSocket, socket,
             tftpServer
         );
     }
 
     public void start() throws InterruptedException {
-        serverFuture = executor.submit(() -> {
-            Thread.sleep(100);
-            server.listen();
-
-            return null;
-        });
-        server.awaitInitialized();
+        server.start();
     }
 
     public void execute(CipherKey cipherKey, ServerContext fn) throws Exception {
@@ -173,7 +170,7 @@ public class MockServer implements Closeable {
             //
         }
 
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(server);
 

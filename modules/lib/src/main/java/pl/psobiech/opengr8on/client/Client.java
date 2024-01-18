@@ -65,7 +65,7 @@ public class Client implements Closeable {
 
     protected final UDPSocket socket;
 
-    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUClient");
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("CLUClient");
 
     protected final Inet4Address localAddress;
 
@@ -86,6 +86,9 @@ public class Client implements Closeable {
         this.socket.open();
     }
 
+    /**
+     * @return streams (asynchronously) discovered devices, attempts to discover cipher key type, if it has proper private keys provided
+     */
     public Stream<CLUDevice> discover(CipherKey projectCipherKey, Map<Long, byte[]> privateKeys, Duration timeout, int limit) {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
         final DiscoverCLUsCommand.Request request = DiscoverCLUsCommand.request(
@@ -101,7 +104,7 @@ public class Client implements Closeable {
             .flatMap(payload -> DiscoverCLUsCommand.parse(randomBytes, payload, privateKeys).stream());
     }
 
-    public Stream<Payload> broadcastStream(
+    protected Stream<Payload> broadcastStream(
         CipherKey requestCipherKey, CipherKey responseCipherKey,
         Command command,
         Inet4Address ipAddress,
@@ -173,6 +176,9 @@ public class Client implements Closeable {
         );
     }
 
+    /**
+     * Encrypts and sends the buffer to the given ip address
+     */
     protected void send(String uuid, CipherKey cipherKey, Inet4Address ipAddress, byte[] buffer) {
         final Payload requestPayload = Payload.of(ipAddress, port, buffer);
         LOGGER.trace(
@@ -200,6 +206,9 @@ public class Client implements Closeable {
         }
     }
 
+    /**
+     * @return decrypted response, or empty() if waiting exceed the timeout or decryption key cannot decipher the response
+     */
     protected Optional<Payload> awaitResponsePayload(String uuid, CipherKey responseCipherKey, Duration timeout) {
         final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
         if (encryptedPayload.isEmpty()) {
@@ -214,6 +223,9 @@ public class Client implements Closeable {
         return Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
     }
 
+    /**
+     * @return decrypted payload or empty() if the decryption key cannot decipher the response
+     */
     public static Optional<Payload> tryDecrypt(
         String uuid,
         CipherKey responseCipherKey, Payload encryptedPayload
@@ -245,7 +257,7 @@ public class Client implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(executor);
 
         socketLock.lock();
         try {

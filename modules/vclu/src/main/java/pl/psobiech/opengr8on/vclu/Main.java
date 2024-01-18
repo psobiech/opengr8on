@@ -23,6 +23,7 @@ import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,11 +41,6 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
  */
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
-    static {
-        Thread.currentThread()
-              .setName("init");
-    }
 
     private Main() {
         // NOP
@@ -74,8 +70,11 @@ public class Main {
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 
-        try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), cluDevice)) {
-            server.listen();
+        try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), networkInterface, cluDevice)) {
+            server.start();
+
+            // sleep until interrupted
+            new CountDownLatch(1).await();
         }
     }
 

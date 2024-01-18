@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
@@ -35,7 +34,7 @@ import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
 public class TFTPClient implements Closeable {
-    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("TFTPClient");
 
     private final ReentrantLock tftpLock = new ReentrantLock();
 
@@ -50,9 +49,7 @@ public class TFTPClient implements Closeable {
     public TFTPClient(UDPSocket socket, int port) {
         this.tftp = new TFTP(socket);
         this.port = port;
-    }
 
-    public void open() {
         tftp.open();
     }
 
@@ -77,7 +74,7 @@ public class TFTPClient implements Closeable {
 
     @Override
     public void close() {
-        ThreadUtil.close(executor);
+        ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(tftp);
     }

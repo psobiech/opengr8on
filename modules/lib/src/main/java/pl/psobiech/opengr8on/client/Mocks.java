@@ -45,7 +45,7 @@ public class Mocks {
         final int ipAsNumber = IPv4AddressUtil.getIPv4AsNumber("127.0.0.1");
 
         return IPv4AddressUtil.parseIPv4(
-            ipAsNumber + RandomUtil.random(false).nextInt(255)
+            ipAsNumber + RandomUtil.integer(255)
         );
     }
 
@@ -53,7 +53,7 @@ public class Mocks {
         final int ipAsNumber = IPv4AddressUtil.getIPv4AsNumber("192.168.31.1");
 
         return IPv4AddressUtil.parseIPv4(
-            ipAsNumber + RandomUtil.random(false).nextInt(255)
+            ipAsNumber + RandomUtil.integer(255)
         );
     }
 
