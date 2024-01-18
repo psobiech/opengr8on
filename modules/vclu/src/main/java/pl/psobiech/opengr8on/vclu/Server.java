@@ -450,7 +450,7 @@ public class Server implements Closeable {
     }
 
     protected void startClu() {
-        LOGGER.info("VCLU is starting...");
+        LOGGER.info("Open Gr8ton VCLU (v{}) is starting...", ServerVersion.get());
         IOUtil.closeQuietly(this.mainThread);
 
         final Path aDriveDirectory = rootDirectory.resolve("a");
