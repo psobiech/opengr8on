@@ -43,25 +43,20 @@ public class MqttTopic extends VirtualObject {
 
     public static final int INDEX = 999;
 
-    private final VirtualSystem virtualSystem;
-
     private final Set<String> topicFilters = new HashSet<>();
 
     private final LinkedBlockingDeque<Map.Entry<String, Message>> messageQueue = new LinkedBlockingDeque<>();
 
     private MqttClient mqttClient;
 
-    public MqttTopic(String name, VirtualSystem virtualSystem) {
+    public MqttTopic(VirtualSystem virtualSystem, String name) {
         super(
-            name,
+            virtualSystem, name,
             Features.class, Methods.class, Events.class
         );
 
-        this.virtualSystem = virtualSystem;
-
         register(Methods.SUBSCRIBE, this::subscribe);
         register(Methods.UNSUBSCRIBE, this::unsubscribe);
-        register(Methods.NEXT_MESSAGE, this::onNextMessage);
         register(Methods.PUBLISH, this::publish);
     }
 
@@ -177,28 +172,24 @@ public class MqttTopic extends VirtualObject {
         return topicFilters;
     }
 
-    private LuaValue onNextMessage() {
-        clearTopic();
-        clearMessage();
-
-        return LuaValue.NIL;
-    }
-
     @Override
     public void loop() {
         final String currentPayload = getMessage();
         if (currentPayload == null || currentPayload.isEmpty()) {
-            final Entry<String, Message> entry = messageQueue.poll();
-            if (entry != null) {
+            Entry<String, Message> entry;
+            while ((entry = messageQueue.poll()) != null) {
                 final String topic = entry.getKey();
                 final Message message = entry.getValue();
 
+                awaitEventTrigger(Events.MESSAGE);
                 set(Features.TOPIC, LuaValue.valueOf(topic));
                 set(Features.MESSAGE, messageFromPayload(message));
                 if (triggerEvent(Events.MESSAGE)) {
                     message.acknowledgement()
                            .run();
                 }
+
+                Thread.yield();
             }
         }
     }
@@ -259,7 +250,6 @@ public class MqttTopic extends VirtualObject {
     private enum Methods implements IMethod {
         SUBSCRIBE(0),
         UNSUBSCRIBE(1),
-        NEXT_MESSAGE(2),
         PUBLISH(10),
         //
         ;

@@ -81,7 +81,7 @@ public class InitLuaLib extends TwoArgFunction {
         system.set("Init", LuaFunctionWrapper.wrap(logger, virtualSystem::setup));
         system.set("Loop", LuaFunctionWrapper.wrap(logger, virtualSystem::loop));
         system.set("Wait", LuaFunctionWrapper.wrap(logger, args -> {
-            final long milliseconds = args.checklong(1);
+            final long milliseconds = args.checklong(2);
 
             virtualSystem.sleep(milliseconds);
         }));

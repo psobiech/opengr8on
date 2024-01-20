@@ -73,11 +73,11 @@ Implemented: No
 
 ## TFTP
 
-[TFTP.md](modules%2FTFTP.md)[README.md](tftp%2FREADME.md)
+[TFTP.md](modules%2FTFTP.md)
 
 ## Example Client
 
-[CLIENT.md](modules%2FCLIENT.md)[client/README.md](client%2FREADME.md)
+[CLIENT.md](modules%2FCLIENT.md)
 
 ## Quickstart
 
@@ -123,14 +123,14 @@ To bypass this limitation and not need to run the application as root, you can:
 ### Change protected port range (recommended)
 
 ```bash
-# Enabled binding to any port by any application - does not persist after reboot
-echo 1 | sudo tee /proc/sys/net/ipv4/ip_unprivileged_port_start
+# Enables binding to any port by any application - does not persist after reboot
+echo 0 | sudo tee /proc/sys/net/ipv4/ip_unprivileged_port_start
 ```
 
 ### Allow all java applications to bind on protected ports (not recommended)
 
 ```bash
-# Enabled binding for all java applications to any port - java updates will clear the flag
+# Enables binding for all java applications to any port - java updates will clear the flag
 sudo setcap 'cap_net_bind_service=+ep' "$JAVA_HOME/bin/java"
 ```
 

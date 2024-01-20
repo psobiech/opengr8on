@@ -108,7 +108,7 @@ class Server2ServerTest {
         } while (server2value.checkint() != 334);
 
         final LuaValue resultValueRemote = server1.getServer().luaCall("CLU1:execute(0, \"getVar(\\\"testVariable\\\")\")");
-        assertEquals("334", LuaUtil.asObject(resultValueRemote));
+        assertEquals(334, LuaUtil.asObject(resultValueRemote));
 
         final LuaValue resultValueLocal = server2.getServer().luaCall("testVariable");
         assertEquals(334, LuaUtil.asObject(resultValueLocal));

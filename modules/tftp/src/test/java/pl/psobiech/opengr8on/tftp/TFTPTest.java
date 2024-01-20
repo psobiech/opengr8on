@@ -27,7 +27,6 @@ import java.net.Inet4Address;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.AfterAll;
@@ -58,8 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TFTPTest {
     private static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
 
-    private static ExecutorService executor;
-
     private static Path rootDirectory;
 
     private static UDPSocket socket;
@@ -72,8 +69,6 @@ class TFTPTest {
 
     @BeforeAll
     static void setUp() throws Exception {
-        executor = ThreadUtil.daemonExecutor("TFTPTest");
-
         rootDirectory = FileUtil.temporaryDirectory();
         FileUtil.mkdir(rootDirectory);
 
@@ -89,7 +84,6 @@ class TFTPTest {
     @AfterAll
     static void tearDown() throws Exception {
         ThreadUtil.cancel(serverFuture);
-        ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(client, server);
 

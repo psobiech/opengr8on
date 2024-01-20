@@ -49,9 +49,6 @@ logDebug(CLU0->myTopic->Topic, ": ", CLU0->myTopic->Message["jsonKey"])
 
 -- publish the same message to some other topic
 CLU0->myTopic->Publish("innytopic", CLU0->myTopic->Message)
-
--- unblock next message in the queue
-CLU0->myTopic->NextMessage()
 ```
 
 # Configure MQTT broker

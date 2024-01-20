@@ -18,10 +18,13 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.luaj.vm2.LuaValue;
+import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class Timer extends VirtualObject {
@@ -29,13 +32,15 @@ public class Timer extends VirtualObject {
 
     private final AtomicLong counter = new AtomicLong(0);
 
+    private volatile Future<?> timerFuture = null;
+
     private volatile long lastLoopTime;
 
     private volatile State state = State.STOPPED;
 
-    public Timer(String name) {
+    public Timer(VirtualSystem virtualSystem, String name) {
         super(
-            name,
+            virtualSystem, name,
             Features.class, Methods.class, Events.class
         );
 
@@ -44,7 +49,11 @@ public class Timer extends VirtualObject {
                 return getValue(Features.TIME);
             }
 
-            counter.set(TimeUnit.MILLISECONDS.toNanos(arg1.checklong()));
+            if (state == State.COUNTING) {
+                restartTimer(
+                    TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong())
+                );
+            }
 
             return arg1;
         });
@@ -59,20 +68,35 @@ public class Timer extends VirtualObject {
     }
 
     private LuaValue onStart() {
-        counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
+        restartTimer(
+            TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong())
+        );
 
-        lastLoopTime = System.nanoTime();
-        state        = State.COUNTING;
-
+        state = State.COUNTING;
         triggerEvent(Events.START);
 
         return LuaValue.NIL;
     }
 
-    private LuaValue onStop() {
-        counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
+    private void restartTimer(long time) {
+        ThreadUtil.cancel(timerFuture);
 
+        this.counter.set(time);
+
+        this.lastLoopTime = System.nanoTime();
+
+        this.timerFuture = this.scheduler.scheduleAtFixedRate(
+            new TimerTask(time),
+            time, time, TimeUnit.NANOSECONDS
+        );
+    }
+
+    private LuaValue onStop() {
         state = State.STOPPED;
+
+        ThreadUtil.cancel(timerFuture);
+
+        counter.set(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
 
         triggerEvent(Events.STOP);
 
@@ -85,32 +109,39 @@ public class Timer extends VirtualObject {
             state        = State.COUNTING;
         } else if (state == State.COUNTING) {
             state = State.PAUSED;
-
             triggerEvent(Events.PAUSE);
         }
 
         return LuaValue.NIL;
     }
 
-    @Override
-    public void loop() {
-        if (state != State.COUNTING) {
-            return;
+    private class TimerTask implements Runnable {
+        private final long time;
+
+        private TimerTask(long time) {
+            this.time = time;
         }
 
-        final long now = System.nanoTime();
-        final long delta = now - lastLoopTime;
-        lastLoopTime = now;
-
-        final long value = counter.addAndGet(-delta);
-        if (value <= 0) {
-            if (get(Features.MODE).checkint() == Mode.INTERVAL.mode()) {
-                counter.addAndGet(TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong()));
-            } else {
-                onStop();
+        @Override
+        public void run() {
+            if (state != State.COUNTING) {
+                return;
             }
 
-            triggerEvent(Events.TIMER);
+            final long now = System.nanoTime();
+            final long delta = now - lastLoopTime;
+            lastLoopTime = now;
+
+            final long value = counter.addAndGet(-delta);
+            if (value <= 0) {
+                if (get(Features.MODE).checkint() == Mode.INTERVAL.mode()) {
+                    counter.set(time - (value % time));
+                } else {
+                    onStop();
+                }
+
+                triggerEvent(Events.TIMER);
+            }
         }
     }
 

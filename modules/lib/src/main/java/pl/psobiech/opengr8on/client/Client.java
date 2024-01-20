@@ -65,7 +65,7 @@ public class Client implements Closeable {
 
     protected final UDPSocket socket;
 
-    private final ExecutorService executor = ThreadUtil.daemonExecutor("CLUClient");
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUClient");
 
     protected final Inet4Address localAddress;
 

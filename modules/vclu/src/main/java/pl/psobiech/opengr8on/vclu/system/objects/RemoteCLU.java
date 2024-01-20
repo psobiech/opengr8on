@@ -19,75 +19,64 @@
 package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.net.Inet4Address;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.StringUtils;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.compiler.LuaC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
-import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
 
     public static final int INDEX = 1;
 
-    private final ExecutorService executor;
-
     private final CLUClient client;
 
-    private Future<?> lastfuture = null;
+    private final Globals localLuaContext;
 
-    public RemoteCLU(String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
+    public RemoteCLU(VirtualSystem virtualSystem, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(
-            name,
+            virtualSystem, name,
             IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class
         );
 
-        this.executor = ThreadUtil.daemonExecutor(name);
+        this.localLuaContext = new Globals();
+        // LoadState.install(globals);
+        LuaC.install(localLuaContext);
 
         this.client = new CLUClient(localAddress, address, cipherKey, port);
 
         register(Methods.EXECUTE, arg1 -> {
             final String script = arg1.checkjstring();
 
-            if (lastfuture != null && !lastfuture.isDone()) {
-                try {
-                    lastfuture.get();
-                } catch (Exception e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-            }
+            return client.execute(script)
+                         .map(returnValue -> {
+                                 returnValue = StringUtils.stripToNull(returnValue);
+                                 if (returnValue == null) {
+                                     return null;
+                                 }
 
-            if (script.startsWith(LuaScriptCommand.SET_VARS)) {
-                lastfuture = executor.submit(() -> client.execute(script));
-            } else {
-                final Optional<String> returnValueOptional;
-                try {
-                    returnValueOptional = executor.submit(() ->
-                                                      client.execute(script)
-                                                  )
-                                                  .get();
-                } catch (InterruptedException e) {
-                    throw new UncheckedInterruptedException(e);
-                } catch (ExecutionException e) {
-                    throw new UnexpectedException(e.getCause());
-                }
+                                 if (returnValue.startsWith("{")) {
+                                     return localLuaContext.load("return %s".formatted(returnValue))
+                                                           .call();
+                                 }
 
-                if (returnValueOptional.isPresent()) {
-                    return LuaValue.valueOf(returnValueOptional.get());
-                }
-            }
+                                 final LuaString luaString = LuaValue.valueOf(returnValue);
+                                 if (luaString.isnumber()) {
+                                     return luaString.checknumber();
+                                 }
 
-            return LuaValue.NIL;
+                                 return luaString;
+                             }
+                         )
+                         .orElse(LuaValue.NIL);
         });
     }
 
@@ -95,7 +84,6 @@ public class RemoteCLU extends VirtualObject {
     public void close() {
         super.close();
 
-        ThreadUtil.closeQuietly(executor);
         IOUtil.closeQuietly(client);
     }
 

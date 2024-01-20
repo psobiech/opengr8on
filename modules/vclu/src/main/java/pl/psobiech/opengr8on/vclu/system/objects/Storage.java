@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class Storage extends VirtualObject {
@@ -43,21 +43,17 @@ public class Storage extends VirtualObject {
 
     public static final int INDEX = 44;
 
-    private final LuaThread luaThread;
-
     private final Path storagePath;
 
     private final ReentrantLock variablesLock = new ReentrantLock();
 
     private final Map<String, LuaValue> variables = new HashMap<>();
 
-    public Storage(String name, LuaThread luaThread, Path storageRootPath) {
+    public Storage(VirtualSystem virtualSystem, String name, Path storageRootPath) {
         super(
-            name,
+            virtualSystem, name,
             Features.class, Methods.class, IEvent.EMPTY.class
         );
-
-        this.luaThread = luaThread;
 
         FileUtil.mkdir(storageRootPath);
 
@@ -129,7 +125,7 @@ public class Storage extends VirtualObject {
         try {
             final Set<String> variableNames = new HashSet<>(variables.keySet());
             for (String variableName : variableNames) {
-                final LuaValue value = luaThread.luaCall(variableName);
+                final LuaValue value = virtualSystem.luaCall(variableName);
                 if (!value.equals(variables.put(variableName, value))) {
                     changed = true;
                 }

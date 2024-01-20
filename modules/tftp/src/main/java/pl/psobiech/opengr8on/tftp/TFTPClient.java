@@ -34,7 +34,7 @@ import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
 public class TFTPClient implements Closeable {
-    private final ExecutorService executor = ThreadUtil.daemonExecutor("TFTPClient");
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("TFTPClient");
 
     private final ReentrantLock tftpLock = new ReentrantLock();
 

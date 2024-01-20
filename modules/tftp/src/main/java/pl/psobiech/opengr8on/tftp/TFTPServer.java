@@ -55,7 +55,7 @@ public class TFTPServer implements Closeable {
 
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
-    private final ExecutorService executor = ThreadUtil.daemonExecutor("TFTPServer");
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("TFTPServer");
 
     private final InetAddress localAddress;
 

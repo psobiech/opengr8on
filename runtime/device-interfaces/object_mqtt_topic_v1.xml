@@ -38,11 +38,6 @@
       <hint lang="en" value="Marks message as received"/>
       <desc resKey="mqttsubscription_unsubscribe"/>
     </method>
-    <method call="execute" index="2" name="NextMessage" return="void">
-      <hint lang="pl" value="Oznacza wiadomość jako otrzymaną"/>
-      <hint lang="en" value="Marks message as received"/>
-      <desc resKey="mqttsubscription_nextmessage"/>
-    </method>
 
     <method call="execute" index="10" name="Publish" return="void">
       <param name="Topic" type="str" unit="string"/>
@@ -61,8 +56,8 @@
     </event>
     <event address="1" name="OnMessage">
       <hint lang="pl"
-        value="Zdarzenie wywoływane w momencie otrzymania wiadomości (wymaga wywołania NextMessage, aby klient otrzymał kolejną wiadomość w kolejce)"/>
-      <hint lang="en" value="Event occurring when the message is received (Requires the use of NextMessage method to receive next message in the queue)"/>
+        value="Zdarzenie wywoływane w momencie otrzymania wiadomości"/>
+      <hint lang="en" value="Event occurring when the message is received"/>
       <desc resKey="mqttsubscription_onmessage"/>
     </event>
   </events>

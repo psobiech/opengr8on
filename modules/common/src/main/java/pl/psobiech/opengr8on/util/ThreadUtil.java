@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.util;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -49,11 +50,11 @@ public class ThreadUtil {
         LOGGER.debug("Virtual Threads: %d-%d/%d".formatted(MIN_RUNNABLE, parallelism, maxPoolSize));
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            LOGGER.error("UncaughtException: [%s] %s".formatted(t.getName(), e.getMessage()), e);
+            LOGGER.error("UncaughtException: [{}] {}", t.getName(), e.getMessage(), e);
         });
     }
 
-    private static final ThreadFactory SHUTDOWN_THREAD_FACTORY = threadFactory("ShutdownThreads", false);
+    private static final ThreadFactory SHUTDOWN_THREAD_FACTORY = platformThreadFactory("ShutdownThreads", false);
 
     private static final ScheduledExecutorService INSTANCE;
 
@@ -65,6 +66,22 @@ public class ThreadUtil {
 
     private ThreadUtil() {
         // NOP
+    }
+
+    public static <T> T await(Future<T> future) {
+        if (future != null && !future.isDone()) {
+            try {
+                return future.get();
+            } catch (ExecutionException e) {
+                final Throwable cause = e.getCause();
+
+                LOGGER.error(cause.getMessage(), cause);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -171,7 +188,7 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Daemon Platform Threads
      */
     public static ScheduledExecutorService daemonScheduler(int poolSize, String name) {
-        final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(poolSize, ThreadUtil.threadFactory(name, true));
+        final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(poolSize, ThreadUtil.platformThreadFactory(name, true));
         scheduler.setKeepAliveTime(1, TimeUnit.MINUTES);
         scheduler.allowCoreThreadTimeOut(true);
 
@@ -192,7 +209,7 @@ public class ThreadUtil {
     /**
      * @return named thread factory, that produces virtual threads
      */
-    public static ThreadFactory virtualThreadFactory(String groupName) {
+    private static ThreadFactory virtualThreadFactory(String groupName) {
         return Thread.ofVirtual()
                      .name(groupName)
                      .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
@@ -210,14 +227,14 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Daemon Platform Threads
      */
     public static ExecutorService daemonExecutor(String name) {
-        return Executors.newCachedThreadPool(threadFactory(name, true));
+        return Executors.newCachedThreadPool(platformThreadFactory(name, true));
     }
 
     /**
      * @param daemon should platform thread be marked as a daemon thread
      * @return named thread factory, that produces platform threads
      */
-    public static ThreadFactory threadFactory(String groupName, boolean daemon) {
+    private static ThreadFactory platformThreadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()
                      .name(groupName)
                      .daemon(daemon)

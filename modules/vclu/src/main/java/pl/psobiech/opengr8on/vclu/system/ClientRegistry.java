@@ -39,7 +39,7 @@ import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 public class ClientRegistry implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistry.class);
 
-    private final ScheduledExecutorService scheduler = ThreadUtil.daemonScheduler(getClass());
+    private final ScheduledExecutorService scheduler = ThreadUtil.virtualScheduler(getClass());
 
     private final Inet4Address localAddress;
 

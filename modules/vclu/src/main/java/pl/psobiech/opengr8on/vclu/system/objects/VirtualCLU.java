@@ -36,6 +36,7 @@ import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
@@ -56,9 +57,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
-    public VirtualCLU(String name) {
+    public VirtualCLU(VirtualSystem virtualSystem, String name) {
         super(
-            name,
+            virtualSystem, name,
             Features.class, Methods.class, Events.class
         );
 
@@ -92,17 +93,18 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
-    }
 
-    @Override
-    public void loop() {
-        final ZonedDateTime lastDateTime = currentDateTime;
-        currentDateTime = getCurrentDateTime();
+        scheduler.scheduleAtFixedRate(() -> {
+                final ZonedDateTime lastDateTime = currentDateTime;
+                currentDateTime = getCurrentDateTime();
 
-        if (!currentDateTime.getZone().equals(lastDateTime.getZone())
-            || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
-            triggerEvent(Events.TIME_CHANGE);
-        }
+                if (!currentDateTime.getZone().equals(lastDateTime.getZone())
+                    || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
+                    triggerEvent(Events.TIME_CHANGE);
+                }
+            },
+            1, 1, TimeUnit.SECONDS
+        );
     }
 
     public boolean isMqttEnabled() {

@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.luaj.vm2.LuaFunction;
@@ -30,6 +31,7 @@ import org.luaj.vm2.Varargs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaSupplier;
@@ -38,6 +40,8 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 public class VirtualObject implements Closeable {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+
+    protected final VirtualSystem virtualSystem;
 
     protected final String name;
 
@@ -57,21 +61,26 @@ public class VirtualObject implements Closeable {
 
     private final Class<? extends Enum<? extends IEvent>> eventClass;
 
-    public VirtualObject(String name) {
+    private final Map<IEvent, Future<?>> eventTriggerFuture = new Hashtable<>();
+
+    public VirtualObject(VirtualSystem virtualSystem, String name) {
         this(
+            virtualSystem,
             name,
             IFeature.EMPTY.class, IMethod.EMPTY.class, IEvent.EMPTY.class
         );
     }
 
     public VirtualObject(
+        VirtualSystem virtualSystem,
         String name,
         Class<? extends Enum<? extends IFeature>> featureClass,
         Class<? extends Enum<? extends IMethod>> methodClass,
         Class<? extends Enum<? extends IEvent>> eventClass
     ) {
-        this.name = name;
-        this.scheduler = ThreadUtil.virtualScheduler(name);
+        this.virtualSystem = virtualSystem;
+        this.name          = name;
+        this.scheduler     = ThreadUtil.virtualScheduler(name);
 
         this.featureClass = featureClass;
         this.methodClass  = methodClass;
@@ -238,18 +247,37 @@ public class VirtualObject implements Closeable {
     }
 
     public boolean triggerEvent(IEvent event) {
-        final int address = event.address();
-        final LuaFunction luaFunction = eventFunctions.get(address);
-        if (luaFunction == null) {
+        return triggerEvent(event, null);
+    }
+
+    public boolean triggerEvent(IEvent event, Runnable onCompleted) {
+        if (!isEventRegistered(event)) {
             LOGGER.trace("{}.triggerEvent({}) -- NOT REGISTERED", name, event.name());
+
+            if (onCompleted != null) {
+                scheduler.submit(onCompleted);
+            }
 
             return false;
         }
 
+        final LuaFunction luaFunction = eventFunctions.get(event.address());
         try {
             LOGGER.debug("{}.triggerEvent({})", name, event.name());
 
-            scheduler.execute(luaFunction::call);
+            awaitEventTrigger(event);
+            eventTriggerFuture.put(
+                event,
+                scheduler.submit(() -> {
+                    try {
+                        luaFunction.call();
+                    } finally {
+                        if (onCompleted != null) {
+                            scheduler.submit(onCompleted);
+                        }
+                    }
+                })
+            );
 
             return true;
         } catch (Exception e) {
@@ -257,6 +285,17 @@ public class VirtualObject implements Closeable {
         }
 
         return false;
+    }
+
+    public boolean isEventRegistered(IEvent event) {
+        final int address = event.address();
+        final LuaFunction luaFunction = eventFunctions.get(address);
+
+        return luaFunction != null;
+    }
+
+    public void awaitEventTrigger(IEvent event) {
+        ThreadUtil.await(eventTriggerFuture.remove(event));
     }
 
     public void addEventHandler(IEvent event, LuaFunction luaFunction) {

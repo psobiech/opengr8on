@@ -44,6 +44,7 @@ import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
+import pl.psobiech.opengr8on.vclu.system.objects.HttpListener;
 import pl.psobiech.opengr8on.vclu.system.objects.HttpRequest;
 import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
@@ -58,7 +59,7 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
-    private static final long LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(64);
+    private static final long LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(960);
 
     private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(8);
 
@@ -104,12 +105,12 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
-            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(name));
-            case RemoteCLU.INDEX -> new RemoteCLU(name, ipAddress, localAddress, cipherKey, port);
-            case Timer.INDEX -> new Timer(name);
-            case Storage.INDEX -> new Storage(name, luaThread, rootDirectory.getParent().resolve("storage"));
-            case MqttTopic.INDEX -> new MqttTopic(name, this);
-            default -> new VirtualObject(name);
+            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, name));
+            case RemoteCLU.INDEX -> new RemoteCLU(this, name, ipAddress, localAddress, cipherKey, port);
+            case Timer.INDEX -> new Timer(this, name);
+            case Storage.INDEX -> new Storage(this, name, rootDirectory.getParent().resolve("storage"));
+            case MqttTopic.INDEX -> new MqttTopic(this, name);
+            default -> new VirtualObject(this, name);
         };
 
         objectsByName.put(name, virtualObject);
@@ -118,9 +119,10 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newGate(int index, String name) {
         final VirtualObject virtualObject = switch (index) {
-            case HttpRequest.INDEX -> new HttpRequest(name, localAddress);
-            case MqttTopic.INDEX -> new MqttTopic(name, this);
-            default -> new VirtualObject(name);
+            case HttpRequest.INDEX -> new HttpRequest(this, name, localAddress);
+            case HttpListener.INDEX -> new HttpListener(this, name, localAddress);
+            case MqttTopic.INDEX -> new MqttTopic(this, name);
+            default -> new VirtualObject(this, name);
         };
 
         objectsByName.put(name, virtualObject);
@@ -140,6 +142,10 @@ public class VirtualSystem implements Closeable {
             currentClu.set(Features.STATE, LuaValue.valueOf(state.value()));
             currentClu.triggerEvent(VirtualCLU.Events.INIT);
         }
+    }
+
+    public LuaValue luaCall(String script) {
+        return luaThread.luaCall(script);
     }
 
     public void loop() {

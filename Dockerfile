@@ -47,7 +47,7 @@ WORKDIR /opt/build
 #COPY --from=app-build /opt/build/vclu/target/vclu.jar .
 
 RUN $JAVA_HOME/bin/jlink \
-         --add-modules java.base,java.net.http,java.xml,java.naming,java.management,jdk.zipfs,jdk.crypto.ec \
+         --add-modules java.base,java.net.http,java.xml,java.naming,java.management,jdk.zipfs,jdk.crypto.ec,jdk.httpserver \
 #         --add-modules $(jdeps --ignore-missing-deps --print-module-deps vclu.jar),java.base,java.xml,java.naming,java.management,java.sql,java.instrument,jdk.zipfs \
          --strip-debug \
          --no-man-pages \

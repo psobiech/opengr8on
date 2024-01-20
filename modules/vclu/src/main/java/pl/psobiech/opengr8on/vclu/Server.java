@@ -82,7 +82,7 @@ public class Server implements Closeable {
 
     private static final long RETRY_DELAY = 100L;
 
-    private final ExecutorService executor = ThreadUtil.daemonExecutor("CLUServer");
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUServer");
 
     private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
 
@@ -466,7 +466,7 @@ public class Server implements Closeable {
 
     protected void startClu() {
         IOUtil.closeQuietly(this.mainThread);
-        LOGGER.info("OpenGr8ton VCLU (v{}) is starting on {}", ServerVersion.get(), commandSocket.getLocalAddress());
+        LOGGER.info("OpenGr8ton VCLU (Version: {}) is starting on {}", ServerVersion.get(), commandSocket.getLocalAddress());
 
         try {
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);

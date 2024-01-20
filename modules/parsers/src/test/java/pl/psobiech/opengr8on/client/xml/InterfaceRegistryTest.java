@@ -73,7 +73,7 @@ public class InterfaceRegistryTest {
         assertEquals(2, anInterface.getEvents().size());
 
         final List<CLUObjectRestriction> objects = vclu.getObjects();
-        assertEquals(3, objects.size());
+        assertEquals(4, objects.size());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class InterfaceRegistryTest {
 
         // TODO: more granular checks
         assertEquals(2, mqttTopic.getFeatures().size());
-        assertEquals(6, mqttTopic.getMethods().size());
+        assertEquals(5, mqttTopic.getMethods().size());
         assertEquals(2, mqttTopic.getEvents().size());
     }
 }
