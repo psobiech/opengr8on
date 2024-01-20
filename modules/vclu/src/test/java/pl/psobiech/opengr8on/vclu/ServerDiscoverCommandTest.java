@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
 class ServerDiscoverCommandTest extends BaseServerTest {
-    private final ExecutorService executor = ThreadUtil.virtualExecutor("ServerDiscoverCommandTest");
+    private final ExecutorService executor = ThreadUtil.daemonExecutor("ServerDiscoverCommandTest");
 
     @Test
     void discovery() throws Exception {

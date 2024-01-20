@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.util;
 
+import java.lang.Runtime.Version;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 public class ThreadUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtil.class);
+
+    private static final Version JVM_VERSION_NON_BLOCKING_DATAGRAM_SOCKET = Version.parse("21.0.2+2");
 
     private static final int MIN_RUNNABLE;
 
@@ -228,6 +231,13 @@ public class ThreadUtil {
      */
     public static ExecutorService daemonExecutor(String name) {
         return Executors.newCachedThreadPool(platformThreadFactory(name, true));
+    }
+
+    /**
+     * @return true, if JVM version has fixed <a href="https://bugs.openjdk.org/browse/JDK-8312166">JDK-8312166</a> (>= 21.0.2+2)
+     */
+    public static boolean supportsNonBlockingDatagramSockets() {
+        return Runtime.version().compareTo(JVM_VERSION_NON_BLOCKING_DATAGRAM_SOCKET) >= 0;
     }
 
     /**
