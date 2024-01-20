@@ -49,7 +49,10 @@ Implemented: Yes
 
 ### HttpListener
 
-Implemented: No
+Implemented: Yes
+
+* Automatically converts JSON/XML/FROM_DATA to Lua Tables, depending on Content-Type headers
+* No TLS support yet, binds on port 80
 
 ### Calendar
 
