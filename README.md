@@ -29,11 +29,13 @@ TODOs:
 
 ## Virtual Objects
 
+Object behaviour may differ from physical CLU ones, in some cases its intentional. 
+
 ### MqttTopic
 
 Implemented: Yes
 
-* Automatically converts JSON to Lua Tables
+* Automatically converts JSON from/to Lua Tables
 
 [MQTT.md](modules/MQTT.md) (+ mosquitto broker configuration)
 
@@ -45,14 +47,14 @@ Implemented: Yes
 
 Implemented: Yes
 
-* Automatically converts JSON/XML/FROM_DATA to Lua Tables, depending on Content-Type headers
+* Automatically converts JSON/XML/FROM_DATA from/to Lua Tables, depending on Content-Type headers
 
 ### HttpListener
 
 Implemented: Yes
 
-* Automatically converts JSON/XML/FROM_DATA to Lua Tables, depending on Content-Type headers
-* No TLS support yet, binds on port 80
+* Automatically converts JSON/XML/FROM_DATA from/to Lua Tables, depending on Content-Type headers
+* Might add TLS support, currently server binds on port 80
 
 ### Calendar
 
@@ -94,13 +96,15 @@ Implemented: No
 1. Start OM Discovery
 1. When prompted for KEY type: `00000000`
    ![vclu_sn.png](docs%2Fimg%2Fvclu_sn.png)
-1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address, but they can be ignored for now):
+1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address assignment, they can be ignored - since we cannot change IP address from an application):
    ![vclu_discover.png](docs%2Fimg%2Fvclu_discover.png)
    ![vclu_features.png](docs%2Fimg%2Fvclu_features.png)
 
 # Build
 
 ## Docker
+
+Host networking is required, since Grenton protocol requires broadcast packets. 
 
 > docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
 
@@ -110,7 +114,7 @@ or
 
 ## Local
 
-> mvn package
+> mvn package -Dmaven.test.skip=true
 
 > java -jar vclu/target/vclu.jar eth0
 
@@ -118,7 +122,7 @@ or
 
 > java -jar vclu/target/vclu.jar 192.168.31.44
 
-## Port binding permission issues
+## Port binding permission issues (Linux, it's not required for containers)
 
 The application requires to bind to port TFTP 69, which on Linux is a protected port (<1024).
 To bypass this limitation and not need to run the application as root, you can:
@@ -130,7 +134,7 @@ To bypass this limitation and not need to run the application as root, you can:
 echo 0 | sudo tee /proc/sys/net/ipv4/ip_unprivileged_port_start
 ```
 
-### Allow all java applications to bind on protected ports (not recommended)
+### Allow all java applications to bind on protected ports
 
 ```bash
 # Enables binding for all java applications to any port - java updates will clear the flag
