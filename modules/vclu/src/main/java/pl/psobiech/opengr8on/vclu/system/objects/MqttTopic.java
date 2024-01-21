@@ -184,7 +184,7 @@ public class MqttTopic extends VirtualObject {
                 awaitEventTrigger(Events.MESSAGE);
                 set(Features.TOPIC, LuaValue.valueOf(topic));
                 set(Features.MESSAGE, messageFromPayload(message));
-                if (triggerEvent(Events.MESSAGE)) {
+                if (triggerEvent(Events.MESSAGE, this::clearMessage)) {
                     message.acknowledgement()
                            .run();
                 }

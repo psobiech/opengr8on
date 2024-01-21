@@ -254,9 +254,7 @@ public class VirtualObject implements Closeable {
         if (!isEventRegistered(event)) {
             LOGGER.trace("{}.triggerEvent({}) -- NOT REGISTERED", name, event.name());
 
-            if (onCompleted != null) {
-                scheduler.submit(onCompleted);
-            }
+            tryFireHandler(onCompleted);
 
             return false;
         }
@@ -272,9 +270,7 @@ public class VirtualObject implements Closeable {
                     try {
                         luaFunction.call();
                     } finally {
-                        if (onCompleted != null) {
-                            scheduler.submit(onCompleted);
-                        }
+                        tryFireHandler(onCompleted);
                     }
                 })
             );
@@ -285,6 +281,12 @@ public class VirtualObject implements Closeable {
         }
 
         return false;
+    }
+
+    private void tryFireHandler(Runnable onCompleted) {
+        if (onCompleted != null) {
+            scheduler.submit(onCompleted);
+        }
     }
 
     public boolean isEventRegistered(IEvent event) {
