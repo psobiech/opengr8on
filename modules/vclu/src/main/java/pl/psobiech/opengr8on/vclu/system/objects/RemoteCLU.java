@@ -19,6 +19,8 @@
 package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.net.Inet4Address;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
@@ -29,7 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
 public class RemoteCLU extends VirtualObject {
@@ -44,7 +49,8 @@ public class RemoteCLU extends VirtualObject {
     public RemoteCLU(VirtualSystem virtualSystem, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(
             virtualSystem, name,
-            IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class
+            IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class,
+            ThreadUtil.supportsNonBlockingDatagramSockets() ? ThreadUtil::virtualScheduler : ThreadUtil::daemonScheduler
         );
 
         this.localLuaContext = new Globals();
@@ -56,27 +62,39 @@ public class RemoteCLU extends VirtualObject {
         register(Methods.EXECUTE, arg1 -> {
             final String script = arg1.checkjstring();
 
-            return client.execute(script)
-                         .map(returnValue -> {
-                                 returnValue = StringUtils.stripToNull(returnValue);
-                                 if (returnValue == null) {
-                                     return null;
-                                 }
+            final Optional<String> returnValueOptional;
+            try {
+                // TODO: remove this workaround, when DockerSockets stop thread pinning
+                returnValueOptional = scheduler.submit(() ->
+                                                   client.execute(script)
+                                               )
+                                               .get();
+            } catch (InterruptedException e) {
+                throw new UncheckedInterruptedException(e);
+            } catch (ExecutionException e) {
+                throw new UnexpectedException(e);
+            }
 
-                                 if (returnValue.startsWith("{")) {
-                                     return localLuaContext.load("return %s".formatted(returnValue))
-                                                           .call();
-                                 }
+            return returnValueOptional.map(returnValue -> {
+                                              returnValue = StringUtils.stripToNull(returnValue);
+                                              if (returnValue == null) {
+                                                  return null;
+                                              }
 
-                                 final LuaString luaString = LuaValue.valueOf(returnValue);
-                                 if (luaString.isnumber()) {
-                                     return luaString.checknumber();
-                                 }
+                                              if (returnValue.startsWith("{")) {
+                                                  return localLuaContext.load("return %s".formatted(returnValue))
+                                                                        .call();
+                                              }
 
-                                 return luaString;
-                             }
-                         )
-                         .orElse(LuaValue.NIL);
+                                              final LuaString luaString = LuaValue.valueOf(returnValue);
+                                              if (luaString.isnumber()) {
+                                                  return luaString.checknumber();
+                                              }
+
+                                              return luaString;
+                                          }
+                                      )
+                                      .orElse(LuaValue.NIL);
         });
     }
 

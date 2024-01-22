@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
@@ -78,9 +79,25 @@ public class VirtualObject implements Closeable {
         Class<? extends Enum<? extends IMethod>> methodClass,
         Class<? extends Enum<? extends IEvent>> eventClass
     ) {
+        this(
+            virtualSystem,
+            name,
+            featureClass, methodClass, eventClass,
+            ThreadUtil::virtualScheduler
+        );
+    }
+
+    public VirtualObject(
+        VirtualSystem virtualSystem,
+        String name,
+        Class<? extends Enum<? extends IFeature>> featureClass,
+        Class<? extends Enum<? extends IMethod>> methodClass,
+        Class<? extends Enum<? extends IEvent>> eventClass,
+        Function<String, ScheduledExecutorService> schedulerSupplier
+    ) {
         this.virtualSystem = virtualSystem;
         this.name          = name;
-        this.scheduler     = ThreadUtil.virtualScheduler(name);
+        this.scheduler     = schedulerSupplier.apply(name);
 
         this.featureClass = featureClass;
         this.methodClass  = methodClass;

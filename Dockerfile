@@ -25,7 +25,7 @@ COPY assembly/jar-with-dependencies.xml assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
 #RUN mvn -B -T 4 dependency:go-offline
-RUN mvn -B -T 4 compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B -T 4 -pl '!modules/client' compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM app-deps AS app-build
 
@@ -33,13 +33,12 @@ COPY modules/tftp modules/tftp
 COPY modules/common modules/common
 COPY modules/lib modules/lib
 COPY modules/parsers modules/parsers
-COPY modules/client modules/client
 COPY modules/vclu modules/vclu
 COPY .git .git
 
-RUN mvn -B -T 4 clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B -T 4 -pl '!modules/client' clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21 AS jre-build
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-alpine AS jre-build
 
 RUN mkdir -p /opt/build
 WORKDIR /opt/build
@@ -55,7 +54,7 @@ RUN $JAVA_HOME/bin/jlink \
          --compress=2 \
          --output /opt/build/jre
 
-FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS app-runtime
+FROM --platform=$BUILDPLATFORM alpine:latest AS app-runtime
 
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
