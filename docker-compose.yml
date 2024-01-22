@@ -2,7 +2,7 @@ version: "2.3"
 
 services:
   opengr8on:
-    image: ghcr.io/psobiech/opengr8on:latest
+    image: ghcr.io/psobiech/opengr8on:edge
     command: wlp7s0
     restart: unless-stopped
     read_only: true

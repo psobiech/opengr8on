@@ -82,8 +82,15 @@ public class RemoteCLU extends VirtualObject {
                                               }
 
                                               if (returnValue.startsWith("{")) {
-                                                  return localLuaContext.load("return %s".formatted(returnValue))
-                                                                        .call();
+                                                  try {
+                                                      return localLuaContext.load("return %s".formatted(returnValue))
+                                                                            .call();
+                                                  } catch (Exception e) {
+                                                      // Might not have been a proper LUA table
+                                                      // TODO: implement a more robust check
+
+                                                      LOGGER.error(e.getMessage(), e);
+                                                  }
                                               }
 
                                               final LuaString luaString = LuaValue.valueOf(returnValue);
