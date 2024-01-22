@@ -6,7 +6,7 @@
 
 # Virtual CLU
 
-As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager is programmed, before buying the device itself.
+As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager can be used, before buying the device itself.
 
 Just run VCLU docker image (or multiple images on different devices, just adjust the serial numbers) in the same network as computer running Grenton Object
 Manager (https://grentonsmarthome.github.io/release-en/om/).
