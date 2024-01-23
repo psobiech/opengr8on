@@ -86,8 +86,6 @@ public class Server implements Closeable {
                                              ? ThreadUtil.virtualExecutor("CLUServer")
                                              : ThreadUtil.daemonExecutor("CLUServer");
 
-    private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
-
     private final Path parentDirectory;
 
     private final Path rootDirectory;
@@ -154,13 +152,16 @@ public class Server implements Closeable {
         responseSocket.open();
 
         executor.execute(() -> {
+                final DatagramPacket requestPacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
+
                 do {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
                         final Optional<Request> requestOptional = awaitRequestPayload(
                             String.valueOf(uuid),
-                            broadcastSocket, Duration.ofMillis(TIMEOUT_MILLIS),
+                            broadcastSocket, requestPacket,
+                            Duration.ofMillis(TIMEOUT_MILLIS),
                             broadcastCipherKeys
                         );
                         if (requestOptional.isEmpty()) {
@@ -191,13 +192,16 @@ public class Server implements Closeable {
         );
 
         executor.execute(() -> {
+                final DatagramPacket requestPacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
+
                 do {
                     try {
                         final UUID uuid = UUID.randomUUID();
 
                         final Optional<Request> requestOptional = awaitRequestPayload(
                             String.valueOf(uuid),
-                            commandSocket, Duration.ofMillis(TIMEOUT_MILLIS),
+                            commandSocket, requestPacket,
+                            Duration.ofMillis(TIMEOUT_MILLIS),
                             unicastCipherKeys
                         );
                         if (requestOptional.isEmpty()) {
@@ -230,7 +234,12 @@ public class Server implements Closeable {
         startClu();
     }
 
-    private Optional<Request> awaitRequestPayload(String uuid, UDPSocket socket, Duration timeout, List<CipherKey> responseCipherKeys) {
+    private Optional<Request> awaitRequestPayload(
+        String uuid,
+        UDPSocket socket, DatagramPacket responsePacket,
+        Duration timeout,
+        List<CipherKey> responseCipherKeys
+    ) {
         final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
         if (encryptedPayload.isEmpty()) {
             return Optional.empty();
