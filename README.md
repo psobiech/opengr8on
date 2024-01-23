@@ -91,8 +91,13 @@ Implemented: No
 1. Copy all VCLU [device-interfaces](runtime%2Fdevice-interfaces) to `$OM_HOME/configuration/com.grenton.om/device-interfaces/`
 1. Restart/Launch OM or Reload Device Interfaces
 1. Clone ./runtime directory from this repository
-1. Run Virtual CLU (eg. `docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0` - assuming
-   eth0 is your network interface name - you can specify also local IP address)
+1. Run Virtual CLU (replace eth0 with your network interface name or specify a local IP address)
+   ```bash
+   docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-amd64:latest eth0
+   
+   # For arm64
+   docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-arm64:latest eth0
+   ``` 
 1. Start OM Discovery
 1. When prompted for KEY type: `00000000`
    ![vclu_sn.png](docs%2Fimg%2Fvclu_sn.png)
@@ -106,11 +111,21 @@ Implemented: No
 
 Host networking is required, since Grenton protocol requires broadcast packets. 
 
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest eth0
+```bash
+docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-amd64:latest eth0
+
+# for arm64
+docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-arm64:latest eth0
+```
 
 or
 
-> docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on:latest 192.168.31.44
+```bash
+docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-amd64:latest 192.168.31.44
+
+# for arm64
+docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-arm64:latest 192.168.31.44
+```
 
 ## Local
 
