@@ -34,7 +34,16 @@ import org.slf4j.LoggerFactory;
 public class ThreadUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtil.class);
 
-    private static final Version JVM_VERSION_NON_BLOCKING_DATAGRAM_SOCKET = Version.parse("21.0.2+2");
+    /**
+     * JVM version that has fixed <a href="https://bugs.openjdk.org/browse/JDK-8312166">JDK-8312166</a> (>= 21.0.2+2)
+     */
+    private static final Version JVM_VERSION_WITH_NON_PINNING_DATAGRAM_SOCKET = Version.parse("21.0.2+2");
+
+    /**
+     * true, if we run a version that has proper virtual thread support
+     */
+    public static final boolean SUPPORTS_NON_PINNING_DATAGRAM_SOCKETS = Runtime.version()
+                                                                               .compareTo(JVM_VERSION_WITH_NON_PINNING_DATAGRAM_SOCKET) >= 0;
 
     private static final int MIN_RUNNABLE;
 
@@ -231,14 +240,6 @@ public class ThreadUtil {
      */
     public static ExecutorService daemonExecutor(String name) {
         return Executors.newCachedThreadPool(platformThreadFactory(name, true));
-    }
-
-    /**
-     * @return true, if JVM version has fixed <a href="https://bugs.openjdk.org/browse/JDK-8312166">JDK-8312166</a> (>= 21.0.2+2)
-     */
-    public static boolean supportsNonBlockingDatagramSockets() {
-        return Runtime.version()
-                      .compareTo(JVM_VERSION_NON_BLOCKING_DATAGRAM_SOCKET) >= 0;
     }
 
     /**

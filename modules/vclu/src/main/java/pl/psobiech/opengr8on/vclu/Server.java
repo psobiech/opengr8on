@@ -82,9 +82,7 @@ public class Server implements Closeable {
 
     private static final long RETRY_DELAY = 100L;
 
-    private final ExecutorService executor = ThreadUtil.supportsNonBlockingDatagramSockets()
-                                             ? ThreadUtil.virtualExecutor("CLUServer")
-                                             : ThreadUtil.daemonExecutor("CLUServer");
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUServer");
 
     private final Path parentDirectory;
 

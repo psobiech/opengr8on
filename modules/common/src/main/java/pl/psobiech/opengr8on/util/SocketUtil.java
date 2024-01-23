@@ -30,6 +30,8 @@ import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
@@ -43,6 +45,14 @@ public class SocketUtil {
      * Default timeout value
      */
     public static final int DEFAULT_TIMEOUT_MILLISECONDS = 9_000;
+
+    private static final ExecutorService PLATFORM_EXECUTOR;
+
+    static {
+        PLATFORM_EXECUTOR = ThreadUtil.daemonExecutor(SocketUtil.class);
+
+        ThreadUtil.addShutdownHook(() -> IOUtil.closeQuietly(PLATFORM_EXECUTOR));
+    }
 
     private SocketUtil() {
         // NOP
@@ -115,8 +125,8 @@ public class SocketUtil {
             socketLock.lock();
             try {
                 this.socket = new DatagramSocket(new InetSocketAddress(address, port));
-                this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
                 this.socket.setBroadcast(broadcast);
+                this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
             } catch (IOException e) {
                 throw new UnexpectedException(e);
             } finally {
@@ -156,17 +166,14 @@ public class SocketUtil {
             socketLock.lock();
             try {
                 socket.setSoTimeout(1);
+
                 do {
-                    socket.receive(packet);
+                    receive(packet);
                 } while (packet.getLength() > 0 && !Thread.interrupted());
             } catch (IOException e) {
                 // NOP
             } finally {
-                try {
-                    socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
-                } catch (SocketException e) {
-                    // NOP
-                }
+                tryRestoreDefaultSoTimeout();
 
                 socketLock.unlock();
             }
@@ -181,8 +188,8 @@ public class SocketUtil {
                 try {
                     // defend against 0 to prevent infinite timeouts
                     socket.setSoTimeout(Math.max(1, Math.toIntExact(timeout.toMillis())));
-                    socket.receive(packet);
-                    socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
+
+                    receive(packet);
                 } catch (SocketTimeoutException e) {
                     return Optional.empty();
                 } catch (SocketException e) {
@@ -193,6 +200,8 @@ public class SocketUtil {
                     throw new UnexpectedException(e);
                 } catch (IOException e) {
                     throw new UnexpectedException(e);
+                } finally {
+                    tryRestoreDefaultSoTimeout();
                 }
 
                 return Optional.of(
@@ -206,6 +215,47 @@ public class SocketUtil {
                 );
             } finally {
                 socketLock.unlock();
+            }
+        }
+
+        private void receive(DatagramPacket packet) throws IOException {
+            if (
+                ThreadUtil.SUPPORTS_NON_PINNING_DATAGRAM_SOCKETS
+                || !Thread.currentThread().isVirtual()
+            ) {
+                socket.receive(packet);
+
+                return;
+            }
+
+            try {
+                PLATFORM_EXECUTOR.submit(() -> {
+                                     socket.receive(packet);
+
+                                     return null;
+                                 })
+                                 .get();
+            } catch (InterruptedException e) {
+                throw new UncheckedInterruptedException(e);
+            } catch (ExecutionException e) {
+                final Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+
+                if (cause instanceof IOException ioException) {
+                    throw ioException;
+                }
+
+                throw new UnexpectedException(cause);
+            }
+        }
+
+        private void tryRestoreDefaultSoTimeout() {
+            try {
+                socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
+            } catch (SocketException e) {
+                // NOP
             }
         }
 

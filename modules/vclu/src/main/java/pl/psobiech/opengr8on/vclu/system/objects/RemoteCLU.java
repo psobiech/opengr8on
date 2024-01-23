@@ -19,8 +19,6 @@
 package pl.psobiech.opengr8on.vclu.system.objects;
 
 import java.net.Inet4Address;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
@@ -31,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
@@ -50,7 +46,7 @@ public class RemoteCLU extends VirtualObject {
         super(
             virtualSystem, name,
             IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class,
-            ThreadUtil.supportsNonBlockingDatagramSockets() ? ThreadUtil::virtualScheduler : ThreadUtil::daemonScheduler
+            ThreadUtil::virtualScheduler
         );
 
         this.localLuaContext = new Globals();
@@ -62,46 +58,34 @@ public class RemoteCLU extends VirtualObject {
         register(Methods.EXECUTE, arg1 -> {
             final String script = arg1.checkjstring();
 
-            final Optional<String> returnValueOptional;
-            try {
-                // TODO: remove this workaround, when DockerSockets stop thread pinning
-                returnValueOptional = scheduler.submit(() ->
-                                                   client.execute(script)
-                                               )
-                                               .get();
-            } catch (InterruptedException e) {
-                throw new UncheckedInterruptedException(e);
-            } catch (ExecutionException e) {
-                throw new UnexpectedException(e);
-            }
+            return client.execute(script)
+                         .map(returnValue -> {
+                                 returnValue = StringUtils.stripToNull(returnValue);
+                                 if (returnValue == null) {
+                                     return null;
+                                 }
 
-            return returnValueOptional.map(returnValue -> {
-                                              returnValue = StringUtils.stripToNull(returnValue);
-                                              if (returnValue == null) {
-                                                  return null;
-                                              }
+                                 if (returnValue.startsWith("{")) {
+                                     try {
+                                         return localLuaContext.load("return %s".formatted(returnValue))
+                                                               .call();
+                                     } catch (Exception e) {
+                                         // Might not have been a proper LUA table
+                                         // TODO: implement a more robust check
 
-                                              if (returnValue.startsWith("{")) {
-                                                  try {
-                                                      return localLuaContext.load("return %s".formatted(returnValue))
-                                                                            .call();
-                                                  } catch (Exception e) {
-                                                      // Might not have been a proper LUA table
-                                                      // TODO: implement a more robust check
+                                         LOGGER.error(e.getMessage(), e);
+                                     }
+                                 }
 
-                                                      LOGGER.error(e.getMessage(), e);
-                                                  }
-                                              }
+                                 final LuaString luaString = LuaValue.valueOf(returnValue);
+                                 if (luaString.isnumber()) {
+                                     return luaString.checknumber();
+                                 }
 
-                                              final LuaString luaString = LuaValue.valueOf(returnValue);
-                                              if (luaString.isnumber()) {
-                                                  return luaString.checknumber();
-                                              }
-
-                                              return luaString;
-                                          }
-                                      )
-                                      .orElse(LuaValue.NIL);
+                                 return luaString;
+                             }
+                         )
+                         .orElse(LuaValue.NIL);
         });
     }
 
