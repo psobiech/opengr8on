@@ -109,11 +109,29 @@ class ServerCommandTest extends BaseServerTest {
     }
 
     @Test
+    void setAddressUsingBroadcastWrongSerialNumber() throws Exception {
+        final CLUDevice correctDevice = server.getServer().getDevice();
+
+        final CLUDevice otherDevice = new CLUDevice(
+            Mocks.serialNumber(),
+            correctDevice.getMacAddress(), correctDevice.getAddress(), correctDevice.getPort(),
+            correctDevice.getCipherType(), correctDevice.getCipherKey().getIV(), Mocks.pin()
+        );
+
+        try (CLUClient broadcastClient = new CLUClient(LOCALHOST, otherDevice, projectCipherKey, LOCALHOST, server.getBroadcastPort())) {
+            final Optional<Inet4Address> addressOptional = broadcastClient.setAddress(LOCALHOST, LOCALHOST);
+
+            assertFalse(addressOptional.isPresent());
+        }
+    }
+
+    @Test
     void setAddressUnsupported() throws Exception {
         try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
             final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
 
-            assertFalse(addressOptional.isPresent());
+            assertTrue(addressOptional.isPresent());
+            assertEquals(LOCALHOST, addressOptional.get());
         }
     }
 }

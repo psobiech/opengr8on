@@ -30,7 +30,11 @@
   <logger name="pl.psobiech.opengr8on.vclu.Server" level="TRACE"/>
   <logger name="pl.psobiech.opengr8on.xml" level="DEBUG"/>
 
+  <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="STDOUT" />
+  </appender>
+
   <root level="WARN">
-    <appender-ref ref="STDOUT"/>
+    <appender-ref ref="ASYNC"/>
   </root>
 </configuration>

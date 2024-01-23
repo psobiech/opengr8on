@@ -234,11 +234,11 @@ public class Server implements Closeable {
 
     private Optional<Request> awaitRequestPayload(
         String uuid,
-        UDPSocket socket, DatagramPacket responsePacket,
+        UDPSocket socket, DatagramPacket requestPacket,
         Duration timeout,
         List<CipherKey> responseCipherKeys
     ) {
-        final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
+        final Optional<Payload> encryptedPayload = socket.tryReceive(requestPacket, timeout);
         if (encryptedPayload.isEmpty()) {
             return Optional.empty();
         }
@@ -382,20 +382,17 @@ public class Server implements Closeable {
 
         if (Objects.equals(cluDevice.getSerialNumber(), command.getSerialNumber())) {
             // we cant change IP address, so we only accept current ip address
-            if (command.getIpAddress().equals(cluDevice.getAddress())) {
-                return Optional.of(
-                    new Response(
-                        request.cipherKey(),
-                        SetIpCommand.response(
-                            cluDevice.getSerialNumber(),
-                            cluDevice.getAddress()
-                        )
+            return Optional.of(
+                new Response(
+                    request.cipherKey(),
+                    SetIpCommand.response(
+                        cluDevice.getSerialNumber(),
+                        cluDevice.getAddress()
                     )
-                );
-            }
+                )
+            );
         }
 
-        // For broadcasts, the message needs to be silently ignored
         if (broadcast) {
             return Optional.empty();
         }
