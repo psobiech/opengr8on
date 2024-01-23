@@ -87,7 +87,7 @@ public class Config {
                                                                        .readValue(configJsonPath.toFile());
 
             cluDeviceConfig = new CLUDeviceConfig(
-                HexUtil.asString(configJson.getSerialNumber()),
+                configJson.getSerialNumber(),
                 macAddress,
                 configJson.getHardwareType(), configJson.getHardwareVersion(),
                 configJson.getFirmwareType(), configJson.getFirmwareVersion(),
@@ -97,7 +97,7 @@ public class Config {
             );
         } else {
             cluDeviceConfig = new CLUDeviceConfig(
-                RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS),
+                HexUtil.asLong(RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS)),
                 macAddress,
                 HARDWARE_TYPE, HARDWARE_VERSION,
                 FIRMWARE_TYPE, FIRMWARE_VERSION,

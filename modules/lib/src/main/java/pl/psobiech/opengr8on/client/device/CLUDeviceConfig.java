@@ -32,7 +32,7 @@ public class CLUDeviceConfig extends DeviceConfig {
 
     @JsonCreator
     public CLUDeviceConfig(
-        String serialNumber,
+        Long serialNumber,
         String macAddress,
         int hardwareType, long hardwareVersion,
         int firmwareType, int firmwareVersion,

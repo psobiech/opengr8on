@@ -20,9 +20,7 @@ package pl.psobiech.opengr8on.client.device;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
-import pl.psobiech.opengr8on.util.Util;
 
 public class DeviceConfig {
     @JsonProperty("sn")
@@ -48,12 +46,12 @@ public class DeviceConfig {
 
     @JsonCreator
     public DeviceConfig(
-        String serialNumber,
+        Long serialNumber,
         int hardwareType, long hardwareVersion,
         int firmwareType, int firmwareVersion, String fwVer,
         String status
     ) {
-        this.serialNumber    = Util.mapNullSafe(serialNumber, HexUtil::asLong);
+        this.serialNumber    = serialNumber;
         this.hardwareType    = hardwareType;
         this.hardwareVersion = hardwareVersion;
         this.firmwareType    = firmwareType;
