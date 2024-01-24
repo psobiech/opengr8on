@@ -30,6 +30,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
@@ -92,7 +95,7 @@ public class Server implements Closeable {
 
     private final CLUDevice cluDevice;
 
-    protected final UDPSocket broadcastSocket;
+    protected final UDPSocket broadcastCommandSocket;
 
     protected final UDPSocket commandSocket;
 
@@ -103,6 +106,10 @@ public class Server implements Closeable {
     private List<CipherKey> unicastCipherKeys;
 
     private List<CipherKey> broadcastCipherKeys;
+
+    private final ReentrantLock cipherKeyLock = new ReentrantLock();
+
+    private byte[] temporaryCipherKeyIV;
 
     private CipherKey projectCipherKey;
 
@@ -123,7 +130,7 @@ public class Server implements Closeable {
 
     protected Server(
         Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
-        UDPSocket broadcastSocket,
+        UDPSocket broadcastCommandSocket,
         UDPSocket commandSocket, UDPSocket responseSocket,
         TFTPServer tftpServer
     ) {
@@ -132,104 +139,98 @@ public class Server implements Closeable {
         this.aDriveDirectory = rootDirectory.resolve("a");
         this.cluDevice       = cluDevice;
 
-        this.broadcastSocket = broadcastSocket;
-        this.commandSocket   = commandSocket;
-        this.responseSocket  = responseSocket;
+        this.broadcastCommandSocket = broadcastCommandSocket;
+        this.commandSocket          = commandSocket;
+        this.responseSocket         = responseSocket;
 
         this.tftpServer = tftpServer;
 
         this.projectCipherKey = projectCipherKey;
 
-        this.broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
-        this.unicastCipherKeys   = List.of(projectCipherKey);
+        this.broadcastCipherKeys  = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
+        this.unicastCipherKeys    = List.of(projectCipherKey);
+        this.temporaryCipherKeyIV = null;
     }
 
     public void start() {
-        commandSocket.open();
-        broadcastSocket.open();
         responseSocket.open();
 
+        broadcastCommandSocket.open();
         executor.execute(() -> {
-                final DatagramPacket requestPacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
-
-                do {
-                    try {
-                        final UUID uuid = UUID.randomUUID();
-
-                        final Optional<Request> requestOptional = awaitRequestPayload(
-                            String.valueOf(uuid),
-                            broadcastSocket, requestPacket,
-                            Duration.ofMillis(TIMEOUT_MILLIS),
-                            broadcastCipherKeys
-                        );
-                        if (requestOptional.isEmpty()) {
-                            continue;
+                handleCommands(
+                    () -> {
+                        cipherKeyLock.lock();
+                        try {
+                            return broadcastCipherKeys;
+                        } finally {
+                            cipherKeyLock.unlock();
                         }
-
-                        final Request request = requestOptional.get();
-                        final Optional<Response> responseOptional = onBroadcastCommand(uuid, request);
-                        if (responseOptional.isEmpty()) {
-                            LOGGER.trace(
-                                "%s\tIGNORED\t<-D--\t%s // %s"
-                                    .formatted(uuid, request.payload(), request.cipherKey())
-                            );
-
-                            continue;
-                        }
-
-                        respond(uuid, request, responseOptional.get());
-                    } catch (UncheckedInterruptedException e) {
-                        LOGGER.trace(e.getMessage(), e);
-
-                        break;
-                    } catch (Exception e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                } while (!Thread.interrupted());
+                    },
+                    broadcastCommandSocket, this::onBroadcastCommand
+                );
             }
         );
 
+        commandSocket.open();
         executor.execute(() -> {
-                final DatagramPacket requestPacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
-
-                do {
-                    try {
-                        final UUID uuid = UUID.randomUUID();
-
-                        final Optional<Request> requestOptional = awaitRequestPayload(
-                            String.valueOf(uuid),
-                            commandSocket, requestPacket,
-                            Duration.ofMillis(TIMEOUT_MILLIS),
-                            unicastCipherKeys
-                        );
-                        if (requestOptional.isEmpty()) {
-                            continue;
+                handleCommands(
+                    () -> {
+                        cipherKeyLock.lock();
+                        try {
+                            return unicastCipherKeys;
+                        } finally {
+                            cipherKeyLock.unlock();
                         }
-
-                        final Request request = requestOptional.get();
-                        final Optional<Response> responseOptional = onCommand(uuid, request);
-                        if (responseOptional.isEmpty()) {
-                            LOGGER.trace(
-                                "%s\tIGNORED\t<-D--\t%s // %s"
-                                    .formatted(uuid, request.payload(), request.cipherKey())
-                            );
-
-                            continue;
-                        }
-
-                        respond(uuid, request, responseOptional.get());
-                    } catch (UncheckedInterruptedException e) {
-                        LOGGER.trace(e.getMessage(), e);
-
-                        break;
-                    } catch (Exception e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                } while (!Thread.interrupted());
+                    },
+                    commandSocket, this::onCommand
+                );
             }
         );
 
         startClu();
+    }
+
+    private void handleCommands(
+        Supplier<List<CipherKey>> cipherKeysSupplier,
+        UDPSocket socket,
+        BiFunction<UUID, Request, Optional<Response>> commandFunction
+    ) {
+        final DatagramPacket requestPacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
+
+        do {
+            try {
+                final UUID uuid = UUID.randomUUID();
+
+                final Optional<Request> requestOptional = awaitRequestPayload(
+                    String.valueOf(uuid),
+                    socket, requestPacket,
+                    Duration.ofMillis(TIMEOUT_MILLIS),
+                    cipherKeysSupplier.get()
+                );
+                if (requestOptional.isEmpty()) {
+                    continue;
+                }
+
+                final Request request = requestOptional.get();
+                final Optional<Response> responseOptional = commandFunction.apply(uuid, request);
+                if (responseOptional.isEmpty()) {
+                    LOGGER.trace(
+                        "%s\tIGNORED\t<-D--\t%s // %s"
+                            .formatted(uuid, request.payload(), request.cipherKey())
+                    );
+
+                    continue;
+                }
+
+                respond(uuid, request, responseOptional.get());
+            } catch (UncheckedInterruptedException e) {
+                LOGGER.trace(e.getMessage(), e);
+
+                break;
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        } while (!Thread.interrupted());
     }
 
     private Optional<Request> awaitRequestPayload(
@@ -289,16 +290,7 @@ public class Server implements Closeable {
         final byte[] hash = DiscoverCLUsCommand.hash(projectCipherKey.decrypt(encrypted)
                                                                      .orElse(RandomUtil.bytes(Command.RANDOM_BYTES)));
 
-        final CipherKey temporaryCipherKey = cluDevice.getCipherKey()
-                                                      .withIV(RandomUtil.bytes(Command.IV_BYTES));
-
-        cluDevice.setCipherKey(temporaryCipherKey);
-        broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey, temporaryCipherKey);
-
-        LOGGER.warn("Adding temporary CIPHER KEY...");
-        unicastCipherKeys = List.of(projectCipherKey, temporaryCipherKey);
-
-        persistKeys();
+        final CipherKey temporaryCipherKey = generateTemporaryCipherKey();
 
         return Optional.of(
             new Response(
@@ -421,15 +413,45 @@ public class Server implements Closeable {
         );
     }
 
+    private CipherKey generateTemporaryCipherKey() {
+        cipherKeyLock.lock();
+        try {
+            if (temporaryCipherKeyIV == null) {
+                LOGGER.warn("Adding temporary CIPHER KEY...");
+
+                temporaryCipherKeyIV = RandomUtil.bytes(Command.IV_BYTES);
+            }
+
+            final CipherKey temporaryCipherKey = cluDevice.getCipherKey()
+                                                          .withIV(temporaryCipherKeyIV);
+
+            cluDevice.setCipherKey(temporaryCipherKey);
+            unicastCipherKeys   = List.of(temporaryCipherKey, projectCipherKey);
+            broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, temporaryCipherKey, projectCipherKey);
+
+            persistKeys();
+
+            return temporaryCipherKey;
+        } finally {
+            cipherKeyLock.unlock();
+        }
+    }
+
     private void updateProjectCipherKey(CipherKey newCipherKey) {
-        LOGGER.warn("Updating CIPHER KEY...");
+        cipherKeyLock.lock();
+        try {
+            LOGGER.warn("Updating CIPHER KEY...");
 
-        projectCipherKey = newCipherKey;
+            temporaryCipherKeyIV = null;
+            projectCipherKey     = newCipherKey;
 
-        unicastCipherKeys   = List.of(projectCipherKey);
-        broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
+            unicastCipherKeys   = List.of(projectCipherKey);
+            broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
 
-        persistKeys();
+            persistKeys();
+        } finally {
+            cipherKeyLock.unlock();
+        }
     }
 
     private void persistKeys() {
@@ -699,7 +721,7 @@ public class Server implements Closeable {
         ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(tftpServer, mqttClient, mainThread);
-        IOUtil.closeQuietly(commandSocket, broadcastSocket, responseSocket);
+        IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, responseSocket);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) { }

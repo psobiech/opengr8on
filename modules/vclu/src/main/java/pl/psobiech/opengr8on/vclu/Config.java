@@ -57,9 +57,10 @@ public class Config {
 
         final String pin = StringUtils.upperCase(RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS));
 
+        final byte[] ivBytes = RandomUtil.bytes(Command.IV_BYTES);
         final CluKeys cluKeys = new CluKeys(
-            RandomUtil.bytes(Command.KEY_BYTES), RandomUtil.bytes(Command.IV_BYTES),
-            RandomUtil.bytes(Command.IV_BYTES), pin.getBytes(StandardCharsets.US_ASCII)
+            RandomUtil.bytes(Command.KEY_BYTES), ivBytes,
+            ivBytes, pin.getBytes(StandardCharsets.US_ASCII)
         );
 
         writeKeys(runtimeDirectory, cluKeys);

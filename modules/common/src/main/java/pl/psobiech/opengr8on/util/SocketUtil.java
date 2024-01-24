@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
@@ -228,14 +229,17 @@ public class SocketUtil {
                 return;
             }
 
-            try {
-                PLATFORM_EXECUTOR.submit(() -> {
-                                     socket.receive(packet);
+            final Future<?> future = PLATFORM_EXECUTOR.submit(() -> {
+                socket.receive(packet);
 
-                                     return null;
-                                 })
-                                 .get();
+                return null;
+            });
+
+            try {
+                future.get();
             } catch (InterruptedException e) {
+                ThreadUtil.cancel(future);
+
                 throw new UncheckedInterruptedException(e);
             } catch (ExecutionException e) {
                 final Throwable cause = e.getCause();
