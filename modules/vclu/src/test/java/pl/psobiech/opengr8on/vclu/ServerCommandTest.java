@@ -130,8 +130,7 @@ class ServerCommandTest extends BaseServerTest {
         try (CLUClient client = new CLUClient(LOCALHOST, server.getServer().getDevice(), projectCipherKey, LOCALHOST, server.getPort())) {
             final Optional<Inet4Address> addressOptional = client.setAddress(IPv4AddressUtil.parseIPv4("1.1.1.1"), LOCALHOST);
 
-            assertTrue(addressOptional.isPresent());
-            assertEquals(LOCALHOST, addressOptional.get());
+            assertFalse(addressOptional.isPresent());
         }
     }
 }

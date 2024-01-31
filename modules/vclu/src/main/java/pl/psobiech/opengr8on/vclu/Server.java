@@ -373,19 +373,22 @@ public class Server implements Closeable {
         logCommand(uuid, request, command);
 
         if (Objects.equals(cluDevice.getSerialNumber(), command.getSerialNumber())) {
-            // we cant change IP address, so we only accept current ip address
-            return Optional.of(
-                new Response(
-                    request.cipherKey(),
-                    SetIpCommand.response(
-                        cluDevice.getSerialNumber(),
-                        cluDevice.getAddress()
+            if (command.getIpAddress().equals(cluDevice.getAddress())) {
+                // we cant change IP address, so we only accept current ip address
+                return Optional.of(
+                    new Response(
+                        request.cipherKey(),
+                        SetIpCommand.response(
+                            cluDevice.getSerialNumber(),
+                            cluDevice.getAddress()
+                        )
                     )
-                )
-            );
+                );
+            }
         }
 
         if (broadcast) {
+            // if message was a broadcast, we should not spam errors
             return Optional.empty();
         }
 
