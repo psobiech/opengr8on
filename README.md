@@ -19,7 +19,9 @@ What works:
 
 Does not work:
 
-- No known issues
+- If OM decides to assign different IP address for a device, the discovery will not work. As a workaround starting a fresh OM project seems to work best. 
+
+  Other workaround would be to assign the device the same IP address as OM tries to force on it, then on next discovery the device should be accepted.
 
 TODOs:
 
@@ -101,7 +103,7 @@ Implemented: No
 1. Start OM Discovery
 1. When prompted for KEY type: `00000000`
    ![vclu_sn.png](docs%2Fimg%2Fvclu_sn.png)
-1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address assignment, they can be ignored - since we cannot change IP address from an application):
+1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address assignment, since we cannot change IP address from an application, currently its best to start a fresh OM project):
    ![vclu_discover.png](docs%2Fimg%2Fvclu_discover.png)
    ![vclu_features.png](docs%2Fimg%2Fvclu_features.png)
 
@@ -155,6 +157,9 @@ echo 0 | sudo tee /proc/sys/net/ipv4/ip_unprivileged_port_start
 # Enables binding for all java applications to any port - java updates will clear the flag
 sudo setcap 'cap_net_bind_service=+ep' "$JAVA_HOME/bin/java"
 ```
+
+# Performance
+[PERFORMANCE.md](modules%2FPERFORMANCE.md)
 
 # Licenses
 

@@ -5,10 +5,13 @@ In the examples, the test was run using 64 separate threads were executed for a 
 
 ## Raspberry PI4 8GB
 
-Model: Raspberry Pi 4 Model B Rev 1.4
-Linux: 6.1.0-rpi7-rpi-v8 #1 SMP PREEMPT Debian 1:6.1.63-1+rpt1 (2023-11-24) aarch64 GNU/Linux
-CPU: (4 x 1.8 GHz)
-CLU: OpenGr8ton VCLU (Version: bcf741d) using Java 21.0.1+12-LTS
+**Model**: Raspberry Pi 4 Model B Rev 1.4
+
+**Linux**: 6.1.0-rpi7-rpi-v8 #1 SMP PREEMPT Debian 1:6.1.63-1+rpt1 (2023-11-24) aarch64 GNU/Linux
+
+**CPU**: (4 x 1.8 GHz)
+
+**CLU**: OpenGr8ton VCLU (Version: bcf741d) using Java 21.0.1+12-LTS
 
 ### Results
 
@@ -34,11 +37,15 @@ Maximum	106785
 
 Messages per second: 1676
 
-## Odroid H3+ (Intel N6005)
+## Odroid H3+
 
-Linux: 5.10.0-27-amd64 #1 SMP Debian 5.10.205-2 (2023-12-31) x86_64 GNU/Linux
-CPU: Intel(R) Pentium(R) Silver N6005 @ 2.00GHz (4 x 2.3 GHz)
-CLU: OpenGr8ton VCLU (Version: bcf741d) using Java 21.0.1+12-LTS
+**Model**: Odroid H3+ (Intel N6005)
+
+**Linux**: 5.10.0-27-amd64 #1 SMP Debian 5.10.205-2 (2023-12-31) x86_64 GNU/Linux
+
+**CPU**: Intel(R) Pentium(R) Silver N6005 @ 2.00GHz (4 x 2.3 GHz)
+
+**CLU**: OpenGr8ton VCLU (Version: bcf741d) using Java 21.0.1+12-LTS
 
 ### Results
 
