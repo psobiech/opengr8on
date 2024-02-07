@@ -1,0 +1,162 @@
+/*
+ * OpenGr8on, open source extensions to systems based on Grenton devices
+ * Copyright (C) 2023 Piotr Sobiech
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package pl.psobiech.opengr8on.mysensors.message;
+
+import java.util.Optional;
+
+import pl.psobiech.opengr8on.mysensors.message.DataMessage.SensorDataType;
+import pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType;
+import pl.psobiech.opengr8on.mysensors.message.SensorPresentationMessage.SensorType;
+
+public class Message {
+    private final int nodeId;
+
+    private final int childSensorId;
+
+    private final int command;
+
+    private final int echo;
+
+    private final int type;
+
+    private final String payload;
+
+    public Message(int nodeId, int childSensorId, int command, int echo, int type, String payload) {
+        this.nodeId        = nodeId;
+        this.childSensorId = childSensorId;
+        this.command       = command;
+        this.echo          = echo;
+        this.type          = type;
+        this.payload       = payload;
+    }
+
+    public int getNodeId() {
+        return nodeId;
+    }
+
+    public int getChildSensorId() {
+        return childSensorId;
+    }
+
+    public SensorCommandType getCommandEnum() {
+        return SensorCommandType.byType(getCommand())
+                                .get();
+    }
+
+    public int getCommand() {
+        return command;
+    }
+
+    public boolean requiresEcho() {
+        return getEcho() == 1;
+    }
+
+    public int getEcho() {
+        return echo;
+    }
+
+    public TypeEnum getTypeEnum() {
+        return null;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public String getPayload() {
+        return payload;
+    }
+
+    @Override
+    public String toString() {
+        return "RawMessage{" +
+               "nodeId=" + nodeId +
+               ", childSensorId=" + childSensorId +
+               ", command=" + command +
+               ", echo/ack=" + echo +
+               ", type=" + type +
+               ", payload='" + payload + '\'' +
+               '}';
+    }
+
+    public static DataMessage request(int nodeId, int childSensorId, int ack, SensorDataType type, String payload) {
+        return new DataMessage(nodeId, childSensorId, SensorCommandType.C_REQ, ack, type, payload);
+    }
+
+    public static DataMessage set(int nodeId, int childSensorId, int ack, SensorDataType type, String payload) {
+        return new DataMessage(nodeId, childSensorId, SensorCommandType.C_SET, ack, type, payload);
+    }
+
+    public static SensorPresentationMessage presentation(int nodeId, int childSensorId, int ack, SensorType type, String payload) {
+        return new SensorPresentationMessage(nodeId, childSensorId, SensorCommandType.C_PRESENTATION, ack, type, payload);
+    }
+
+    public static InternalMessage idResponse(int nodeId, int childSensorId, int newNodeId) {
+        return internal(nodeId, childSensorId, SensorInternalMessageType.I_ID_RESPONSE, newNodeId);
+    }
+
+    public static InternalMessage internal(int nodeId, int childSensorId, SensorInternalMessageType type) {
+        return internal(nodeId, childSensorId, 0, type, "");
+    }
+
+    public static InternalMessage internal(int nodeId, int childSensorId, SensorInternalMessageType type, int payload) {
+        return new InternalMessage(nodeId, childSensorId, SensorCommandType.C_INTERNAL, 0, type, String.valueOf(payload));
+    }
+
+    public static InternalMessage internal(int nodeId, int childSensorId, SensorInternalMessageType type, String payload) {
+        return new InternalMessage(nodeId, childSensorId, SensorCommandType.C_INTERNAL, 0, type, payload);
+    }
+
+    public static InternalMessage internal(int nodeId, int childSensorId, int ack, SensorInternalMessageType type, String payload) {
+        return new InternalMessage(nodeId, childSensorId, SensorCommandType.C_INTERNAL, ack, type, payload);
+    }
+
+    public enum SensorCommandType {
+        C_PRESENTATION(0), // Sent by a node when they present attached sensors. This is usually done in presentation() at startup.
+        C_SET(1), // This message is sent from or to a sensor when a sensor value should be updated.
+        C_REQ(2), // Requests a variable value (usually from an actuator destined for controller).
+        C_INTERNAL(3), // Internal MySensors messages (also include common messages provided/generated by the library).
+        C_STREAM(4),    //!< For firmware and other larger chunks of data that need to be divided into pieces.
+        C_RESERVED_5(5),    //!< C_RESERVED_5
+        C_RESERVED_6(6),    //!< C_RESERVED_6
+        C_INVALID_7(7),    //!< C_INVALID_7
+        //
+        ;
+
+        private final int type;
+
+        SensorCommandType(int type) {
+            this.type = type;
+        }
+
+        public static Optional<SensorCommandType> byType(int type) {
+            for (SensorCommandType sensorType : values()) {
+                if (type == sensorType.type()) {
+                    return Optional.of(sensorType);
+                }
+            }
+
+            return Optional.empty();
+        }
+
+        public int type() {
+            return type;
+        }
+    }
+}

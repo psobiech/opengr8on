@@ -20,11 +20,14 @@ package pl.psobiech.opengr8on.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
@@ -39,7 +42,7 @@ import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 /**
- * Common socket operations. Currently only UDP.
+ * Common socket operations.
  */
 public class SocketUtil {
     /**
@@ -59,6 +62,12 @@ public class SocketUtil {
         // NOP
     }
 
+    public static TCPClientSocket tcpClient(InetAddress address, int port) {
+        return new TCPClientSocket(
+            address, port
+        );
+    }
+
     public static UDPSocket udpListener(InetAddress address, int port) {
         return new UDPSocket(
             address, port, false
@@ -69,6 +78,150 @@ public class SocketUtil {
         return new UDPSocket(
             address, true
         );
+    }
+
+    /**
+     * TCP socket wrapper
+     */
+    public static class TCPClientSocket implements Closeable {
+        /**
+         * Local network address
+         */
+        private final InetAddress address;
+
+        /**
+         * Local port
+         */
+        private final int port;
+
+        /**
+         * Socket access lock
+         */
+        private final ReentrantLock socketLock = new ReentrantLock();
+
+        /**
+         * Raw network socket
+         */
+        private Socket socket;
+
+        /**
+         * @param address local address to bind on
+         * @param port port to listen on
+         */
+        public TCPClientSocket(InetAddress address, int port) {
+            this.address = address;
+            this.port    = port;
+        }
+
+        public void send(byte[] buffer) throws IOException {
+            ensureConnected();
+
+            try {
+                final OutputStream outputStream = socket.getOutputStream();
+                outputStream.write(buffer);
+                outputStream.flush();
+            } catch (SocketException e) {
+                // TODO: proper retry / broken pipe handling
+                disconnect();
+                ensureConnected();
+
+                try {
+                    final OutputStream outputStream = socket.getOutputStream();
+                    outputStream.write(buffer);
+                    outputStream.flush();
+                } catch (Exception e2) {
+                    throw e;
+                }
+            }
+        }
+
+        /**
+         * Disconnects the socket
+         */
+        public void disconnect() {
+            socketLock.lock();
+            try {
+                // normal connect does not work for broken connections, we need to recreate socket
+                close();
+                open();
+            } finally {
+                socketLock.unlock();
+            }
+        }
+
+        /**
+         * Open the socket
+         */
+        public void open() {
+            socketLock.lock();
+            try {
+                this.socket = new Socket();
+                this.socket.setTcpNoDelay(true);
+                this.socket.setKeepAlive(true);
+                this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
+            } catch (SocketException e) {
+                if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
+                    throw new UncheckedInterruptedException(e);
+                }
+
+                throw new UnexpectedException(e);
+            } finally {
+                socketLock.unlock();
+            }
+        }
+
+        /**
+         * @return current local address
+         */
+        public InetAddress getLocalAddress() {
+            socketLock.lock();
+            try {
+                return socket.getLocalAddress();
+            } finally {
+                socketLock.unlock();
+            }
+        }
+
+        public InputStream getInputStream() throws IOException {
+            socketLock.lock();
+            try {
+                ensureConnected();
+
+                return socket.getInputStream();
+            } finally {
+                socketLock.unlock();
+            }
+        }
+
+        private void ensureConnected() throws IOException {
+            socketLock.lock();
+            try {
+                if (!socket.isConnected()) {
+                    connect();
+                }
+            } finally {
+                socketLock.unlock();
+            }
+        }
+
+        public void connect() throws IOException {
+            socketLock.lock();
+            try {
+                this.socket.connect(new InetSocketAddress(address, port), DEFAULT_TIMEOUT_MILLISECONDS);
+            } finally {
+                socketLock.unlock();
+            }
+        }
+
+        @Override
+        public void close() {
+            socketLock.lock();
+            try {
+                IOUtil.closeQuietly(this.socket);
+            } finally {
+                socketLock.unlock();
+            }
+        }
     }
 
     /**
@@ -128,7 +281,11 @@ public class SocketUtil {
                 this.socket = new DatagramSocket(new InetSocketAddress(address, port));
                 this.socket.setBroadcast(broadcast);
                 this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
-            } catch (IOException e) {
+            } catch (SocketException e) {
+                if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
+                    throw new UncheckedInterruptedException(e);
+                }
+
                 throw new UnexpectedException(e);
             } finally {
                 socketLock.unlock();

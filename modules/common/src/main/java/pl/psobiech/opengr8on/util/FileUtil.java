@@ -63,9 +63,13 @@ public final class FileUtil {
 
     private static final TemporaryFileTracker FILE_TRACKER = new TemporaryFileTracker();
 
-    public static final String CR = Character.toString(0x0D);
+    public static final byte CR_CODE_POINT = 0x0D;
 
-    public static final String LF = Character.toString(0x0A);
+    public static final String CR = Character.toString(CR_CODE_POINT);
+
+    public static final byte LF_CODE_POINT = 0x0A;
+
+    public static final String LF = Character.toString(LF_CODE_POINT);
 
     public static final String CRLF = CR + LF;
 

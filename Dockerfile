@@ -19,13 +19,14 @@ COPY modules/lib/pom.xml modules/lib/
 COPY modules/parsers/pom.xml modules/parsers/
 COPY modules/tftp/pom.xml modules/tftp/
 COPY modules/client/pom.xml modules/client/
+COPY modules/mysensors/pom.xml modules/mysensors/
 COPY modules/vclu/pom.xml modules/vclu/
 
 COPY assembly/jar-with-dependencies.xml assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
 #RUN mvn -B -T 4 dependency:go-offline
-RUN mvn -B -T 4 -pl '!modules/client' compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B -T 4 -pl '!modules/client,!modules/mysensors' compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM app-deps AS app-build
 
