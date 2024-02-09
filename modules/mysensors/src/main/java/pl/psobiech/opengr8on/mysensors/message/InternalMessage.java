@@ -25,8 +25,8 @@ public class InternalMessage extends Message {
 
     private final SensorInternalMessageType typeEnum;
 
-    InternalMessage(int nodeId, int childSensorId, SensorCommandType commandEnum, int ack, SensorInternalMessageType typeEnum, String payload) {
-        super(nodeId, childSensorId, commandEnum.type(), ack, typeEnum.type(), payload);
+    InternalMessage(int nodeId, int childSensorId, SensorCommandType commandEnum, int echo, SensorInternalMessageType typeEnum, String payload) {
+        super(nodeId, childSensorId, commandEnum.type(), echo, typeEnum.type(), payload);
 
         this.commandEnum = commandEnum;
         this.typeEnum    = typeEnum;
@@ -45,9 +45,13 @@ public class InternalMessage extends Message {
     @Override
     public String toString() {
         return "InternalMessage{" +
-               "commandEnum=" + commandEnum +
-               ", typeEnum=" + typeEnum +
-               "} " + super.toString();
+               "nodeId=" + nodeId +
+               ", childSensorId=" + childSensorId +
+               ", command=" + command + " // " + commandEnum +
+               ", echo=" + echo +
+               ", type=" + type + " // " + typeEnum +
+               ", payload='" + payload + '\'' +
+               '}';
     }
 
     public enum SensorInternalMessageType implements TypeEnum {

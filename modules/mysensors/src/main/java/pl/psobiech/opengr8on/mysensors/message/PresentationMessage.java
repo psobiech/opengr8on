@@ -20,13 +20,13 @@ package pl.psobiech.opengr8on.mysensors.message;
 
 import java.util.Optional;
 
-public class SensorPresentationMessage extends Message {
+public class PresentationMessage extends Message {
     private final SensorCommandType commandEnum;
 
     private final SensorType typeEnum;
 
-    SensorPresentationMessage(int nodeId, int childSensorId, SensorCommandType commandEnum, int ack, SensorType typeEnum, String payload) {
-        super(nodeId, childSensorId, commandEnum.type(), ack, typeEnum.type(), payload);
+    PresentationMessage(int nodeId, int childSensorId, SensorCommandType commandEnum, int echo, SensorType typeEnum, String payload) {
+        super(nodeId, childSensorId, commandEnum.type(), echo, typeEnum.type(), payload);
 
         this.commandEnum = commandEnum;
         this.typeEnum    = typeEnum;
@@ -45,9 +45,13 @@ public class SensorPresentationMessage extends Message {
     @Override
     public String toString() {
         return "SensorPresentationMessage{" +
-               "commandEnum=" + commandEnum +
-               ", typeEnum=" + typeEnum +
-               "} " + super.toString();
+               "nodeId=" + nodeId +
+               ", childSensorId=" + childSensorId +
+               ", command=" + command + " // " + commandEnum +
+               ", echo=" + echo +
+               ", type=" + type + " // " + typeEnum +
+               ", payload='" + payload + '\'' +
+               '}';
     }
 
     public enum SensorType implements TypeEnum {

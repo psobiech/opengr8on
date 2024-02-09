@@ -20,22 +20,26 @@ package pl.psobiech.opengr8on.mysensors.message;
 
 import java.util.Optional;
 
-import pl.psobiech.opengr8on.mysensors.message.DataMessage.SensorDataType;
-import pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType;
-import pl.psobiech.opengr8on.mysensors.message.SensorPresentationMessage.SensorType;
+import org.apache.commons.lang3.StringUtils;
 
 public class Message {
-    private final int nodeId;
+    public static final int VALUE_FALSE = 0;
 
-    private final int childSensorId;
+    public static final int VALUE_TRUE = 1;
 
-    private final int command;
+    public static final String VALUE_TRUE_AS_STRING = String.valueOf(VALUE_TRUE);
 
-    private final int echo;
+    protected final int nodeId;
 
-    private final int type;
+    protected final int childSensorId;
 
-    private final String payload;
+    protected final int command;
+
+    protected final int echo;
+
+    protected final int type;
+
+    protected final String payload;
 
     public Message(int nodeId, int childSensorId, int command, int echo, int type, String payload) {
         this.nodeId        = nodeId;
@@ -44,6 +48,20 @@ public class Message {
         this.echo          = echo;
         this.type          = type;
         this.payload       = payload;
+    }
+
+    public String serialize(boolean ignoreEcho) {
+        return getNodeId()
+               + ";"
+               + getChildSensorId()
+               + ";"
+               + getCommand()
+               + ";"
+               + (ignoreEcho ? VALUE_FALSE : getEcho())
+               + ";"
+               + getType()
+               + ";"
+               + StringUtils.stripToEmpty(getPayload());
     }
 
     public int getNodeId() {
@@ -64,7 +82,7 @@ public class Message {
     }
 
     public boolean requiresEcho() {
-        return getEcho() == 1;
+        return getEcho() == VALUE_TRUE;
     }
 
     public int getEcho() {
@@ -79,6 +97,69 @@ public class Message {
         return type;
     }
 
+    public byte getPayloadAsByte() {
+        return findPayloadAsByte().orElse((byte) 0);
+    }
+
+    public Optional<Byte> findPayloadAsByte() {
+        return findPayloadAsInteger()
+            .filter(value -> (value >= 0 && value <= 0xFF))
+            .map(Integer::byteValue);
+    }
+
+    public int getPayloadAsInteger() {
+        return findPayloadAsInteger().orElse(0);
+    }
+
+    public Optional<Integer> findPayloadAsInteger() {
+        try {
+            return findPayloadAsString().map(Integer::parseInt);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public long getPayloadAsLong() {
+        return findPayloadAsLong().orElse(0L);
+    }
+
+    public Optional<Long> findPayloadAsLong() {
+        try {
+            return findPayloadAsString().map(Long::parseLong);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public float getPayloadAsFloat() {
+        return findPayloadAsFloat().orElse(Float.NaN);
+    }
+
+    public Optional<Float> findPayloadAsFloat() {
+        try {
+            return findPayloadAsString().map(Float::parseFloat);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public boolean getPayloadAsBoolean() {
+        return findPayloadAsBoolean().orElse(false);
+    }
+
+    public Optional<Boolean> findPayloadAsBoolean() {
+        return findPayloadAsString()
+            .map(value -> VALUE_TRUE_AS_STRING.equals(value) || Boolean.parseBoolean(value));
+    }
+
+    public String getPayloadAsString() {
+        return findPayloadAsString().orElse("");
+    }
+
+    public Optional<String> findPayloadAsString() {
+        return Optional.ofNullable(payload);
+    }
+
     public String getPayload() {
         return payload;
     }
@@ -88,43 +169,11 @@ public class Message {
         return "RawMessage{" +
                "nodeId=" + nodeId +
                ", childSensorId=" + childSensorId +
-               ", command=" + command +
+               ", command=" + command + " // " + SensorCommandType.byType(getCommand()) +
                ", echo/ack=" + echo +
                ", type=" + type +
                ", payload='" + payload + '\'' +
                '}';
-    }
-
-    public static DataMessage request(int nodeId, int childSensorId, int ack, SensorDataType type, String payload) {
-        return new DataMessage(nodeId, childSensorId, SensorCommandType.C_REQ, ack, type, payload);
-    }
-
-    public static DataMessage set(int nodeId, int childSensorId, int ack, SensorDataType type, String payload) {
-        return new DataMessage(nodeId, childSensorId, SensorCommandType.C_SET, ack, type, payload);
-    }
-
-    public static SensorPresentationMessage presentation(int nodeId, int childSensorId, int ack, SensorType type, String payload) {
-        return new SensorPresentationMessage(nodeId, childSensorId, SensorCommandType.C_PRESENTATION, ack, type, payload);
-    }
-
-    public static InternalMessage idResponse(int nodeId, int childSensorId, int newNodeId) {
-        return internal(nodeId, childSensorId, SensorInternalMessageType.I_ID_RESPONSE, newNodeId);
-    }
-
-    public static InternalMessage internal(int nodeId, int childSensorId, SensorInternalMessageType type) {
-        return internal(nodeId, childSensorId, 0, type, "");
-    }
-
-    public static InternalMessage internal(int nodeId, int childSensorId, SensorInternalMessageType type, int payload) {
-        return new InternalMessage(nodeId, childSensorId, SensorCommandType.C_INTERNAL, 0, type, String.valueOf(payload));
-    }
-
-    public static InternalMessage internal(int nodeId, int childSensorId, SensorInternalMessageType type, String payload) {
-        return new InternalMessage(nodeId, childSensorId, SensorCommandType.C_INTERNAL, 0, type, payload);
-    }
-
-    public static InternalMessage internal(int nodeId, int childSensorId, int ack, SensorInternalMessageType type, String payload) {
-        return new InternalMessage(nodeId, childSensorId, SensorCommandType.C_INTERNAL, ack, type, payload);
     }
 
     public enum SensorCommandType {

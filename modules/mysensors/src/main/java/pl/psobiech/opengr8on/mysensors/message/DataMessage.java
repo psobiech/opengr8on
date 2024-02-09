@@ -25,8 +25,8 @@ public class DataMessage extends Message {
 
     private final SensorDataType typeEnum;
 
-    DataMessage(int nodeId, int childSensorId, SensorCommandType commandEnum, int ack, SensorDataType typeEnum, String payload) {
-        super(nodeId, childSensorId, commandEnum.type(), ack, typeEnum.type(), payload);
+    DataMessage(int nodeId, int childSensorId, SensorCommandType commandEnum, int echo, SensorDataType typeEnum, String payload) {
+        super(nodeId, childSensorId, commandEnum.type(), echo, typeEnum.type(), payload);
 
         this.commandEnum = commandEnum;
         this.typeEnum    = typeEnum;
@@ -45,9 +45,13 @@ public class DataMessage extends Message {
     @Override
     public String toString() {
         return "DataMessage{" +
-               "commandEnum=" + commandEnum +
-               ", typeEnum=" + typeEnum +
-               "} " + super.toString();
+               "nodeId=" + nodeId +
+               ", childSensorId=" + childSensorId +
+               ", command=" + command + " // " + commandEnum +
+               ", echo=" + echo +
+               ", type=" + type + " // " + typeEnum +
+               ", payload='" + payload + '\'' +
+               '}';
     }
 
     public enum SensorDataType implements TypeEnum {

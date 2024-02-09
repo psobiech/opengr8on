@@ -21,121 +21,136 @@ package pl.psobiech.opengr8on.mysensors;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.mysensors.message.DataMessage.SensorDataType;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.mysensors.message.DataMessage;
+import pl.psobiech.opengr8on.mysensors.message.InternalMessage;
 import pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType;
 import pl.psobiech.opengr8on.mysensors.message.Message;
-import pl.psobiech.opengr8on.mysensors.message.Message.SensorCommandType;
-import pl.psobiech.opengr8on.mysensors.message.SensorPresentationMessage.SensorType;
+import pl.psobiech.opengr8on.mysensors.message.MessageFactory;
+import pl.psobiech.opengr8on.mysensors.message.PresentationMessage;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.TCPClientSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.util.ToStringUtil;
+import pl.psobiech.opengr8on.util.Util;
+
+import static pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType.I_CONFIG;
+import static pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType.I_DISCOVER_REQUEST;
+import static pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType.I_HEARTBEAT_RESPONSE;
+import static pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType.I_PRESENTATION;
+import static pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType.I_VERSION;
 
 public class MySensorsClient implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySensorsClient.class);
 
     public static final int DEFAULT_PORT = 5003;
 
-    static final int MIN_PACKET_SIZE = 7;
+    private static final int MIN_PACKET_SIZE = 7;
 
-    static final int MAX_PACKET_SIZE = 32;
+    private static final int MAX_PACKET_SIZE = 32;
 
-    static final int MAX_BUFFER_SIZE = 100;
+    private static final int MAX_BUFFER_SIZE = 100;
 
-    private static final int MESSAGE_PARTS = 6;
+    private static final int INITIAL_SEND_DELAY_MILLIS = 200;
+
+    private static final int ANY_NODE = 255;
 
     private final ExecutorService executorService;
 
     private final TCPClientSocket socket;
 
-    private final LinkedBlockingQueue<Message> readQueue = new LinkedBlockingQueue<>();
+    private final long sendDelayNanos = TimeUnit.MILLISECONDS.toNanos(INITIAL_SEND_DELAY_MILLIS);
 
     private final ReentrantLock sendLock = new ReentrantLock();
 
     private Future<?> readFuture;
 
-    public MySensorsClient(ExecutorService executorService, TCPClientSocket socket) {
+    private volatile long lastSentAt = 0;
+
+    public MySensorsClient(
+        ExecutorService executorService,
+        TCPClientSocket socket
+    ) {
         this.executorService = executorService;
-        this.socket          = socket;
+
+        this.socket = socket;
     }
 
-    public void open() {
+    public void open(
+        BiFunction<MySensorsClient, InternalMessage, Integer> registrationConsumer,
+        BiConsumer<MySensorsClient, PresentationMessage> presentationConsumer,
+        BiConsumer<MySensorsClient, DataMessage> dataConsumer
+    ) {
+        ThreadUtil.cancel(readFuture);
+
+        socket.close();
         socket.open();
-
-        try {
-            socket.connect();
-        } catch (SocketTimeoutException e) {
-            // NOP
-        } catch (SocketException e) {
-            if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
-                throw new UncheckedInterruptedException(e);
-            }
-
-            LOGGER.error(e.getMessage(), e);
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage(), e);
-        }
 
         readFuture = executorService.submit(() -> {
             int offset = 0;
             final byte[] buffer = new byte[MAX_BUFFER_SIZE];
 
             do {
+                final UUID uuid = UUID.randomUUID();
+
                 try {
                     final InputStream inputStream = socket.getInputStream();
 
-                    READ_AVAILABLE:
                     while (inputStream.available() > 0) {
                         final byte value = (byte) inputStream.read();
                         if (isLineEnding(value)) {
-                            if (offset < MIN_PACKET_SIZE) {
-                                LOGGER.warn("IGNORING PACKET: " + ToStringUtil.toString(Arrays.copyOf(buffer, offset)));
-                            } else {
-                                final String messageAsString = new String(Arrays.copyOf(buffer, offset), StandardCharsets.UTF_8);
-                                final Optional<Message> rawMessage = parseMessage(messageAsString);
-                                if (rawMessage.isPresent()) {
-                                    final Message message = rawMessage.get();
+                            final String messageAsString = new String(Arrays.copyOf(buffer, offset), StandardCharsets.UTF_8);
+                            final Optional<Message> messageOptional = MessageFactory.parseMessage(messageAsString);
+                            if (messageOptional.isPresent()) {
+                                final Message message = messageOptional.get();
 
-                                    LOGGER.warn("INCOMING: {}", message);
-                                    readQueue.offer(message);
-                                } else {
-                                    LOGGER.warn("IGNORING MESSAGE: " + messageAsString);
-                                }
+                                LOGGER.trace(
+                                    "%s\t<-D--\t%s // %s"
+                                        .formatted(uuid, message, messageAsString)
+                                );
+
+                                onMessage(
+                                    message,
+                                    registrationConsumer, presentationConsumer, dataConsumer
+                                );
+                            } else {
+                                LOGGER.warn(
+                                    "%s\t<-D--\t%s // %s"
+                                        .formatted(uuid, "IGNORING MESSAGE", messageAsString)
+                                );
                             }
 
                             offset = 0;
-
                             continue;
                         }
 
                         if (offset == buffer.length) {
-                            LOGGER.warn("BUFFER OVERFLOW, DISCARDING WHOLE BUFFER");
+                            LOGGER.warn(
+                                "%s\t<-D--\t%s"
+                                    .formatted(uuid, "INVALID PACKET, DISCARDING BUFFER")
+                            );
 
-                            // discard all buffered data, unless we get a newline, which resets our state - hopefully
-                            while (inputStream.available() > 0) {
-                                final byte discardedValue = (byte) inputStream.read();
-                                if (isLineEnding(discardedValue)) {
-                                    break READ_AVAILABLE;
-                                }
-                            }
+                            discardBuffer(inputStream);
 
                             offset = 0;
-
                             continue;
                         }
 
@@ -156,121 +171,142 @@ public class MySensorsClient implements Closeable {
                 }
             } while (!Thread.interrupted());
         });
+
+        send(
+            MessageFactory.internal(
+                ANY_NODE, ANY_NODE,
+                I_DISCOVER_REQUEST
+            )
+        );
     }
 
-    private Optional<Message> parseMessage(String messageAsString) {
-        final String[] parts = messageAsString.split(";", MESSAGE_PARTS);
-        if (parts.length != MESSAGE_PARTS) {
-            return Optional.empty();
+    private void onMessage(
+        Message message,
+        BiFunction<MySensorsClient, InternalMessage, Integer> registrationConsumer,
+        BiConsumer<MySensorsClient, PresentationMessage> presentationConsumer,
+        BiConsumer<MySensorsClient, DataMessage> dataConsumer
+    ) {
+        if (message instanceof PresentationMessage presentationMessage) {
+            executorService.submit(() -> presentationConsumer.accept(this, presentationMessage));
         }
 
-        final int nodeId = Integer.parseInt(parts[0]);
-        final int sensorChildId = Integer.parseInt(parts[1]);
+        if (message instanceof DataMessage dataMessage) {
+            executorService.submit(() -> dataConsumer.accept(this, dataMessage));
+        }
 
-        final int command = Integer.parseInt(parts[2]);
+        if (message instanceof InternalMessage internalMessage) {
+            final SensorInternalMessageType typeEnum = internalMessage.getTypeEnum();
 
-        final int echo = Integer.parseInt(parts[3]);
+            final Optional<Message> responseMessage = switch (typeEnum) {
+                case I_HEARTBEAT_REQUEST -> Optional.of(
+                    MessageFactory.internal(
+                        message.getNodeId(), ANY_NODE,
+                        I_HEARTBEAT_RESPONSE,
+                        (int) (System.currentTimeMillis() - ManagementFactory.getRuntimeMXBean().getStartTime())
+                    )
+                );
+                case I_ID_REQUEST -> Optional.of(
+                    MessageFactory.idResponse(
+                        message.getNodeId(), message.getChildSensorId(),
+                        registrationConsumer.apply(this, internalMessage)
+                    )
+                );
+                case I_GATEWAY_READY -> Optional.of(
+                    MessageFactory.internal(
+                        message.getNodeId(), ANY_NODE,
+                        I_VERSION
+                    )
+                );
+                case I_CONFIG -> Optional.of(
+                    MessageFactory.internal(
+                        message.getNodeId(), message.getChildSensorId(),
+                        I_CONFIG,
+                        "M" // METRIC
+                    )
+                );
+                case I_DISCOVER_RESPONSE -> Optional.of(
+                    MessageFactory.internal(
+                        message.getNodeId(), ANY_NODE,
+                        I_PRESENTATION
+                    )
+                );
+                default -> Optional.empty();
+            };
 
-        final int type = Integer.parseInt(parts[4]);
-        final String payload = parts[5];
+            responseMessage.ifPresent(this::send);
+        }
 
-        return SensorCommandType.byType(command)
-                                .flatMap(commandType ->
-                                    switch (commandType) {
-                                        case C_PRESENTATION -> SensorType.byType(type)
-                                                                         .map(sensorType ->
-                                                                             Message.presentation(
-                                                                                 nodeId, sensorChildId,
-                                                                                 echo,
-                                                                                 sensorType, payload
-                                                                             )
-                                                                         );
-                                        case C_SET -> SensorDataType.byType(type)
-                                                                    .map(sensorDataType ->
-                                                                        Message.set(
-                                                                            nodeId, sensorChildId,
-                                                                            echo,
-                                                                            sensorDataType, payload
-                                                                        )
-                                                                    );
-                                        case C_REQ -> SensorDataType.byType(type)
-                                                                    .map(sensorDataType ->
-                                                                        Message.request(
-                                                                            nodeId, sensorChildId,
-                                                                            echo,
-                                                                            sensorDataType, payload
-                                                                        )
-                                                                    );
-                                        case C_INTERNAL -> SensorInternalMessageType.byType(type)
-                                                                                    .map(sensorInternalMessageType ->
-                                                                                        Message.internal(
-                                                                                            nodeId, sensorChildId,
-                                                                                            echo,
-                                                                                            sensorInternalMessageType, payload
-                                                                                        )
-                                                                                    );
-                                        default -> Optional.empty();
-                                    });
+        if (message.requiresEcho()) {
+            echo(message);
+        }
+    }
+
+    /**
+     * Discards all buffered data (if newline is not observed first) - should hopefully reset our state
+     */
+    private static void discardBuffer(InputStream inputStream) throws IOException {
+        while (inputStream.available() > 0) {
+            final byte discardedValue = (byte) inputStream.read();
+            if (isLineEnding(discardedValue)) {
+                return;
+            }
+        }
     }
 
     private static boolean isLineEnding(byte value) {
         return value == FileUtil.LF_CODE_POINT || value == FileUtil.CR_CODE_POINT;
     }
 
-    public Optional<Message> poll() {
+    public void send(Message message) {
         try {
-            return Optional.ofNullable(
-                readQueue.poll(1, TimeUnit.SECONDS)
-            );
+            sendAsync(message).get();
         } catch (InterruptedException e) {
             throw new UncheckedInterruptedException(e);
+        } catch (ExecutionException e) {
+            throw new UnexpectedException(e.getCause());
         }
     }
 
-    public void send(Message message) throws IOException {
-        send(message, false);
-    }
-
-    public void echo(Message message) throws IOException {
-        send(message, true);
-    }
-
-    private void send(Message message, boolean ignoreEcho) throws IOException {
-        LOGGER.warn("SENDING: {}", message);
-
-        send(
-            message.getNodeId()
-            + ";"
-            + message.getChildSensorId()
-            + ";"
-            + message.getCommand()
-            + ";"
-            + (ignoreEcho ? 0 : message.getEcho())
-            + ";"
-            + message.getType()
-            + ";"
-            + message.getPayload()
+    public Future<?> sendAsync(Message message) {
+        return executorService.submit(() ->
+            send(message, false)
         );
     }
 
-    private void send(String messageAsString) throws IOException {
-        final byte[] messageAsBytes = messageAsString.getBytes(StandardCharsets.UTF_8);
+    public void echo(Message message) {
+        send(message, true);
+    }
 
-        final byte[] buffer = Arrays.copyOf(messageAsBytes, messageAsBytes.length + 1);
-        buffer[messageAsBytes.length] = FileUtil.LF_CODE_POINT;
+    private void send(Message message, boolean ignoreEcho) {
+        final String messageAsString = message.serialize(ignoreEcho);
+        final byte[] messageAsBytes = messageAsString.getBytes(StandardCharsets.UTF_8);
 
         sendLock.lock();
         try {
-            socket.send(buffer);
+            final long waitLeftNanos = (sendDelayNanos - (System.nanoTime() - lastSentAt));
+            if (waitLeftNanos > 0) {
+                // Controller specification requires to sleep in between sending messages
+                //
+                // https://www.mysensors.org/controller/requirements
+                // https://github.com/mysensors/MySensors/issues/1529
+                Util.sleepNanos(waitLeftNanos);
+            }
 
-            // TODO: implement the sendDelay properly
-            // https://www.mysensors.org/controller/requirements
-            // https://github.com/mysensors/MySensors/issues/1529
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
+            LOGGER.trace(
+                "%s\t--D->\t%s // %s"
+                    .formatted(UUID.randomUUID(), message, messageAsString)
+            );
+
+            lastSentAt = System.nanoTime();
+            socket.send(messageAsBytes, new byte[] {FileUtil.LF_CODE_POINT});
+        } catch (SocketException e) {
+            if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
                 throw new UncheckedInterruptedException(e);
             }
+
+            throw new UnexpectedException(e);
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
         } finally {
             sendLock.unlock();
         }

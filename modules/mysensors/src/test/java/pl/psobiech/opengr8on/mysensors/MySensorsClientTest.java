@@ -18,48 +18,50 @@
 
 package pl.psobiech.opengr8on.mysensors;
 
+import java.util.Hashtable;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.mysensors.message.DataMessage.SensorDataType;
 import pl.psobiech.opengr8on.mysensors.message.Message;
 import pl.psobiech.opengr8on.mysensors.message.Message.SensorCommandType;
+import pl.psobiech.opengr8on.mysensors.message.MessageFactory;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
+import static pl.psobiech.opengr8on.mysensors.message.InternalMessage.SensorInternalMessageType.I_HEARTBEAT_REQUEST;
+
 class MySensorsClientTest {
-    public static final int ANY_NODE = 255;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySensorsClient.class);
 
     @Test
     @Disabled
     void main() throws Exception {
-        final ExecutorService executorService = ThreadUtil.virtualExecutor("MySensors");
+        final ScheduledExecutorService executorService = ThreadUtil.virtualScheduler("MySensors");
 
         final MySensorsClient client = new MySensorsClient(
             executorService,
             SocketUtil.tcpClient(IPv4AddressUtil.parseIPv4("192.168.0.240"), 5003)
         );
-        client.open();
 
-        client.send(
-            Message.internal(
-                ANY_NODE, ANY_NODE,
-                SensorInternalMessageType.I_DISCOVER_REQUEST
-            )
-        );
+        final Hashtable<String, String> names = new Hashtable<>();
 
         executorService.submit(() -> {
             while (!Thread.interrupted()) {
-                Thread.sleep(8000);
+                Thread.sleep(10_000);
 
                 client.send(
-                    Message.internal(
-                        1, ANY_NODE,
-                        SensorInternalMessageType.I_HEARTBEAT_REQUEST
+                    MessageFactory.internal(
+                        0, 255,
+                        I_HEARTBEAT_REQUEST
                     )
                 );
             }
@@ -67,48 +69,56 @@ class MySensorsClientTest {
             return null;
         });
 
-        final AtomicInteger nextNode = new AtomicInteger(0);
-        do {
-            final Optional<Message> rawMessageOptional = client.poll();
-            if (rawMessageOptional.isEmpty()) {
-                continue;
-            }
+        final AtomicInteger nodeIdSequence = new AtomicInteger(0);
 
-            final Message message = rawMessageOptional.get();
-            if (message.requiresEcho()) {
-                client.echo(message);
-            }
+        client.open(
+            (mySensorsClient, internalMessage) -> nodeIdSequence.incrementAndGet(),
+            (controller, message) -> {
+                names.put(message.getNodeId() + ":" + message.getChildSensorId(), message.getPayload());
 
-            if (message.getCommandEnum() == SensorCommandType.C_INTERNAL) {
-                final SensorInternalMessageType typeEnum = (SensorInternalMessageType) message.getTypeEnum();
-                switch (typeEnum) {
-                    case SensorInternalMessageType.I_ID_REQUEST -> client.send(
-                        Message.idResponse(
-                            message.getNodeId(), message.getChildSensorId(),
-                            nextNode.incrementAndGet()
-                        )
-                    );
-                    case SensorInternalMessageType.I_GATEWAY_READY -> client.send(
-                        Message.internal(
-                            message.getNodeId(), ANY_NODE,
-                            SensorInternalMessageType.I_VERSION
-                        )
-                    );
-                    case SensorInternalMessageType.I_CONFIG -> client.send(
-                        Message.internal(
-                            message.getNodeId(), message.getChildSensorId(),
-                            SensorInternalMessageType.I_CONFIG,
-                            "M" // METRIC
-                        )
-                    );
-                    case SensorInternalMessageType.I_DISCOVER_RESPONSE -> client.send(
-                        Message.internal(
-                            message.getNodeId(), ANY_NODE,
-                            SensorInternalMessageType.I_PRESENTATION
-                        )
+                final Optional<Message> responseMessage = switch (message.getTypeEnum()) {
+                    case S_BINARY -> {
+                        executorService.schedule(() ->
+                                client.send(
+                                    MessageFactory.set(
+                                        message.getNodeId(), message.getChildSensorId(),
+                                        0,
+                                        SensorDataType.V_STATUS,
+                                        "0"
+                                    )
+                                ),
+                            2000, TimeUnit.MILLISECONDS
+                        );
+
+                        yield Optional.of(
+                            MessageFactory.set(
+                                message.getNodeId(), message.getChildSensorId(),
+                                0,
+                                SensorDataType.V_STATUS,
+                                "1"
+                            )
+                        );
+                    }
+                    default -> Optional.empty();
+                };
+
+                responseMessage.ifPresent(controller::send);
+            },
+            (controller, message) -> {
+                if (message.getCommandEnum() == SensorCommandType.C_SET) {
+                    LOGGER.info("SET: {}:{} ({}) == {}",
+                        message.getNodeId(), message.getChildSensorId(),
+                        names.get(message.getNodeId() + ":" + message.getChildSensorId()),
+                        switch (message.getTypeEnum()) {
+                            case V_TEMP -> message.getPayloadAsFloat();
+                            case V_STATUS -> message.getPayloadAsBoolean();
+                            default -> message.getPayload();
+                        }
                     );
                 }
             }
-        } while (!Thread.interrupted());
+        );
+
+        new CountDownLatch(1).await();
     }
 }

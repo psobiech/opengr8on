@@ -97,6 +97,12 @@
 
       <dependency>
         <groupId>pl.psobiech.opengr8on</groupId>
+        <artifactId>mysensors</artifactId>
+        <version>${project.parent.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>pl.psobiech.opengr8on</groupId>
         <artifactId>lib</artifactId>
         <version>${project.parent.version}</version>
       </dependency>

@@ -28,10 +28,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
+
 public final class Util {
+    private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
+
     private Util() {
         // NOP
     }
@@ -175,5 +180,16 @@ public final class Util {
         }
 
         return sb.toString();
+    }
+
+    public static void sleepNanos(long nanoSeconds) {
+        final long millis = nanoSeconds / NANOS_IN_MILLISECOND;
+        final int nanos = (int) (nanoSeconds % NANOS_IN_MILLISECOND);
+
+        try {
+            Thread.sleep(millis, nanos);
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
+        }
     }
 }

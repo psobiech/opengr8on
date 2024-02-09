@@ -38,6 +38,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
@@ -84,6 +86,8 @@ public class SocketUtil {
      * TCP socket wrapper
      */
     public static class TCPClientSocket implements Closeable {
+        private static final Logger LOGGER = LoggerFactory.getLogger(TCPClientSocket.class);
+
         /**
          * Local network address
          */
@@ -113,23 +117,35 @@ public class SocketUtil {
             this.port    = port;
         }
 
-        public void send(byte[] buffer) throws IOException {
+        public void send(byte[]... buffers) throws IOException {
             ensureConnected();
 
             try {
                 final OutputStream outputStream = socket.getOutputStream();
-                outputStream.write(buffer);
+                for (byte[] buffer : buffers) {
+                    outputStream.write(buffer);
+                }
+
                 outputStream.flush();
             } catch (SocketException e) {
+                if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
+                    throw new UncheckedInterruptedException(e);
+                }
+
                 // TODO: proper retry / broken pipe handling
                 disconnect();
                 ensureConnected();
 
                 try {
                     final OutputStream outputStream = socket.getOutputStream();
-                    outputStream.write(buffer);
+                    for (byte[] buffer : buffers) {
+                        outputStream.write(buffer);
+                    }
+
                     outputStream.flush();
                 } catch (Exception e2) {
+                    LOGGER.error(e2.getMessage(), e2);
+
                     throw e;
                 }
             }
@@ -207,7 +223,7 @@ public class SocketUtil {
         public void connect() throws IOException {
             socketLock.lock();
             try {
-                this.socket.connect(new InetSocketAddress(address, port), DEFAULT_TIMEOUT_MILLISECONDS);
+                socket.connect(new InetSocketAddress(address, port), DEFAULT_TIMEOUT_MILLISECONDS);
             } finally {
                 socketLock.unlock();
             }
@@ -217,7 +233,7 @@ public class SocketUtil {
         public void close() {
             socketLock.lock();
             try {
-                IOUtil.closeQuietly(this.socket);
+                IOUtil.closeQuietly(socket);
             } finally {
                 socketLock.unlock();
             }
