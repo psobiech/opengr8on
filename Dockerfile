@@ -57,8 +57,16 @@ RUN $JAVA_HOME/bin/jlink \
 
 FROM alpine:3 AS app-runtime
 
+ARG USERNAME=vclu
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
+
+RUN addgroup --gid $USER_UID $USERNAME && \
+    adduser --disabled-password --gecos "" --home /opt/docker/ --ingroup $USERNAME --no-create-home \
+            --uid "$USER_UID" $USERNAME
 
 RUN mkdir -p /opt/docker/runtime
 WORKDIR /opt/docker
@@ -66,6 +74,11 @@ WORKDIR /opt/docker
 COPY --from=jre-build /opt/build/jre $JAVA_HOME
 COPY --from=app-build /opt/build/modules/vclu/target/vclu-jar-with-dependencies.jar /opt/docker/vclu.jar
 #COPY runtime .
+
+RUN chmod a+x /opt/docker/vclu.jar && \
+    chmod -R a+rwX /opt/docker/runtime
+
+USER $USERNAME
 
 ENTRYPOINT [ \
   "java", \

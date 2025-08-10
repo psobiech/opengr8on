@@ -1,7 +1,7 @@
 services:
   opengr8on:
     image: ghcr.io/psobiech/opengr8on:edge
-    command: wlp7s0
+    command: wlan0
     restart: unless-stopped
     read_only: true
     security_opt:
