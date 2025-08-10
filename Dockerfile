@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21 AS app-builder
+FROM eclipse-temurin:24 AS app-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -39,7 +39,7 @@ COPY .git .git
 
 RUN mvn -B -T 4 -pl '!modules/client' clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
-FROM eclipse-temurin:21-alpine AS jre-build
+FROM eclipse-temurin:24-alpine AS jre-build
 
 RUN mkdir -p /opt/build
 WORKDIR /opt/build
@@ -55,7 +55,7 @@ RUN $JAVA_HOME/bin/jlink \
          --compress=2 \
          --output /opt/build/jre
 
-FROM alpine:3.19 AS app-runtime
+FROM alpine:3 AS app-runtime
 
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"

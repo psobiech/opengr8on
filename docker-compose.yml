@@ -1,5 +1,3 @@
-version: "2.3"
-
 services:
   opengr8on:
     image: ghcr.io/psobiech/opengr8on:edge
