@@ -18,7 +18,6 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.lang.Runtime.Version;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,17 +33,6 @@ import org.slf4j.LoggerFactory;
 public class ThreadUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtil.class);
 
-    /**
-     * JVM version that has fixed <a href="https://bugs.openjdk.org/browse/JDK-8312166">JDK-8312166</a> (>= 21.0.2+2)
-     */
-    private static final Version JVM_VERSION_WITH_NON_PINNING_DATAGRAM_SOCKET = Version.parse("21.0.2+2");
-
-    /**
-     * true, if we run a version that has proper virtual thread support
-     */
-    public static final boolean SUPPORTS_NON_PINNING_DATAGRAM_SOCKETS = Runtime.version()
-                                                                               .compareTo(JVM_VERSION_WITH_NON_PINNING_DATAGRAM_SOCKET) >= 0;
-
     private static final int MIN_RUNNABLE;
 
     static {
@@ -59,7 +47,7 @@ public class ThreadUtil {
 
         System.setProperty("jdk.tracePinnedThreads", "full");
 
-        LOGGER.debug("Virtual Threads: %d-%d/%d".formatted(MIN_RUNNABLE, parallelism, maxPoolSize));
+        LOGGER.debug("Virtual Threads: {}-{}/{}", MIN_RUNNABLE, parallelism, maxPoolSize);
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             LOGGER.error("UncaughtException: [{}] {}", t.getName(), e.getMessage(), e);
@@ -97,9 +85,9 @@ public class ThreadUtil {
     }
 
     /**
-     * Attempts to close the executor, by sending interrupt signal to all threads and waiting for a short period of time.
+     * Attempts to close the executor by sending interrupt signal to all threads and waiting for a short period of time.
      *
-     * @return if executor was closed within the default timeout or false if its still pending closure
+     * @return if the executor was closed within the default timeout or false if its still pending closure
      */
     public static boolean closeQuietly(ExecutorService executor) {
         if (executor == null) {
@@ -244,7 +232,7 @@ public class ThreadUtil {
 
     /**
      * @param daemon should platform thread be marked as a daemon thread
-     * @return named thread factory, that produces platform threads
+     * @return named thread factory that produces platform threads
      */
     private static ThreadFactory platformThreadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()

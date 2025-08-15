@@ -86,7 +86,7 @@ ENTRYPOINT [ \
   "-server", "-Xshare:off", "-XX:+UseContainerSupport", "-XX:+UseZGC", "-XX:+UseDynamicNumberOfGCThreads", \
   "-XX:+ExitOnOutOfMemoryError", \
   "-Djava.net.preferIPv6Addresses=false", \
-#  "-Djava.net.preferIPv4Stack=true", \
+  "-Djava.net.preferIPv4Stack=true", \
   "-Djava.awt.headless=true", "-Dfile.encoding=UTF-8", \
   "-jar", "vclu.jar" \
 ]

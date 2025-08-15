@@ -393,39 +393,7 @@ public class SocketUtil {
         }
 
         private void receive(DatagramPacket packet) throws IOException {
-            if (
-                ThreadUtil.SUPPORTS_NON_PINNING_DATAGRAM_SOCKETS
-                || !Thread.currentThread().isVirtual()
-            ) {
-                socket.receive(packet);
-
-                return;
-            }
-
-            final Future<?> future = PLATFORM_EXECUTOR.submit(() -> {
-                socket.receive(packet);
-
-                return null;
-            });
-
-            try {
-                future.get();
-            } catch (InterruptedException e) {
-                ThreadUtil.cancel(future);
-
-                throw new UncheckedInterruptedException(e);
-            } catch (ExecutionException e) {
-                final Throwable cause = e.getCause();
-                if (cause instanceof RuntimeException runtimeException) {
-                    throw runtimeException;
-                }
-
-                if (cause instanceof IOException ioException) {
-                    throw ioException;
-                }
-
-                throw new UnexpectedException(cause);
-            }
+            socket.receive(packet);
         }
 
         private void tryRestoreDefaultSoTimeout() {
