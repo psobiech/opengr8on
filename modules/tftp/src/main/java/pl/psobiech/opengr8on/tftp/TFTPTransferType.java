@@ -42,7 +42,7 @@ public enum TFTPTransferType {
 
     <T extends TFTPRequestPacket> TFTPTransferType(Class<T> packetClass, Creator creator) {
         this.packetClass = packetClass;
-        this.creator     = creator;
+        this.creator = creator;
     }
 
     public TFTPTransfer create(TFTPRequestPacket packet, Path path) throws TFTPPacketException {
@@ -71,9 +71,9 @@ public enum TFTPTransferType {
     private interface Creator {
         default TFTPTransfer create(TFTPRequestPacket packet, Path path) throws TFTPPacketException {
             return create(
-                packet.getAddress(), packet.getPort(),
-                packet.getMode(),
-                path, packet.getFileName()
+                    packet.getAddress(), packet.getPort(),
+                    packet.getMode(),
+                    path, packet.getFileName()
             );
         }
 

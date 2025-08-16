@@ -44,9 +44,9 @@ public class RemoteCLU extends VirtualObject {
 
     public RemoteCLU(VirtualSystem virtualSystem, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(
-            virtualSystem, name,
-            IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class,
-            ThreadUtil::virtualScheduler
+                virtualSystem, name,
+                IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class,
+                ThreadUtil::virtualScheduler
         );
 
         this.localLuaContext = new Globals();
@@ -59,33 +59,33 @@ public class RemoteCLU extends VirtualObject {
             final String script = arg1.checkjstring();
 
             return client.execute(script)
-                         .map(returnValue -> {
-                                 returnValue = StringUtils.stripToNull(returnValue);
-                                 if (returnValue == null) {
-                                     return null;
-                                 }
+                    .map(returnValue -> {
+                                returnValue = StringUtils.stripToNull(returnValue);
+                                if (returnValue == null) {
+                                    return null;
+                                }
 
-                                 if (returnValue.startsWith("{")) {
-                                     try {
-                                         return localLuaContext.load("return %s".formatted(returnValue))
-                                                               .call();
-                                     } catch (Exception e) {
-                                         // Might not have been a proper LUA table
-                                         // TODO: implement a more robust check
+                                if (returnValue.startsWith("{")) {
+                                    try {
+                                        return localLuaContext.load("return %s".formatted(returnValue))
+                                                .call();
+                                    } catch (Exception e) {
+                                        // Might not have been a proper LUA table
+                                        // TODO: implement a more robust check
 
-                                         LOGGER.error(e.getMessage(), e);
-                                     }
-                                 }
+                                        LOGGER.error(e.getMessage(), e);
+                                    }
+                                }
 
-                                 final LuaString luaString = LuaValue.valueOf(returnValue);
-                                 if (luaString.isnumber()) {
-                                     return luaString.checknumber();
-                                 }
+                                final LuaString luaString = LuaValue.valueOf(returnValue);
+                                if (luaString.isnumber()) {
+                                    return luaString.checknumber();
+                                }
 
-                                 return luaString;
-                             }
-                         )
-                         .orElse(LuaValue.NIL);
+                                return luaString;
+                            }
+                    )
+                    .orElse(LuaValue.NIL);
         });
     }
 

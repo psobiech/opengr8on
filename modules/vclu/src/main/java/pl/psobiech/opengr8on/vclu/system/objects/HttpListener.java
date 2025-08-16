@@ -60,8 +60,8 @@ public class HttpListener extends BaseHttpObject {
 
     public HttpListener(VirtualSystem virtualSystem, String name, Inet4Address localAddress) {
         super(
-            virtualSystem, name,
-            Features.class, Methods.class, Events.class
+                virtualSystem, name,
+                Features.class, Methods.class, Events.class
         );
 
         try {
@@ -69,35 +69,35 @@ public class HttpListener extends BaseHttpObject {
             this.httpServer.bind(new InetSocketAddress(localAddress, HTTP_PORT), 0);
 
             this.httpServer.createContext(
-                "/",
-                newExchange -> {
-                    if (!isEventRegistered(Events.REQUEST)) {
-                        tryErrorIfNotClosed(STATUS_NOT_FOUND, newExchange);
+                    "/",
+                    newExchange -> {
+                        if (!isEventRegistered(Events.REQUEST)) {
+                            tryErrorIfNotClosed(STATUS_NOT_FOUND, newExchange);
 
-                        return;
+                            return;
+                        }
+
+                        awaitEventTrigger(Events.REQUEST);
+                        IOUtil.closeQuietly(exchange);
+
+                        set(Features.METHOD, LuaValue.valueOf(newExchange.getRequestMethod()));
+
+                        final URI uri = newExchange.getRequestURI();
+                        set(Features.PATH, LuaValue.valueOf(uri.getPath()));
+                        set(Features.QUERY, LuaUtil.fromObject(urlDecode(uri.getRawQuery())));
+
+                        set(Features.REQUEST_HEADERS, LuaUtil.fromObject(getHeaders(newExchange.getRequestHeaders())));
+
+                        final String contentType = newExchange.getRequestHeaders().getFirst(HEADER_CONTENT_TYPE);
+                        final HttpType requestType = HttpType.ofContentType(contentType);
+                        set(Features.REQUEST_TYPE, parseResponseBody(requestType, newExchange.getRequestBody().readAllBytes()));
+
+                        this.exchange = newExchange;
+                        triggerEvent(
+                                Events.REQUEST,
+                                () -> tryErrorIfNotClosed(STATUS_NOT_FOUND, newExchange)
+                        );
                     }
-
-                    awaitEventTrigger(Events.REQUEST);
-                    IOUtil.closeQuietly(exchange);
-
-                    set(Features.METHOD, LuaValue.valueOf(newExchange.getRequestMethod()));
-
-                    final URI uri = newExchange.getRequestURI();
-                    set(Features.PATH, LuaValue.valueOf(uri.getPath()));
-                    set(Features.QUERY, LuaUtil.fromObject(urlDecode(uri.getRawQuery())));
-
-                    set(Features.REQUEST_HEADERS, LuaUtil.fromObject(getHeaders(newExchange.getRequestHeaders())));
-
-                    final String contentType = newExchange.getRequestHeaders().getFirst(HEADER_CONTENT_TYPE);
-                    final HttpType requestType = HttpType.ofContentType(contentType);
-                    set(Features.REQUEST_TYPE, parseResponseBody(requestType, newExchange.getRequestBody().readAllBytes()));
-
-                    this.exchange = newExchange;
-                    triggerEvent(
-                        Events.REQUEST,
-                        () -> tryErrorIfNotClosed(STATUS_NOT_FOUND, newExchange)
-                    );
-                }
             );
 
             this.httpServer.setExecutor(scheduler);

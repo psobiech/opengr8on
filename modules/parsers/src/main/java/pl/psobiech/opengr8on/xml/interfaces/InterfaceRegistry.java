@@ -67,22 +67,22 @@ public class InterfaceRegistry {
 
         try {
             Files.walkFileTree(
-                rootPath,
-                new SimpleFileVisitor<>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        final String fileName = String.valueOf(file.getFileName());
-                        if (fileName.startsWith("clu_")) {
-                            cluInterfaceFiles.add(file);
-                        } else if (fileName.startsWith("module_")) {
-                            moduleInterfaceFiles.add(file);
-                        } else if (fileName.startsWith("object_")) {
-                            objectInterfaceFiles.add(file);
-                        }
+                    rootPath,
+                    new SimpleFileVisitor<>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                            final String fileName = String.valueOf(file.getFileName());
+                            if (fileName.startsWith("clu_")) {
+                                cluInterfaceFiles.add(file);
+                            } else if (fileName.startsWith("module_")) {
+                                moduleInterfaceFiles.add(file);
+                            } else if (fileName.startsWith("object_")) {
+                                objectInterfaceFiles.add(file);
+                            }
 
-                        return super.visitFile(file, attrs);
+                            return super.visitFile(file, attrs);
+                        }
                     }
-                }
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -126,7 +126,7 @@ public class InterfaceRegistry {
                 final String version = createObjectVersionKey(object.getVersion());
 
                 objects.computeIfAbsent(name, ignored -> new TreeMap<>(String::compareTo))
-                       .put(version, object);
+                        .put(version, object);
 
                 LOGGER.trace("Loaded: " + name + SEPARATOR + version);
             } catch (IOException e) {
@@ -143,7 +143,7 @@ public class InterfaceRegistry {
             objects.put(objectKey, Collections.unmodifiableMap(objectVersions));
         }
 
-        this.clus    = Collections.unmodifiableMap(clus);
+        this.clus = Collections.unmodifiableMap(clus);
         this.modules = Collections.unmodifiableMap(modules);
         this.objects = Collections.unmodifiableMap(objects);
 
@@ -151,44 +151,44 @@ public class InterfaceRegistry {
     }
 
     private InterfaceRegistry() {
-        this.clus    = Collections.emptyMap();
+        this.clus = Collections.emptyMap();
         this.modules = Collections.emptyMap();
         this.objects = Collections.emptyMap();
     }
 
     public Optional<CLU> getCLU(int hardwareType, long hardwareVersion, int firmwareType, int firmwareVersion) {
         return Optional.ofNullable(
-            clus.get(
-                createCluKey(hardwareType, hardwareVersion, firmwareType, firmwareVersion)
-            )
+                clus.get(
+                        createCluKey(hardwareType, hardwareVersion, firmwareType, firmwareVersion)
+                )
         );
     }
 
     private static String createCluKey(CLU clu) {
         return createCluKey(
-            HexUtil.asInt(clu.getHardwareType()), HexUtil.asLong(clu.getHardwareVersion()),
-            HexUtil.asInt(clu.getFirmwareType()), HexUtil.asInt(clu.getFirmwareVersion())
+                HexUtil.asInt(clu.getHardwareType()), HexUtil.asLong(clu.getHardwareVersion()),
+                HexUtil.asInt(clu.getFirmwareType()), HexUtil.asInt(clu.getFirmwareVersion())
         );
     }
 
     private static String createCluKey(
-        int hardwareType, long hardwareVersion,
-        int firmwareType, int firmwareVersion
+            int hardwareType, long hardwareVersion,
+            int firmwareType, int firmwareVersion
     ) {
         return createKey(
-            hardwareType & 0xFFFFFFFFL, hardwareVersion,
-            firmwareType, firmwareVersion
+                hardwareType & 0xFFFFFFFFL, hardwareVersion,
+                firmwareType, firmwareVersion
         );
     }
 
     public Optional<CLUModule> getModule(long hardwareType, int firmwareType, int firmwareVersion) {
         return Optional.ofNullable(
-            modules.get(
-                createModuleKey(
-                    hardwareType,
-                    firmwareType, firmwareVersion
+                modules.get(
+                        createModuleKey(
+                                hardwareType,
+                                firmwareType, firmwareVersion
+                        )
                 )
-            )
         );
     }
 
@@ -196,21 +196,21 @@ public class InterfaceRegistry {
         final ModuleFirmware firmware = clu.getFirmware();
 
         return createModuleKey(
-            HexUtil.asLong(clu.getTypeId()),
-            HexUtil.asInt(firmware.getTypeId()), HexUtil.asInt(firmware.getVersion())
+                HexUtil.asLong(clu.getTypeId()),
+                HexUtil.asInt(firmware.getTypeId()), HexUtil.asInt(firmware.getVersion())
         );
     }
 
     private static String createModuleKey(long hardwareType, int firmwareType, int firmwareVersion) {
         return "MOD" + SEPARATOR + createKey(
-            hardwareType, 1,
-            firmwareType, firmwareVersion
+                hardwareType, 1,
+                firmwareType, firmwareVersion
         );
     }
 
     private static String createKey(long hardwareType, long hardwareVersion, int firmwareType, int firmwareVersion) {
         return parse(hardwareType, HARDWARE_TYPE_LENGTH) + SEPARATOR + parse(hardwareVersion, HARDWARE_VERSION_LENGTH) + SEPARATOR
-               + parse(firmwareType, FIRMWARE_TYPE_LENGTH) + SEPARATOR + parse(firmwareVersion, FIRMWARE_VERSION_LENGTH);
+                + parse(firmwareType, FIRMWARE_TYPE_LENGTH) + SEPARATOR + parse(firmwareVersion, FIRMWARE_VERSION_LENGTH);
     }
 
     public Optional<CLUObject> getObject(String name, int version) {
@@ -220,7 +220,7 @@ public class InterfaceRegistry {
         }
 
         return Optional.ofNullable(
-            objectVersions.get(createObjectVersionKey(version))
+                objectVersions.get(createObjectVersionKey(version))
         );
     }
 

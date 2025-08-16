@@ -51,27 +51,27 @@ public class ClientRegistry implements Closeable {
 
     public ClientRegistry(Inet4Address localAddress, CipherKey cipherKey) {
         this.localAddress = localAddress;
-        this.cipherKey    = cipherKey;
+        this.cipherKey = cipherKey;
     }
 
     public void register(
-        Inet4Address ipAddress, int port, int sessionId, Consumer<CLUClient> fn
+            Inet4Address ipAddress, int port, int sessionId, Consumer<CLUClient> fn
     ) {
         final String registrationKey = createKey(ipAddress, port, sessionId);
         final CLUClient client = new CLUClient(localAddress, ipAddress, cipherKey, port);
 
         final Future<?> previousFuture = registrations.put(
-            registrationKey,
-            scheduler.scheduleAtFixedRate(
-                () -> {
-                    try {
-                        fn.accept(client);
-                    } catch (Exception e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                },
-                1, 1, TimeUnit.SECONDS
-            )
+                registrationKey,
+                scheduler.scheduleAtFixedRate(
+                        () -> {
+                            try {
+                                fn.accept(client);
+                            } catch (Exception e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+                        },
+                        1, 1, TimeUnit.SECONDS
+                )
         );
 
         ThreadUtil.cancel(previousFuture);

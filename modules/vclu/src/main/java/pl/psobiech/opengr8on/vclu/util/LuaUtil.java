@@ -146,8 +146,8 @@ public class LuaUtil {
         }
 
         return (luaValue.isboolean() && luaValue.checkboolean())
-               || (luaValue.isnumber() && luaValue.checklong() != 0)
-               || (luaValue.isstring() && Boolean.parseBoolean(luaValue.checkjstring()));
+                || (luaValue.isnumber() && luaValue.checklong() != 0)
+                || (luaValue.isstring() && Boolean.parseBoolean(luaValue.checkjstring()));
     }
 
     /**
@@ -159,10 +159,10 @@ public class LuaUtil {
         }
 
         return stringifyList(
-            IntStream.rangeClosed(1, args.narg())
-                     .mapToObj(args::arg)
-                     .collect(Collectors.toList()),
-            LuaUtil::stringify
+                IntStream.rangeClosed(1, args.narg())
+                        .mapToObj(args::arg)
+                        .collect(Collectors.toList()),
+                LuaUtil::stringify
         );
     }
 

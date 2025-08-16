@@ -62,14 +62,14 @@ public class TFTPClientSend extends TFTPSendingTransfer {
         if (!(responsePacket instanceof TFTPAcknowledgementPacket)) {
             if (responsePacket instanceof TFTPErrorPacket errorPacket) {
                 throw new TFTPException(
-                    errorPacket.getError(),
-                    "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                        errorPacket.getError(),
+                        "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                 );
             }
 
             throw new TFTPException(
-                TFTPErrorType.UNDEFINED,
-                "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                    TFTPErrorType.UNDEFINED,
+                    "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
             );
         }
 

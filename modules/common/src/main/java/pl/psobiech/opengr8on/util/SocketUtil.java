@@ -66,19 +66,19 @@ public class SocketUtil {
 
     public static TCPClientSocket tcpClient(InetAddress address, int port) {
         return new TCPClientSocket(
-            address, port
+                address, port
         );
     }
 
     public static UDPSocket udpListener(InetAddress address, int port) {
         return new UDPSocket(
-            address, port, false
+                address, port, false
         );
     }
 
     public static UDPSocket udpRandomPort(InetAddress address) {
         return new UDPSocket(
-            address, true
+                address, true
         );
     }
 
@@ -110,11 +110,11 @@ public class SocketUtil {
 
         /**
          * @param address local address to bind on
-         * @param port port to listen on
+         * @param port    port to listen on
          */
         public TCPClientSocket(InetAddress address, int port) {
             this.address = address;
-            this.port    = port;
+            this.port = port;
         }
 
         public void send(byte[]... buffers) throws IOException {
@@ -270,7 +270,7 @@ public class SocketUtil {
         private DatagramSocket socket;
 
         /**
-         * @param address local address to bind on (on random local port)
+         * @param address   local address to bind on (on random local port)
          * @param broadcast should broadcasting be enabled on this socket
          */
         public UDPSocket(InetAddress address, boolean broadcast) {
@@ -278,8 +278,8 @@ public class SocketUtil {
         }
 
         /**
-         * @param address local address to bind on
-         * @param port port to listen on
+         * @param address   local address to bind on
+         * @param port      port to listen on
          * @param broadcast should broadcasting be enabled on this socket
          */
         public UDPSocket(InetAddress address, int port, boolean broadcast) {
@@ -379,13 +379,13 @@ public class SocketUtil {
                 }
 
                 return Optional.of(
-                    Payload.of(
-                        (Inet4Address) packet.getAddress(), packet.getPort(),
-                        Arrays.copyOfRange(
-                            packet.getData(),
-                            packet.getOffset(), packet.getOffset() + packet.getLength()
+                        Payload.of(
+                                (Inet4Address) packet.getAddress(), packet.getPort(),
+                                Arrays.copyOfRange(
+                                        packet.getData(),
+                                        packet.getOffset(), packet.getOffset() + packet.getLength()
+                                )
                         )
-                    )
                 );
             } finally {
                 socketLock.unlock();
@@ -423,9 +423,9 @@ public class SocketUtil {
         @Override
         public String toString() {
             return "Payload{" +
-                   "buffer=" + ToStringUtil.toString(buffer) +
-                   ", address=" + ToStringUtil.toString(address, port) +
-                   '}';
+                    "buffer=" + ToStringUtil.toString(buffer) +
+                    ", address=" + ToStringUtil.toString(address, port) +
+                    '}';
         }
     }
 }

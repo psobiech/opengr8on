@@ -44,9 +44,9 @@ public class GenerateMeasurementsCommand {
 
     public static Request request(Inet4Address ipAddress, Integer sessionId, String unknown) {
         return new Request(
-            ipAddress,
-            sessionId,
-            unknown
+                ipAddress,
+                sessionId,
+                unknown
         );
     }
 
@@ -61,11 +61,11 @@ public class GenerateMeasurementsCommand {
         final String unknown = requestParts[UNKNOWN_PART];
 
         return Optional.of(
-            new Request(
-                ipAddress,
-                sessionId,
-                unknown
-            )
+                new Request(
+                        ipAddress,
+                        sessionId,
+                        unknown
+                )
         );
     }
 
@@ -79,13 +79,13 @@ public class GenerateMeasurementsCommand {
         }
 
         return Request.COMMAND.equals(
-            Command.asString(buffer, 0, Request.COMMAND.length())
+                Command.asString(buffer, 0, Request.COMMAND.length())
         );
     }
 
     public static Response response(Inet4Address ipAddress, int sessionId, String returnValue) {
         return new Response(
-            ipAddress, sessionId, returnValue
+                ipAddress, sessionId, returnValue
         );
     }
 
@@ -100,11 +100,11 @@ public class GenerateMeasurementsCommand {
         final String returnValue = responseParts[RETURN_VALUE_PART];
 
         return Optional.of(
-            new Response(
-                ipAddress,
-                sessionId,
-                returnValue
-            )
+                new Response(
+                        ipAddress,
+                        sessionId,
+                        returnValue
+                )
         );
     }
 
@@ -118,7 +118,7 @@ public class GenerateMeasurementsCommand {
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -134,20 +134,20 @@ public class GenerateMeasurementsCommand {
         private Request(Inet4Address ipAddress, Integer sessionId, String unknown) {
             this.ipAddress = ipAddress;
             this.sessionId = sessionId;
-            this.unknown   = unknown;
+            this.unknown = unknown;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                ipAddress,
-                ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), Command.MAX_SESSION_CHARACTERS, '0'),
-                ":",
-                unknown,
-                FileUtil.CRLF
+                    COMMAND,
+                    ":",
+                    ipAddress,
+                    ":",
+                    StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), Command.MAX_SESSION_CHARACTERS, '0'),
+                    ":",
+                    unknown,
+                    FileUtil.CRLF
             );
         }
 
@@ -174,21 +174,21 @@ public class GenerateMeasurementsCommand {
         private final String returnValue;
 
         private Response(Inet4Address ipAddress, Integer sessionId, String returnValue) {
-            this.ipAddress   = ipAddress;
-            this.sessionId   = sessionId;
+            this.ipAddress = ipAddress;
+            this.sessionId = sessionId;
             this.returnValue = returnValue;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                ipAddress,
-                ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
-                ":",
-                returnValue
+                    COMMAND,
+                    ":",
+                    ipAddress,
+                    ":",
+                    StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
+                    ":",
+                    returnValue
             );
         }
 

@@ -43,40 +43,40 @@ public class SetKeyCommand {
         final byte[] encrypted = Arrays.copyOf(buffer, Command.RANDOM_ENCRYPTED_BYTES);
         final byte[] iv = Arrays.copyOfRange(buffer, Command.RANDOM_ENCRYPTED_BYTES + 1, Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.KEY_BYTES);
         final byte[] key = Arrays.copyOfRange(
-            buffer,
-            Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1,
-            Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
+                buffer,
+                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1,
+                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
         );
 
         return Optional.of(
-            new Request(
-                encrypted,
-                key, iv
-            )
+                new Request(
+                        encrypted,
+                        key, iv
+                )
         );
     }
 
     public static boolean requestMatches(byte[] buffer) {
         if (
-            buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
-            && buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES + FileUtil.CRLF.length()
+                buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES
+                        && buffer.length != Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.KEY_BYTES + FileUtil.CRLF.length()
         ) {
             return false;
         }
 
         if (buffer[Command.RANDOM_ENCRYPTED_BYTES] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] != ':'
+                || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
+                || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] != ':'
         ) {
             return false;
         }
 
         return Request.COMMAND.equals(
-            Command.asString(
-                buffer,
-                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
-                Request.COMMAND.length()
-            )
+                Command.asString(
+                        buffer,
+                        Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
+                        Request.COMMAND.length()
+                )
         );
     }
 
@@ -94,12 +94,12 @@ public class SetKeyCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length != Response.COMMAND.length()
-            && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
+                && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -114,20 +114,20 @@ public class SetKeyCommand {
 
         private Request(byte[] encrypted, byte[] key, byte[] iv) {
             this.encrypted = encrypted;
-            this.key       = key;
-            this.iv        = iv;
+            this.key = key;
+            this.iv = iv;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                encrypted,
-                ":",
-                iv,
-                ":",
-                COMMAND,
-                ":",
-                key
+                    encrypted,
+                    ":",
+                    iv,
+                    ":",
+                    COMMAND,
+                    ":",
+                    key
             );
         }
 
@@ -154,7 +154,7 @@ public class SetKeyCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND
+                    COMMAND
             );
         }
     }

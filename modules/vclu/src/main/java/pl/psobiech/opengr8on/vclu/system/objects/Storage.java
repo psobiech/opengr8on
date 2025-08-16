@@ -51,8 +51,8 @@ public class Storage extends VirtualObject {
 
     public Storage(VirtualSystem virtualSystem, String name, Path storageRootPath) {
         super(
-            virtualSystem, name,
-            Features.class, Methods.class, IEvent.EMPTY.class
+                virtualSystem, name,
+                Features.class, Methods.class, IEvent.EMPTY.class
         );
 
         FileUtil.mkdir(storageRootPath);

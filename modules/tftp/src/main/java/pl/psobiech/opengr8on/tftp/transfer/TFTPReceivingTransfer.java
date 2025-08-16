@@ -45,10 +45,10 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPReceivingTransfer.class);
 
     protected void incomingTransfer(
-        TFTP tftp, boolean server,
-        TFTPTransferMode mode,
-        InetAddress requestAddress, int requestPort,
-        TFTPPacket lastSentPacket, Path targetPath
+            TFTP tftp, boolean server,
+            TFTPTransferMode mode,
+            InetAddress requestAddress, int requestPort,
+            TFTPPacket lastSentPacket, Path targetPath
     ) throws IOException, TFTPPacketException {
         final Path temporaryPath = FileUtil.temporaryFile();
 
@@ -80,7 +80,7 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                     firstPacket = false;
 
                     requestAddress = responsePacket.getAddress();
-                    requestPort    = responsePacket.getPort();
+                    requestPort = responsePacket.getPort();
                 }
 
                 if (server && acknowledgedBlock == 0 && responsePacket instanceof TFTPRequestPacket) {
@@ -134,9 +134,9 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
                             final InetAddress responseAddress = unexpectedResponsePacket.getAddress();
                             final int responsePort = unexpectedResponsePacket.getPort();
                             if (!responseAddress.equals(requestAddress)
-                                || !(responsePort == requestPort)) {
+                                    || !(responsePort == requestPort)) {
                                 final TFTPPacketException packetException = new TFTPPacketException(
-                                    TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port"
+                                        TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port"
                                 );
                                 LOGGER.debug("Ignoring message from unexpected source.", packetException);
 
@@ -156,14 +156,14 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
 
                 if (responsePacket instanceof TFTPErrorPacket errorPacket) {
                     throw new TFTPException(
-                        errorPacket.getError(),
-                        "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                            errorPacket.getError(),
+                            "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                     );
                 }
 
                 throw new TFTPException(
-                    TFTPErrorType.UNDEFINED,
-                    "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                        TFTPErrorType.UNDEFINED,
+                        "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                 );
             } while (!Thread.interrupted());
         } finally {

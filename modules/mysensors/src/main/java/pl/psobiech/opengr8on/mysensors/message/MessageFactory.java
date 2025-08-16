@@ -63,9 +63,9 @@ public class MessageFactory {
         final String payload = parts[PAYLOAD_PART];
 
         return SensorCommandType.byType(command)
-                                .flatMap(commandType ->
-                                    parseMessage(nodeId, sensorChildId, echo, commandType, type, payload)
-                                );
+                .flatMap(commandType ->
+                        parseMessage(nodeId, sensorChildId, echo, commandType, type, payload)
+                );
     }
 
     public static Optional<? extends Message> parseMessage(int nodeId, int sensorChildId, int echo, SensorCommandType commandType, int type, String payload) {
@@ -80,46 +80,46 @@ public class MessageFactory {
 
     private static Optional<PresentationMessage> parsePresentationMessage(int nodeId, int sensorChildId, int echo, int type, String payload) {
         return SensorType.byType(type)
-                         .map(sensorType ->
-                             MessageFactory.presentation(
-                                 nodeId, sensorChildId,
-                                 echo,
-                                 sensorType, payload
-                             )
-                         );
+                .map(sensorType ->
+                        MessageFactory.presentation(
+                                nodeId, sensorChildId,
+                                echo,
+                                sensorType, payload
+                        )
+                );
     }
 
     private static Optional<DataMessage> parseSetMessage(int nodeId, int sensorChildId, int echo, int type, String payload) {
         return SensorDataType.byType(type)
-                             .map(sensorDataType ->
-                                 MessageFactory.set(
-                                     nodeId, sensorChildId,
-                                     echo,
-                                     sensorDataType, payload
-                                 )
-                             );
+                .map(sensorDataType ->
+                        MessageFactory.set(
+                                nodeId, sensorChildId,
+                                echo,
+                                sensorDataType, payload
+                        )
+                );
     }
 
     private static Optional<DataMessage> parseRequestMessage(int nodeId, int sensorChildId, int echo, int type, String payload) {
         return SensorDataType.byType(type)
-                             .map(sensorDataType ->
-                                 MessageFactory.request(
-                                     nodeId, sensorChildId,
-                                     echo,
-                                     sensorDataType, payload
-                                 )
-                             );
+                .map(sensorDataType ->
+                        MessageFactory.request(
+                                nodeId, sensorChildId,
+                                echo,
+                                sensorDataType, payload
+                        )
+                );
     }
 
     private static Optional<InternalMessage> parseInternalMessage(int nodeId, int sensorChildId, int echo, int type, String payload) {
         return SensorInternalMessageType.byType(type)
-                                        .map(sensorInternalMessageType ->
-                                            MessageFactory.internal(
-                                                nodeId, sensorChildId,
-                                                echo,
-                                                sensorInternalMessageType, payload
-                                            )
-                                        );
+                .map(sensorInternalMessageType ->
+                        MessageFactory.internal(
+                                nodeId, sensorChildId,
+                                echo,
+                                sensorInternalMessageType, payload
+                        )
+                );
     }
 
     public static DataMessage request(int nodeId, int childSensorId, int echo, SensorDataType type, String payload) {

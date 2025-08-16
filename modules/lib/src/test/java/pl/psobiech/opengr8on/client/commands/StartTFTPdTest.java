@@ -36,7 +36,7 @@ class StartTFTPdTest {
         //
 
         final Request output = StartTFTPdCommand.requestFromByteArray(input.asByteArray())
-                                                .get();
+                .get();
 
         //
 
@@ -50,7 +50,7 @@ class StartTFTPdTest {
         //
 
         final Response output = StartTFTPdCommand.responseFromByteArray(input.asByteArray())
-                                                 .get();
+                .get();
 
         //
 
@@ -71,7 +71,7 @@ class StartTFTPdTest {
         assertFalse(StartTFTPdCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(StartTFTPdCommand.responseFromByteArray(new byte[Response.COMMAND.length()]).isPresent());
 
-        buffer                  = new byte[100];
+        buffer = new byte[100];
         buffer["resp".length()] = ':';
         assertFalse(StartTFTPdCommand.responseFromByteArray(buffer).isPresent());
     }

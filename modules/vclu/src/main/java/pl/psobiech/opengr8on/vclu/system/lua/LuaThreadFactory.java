@@ -56,15 +56,15 @@ public class LuaThreadFactory {
     }
 
     public static LuaThread create(
-        Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
+            Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
     ) {
 
         final Path aDriveDirectory = rootDirectory.resolve("a");
 
         final VirtualSystem virtualSystem = new VirtualSystem(
-            rootDirectory,
-            cluDevice.getAddress(), cluDevice.getPort(),
-            cipherKey
+                rootDirectory,
+                cluDevice.getAddress(), cluDevice.getPort(),
+                cipherKey
         );
 
         final Globals globals = new Globals();
@@ -100,9 +100,9 @@ public class LuaThreadFactory {
         globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_LUA_OUT, Level.ERROR));
 
         return new LuaThread(
-            virtualSystem, globals,
-            cluFile == CLUFiles.EMERGNCY_LUA,
-            loadScript(aDriveDirectory, cluFile, globals)
+                virtualSystem, globals,
+                cluFile == CLUFiles.EMERGNCY_LUA,
+                loadScript(aDriveDirectory, cluFile, globals)
         );
     }
 
@@ -114,8 +114,8 @@ public class LuaThreadFactory {
         final String scriptFileName = cluFile.getFileName();
 
         return new LuaClosure(
-            readScript(aDriveDirectory.resolve(scriptFileName), scriptFileName, globals),
-            globals
+                readScript(aDriveDirectory.resolve(scriptFileName), scriptFileName, globals),
+                globals
         );
     }
 

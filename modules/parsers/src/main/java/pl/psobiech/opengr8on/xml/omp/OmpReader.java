@@ -51,8 +51,8 @@ public class OmpReader {
                 final ProjectPropertiesCipherKey projectCipherKey = projectProperties.getProjectCipherKey();
 
                 final CipherKey cipherKey = new CipherKey(
-                    Base64.decodeBase64(projectCipherKey.getKeyBytes().getValue()),
-                    Base64.decodeBase64(projectCipherKey.getIvBytes().getValue())
+                        Base64.decodeBase64(projectCipherKey.getKeyBytes().getValue()),
+                        Base64.decodeBase64(projectCipherKey.getIvBytes().getValue())
                 );
 
                 LOGGER.debug("Loaded project key: {}", cipherKey);

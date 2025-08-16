@@ -43,7 +43,7 @@ public abstract class TFTPBaseBlockPacket extends TFTPPacket {
     }
 
     protected void writeHeader(byte[] buffer) {
-        buffer[0]                    = 0;
+        buffer[0] = 0;
         buffer[OPERATOR_TYPE_OFFSET] = type.packetType();
         writeInt(getBlockNumber(), buffer, BLOCK_NUMBER_OFFSET);
     }

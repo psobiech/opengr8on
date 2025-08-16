@@ -39,7 +39,7 @@ public enum TFTPTransferMode {
     private final String value;
 
     TFTPTransferMode(int code, String value) {
-        this.code  = code;
+        this.code = code;
         this.value = value;
 
     }

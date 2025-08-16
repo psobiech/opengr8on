@@ -63,7 +63,8 @@ public class InitLuaLib extends TwoArgFunction {
     }
 
     private void registerGlobals(LuaValue environment) {
-        environment.set("collectgarbage", LuaFunctionWrapper.wrap(logger, () -> { }));
+        environment.set("collectgarbage", LuaFunctionWrapper.wrap(logger, () -> {
+        }));
 
         environment.set("logDebug", LuaFunctionWrapper.wrap(logger, argsToString(logger::debug)));
         environment.set("logInfo", LuaFunctionWrapper.wrap(logger, argsToString(logger::info)));
@@ -113,16 +114,16 @@ public class InitLuaLib extends TwoArgFunction {
                 self.set("name", objectName);
 
                 virtualSystem.newObject(
-                    index, objectName.checkjstring(),
-                    IPv4AddressUtil.parseIPv4(args.checkint(3))
+                        index, objectName.checkjstring(),
+                        IPv4AddressUtil.parseIPv4(args.checkint(3))
                 );
             } else {
                 final LuaValue objectName = args.arg(3);
                 self.set("name", objectName);
 
                 virtualSystem.newObject(
-                    index, objectName.checkjstring(),
-                    null
+                        index, objectName.checkjstring(),
+                        null
                 );
             }
 
@@ -168,7 +169,7 @@ public class InitLuaLib extends TwoArgFunction {
         final StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= args.narg(); i++) {
             sb.append(
-                LuaUtil.stringifyRaw(args.arg(i))
+                    LuaUtil.stringifyRaw(args.arg(i))
             );
         }
 
@@ -202,7 +203,7 @@ public class InitLuaLib extends TwoArgFunction {
             final int index = keyValue.checktable().get(2).checkint();
 
             subscriptions.add(
-                new Subscription(object, index)
+                    new Subscription(object, index)
             );
         }
 
@@ -211,11 +212,11 @@ public class InitLuaLib extends TwoArgFunction {
         final int port = args.checkint(4);
 
         return LuaValue.valueOf(
-            virtualSystem.clientRegister(
-                remoteAddress, address, port,
-                sessionId,
-                subscriptions
-            )
+                virtualSystem.clientRegister(
+                        remoteAddress, address, port,
+                        sessionId,
+                        subscriptions
+                )
         );
     }
 
@@ -240,14 +241,14 @@ public class InitLuaLib extends TwoArgFunction {
             final LuaValue value = table.get(key);
             if (!value.istable()) {
                 return LuaValue.valueOf(
-                    FETCH_VALUES_PREFIX + "{%s}"
-                        .formatted(
-                            LuaUtil.stringify(
-                                // TODO: sanitize input
-                                globals.load("return %s".formatted(value))
-                                       .call()
-                            )
-                        )
+                        FETCH_VALUES_PREFIX + "{%s}"
+                                .formatted(
+                                        LuaUtil.stringify(
+                                                // TODO: sanitize input
+                                                globals.load("return %s".formatted(value))
+                                                        .call()
+                                        )
+                                )
                 );
             }
 
@@ -257,15 +258,15 @@ public class InitLuaLib extends TwoArgFunction {
             final VirtualObject object = virtualSystem.getObject(objectName);
 
             subscriptions.add(
-                new Subscription(
-                    object,
-                    valueTable.get(2).checkint()
-                )
+                    new Subscription(
+                            object,
+                            valueTable.get(2).checkint()
+                    )
             );
         }
 
         return LuaValue.valueOf(
-            FETCH_VALUES_PREFIX + virtualSystem.fetchValues(subscriptions)
+                FETCH_VALUES_PREFIX + virtualSystem.fetchValues(subscriptions)
         );
     }
 
@@ -274,7 +275,7 @@ public class InitLuaLib extends TwoArgFunction {
         final String objectName = object.get("name").checkjstring();
 
         return virtualSystem.getObject(objectName)
-                            .get(args.checkint(2));
+                .get(args.checkint(2));
     }
 
     public LuaValue setObjectValue(Varargs args) {
@@ -282,7 +283,7 @@ public class InitLuaLib extends TwoArgFunction {
         final String objectName = object.get("name").checkjstring();
 
         virtualSystem.getObject(objectName)
-                     .set(args.checkint(2), args.arg(3));
+                .set(args.checkint(2), args.arg(3));
 
         return LuaValue.NIL;
     }
@@ -295,7 +296,7 @@ public class InitLuaLib extends TwoArgFunction {
         final Varargs otherArgs = args.subargs(3);
 
         return virtualSystem.getObject(objectName)
-                            .execute(index, otherArgs);
+                .execute(index, otherArgs);
     }
 
     public void registerObjectEvent(Varargs args) {
@@ -306,6 +307,6 @@ public class InitLuaLib extends TwoArgFunction {
         final LuaFunction function = args.checkfunction(3);
 
         virtualSystem.getObject(objectName)
-                     .addEventHandler(address, function);
+                .addEventHandler(address, function);
     }
 }

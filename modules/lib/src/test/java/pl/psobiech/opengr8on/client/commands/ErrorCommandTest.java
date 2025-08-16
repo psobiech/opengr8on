@@ -35,7 +35,7 @@ class ErrorCommandTest {
         //
 
         final Response output = ErrorCommand.responseFromByteArray(input.asByteArray())
-                                            .get();
+                .get();
 
         //
 
@@ -51,7 +51,7 @@ class ErrorCommandTest {
         assertFalse(ErrorCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(ErrorCommand.responseFromByteArray(new byte[Response.COMMAND.length()]).isPresent());
 
-        buffer                  = new byte[100];
+        buffer = new byte[100];
         buffer["resp".length()] = ':';
         assertFalse(ErrorCommand.responseFromByteArray(buffer).isPresent());
     }

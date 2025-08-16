@@ -70,11 +70,11 @@ public class CLUClient extends Client implements Closeable {
 
     public CLUClient(Inet4Address localAddress, Inet4Address ipAddress, CipherKey cipherKey, int port) {
         this(
-            localAddress,
-            new CLUDevice(ipAddress, CipherTypeEnum.PROJECT),
-            cipherKey,
-            IPv4AddressUtil.BROADCAST_ADDRESS,
-            port
+                localAddress,
+                new CLUDevice(ipAddress, CipherTypeEnum.PROJECT),
+                cipherKey,
+                IPv4AddressUtil.BROADCAST_ADDRESS,
+                port
         );
     }
 
@@ -108,18 +108,18 @@ public class CLUClient extends Client implements Closeable {
         final SetIpCommand.Request command = SetIpCommand.request(cluDevice.getSerialNumber(), newAddress, gatewayAddress);
 
         return request(command, DEFAULT_TIMEOUT_DURATION)
-            .flatMap(payload -> {
-                final Optional<SetIpCommand.Response> responseOptional = SetIpCommand.responseFromByteArray(payload.buffer());
-                if (responseOptional.isEmpty()) {
-                    return Optional.empty();
-                }
+                .flatMap(payload -> {
+                    final Optional<SetIpCommand.Response> responseOptional = SetIpCommand.responseFromByteArray(payload.buffer());
+                    if (responseOptional.isEmpty()) {
+                        return Optional.empty();
+                    }
 
-                final SetIpCommand.Response response = responseOptional.get();
-                final Inet4Address ipAddress = response.getIpAddress();
-                cluDevice.setAddress(ipAddress);
+                    final SetIpCommand.Response response = responseOptional.get();
+                    final Inet4Address ipAddress = response.getIpAddress();
+                    cluDevice.setAddress(ipAddress);
 
-                return Optional.of(ipAddress);
-            });
+                    return Optional.of(ipAddress);
+                });
     }
 
     /**
@@ -131,20 +131,20 @@ public class CLUClient extends Client implements Closeable {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         return request(
-            newCipherKey,
-            SetKeyCommand.request(
-                newCipherKey.encrypt(randomBytes), newCipherKey.getSecretKey(), newCipherKey.getIV()
-            ),
-            DEFAULT_TIMEOUT_DURATION
+                newCipherKey,
+                SetKeyCommand.request(
+                        newCipherKey.encrypt(randomBytes), newCipherKey.getSecretKey(), newCipherKey.getIV()
+                ),
+                DEFAULT_TIMEOUT_DURATION
         )
-            .flatMap(payload ->
-                SetKeyCommand.responseFromByteArray(payload.buffer())
-                             .map(response -> {
-                                 setCipherKey(newCipherKey);
+                .flatMap(payload ->
+                        SetKeyCommand.responseFromByteArray(payload.buffer())
+                                .map(response -> {
+                                    setCipherKey(newCipherKey);
 
-                                 return true;
-                             })
-            );
+                                    return true;
+                                })
+                );
     }
 
     /**
@@ -177,16 +177,16 @@ public class CLUClient extends Client implements Closeable {
         final ResetCommand.Request command = ResetCommand.request(localAddress);
 
         final Optional<Response> reset = request(command, DEFAULT_TIMEOUT_DURATION)
-            .flatMap(payload -> ResetCommand.responseFromByteArray(payload.buffer()));
+                .flatMap(payload -> ResetCommand.responseFromByteArray(payload.buffer()));
 
         if (reset.isPresent()) {
             return Optional.of(true);
         }
 
         return Util.repeatUntilTrueOrTimeout(
-            timeout,
-            duration ->
-                checkAlive()
+                timeout,
+                duration ->
+                        checkAlive()
         );
     }
 
@@ -195,13 +195,13 @@ public class CLUClient extends Client implements Closeable {
      */
     public Optional<Boolean> checkAlive() {
         return execute(LuaScriptCommand.CHECK_ALIVE)
-            .map(returnValue ->
-                !"emergency".equals(returnValue)
-                && (
-                    Boolean.parseBoolean(returnValue)
-                    || Objects.equals(getCluDevice().getSerialNumber(), HexUtil.asLong(returnValue))
-                )
-            );
+                .map(returnValue ->
+                        !"emergency".equals(returnValue)
+                                && (
+                                Boolean.parseBoolean(returnValue)
+                                        || Objects.equals(getCluDevice().getSerialNumber(), HexUtil.asLong(returnValue))
+                        )
+                );
     }
 
     /**
@@ -214,7 +214,7 @@ public class CLUClient extends Client implements Closeable {
         final LuaScriptCommand.Request command = LuaScriptCommand.request(localAddress, sessionId, script);
 
         return request(command, DEFAULT_TIMEOUT_DURATION)
-            .flatMap(payload -> LuaScriptCommand.parse(sessionId, payload));
+                .flatMap(payload -> LuaScriptCommand.parse(sessionId, payload));
     }
 
     /**
@@ -222,8 +222,8 @@ public class CLUClient extends Client implements Closeable {
      */
     public Optional<Boolean> startTFTPdServer() {
         return request(StartTFTPdCommand.request(), DEFAULT_TIMEOUT_DURATION)
-            .flatMap(payload -> StartTFTPdCommand.responseFromByteArray(payload.buffer()))
-            .map(response -> true);
+                .flatMap(payload -> StartTFTPdCommand.responseFromByteArray(payload.buffer()))
+                .map(response -> true);
     }
 
     /**
@@ -238,16 +238,16 @@ public class CLUClient extends Client implements Closeable {
      * Uploads file from path to the location on the CLU, using TFTPd server (requires the startTFTPdServer command to be issued first). Does not adjust line
      * endings.
      *
-     * @param path path of the file contents
+     * @param path     path of the file contents
      * @param location remote location, eg. a:\MAIN.LUA
      */
     public void uploadFile(Path path, String location) {
         try {
             tftpClient.upload(
-                cluDevice.getAddress(),
-                TFTPTransferMode.OCTET,
-                path,
-                location
+                    cluDevice.getAddress(),
+                    TFTPTransferMode.OCTET,
+                    path,
+                    location
             );
         } catch (IOException | TFTPPacketException e) {
             throw new UnexpectedException(e.getCause());
@@ -258,15 +258,15 @@ public class CLUClient extends Client implements Closeable {
      * Downloads a file from location on the CLU to local path. Does not adjust line endings.
      *
      * @param location remote location, eg. a:\MAIN.LUA
-     * @param path target path for the file contents
+     * @param path     target path for the file contents
      */
     public Optional<Path> downloadFile(String location, Path path) {
         try {
             tftpClient.download(
-                cluDevice.getAddress(),
-                TFTPTransferMode.OCTET,
-                location,
-                path
+                    cluDevice.getAddress(),
+                    TFTPTransferMode.OCTET,
+                    location,
+                    path
             );
 
             return Optional.of(path);
@@ -304,9 +304,9 @@ public class CLUClient extends Client implements Closeable {
             send(uuid, cipherKey, cluDevice.getAddress(), command.asByteArray());
 
             return Util.repeatUntilTimeout(
-                timeout,
-                duration ->
-                    awaitResponsePayload(uuid, responseCipherKey, duration)
+                    timeout,
+                    duration ->
+                            awaitResponsePayload(uuid, responseCipherKey, duration)
             );
         } finally {
             socketLock.unlock();

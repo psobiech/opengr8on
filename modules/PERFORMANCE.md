@@ -1,7 +1,9 @@
 # Performance
 
-As a simple benchmark sending checkAlive() command was chosen (which is actually executing a LUA function and then returns its result). 
-In the examples, the test was run using 64 separate threads were executed for a total of 60 seconds and the test was repeated 10 times.
+As a simple benchmark sending checkAlive() command was chosen (which is actually executing a LUA function and then
+returns its result).
+In the examples, the test was run using 64 separate threads were executed for a total of 60 seconds and the test was
+repeated 10 times.
 
 ## Raspberry PI4 8GB
 
@@ -78,38 +80,67 @@ final ExecutorService executor = ThreadUtil.daemonExecutor("Benchmark");
 
 final LongAdder requests = new LongAdder();
 final List<Future<?>> futures = new LinkedList<>();
-for (int i = 0; i < 64; i++) {
-    futures.add(
-        executor.submit(() -> {
-            try (CLUClient client = new CLUClient(networkInterface.getAddress(), device, projectCipherKey)) {
-                synchronized (Main.class) {
-                    Main.class.wait();
+for(
+int i = 0;
+i< 64;i++){
+        futures.
+
+add(
+        executor.submit(() ->{
+        try(
+CLUClient client = new CLUClient(networkInterface.getAddress(), device, projectCipherKey)){
+synchronized (Main .class){
+Main .class.
+
+wait();
                 }
 
-                do {
-                    client.checkAlive()
-                          .ifPresent(aBoolean -> {
-                              if (aBoolean) {
-                                  requests.increment();
+                        do{
+                        client.
+
+checkAlive()
+                          .
+
+ifPresent(aBoolean ->{
+        if(aBoolean){
+        requests.
+
+increment();
                               }
-                          });
-                } while (!(Thread.interrupted()));
-            }
+                                      });
+                                      }while(!(Thread.
 
-            return null;
+interrupted()));
+        }
+
+        return null;
         })
-    );
-}
+        );
+        }
 
-Thread.sleep(100);
+        Thread.
+
+sleep(100);
 
 final long startTime = System.nanoTime();
-synchronized (Main.class) {
-    Main.class.notifyAll();
+synchronized (Main .class){
+Main .class.
+
+notifyAll();
 }
 
-Thread.sleep(60000);
-System.out.printf("Requests: %d in %dms%n", requests.sum(), TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)));
-System.out.flush();
-System.exit(0);
+        Thread.
+
+sleep(60000);
+System.out.
+
+printf("Requests: %d in %dms%n",requests.sum(),TimeUnit.NANOSECONDS.
+
+toMillis((System.nanoTime() -startTime)));
+        System.out.
+
+flush();
+System.
+
+exit(0);
 ```

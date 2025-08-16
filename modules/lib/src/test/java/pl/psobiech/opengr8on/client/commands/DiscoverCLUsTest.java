@@ -75,20 +75,20 @@ class DiscoverCLUsTest {
         final String macAddress = Mocks.macAddress();
 
         final Response input = response(
-            cluCipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
-            serialNumber, macAddress
+                cluCipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
+                serialNumber, macAddress
         );
 
         //
 
         final CLUDevice cluDevice = parse(
-            randomBytes,
-            Payload.of(ipAddress, 404, input.asByteArray()),
-            Map.of(
-                serialNumber, privateKey
-            )
+                randomBytes,
+                Payload.of(ipAddress, 404, input.asByteArray()),
+                Map.of(
+                        serialNumber, privateKey
+                )
         )
-            .get();
+                .get();
 
         //
 
@@ -116,20 +116,20 @@ class DiscoverCLUsTest {
         final String macAddress = Mocks.macAddress();
 
         final Response input = response(
-            cipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
-            serialNumber, macAddress
+                cipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
+                serialNumber, macAddress
         );
 
         //
 
         final CLUDevice cluDevice = parse(
-            randomBytes,
-            Payload.of(ipAddress, 404, input.asByteArray()),
-            Map.of(
-                serialNumber, privateKey
-            )
+                randomBytes,
+                Payload.of(ipAddress, 404, input.asByteArray()),
+                Map.of(
+                        serialNumber, privateKey
+                )
         )
-            .get();
+                .get();
 
         //
 
@@ -154,18 +154,18 @@ class DiscoverCLUsTest {
         final String macAddress = Mocks.macAddress();
 
         final Response input = response(
-            cipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
-            serialNumber, macAddress
+                cipherKey.encrypt(DiscoverCLUsCommand.hash(randomBytes)), cipherKey.getIV(),
+                serialNumber, macAddress
         );
 
         //
 
         final CLUDevice cluDevice = parse(
-            randomBytes,
-            Payload.of(ipAddress, 404, input.asByteArray()),
-            Map.of()
+                randomBytes,
+                Payload.of(ipAddress, 404, input.asByteArray()),
+                Map.of()
         )
-            .get();
+                .get();
 
         //
 
@@ -197,13 +197,13 @@ class DiscoverCLUsTest {
     @Test
     void correctRequest() {
         final Request input = request(
-            RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.iv(), Mocks.ipAddress()
+                RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.iv(), Mocks.ipAddress()
         );
 
         //
 
         final Request output = DiscoverCLUsCommand.requestFromByteArray(input.asByteArray())
-                                                  .get();
+                .get();
 
         //
 
@@ -213,14 +213,14 @@ class DiscoverCLUsTest {
     @Test
     void correctResponse() {
         final Response input = response(
-            RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.iv(),
-            Mocks.serialNumber(), Mocks.macAddress()
+                RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.iv(),
+                Mocks.serialNumber(), Mocks.macAddress()
         );
 
         //
 
         final Response output = DiscoverCLUsCommand.responseFromByteArray(input.asByteArray())
-                                                   .get();
+                .get();
 
         //
 
@@ -236,10 +236,10 @@ class DiscoverCLUsTest {
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                                                                  = new byte[100];
-        buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                                                                  = ':';
-        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                                                           = ':';
-        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()]                                            = ':';
+        buffer = new byte[100];
+        buffer[Command.RANDOM_ENCRYPTED_BYTES] = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS] = ':';
         assertFalse(DiscoverCLUsCommand.requestFromByteArray(buffer).isPresent());
 
@@ -248,10 +248,10 @@ class DiscoverCLUsTest {
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                                                                   = new byte[100];
-        buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                                                                   = ':';
-        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                                                            = ':';
-        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length()]                                            = ':';
+        buffer = new byte[100];
+        buffer[Command.RANDOM_ENCRYPTED_BYTES] = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length()] = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS] = ':';
         assertFalse(DiscoverCLUsCommand.responseFromByteArray(buffer).isPresent());
     }

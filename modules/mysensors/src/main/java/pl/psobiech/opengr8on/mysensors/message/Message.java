@@ -42,26 +42,26 @@ public class Message {
     protected final String payload;
 
     public Message(int nodeId, int childSensorId, int command, int echo, int type, String payload) {
-        this.nodeId        = nodeId;
+        this.nodeId = nodeId;
         this.childSensorId = childSensorId;
-        this.command       = command;
-        this.echo          = echo;
-        this.type          = type;
-        this.payload       = payload;
+        this.command = command;
+        this.echo = echo;
+        this.type = type;
+        this.payload = payload;
     }
 
     public String serialize(boolean ignoreEcho) {
         return getNodeId()
-               + ";"
-               + getChildSensorId()
-               + ";"
-               + getCommand()
-               + ";"
-               + (ignoreEcho ? VALUE_FALSE : getEcho())
-               + ";"
-               + getType()
-               + ";"
-               + StringUtils.stripToEmpty(getPayload());
+                + ";"
+                + getChildSensorId()
+                + ";"
+                + getCommand()
+                + ";"
+                + (ignoreEcho ? VALUE_FALSE : getEcho())
+                + ";"
+                + getType()
+                + ";"
+                + StringUtils.stripToEmpty(getPayload());
     }
 
     public int getNodeId() {
@@ -74,7 +74,7 @@ public class Message {
 
     public SensorCommandType getCommandEnum() {
         return SensorCommandType.byType(getCommand())
-                                .get();
+                .get();
     }
 
     public int getCommand() {
@@ -103,8 +103,8 @@ public class Message {
 
     public Optional<Byte> findPayloadAsByte() {
         return findPayloadAsInteger()
-            .filter(value -> (value >= 0 && value <= 0xFF))
-            .map(Integer::byteValue);
+                .filter(value -> (value >= 0 && value <= 0xFF))
+                .map(Integer::byteValue);
     }
 
     public int getPayloadAsInteger() {
@@ -149,7 +149,7 @@ public class Message {
 
     public Optional<Boolean> findPayloadAsBoolean() {
         return findPayloadAsString()
-            .map(value -> VALUE_TRUE_AS_STRING.equals(value) || Boolean.parseBoolean(value));
+                .map(value -> VALUE_TRUE_AS_STRING.equals(value) || Boolean.parseBoolean(value));
     }
 
     public String getPayloadAsString() {
@@ -167,13 +167,13 @@ public class Message {
     @Override
     public String toString() {
         return "RawMessage{" +
-               "nodeId=" + nodeId +
-               ", childSensorId=" + childSensorId +
-               ", command=" + command + " // " + SensorCommandType.byType(getCommand()) +
-               ", echo/ack=" + echo +
-               ", type=" + type +
-               ", payload='" + payload + '\'' +
-               '}';
+                "nodeId=" + nodeId +
+                ", childSensorId=" + childSensorId +
+                ", command=" + command + " // " + SensorCommandType.byType(getCommand()) +
+                ", echo/ack=" + echo +
+                ", type=" + type +
+                ", payload='" + payload + '\'' +
+                '}';
     }
 
     public enum SensorCommandType {

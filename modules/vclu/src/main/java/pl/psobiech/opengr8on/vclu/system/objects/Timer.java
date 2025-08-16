@@ -40,8 +40,8 @@ public class Timer extends VirtualObject {
 
     public Timer(VirtualSystem virtualSystem, String name) {
         super(
-            virtualSystem, name,
-            Features.class, Methods.class, Events.class
+                virtualSystem, name,
+                Features.class, Methods.class, Events.class
         );
 
         register(Features.TIME, (arg1) -> {
@@ -51,7 +51,7 @@ public class Timer extends VirtualObject {
 
             if (state == State.COUNTING) {
                 restartTimer(
-                    TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong())
+                        TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong())
                 );
             }
 
@@ -69,7 +69,7 @@ public class Timer extends VirtualObject {
 
     private LuaValue onStart() {
         restartTimer(
-            TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong())
+                TimeUnit.MILLISECONDS.toNanos(get(Features.TIME).checklong())
         );
 
         state = State.COUNTING;
@@ -86,8 +86,8 @@ public class Timer extends VirtualObject {
         this.lastLoopTime = System.nanoTime();
 
         this.timerFuture = this.scheduler.scheduleAtFixedRate(
-            new TimerTask(time),
-            time, time, TimeUnit.NANOSECONDS
+                new TimerTask(time),
+                time, time, TimeUnit.NANOSECONDS
         );
     }
 
@@ -106,7 +106,7 @@ public class Timer extends VirtualObject {
     private LuaValue onPause() {
         if (state == State.PAUSED) {
             lastLoopTime = System.nanoTime();
-            state        = State.COUNTING;
+            state = State.COUNTING;
         } else if (state == State.COUNTING) {
             state = State.PAUSED;
             triggerEvent(Events.PAUSE);

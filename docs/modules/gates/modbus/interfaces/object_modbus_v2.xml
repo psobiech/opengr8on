@@ -18,309 +18,314 @@
   -->
 
 <object class="200" className="GATE" name="Modbus" version="2">
-  <features>
-    <feature default="" get="true" index="0" name="DeviceAddress" range="0-255" set="true" type="num" unit="number">
-      <hint lang="pl" value="Adres urządzenia slave Modbus"/>
-      <hint lang="en" value="Modbus slave device address"/>
-      <hint lang="de" value="Adresse des Slave-Geräts Modbus"/>
-      <desc resKey="modbus_deviceaddress"/>
-    </feature>
-    <feature default="1" enum="0,1" get="true" index="1" name="AccessRights" set="true" type="num" unit="-">
-      <enum name="Read" resKey="modbus_accessrights_enum_read" value="0"/>
-      <enum name="ReadWrite" resKey="modbus_accessrights_enum_readwrite" value="1"/>
-      <hint lang="pl" value="Tryb pracy:&#13;0 - odczyt&#13;1 - odczyt/zapis"/>
-      <hint lang="en" value="Mode:&#13;0 - read&#13;1 - read/write"/>
-      <hint lang="de" value="Betriebsart Lesen oder Lesen/Speichern"/>
-      <desc resKey="modbus_accessrights"/>
-    </feature>
-    <feature default="0" get="true" index="2" name="RegisterAddress" range="0-65535" set="true" type="num" unit="number">
-      <hint lang="pl" value="Adres obsługiwanego rejestru"/>
-      <hint lang="en" value="Supported register address"/>
-      <hint lang="de" value="Adresse des unterstützten Registers"/>
-      <desc resKey="modbus_registeraddress"/>
-    </feature>
-    <feature default="9600" enum="1200,2400,4800,9600,19200,38400,57600,115200" get="true" index="3" name="TransmisionSpeed" set="true" type="num" unit="bps">
-      <enum name="1200" resKey="modbus_transmisionspeed_enum_1200" value="1200"/>
-      <enum name="2400" resKey="modbus_transmisionspeed_enum_2400" value="2400"/>
-      <enum name="4800" resKey="modbus_transmisionspeed_enum_4800" value="4800"/>
-      <enum name="9600" resKey="modbus_transmisionspeed_enum_9600" value="9600"/>
-      <enum name="19200" resKey="modbus_transmisionspeed_enum_19200" value="19200"/>
-      <enum name="38400" resKey="modbus_transmisionspeed_enum_38400" value="38400"/>
-      <enum name="57600" resKey="modbus_transmisionspeed_enum_57600" value="57600"/>
-      <enum name="115200" resKey="modbus_transmisionspeed_enum_115200" value="115200"/>
-      <hint lang="pl" value="Prędkość transmisji"/>
-      <hint lang="en" value="Transmission Speed"/>
-      <hint lang="de" value="Übertragungsgeschwindigkeit"/>
-      <desc resKey="modbus_transmisionspeed"/>
-    </feature>
-    <feature default="1" enum="1,2,3" get="true" index="4" name="ValueType" set="true" type="num" unit="">
-      <enum name="Number" resKey="modbus_valuetype_enum_number" value="1"/>
-      <enum name="Float" resKey="modbus_valuetype_enum_float" value="2"/>
-      <enum name="Bit" resKey="modbus_valuetype_enum_bit" value="3"/>
-      <hint lang="pl" value="Typ zmiennej:&#13;1 - Number&#13;2 - Float&#13;3 - Bit"/>
-      <hint lang="en" value="Variable type:&#13;1 - Number&#13;2 - Float&#13;3 - Bit"/>
-      <hint lang="de" value="Variablentyp"/>
-      <desc resKey="modbus_valuetype"/>
-    </feature>
-    <feature default="0" get="true" index="5" name="BitPosition" range="0-15" set="true" type="num" unit="number">
-      <hint lang="pl" value="Pozycja bitu (dotyczy dostępu bitowego do 16bit rejestrów - typu bit)"/>
-      <hint lang="en" value="Bit position (applies to bit access to 16bist registers - bit type)"/>
-      <hint lang="de" value="Bitmaske"/>
-      <desc resKey="modbus_bitposition"/>
-    </feature>
-    <feature default="16" get="true" index="6" name="BitCount" range="1-32" set="true" type="num" unit="number">
-      <hint lang="pl"
-        value="Liczba bitów rejestru:&#13;Dla 16 bitowych rejestrów - podanie wartości &gt; 16 spowoduje odczyt / zapis 2 rejestrów&#13;Dla rejestrów bitowych / dwustanowych - określa liczbę odczytywanych / zapisywanych rejestrów&#13;W przypadku typu bit - określa liczbę bitów 16 bitowego rejestru podlegających operacji odczytu / zapisu"/>
-      <hint lang="en"
-        value="Number of register's bits:&#13;For 16bits registers - entering values &gt; 16 will read / write 2 registers&#13;For bit outputs / inputs or binary inputs registers - determines the number of read / write registers&#13;For one bit type - specifies the number of bits of the 16-bit register to be read / write"/>
-      <hint lang="de" value="Anzahl Registerbits"/>
-      <desc resKey="modbus_bitcount"/>
-    </feature>
-    <feature default="1000" get="true" index="8" name="RefreshInterval" range="0-65535" set="true" type="num" unit="number">
-      <hint lang="pl" value="Czas odświeżania"/>
-      <hint lang="en" value="Refresh interval"/>
-      <hint lang="de" value="Auffrischungszeit"/>
-      <desc resKey="modbus_refreshinterval"/>
-    </feature>
-    <feature default="100" get="true" index="9" name="ResponseTimeout" range="10-65535" set="true" type="num" unit="number">
-      <hint lang="pl" value="Czas na odpowiedź"/>
-      <hint lang="en" value="Response timeout"/>
-      <hint lang="de" value="Antwortverzögerung"/>
-      <desc resKey="modbus_responsetimeout"/>
-    </feature>
-    <feature default="1" get="true" index="10" name="Divisor" range="1-65535" set="true" type="num" unit="number">
-      <hint lang="pl" value="Dzielnik"/>
-      <hint lang="en" value="Divisor"/>
-      <hint lang="de" value="Divisor"/>
-      <desc resKey="modbus_divisor"/>
-    </feature>
-    <feature default="2" enum="0,1,2,3" get="true" index="11" name="Endianess" set="true" type="num" unit="-">
-      <enum name="NoSwap" resKey="modbus_endianess_enum_noswap" value="0"/>
-      <enum name="SwapBytesAndWords" resKey="modbus_endianess_enum_swapbytesandwords" value="1"/>
-      <enum name="SwapBytes" resKey="modbus_endianess_enum_swapbytes" value="2"/>
-      <enum name="SwapWords" resKey="modbus_endianess_enum_swapwords" value="3"/>
-      <hint lang="pl"
-        value="0 - NoSwap - Little Endian&#13;1 - SwapBytesAndWords - BigEndian&#13;2 - SwapBytes - bajty w słowie: BigEndian; słowa: Little Endian&#13;3 - SwapWords - bajty w słowie: LittleEndian, słowa: Big Endian"/>
-      <hint lang="en"
-        value="0 - NoSwap - Little Endian&#13;1 - SwapBytesAndWords - BigEndian&#13;2 - SwapBytes - byte word order: BigEndian; byte words: Little Endian&#13;3 - SwapWords - byte word order: LittleEndian, byte words: Big Endian"/>
-      <hint lang="de" value="Bytefolge"/>
-      <desc resKey="modbus_endianess"/>
-    </feature>
-    <feature default="2" enum="0,1,2,3" get="true" index="12" name="RegisterType" set="true" type="num" unit="-">
-      <enum name="BitOutputsInputs" resKey="modbus_registertype_enum_bitoutputsinputs" value="0"/>
-      <enum name="BinaryInputs" resKey="modbus_registertype_enum_binaryinputs" value="1"/>
-      <enum name="HoldingRegisters" resKey="modbus_registertype_enum_holdingregisters" value="2"/>
-      <enum name="InputRegisters" resKey="modbus_registertype_enum_inputregisters" value="3"/>
-      <hint lang="pl"
-        value="Typ rejestru Modbus:&#13;0 - wyjścia / wejścia bitowe - bitowe rejestry wyjśc/wejść. Dla zapisu pojedynczego wyjścia - funkcja Modbus: 5, dla wielu wyjść - funkcja Modbus: 15&#13;1 - wejścia dwustanowe - 'discrete inputs' - funkcja Modbus: 3&#13;2 - rejestry pamiętające - rejestry 16 bitowe. Zapis wartości 16bit - funkcja Modbus: 6, Zapis wartości 32bit - funkcja Modbus: 16. Odczyt - funkcja Modbus: 3&#13;3 - rejestry wejściowe - rejestry 16 bitowe - funkcja Modbus: 4"/>
-      <hint lang="en"
-        value="Modbus register type:&#13;0 - bit outputs / inputs - bit registers of outputs / inputs. For writing a single output - Modbus function: 5, for many outputs - Modbus function: 15&#13;1 - binary inputs - 'discrete inputs' - Modbus function: 3&#13;2 - holding registers - 16-bit registers. Writing the 16bit value - Modbus function: 6, Writing the 32bit value - Modbus function: 16. Read - Modbus function: 3&#13;3 - input registers - 16-bit registers - Modbus function: 4"/>
-      <hint lang="de" value="Modbus-Registertyp"/>
-      <desc resKey="modbus_registertype"/>
-    </feature>
-    <feature get="true" index="13" name="ErrorCode" set="false" type="num" unit="number">
-      <hint lang="pl"
-        value="Kod błędu:&#13;1 – niedozwolona funkcja&#13;2 – niedozwolony numer rejestru&#13;3 – niedozwolona wartość danej&#13;4 – uszkodzenie w przyłączonym urządzeniu&#13;5 – potwierdzenie pozytywne&#13;6 – brak gotowości, komunikat usunięty&#13;7 – potwierdzenie negatywne&#13;8 – błąd parzystości pamięci&#13;0 - poprawny odczyt/zapis rejestru&#13;-1 - nieaktualna wartość ostatniegoodczytanego rejestru&#13;-2 - przekroczenie czasu odpowiedzi&#13;-3 - błąd ramki (problem ze zdekodowaniem odpowiedzi)"/>
-      <hint lang="en"
-        value="Error code:&#13;1 – illegal function&#13;2 – illegal register number&#13;3 – illegal data value&#13;4 – connected device damaged&#13;5 – positive confirmation&#13;6 – no readiness, message removed&#13;7 – negative confirmation&#13;8 –  memory parity error&#13;0 - correct read/write register&#13;-1 - invalid value of the last read out register&#13;-2 - exceeding the response timeout&#13;-3 - frame error (error decoding the frame)"/>
-      <hint lang="de" value="Fehlercode"/>
-      <desc resKey="modbus_errorcode"/>
-    </feature>
-    <feature default="0" get="true" index="14" name="Value" range="" set="true" type="num" unit="number">
-      <hint lang="pl" value="Wartość odczytu / zapisu"/>
-      <hint lang="en" value="Read/Write value"/>
-      <hint lang="de" value="Lese-/Speicherwert"/>
-      <desc resKey="modbus_value"/>
-    </feature>
-    <feature get="true" index="15" name="RegisterValue" range="" set="false" type="num" unit="number">
-      <hint lang="pl" value="Nieprzeskalowana wartość rejestru"/>
-      <hint lang="en" value="Register value"/>
-      <hint lang="de" value="Registerinhalt"/>
-      <desc resKey="modbus_registervalue"/>
-    </feature>
-    <feature default="0" enum="0,1,2" get="true" index="16" name="StopBits" set="true" type="num" unit="-">
-      <enum name="1" resKey="modbus_stopbits_enum_1" value="0"/>
-      <enum name="1.5" resKey="modbus_stopbits_enum_15" value="1"/>
-      <enum name="2" resKey="modbus_stopbits_enum_2" value="2"/>
-      <hint lang="pl" value="Bity stopu:&#13; 0 - 1 bit stopu&#13; 1 - 1.5 bitu stopu&#13; 2 - 2 bity stopu"/>
-      <hint lang="en" value="Stop bits:&#13; 0 - 1 stop bit&#13; 1 - 1.5 stop bits&#13; 2 - 2 stop bits"/>
-      <desc resKey="modbus_stopbits"/>
-    </feature>
-    <feature default="0" enum="0,1,2" get="true" index="17" name="Parity" set="true" type="num" unit="-">
-      <enum name="None" resKey="modbus_parity_enum_none" value="0"/>
-      <enum name="Odd" resKey="modbus_parity_enum_odd" value="1"/>
-      <enum name="Even" resKey="modbus_parity_enum_even" value="2"/>
-      <hint lang="pl" value="Bit parzystości:&#13; 0 - None&#13; 1 - Odd&#13; 2 - Even"/>
-      <hint lang="en" value="Parity bit:&#13; 0 - None&#13; 1 - Odd&#13; 2 - Even"/>
-      <desc resKey="modbus_parity"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="set" index="0" name="SetDeviceAddress" return="void">
-      <param name="DeviceAddress" range="0-255" type="num" unit="-"/>
-      <hint lang="pl" value="Ustawia adres urządzenia slave Modbus"/>
-      <hint lang="en" value="Sets Modbus slave device address"/>
-      <hint lang="de" value="Bestimmt die Adresse des Slave-Geräts Modbus"/>
-      <desc resKey="modbus_setdeviceaddress"/>
-    </method>
-    <method call="set" index="1" name="SetAccessRights" return="void">
-      <param default="1" enum="0,1" name="AccessRights" type="num" unit="-">
-        <enum name="Read" value="0"/>
-        <enum name="Read/Write" value="1"/>
-      </param>
-      <hint lang="pl" value="Ustawia tryb pracy: odczyt lub odczyt / zapis"/>
-      <hint lang="en" value="Sets the mode for read or read / write"/>
-      <hint lang="de" value="Setzt die Betriebsart auf Lesen oder Lesen/Speichern"/>
-      <desc resKey="modbus_setaccessrights"/>
-    </method>
-    <method call="set" index="2" name="SetRegisterAddress" return="void">
-      <param name="RegisterAddress" range="0-65535" type="num" unit="number"/>
-      <hint lang="pl" value="Ustawia adres obsługiwanego  rejestru"/>
-      <hint lang="en" value="Sets the supported register address"/>
-      <hint lang="de" value="Bestimmt die Adresse des unterstützen Registers"/>
-      <desc resKey="modbus_setregisteraddress"/>
-    </method>
-    <method call="set" index="3" name="SetTransmisionSpeed" return="void">
-      <param default="9600" enum="1200,2400,4800,9600,19200,38400,57600,115200" name="TransmisionSpeed" type="num" unit="bps">
-        <enum name="1200" value="1200"/>
-        <enum name="2400" value="2400"/>
-        <enum name="4800" value="4800"/>
-        <enum name="9600" value="9600"/>
-        <enum name="19200" value="19200"/>
-        <enum name="38400" value="38400"/>
-        <enum name="57600" value="57600"/>
-        <enum name="115200" value="115200"/>
-      </param>
-      <hint lang="pl" value="Ustawia prędkość transmisji"/>
-      <hint lang="en" value="Sets transmission speed"/>
-      <hint lang="de" value="Bestimmt die Übertragungsgeschwindigkeit"/>
-      <desc resKey="modbus_settransmisionspeed"/>
-    </method>
-    <method call="set" index="4" name="SetValueType" return="void">
-      <param default="2" enum="1,2,3" name="ValueType" type="num" unit="-">
-        <enum name="number" value="1"/>
-        <enum name="float" value="2"/>
-        <enum name="bit" value="3"/>
-      </param>
-      <hint lang="pl" value="Ustawia typ zmiennej"/>
-      <hint lang="en" value="Sets the variable type"/>
-      <hint lang="de" value="Bestimmt den Variablentyp"/>
-      <desc resKey="modbus_setvaluetype"/>
-    </method>
-    <method call="set" index="5" name="SetBitPosition" return="void">
-      <param name="BitPosition" range="0-15" type="num" unit="number"/>
-      <hint lang="pl" value="Ustawia pozycję bitu"/>
-      <hint lang="en" value="Sets the bit position"/>
-      <hint lang="de" value="Bestimmt die Bitmaske"/>
-      <desc resKey="modbus_setbitposition"/>
-    </method>
-    <method call="set" index="6" name="SetBitCount" return="void">
-      <param name="BitCount" range="1-32" type="num" unit="number"/>
-      <hint lang="pl" value="Ustawia liczbę bitów rejestru"/>
-      <hint lang="en" value="Sets the number of register's bits"/>
-      <hint lang="de" value="Bestimmt die Anzahel der Registerbits"/>
-      <desc resKey="modbus_setbitcount"/>
-    </method>
-    <method call="set" index="8" name="SetRefreshInterval" return="void">
-      <param default="1000" name="ReadWriteInterval" range="0-65535" type="num" unit="ms"/>
-      <hint lang="pl" value="Ustawia czas odświeżania"/>
-      <hint lang="en" value="Sets the refresh interval"/>
-      <hint lang="de" value="Bestimmt die Auffrischungszeit"/>
-      <desc resKey="modbus_setrefreshinterval"/>
-    </method>
-    <method call="set" index="9" name="SetReadWriteTimeout" return="void">
-      <param default="10" name="ReadWriteTimeout" range="10-65535" type="num" unit="ms"/>
-      <hint lang="pl" value="Ustawia czas przekroczenia odpowiedzi"/>
-      <hint lang="en" value="Sets the response timeout"/>
-      <hint lang="de" value="Legt das Antwortzeitlimit fest"/>
-      <desc resKey="modbus_setreadwritetimeout"/>
-    </method>
-    <method call="set" index="10" name="SetDivisor" return="void">
-      <param default="1" name="Divisor" range="1-65535" type="num" unit="number"/>
-      <hint lang="pl" value="Ustawia dzielnik"/>
-      <hint lang="en" value="Sets the divisor"/>
-      <hint lang="de" value="Bestimmt den Divisor"/>
-      <desc resKey="modbus_setdivisor"/>
-    </method>
-    <method call="set" index="11" name="SetEndianess" return="void">
-      <param enum="0,1,2,3" name="Endianess" type="num" unit="-">
-        <enum name="Little Endian" value="0"/>
-        <enum name="Big Endian" value="1"/>
-        <enum name="Little Endian Swap" value="2"/>
-        <enum name="Big Endian Swap" value="3"/>
-      </param>
-      <hint lang="pl" value="Ustawia typ kolejności bajtów"/>
-      <hint lang="en" value="Sets byte order"/>
-      <hint lang="de" value="Bestimmt den Typ der Bytefolge"/>
-      <desc resKey="modbus_setendianess"/>
-    </method>
-    <method call="set" index="12" name="SetRegisterType" return="void">
-      <param enum="0,1,2,3" name="RegisterType" type="num" unit="-">
-        <enum name="Wyjścia/wejścia bitowe" value="0"/>
-        <enum name="Wejścia dwustanowe" value="1"/>
-        <enum name="Rejestry pamiętające" value="2"/>
-        <enum name="Rejestry wejściowe" value="3"/>
-      </param>
-      <hint lang="pl" value="Ustawia typ rejestru Modbus"/>
-      <hint lang="en" value="Sets the modbus register type"/>
-      <hint lang="de" value="Bestimmt den Modbus-Registertyp"/>
-      <desc resKey="modbus_setregistertype"/>
-    </method>
-    <!-- <method name="GetErrorCode" index="14" call="set" return="void" >
-      <param name="Error" type="num" unit=""   range="" />
-      <hint lang="pl" value=""/>
-      <hint lang="en" value=""/>
-    </method>
-    <method name="ErrorCode" index="15" call="get" return="void" >
-      <param name="Value" type="num" unit="number"   range="" />
-      <hint lang="pl" value=""/>
-      <hint lang="en" value=""/>
-    </method>
-    <method name="GetScaledValue" index="16" call="get" return="void" >
-      <param name="ScaledValue" type="num" unit="number"   range="" />
-      <hint lang="pl" value=""/>
-      <hint lang="en" value=""/>
-    </method> -->
-    <method call="set" index="14" name="SetValue" return="void">
-      <param name="Value" range="" type="num" unit="number"/>
-      <hint lang="pl" value="Ustawia wartość odczytu / zapisu"/>
-      <hint lang="en" value="Sets read or write value"/>
-      <hint lang="de" value="Bestimmt den Lese-/Speicherwert"/>
-      <desc resKey="modbus_setvalue"/>
-    </method>
-    <method call="set" index="16" name="SetStopBits" return="void">
-      <param enum="0,1,2" name="StopBits" type="num" unit="-">
-        <enum name="1" value="0"/>
-        <enum name="1.5" value="1"/>
-        <enum name="2" value="2"/>
-      </param>
-      <hint lang="pl" value="Ustawia liczbę bitów stopu"/>
-      <hint lang="en" value="Sets stop bit count"/>
-      <desc resKey="modbus_setstopbits"/>
-    </method>
-    <method call="set" index="17" name="SetParity" return="void">
-      <param enum="0,1,2" name="Parity" type="num" unit="-">
-        <enum name="None" value="0"/>
-        <enum name="Odd" value="1"/>
-        <enum name="Even" value="2"/>
-      </param>
-      <hint lang="pl" value="Ustawia sprawdzanie parzystości"/>
-      <hint lang="en" value="Sets parity check type"/>
-      <desc resKey="modbus_setparity"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnChange">
-      <hint lang="pl" value="Zdarzenie wywoływane przy zmianie stanu (niezależnie od wartości)"/>
-      <hint lang="en" value="Event occurring when a change in the state takes place (regardless of the value)"/>
-      <hint lang="de" value="Ereignis, das bei Statusänderung (abgesehen vom Wert) aufgerufen wird"/>
-      <desc resKey="modbus_onchange"/>
-    </event>
-    <event address="1" name="OnError">
-      <hint lang="pl" value="Zdarzenie wywoływane gdy urządzenie slave zgłasza błąd"/>
-      <hint lang="en" value="Event occurring when the slave device reports an error"/>
-      <hint lang="de" value="Ereignis, das bei einem Slavegerät-Fehler aufgerufen wird"/>
-      <desc resKey="modbus_onerror"/>
-    </event>
-  </events>
+    <features>
+        <feature default="" get="true" index="0" name="DeviceAddress" range="0-255" set="true" type="num" unit="number">
+            <hint lang="pl" value="Adres urządzenia slave Modbus"/>
+            <hint lang="en" value="Modbus slave device address"/>
+            <hint lang="de" value="Adresse des Slave-Geräts Modbus"/>
+            <desc resKey="modbus_deviceaddress"/>
+        </feature>
+        <feature default="1" enum="0,1" get="true" index="1" name="AccessRights" set="true" type="num" unit="-">
+            <enum name="Read" resKey="modbus_accessrights_enum_read" value="0"/>
+            <enum name="ReadWrite" resKey="modbus_accessrights_enum_readwrite" value="1"/>
+            <hint lang="pl" value="Tryb pracy:&#13;0 - odczyt&#13;1 - odczyt/zapis"/>
+            <hint lang="en" value="Mode:&#13;0 - read&#13;1 - read/write"/>
+            <hint lang="de" value="Betriebsart Lesen oder Lesen/Speichern"/>
+            <desc resKey="modbus_accessrights"/>
+        </feature>
+        <feature default="0" get="true" index="2" name="RegisterAddress" range="0-65535" set="true" type="num"
+                 unit="number">
+            <hint lang="pl" value="Adres obsługiwanego rejestru"/>
+            <hint lang="en" value="Supported register address"/>
+            <hint lang="de" value="Adresse des unterstützten Registers"/>
+            <desc resKey="modbus_registeraddress"/>
+        </feature>
+        <feature default="9600" enum="1200,2400,4800,9600,19200,38400,57600,115200" get="true" index="3"
+                 name="TransmisionSpeed" set="true" type="num" unit="bps">
+            <enum name="1200" resKey="modbus_transmisionspeed_enum_1200" value="1200"/>
+            <enum name="2400" resKey="modbus_transmisionspeed_enum_2400" value="2400"/>
+            <enum name="4800" resKey="modbus_transmisionspeed_enum_4800" value="4800"/>
+            <enum name="9600" resKey="modbus_transmisionspeed_enum_9600" value="9600"/>
+            <enum name="19200" resKey="modbus_transmisionspeed_enum_19200" value="19200"/>
+            <enum name="38400" resKey="modbus_transmisionspeed_enum_38400" value="38400"/>
+            <enum name="57600" resKey="modbus_transmisionspeed_enum_57600" value="57600"/>
+            <enum name="115200" resKey="modbus_transmisionspeed_enum_115200" value="115200"/>
+            <hint lang="pl" value="Prędkość transmisji"/>
+            <hint lang="en" value="Transmission Speed"/>
+            <hint lang="de" value="Übertragungsgeschwindigkeit"/>
+            <desc resKey="modbus_transmisionspeed"/>
+        </feature>
+        <feature default="1" enum="1,2,3" get="true" index="4" name="ValueType" set="true" type="num" unit="">
+            <enum name="Number" resKey="modbus_valuetype_enum_number" value="1"/>
+            <enum name="Float" resKey="modbus_valuetype_enum_float" value="2"/>
+            <enum name="Bit" resKey="modbus_valuetype_enum_bit" value="3"/>
+            <hint lang="pl" value="Typ zmiennej:&#13;1 - Number&#13;2 - Float&#13;3 - Bit"/>
+            <hint lang="en" value="Variable type:&#13;1 - Number&#13;2 - Float&#13;3 - Bit"/>
+            <hint lang="de" value="Variablentyp"/>
+            <desc resKey="modbus_valuetype"/>
+        </feature>
+        <feature default="0" get="true" index="5" name="BitPosition" range="0-15" set="true" type="num" unit="number">
+            <hint lang="pl" value="Pozycja bitu (dotyczy dostępu bitowego do 16bit rejestrów - typu bit)"/>
+            <hint lang="en" value="Bit position (applies to bit access to 16bist registers - bit type)"/>
+            <hint lang="de" value="Bitmaske"/>
+            <desc resKey="modbus_bitposition"/>
+        </feature>
+        <feature default="16" get="true" index="6" name="BitCount" range="1-32" set="true" type="num" unit="number">
+            <hint lang="pl"
+                  value="Liczba bitów rejestru:&#13;Dla 16 bitowych rejestrów - podanie wartości &gt; 16 spowoduje odczyt / zapis 2 rejestrów&#13;Dla rejestrów bitowych / dwustanowych - określa liczbę odczytywanych / zapisywanych rejestrów&#13;W przypadku typu bit - określa liczbę bitów 16 bitowego rejestru podlegających operacji odczytu / zapisu"/>
+            <hint lang="en"
+                  value="Number of register's bits:&#13;For 16bits registers - entering values &gt; 16 will read / write 2 registers&#13;For bit outputs / inputs or binary inputs registers - determines the number of read / write registers&#13;For one bit type - specifies the number of bits of the 16-bit register to be read / write"/>
+            <hint lang="de" value="Anzahl Registerbits"/>
+            <desc resKey="modbus_bitcount"/>
+        </feature>
+        <feature default="1000" get="true" index="8" name="RefreshInterval" range="0-65535" set="true" type="num"
+                 unit="number">
+            <hint lang="pl" value="Czas odświeżania"/>
+            <hint lang="en" value="Refresh interval"/>
+            <hint lang="de" value="Auffrischungszeit"/>
+            <desc resKey="modbus_refreshinterval"/>
+        </feature>
+        <feature default="100" get="true" index="9" name="ResponseTimeout" range="10-65535" set="true" type="num"
+                 unit="number">
+            <hint lang="pl" value="Czas na odpowiedź"/>
+            <hint lang="en" value="Response timeout"/>
+            <hint lang="de" value="Antwortverzögerung"/>
+            <desc resKey="modbus_responsetimeout"/>
+        </feature>
+        <feature default="1" get="true" index="10" name="Divisor" range="1-65535" set="true" type="num" unit="number">
+            <hint lang="pl" value="Dzielnik"/>
+            <hint lang="en" value="Divisor"/>
+            <hint lang="de" value="Divisor"/>
+            <desc resKey="modbus_divisor"/>
+        </feature>
+        <feature default="2" enum="0,1,2,3" get="true" index="11" name="Endianess" set="true" type="num" unit="-">
+            <enum name="NoSwap" resKey="modbus_endianess_enum_noswap" value="0"/>
+            <enum name="SwapBytesAndWords" resKey="modbus_endianess_enum_swapbytesandwords" value="1"/>
+            <enum name="SwapBytes" resKey="modbus_endianess_enum_swapbytes" value="2"/>
+            <enum name="SwapWords" resKey="modbus_endianess_enum_swapwords" value="3"/>
+            <hint lang="pl"
+                  value="0 - NoSwap - Little Endian&#13;1 - SwapBytesAndWords - BigEndian&#13;2 - SwapBytes - bajty w słowie: BigEndian; słowa: Little Endian&#13;3 - SwapWords - bajty w słowie: LittleEndian, słowa: Big Endian"/>
+            <hint lang="en"
+                  value="0 - NoSwap - Little Endian&#13;1 - SwapBytesAndWords - BigEndian&#13;2 - SwapBytes - byte word order: BigEndian; byte words: Little Endian&#13;3 - SwapWords - byte word order: LittleEndian, byte words: Big Endian"/>
+            <hint lang="de" value="Bytefolge"/>
+            <desc resKey="modbus_endianess"/>
+        </feature>
+        <feature default="2" enum="0,1,2,3" get="true" index="12" name="RegisterType" set="true" type="num" unit="-">
+            <enum name="BitOutputsInputs" resKey="modbus_registertype_enum_bitoutputsinputs" value="0"/>
+            <enum name="BinaryInputs" resKey="modbus_registertype_enum_binaryinputs" value="1"/>
+            <enum name="HoldingRegisters" resKey="modbus_registertype_enum_holdingregisters" value="2"/>
+            <enum name="InputRegisters" resKey="modbus_registertype_enum_inputregisters" value="3"/>
+            <hint lang="pl"
+                  value="Typ rejestru Modbus:&#13;0 - wyjścia / wejścia bitowe - bitowe rejestry wyjśc/wejść. Dla zapisu pojedynczego wyjścia - funkcja Modbus: 5, dla wielu wyjść - funkcja Modbus: 15&#13;1 - wejścia dwustanowe - 'discrete inputs' - funkcja Modbus: 3&#13;2 - rejestry pamiętające - rejestry 16 bitowe. Zapis wartości 16bit - funkcja Modbus: 6, Zapis wartości 32bit - funkcja Modbus: 16. Odczyt - funkcja Modbus: 3&#13;3 - rejestry wejściowe - rejestry 16 bitowe - funkcja Modbus: 4"/>
+            <hint lang="en"
+                  value="Modbus register type:&#13;0 - bit outputs / inputs - bit registers of outputs / inputs. For writing a single output - Modbus function: 5, for many outputs - Modbus function: 15&#13;1 - binary inputs - 'discrete inputs' - Modbus function: 3&#13;2 - holding registers - 16-bit registers. Writing the 16bit value - Modbus function: 6, Writing the 32bit value - Modbus function: 16. Read - Modbus function: 3&#13;3 - input registers - 16-bit registers - Modbus function: 4"/>
+            <hint lang="de" value="Modbus-Registertyp"/>
+            <desc resKey="modbus_registertype"/>
+        </feature>
+        <feature get="true" index="13" name="ErrorCode" set="false" type="num" unit="number">
+            <hint lang="pl"
+                  value="Kod błędu:&#13;1 – niedozwolona funkcja&#13;2 – niedozwolony numer rejestru&#13;3 – niedozwolona wartość danej&#13;4 – uszkodzenie w przyłączonym urządzeniu&#13;5 – potwierdzenie pozytywne&#13;6 – brak gotowości, komunikat usunięty&#13;7 – potwierdzenie negatywne&#13;8 – błąd parzystości pamięci&#13;0 - poprawny odczyt/zapis rejestru&#13;-1 - nieaktualna wartość ostatniegoodczytanego rejestru&#13;-2 - przekroczenie czasu odpowiedzi&#13;-3 - błąd ramki (problem ze zdekodowaniem odpowiedzi)"/>
+            <hint lang="en"
+                  value="Error code:&#13;1 – illegal function&#13;2 – illegal register number&#13;3 – illegal data value&#13;4 – connected device damaged&#13;5 – positive confirmation&#13;6 – no readiness, message removed&#13;7 – negative confirmation&#13;8 –  memory parity error&#13;0 - correct read/write register&#13;-1 - invalid value of the last read out register&#13;-2 - exceeding the response timeout&#13;-3 - frame error (error decoding the frame)"/>
+            <hint lang="de" value="Fehlercode"/>
+            <desc resKey="modbus_errorcode"/>
+        </feature>
+        <feature default="0" get="true" index="14" name="Value" range="" set="true" type="num" unit="number">
+            <hint lang="pl" value="Wartość odczytu / zapisu"/>
+            <hint lang="en" value="Read/Write value"/>
+            <hint lang="de" value="Lese-/Speicherwert"/>
+            <desc resKey="modbus_value"/>
+        </feature>
+        <feature get="true" index="15" name="RegisterValue" range="" set="false" type="num" unit="number">
+            <hint lang="pl" value="Nieprzeskalowana wartość rejestru"/>
+            <hint lang="en" value="Register value"/>
+            <hint lang="de" value="Registerinhalt"/>
+            <desc resKey="modbus_registervalue"/>
+        </feature>
+        <feature default="0" enum="0,1,2" get="true" index="16" name="StopBits" set="true" type="num" unit="-">
+            <enum name="1" resKey="modbus_stopbits_enum_1" value="0"/>
+            <enum name="1.5" resKey="modbus_stopbits_enum_15" value="1"/>
+            <enum name="2" resKey="modbus_stopbits_enum_2" value="2"/>
+            <hint lang="pl" value="Bity stopu:&#13; 0 - 1 bit stopu&#13; 1 - 1.5 bitu stopu&#13; 2 - 2 bity stopu"/>
+            <hint lang="en" value="Stop bits:&#13; 0 - 1 stop bit&#13; 1 - 1.5 stop bits&#13; 2 - 2 stop bits"/>
+            <desc resKey="modbus_stopbits"/>
+        </feature>
+        <feature default="0" enum="0,1,2" get="true" index="17" name="Parity" set="true" type="num" unit="-">
+            <enum name="None" resKey="modbus_parity_enum_none" value="0"/>
+            <enum name="Odd" resKey="modbus_parity_enum_odd" value="1"/>
+            <enum name="Even" resKey="modbus_parity_enum_even" value="2"/>
+            <hint lang="pl" value="Bit parzystości:&#13; 0 - None&#13; 1 - Odd&#13; 2 - Even"/>
+            <hint lang="en" value="Parity bit:&#13; 0 - None&#13; 1 - Odd&#13; 2 - Even"/>
+            <desc resKey="modbus_parity"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="set" index="0" name="SetDeviceAddress" return="void">
+            <param name="DeviceAddress" range="0-255" type="num" unit="-"/>
+            <hint lang="pl" value="Ustawia adres urządzenia slave Modbus"/>
+            <hint lang="en" value="Sets Modbus slave device address"/>
+            <hint lang="de" value="Bestimmt die Adresse des Slave-Geräts Modbus"/>
+            <desc resKey="modbus_setdeviceaddress"/>
+        </method>
+        <method call="set" index="1" name="SetAccessRights" return="void">
+            <param default="1" enum="0,1" name="AccessRights" type="num" unit="-">
+                <enum name="Read" value="0"/>
+                <enum name="Read/Write" value="1"/>
+            </param>
+            <hint lang="pl" value="Ustawia tryb pracy: odczyt lub odczyt / zapis"/>
+            <hint lang="en" value="Sets the mode for read or read / write"/>
+            <hint lang="de" value="Setzt die Betriebsart auf Lesen oder Lesen/Speichern"/>
+            <desc resKey="modbus_setaccessrights"/>
+        </method>
+        <method call="set" index="2" name="SetRegisterAddress" return="void">
+            <param name="RegisterAddress" range="0-65535" type="num" unit="number"/>
+            <hint lang="pl" value="Ustawia adres obsługiwanego  rejestru"/>
+            <hint lang="en" value="Sets the supported register address"/>
+            <hint lang="de" value="Bestimmt die Adresse des unterstützen Registers"/>
+            <desc resKey="modbus_setregisteraddress"/>
+        </method>
+        <method call="set" index="3" name="SetTransmisionSpeed" return="void">
+            <param default="9600" enum="1200,2400,4800,9600,19200,38400,57600,115200" name="TransmisionSpeed" type="num"
+                   unit="bps">
+                <enum name="1200" value="1200"/>
+                <enum name="2400" value="2400"/>
+                <enum name="4800" value="4800"/>
+                <enum name="9600" value="9600"/>
+                <enum name="19200" value="19200"/>
+                <enum name="38400" value="38400"/>
+                <enum name="57600" value="57600"/>
+                <enum name="115200" value="115200"/>
+            </param>
+            <hint lang="pl" value="Ustawia prędkość transmisji"/>
+            <hint lang="en" value="Sets transmission speed"/>
+            <hint lang="de" value="Bestimmt die Übertragungsgeschwindigkeit"/>
+            <desc resKey="modbus_settransmisionspeed"/>
+        </method>
+        <method call="set" index="4" name="SetValueType" return="void">
+            <param default="2" enum="1,2,3" name="ValueType" type="num" unit="-">
+                <enum name="number" value="1"/>
+                <enum name="float" value="2"/>
+                <enum name="bit" value="3"/>
+            </param>
+            <hint lang="pl" value="Ustawia typ zmiennej"/>
+            <hint lang="en" value="Sets the variable type"/>
+            <hint lang="de" value="Bestimmt den Variablentyp"/>
+            <desc resKey="modbus_setvaluetype"/>
+        </method>
+        <method call="set" index="5" name="SetBitPosition" return="void">
+            <param name="BitPosition" range="0-15" type="num" unit="number"/>
+            <hint lang="pl" value="Ustawia pozycję bitu"/>
+            <hint lang="en" value="Sets the bit position"/>
+            <hint lang="de" value="Bestimmt die Bitmaske"/>
+            <desc resKey="modbus_setbitposition"/>
+        </method>
+        <method call="set" index="6" name="SetBitCount" return="void">
+            <param name="BitCount" range="1-32" type="num" unit="number"/>
+            <hint lang="pl" value="Ustawia liczbę bitów rejestru"/>
+            <hint lang="en" value="Sets the number of register's bits"/>
+            <hint lang="de" value="Bestimmt die Anzahel der Registerbits"/>
+            <desc resKey="modbus_setbitcount"/>
+        </method>
+        <method call="set" index="8" name="SetRefreshInterval" return="void">
+            <param default="1000" name="ReadWriteInterval" range="0-65535" type="num" unit="ms"/>
+            <hint lang="pl" value="Ustawia czas odświeżania"/>
+            <hint lang="en" value="Sets the refresh interval"/>
+            <hint lang="de" value="Bestimmt die Auffrischungszeit"/>
+            <desc resKey="modbus_setrefreshinterval"/>
+        </method>
+        <method call="set" index="9" name="SetReadWriteTimeout" return="void">
+            <param default="10" name="ReadWriteTimeout" range="10-65535" type="num" unit="ms"/>
+            <hint lang="pl" value="Ustawia czas przekroczenia odpowiedzi"/>
+            <hint lang="en" value="Sets the response timeout"/>
+            <hint lang="de" value="Legt das Antwortzeitlimit fest"/>
+            <desc resKey="modbus_setreadwritetimeout"/>
+        </method>
+        <method call="set" index="10" name="SetDivisor" return="void">
+            <param default="1" name="Divisor" range="1-65535" type="num" unit="number"/>
+            <hint lang="pl" value="Ustawia dzielnik"/>
+            <hint lang="en" value="Sets the divisor"/>
+            <hint lang="de" value="Bestimmt den Divisor"/>
+            <desc resKey="modbus_setdivisor"/>
+        </method>
+        <method call="set" index="11" name="SetEndianess" return="void">
+            <param enum="0,1,2,3" name="Endianess" type="num" unit="-">
+                <enum name="Little Endian" value="0"/>
+                <enum name="Big Endian" value="1"/>
+                <enum name="Little Endian Swap" value="2"/>
+                <enum name="Big Endian Swap" value="3"/>
+            </param>
+            <hint lang="pl" value="Ustawia typ kolejności bajtów"/>
+            <hint lang="en" value="Sets byte order"/>
+            <hint lang="de" value="Bestimmt den Typ der Bytefolge"/>
+            <desc resKey="modbus_setendianess"/>
+        </method>
+        <method call="set" index="12" name="SetRegisterType" return="void">
+            <param enum="0,1,2,3" name="RegisterType" type="num" unit="-">
+                <enum name="Wyjścia/wejścia bitowe" value="0"/>
+                <enum name="Wejścia dwustanowe" value="1"/>
+                <enum name="Rejestry pamiętające" value="2"/>
+                <enum name="Rejestry wejściowe" value="3"/>
+            </param>
+            <hint lang="pl" value="Ustawia typ rejestru Modbus"/>
+            <hint lang="en" value="Sets the modbus register type"/>
+            <hint lang="de" value="Bestimmt den Modbus-Registertyp"/>
+            <desc resKey="modbus_setregistertype"/>
+        </method>
+        <!-- <method name="GetErrorCode" index="14" call="set" return="void" >
+          <param name="Error" type="num" unit=""   range="" />
+          <hint lang="pl" value=""/>
+          <hint lang="en" value=""/>
+        </method>
+        <method name="ErrorCode" index="15" call="get" return="void" >
+          <param name="Value" type="num" unit="number"   range="" />
+          <hint lang="pl" value=""/>
+          <hint lang="en" value=""/>
+        </method>
+        <method name="GetScaledValue" index="16" call="get" return="void" >
+          <param name="ScaledValue" type="num" unit="number"   range="" />
+          <hint lang="pl" value=""/>
+          <hint lang="en" value=""/>
+        </method> -->
+        <method call="set" index="14" name="SetValue" return="void">
+            <param name="Value" range="" type="num" unit="number"/>
+            <hint lang="pl" value="Ustawia wartość odczytu / zapisu"/>
+            <hint lang="en" value="Sets read or write value"/>
+            <hint lang="de" value="Bestimmt den Lese-/Speicherwert"/>
+            <desc resKey="modbus_setvalue"/>
+        </method>
+        <method call="set" index="16" name="SetStopBits" return="void">
+            <param enum="0,1,2" name="StopBits" type="num" unit="-">
+                <enum name="1" value="0"/>
+                <enum name="1.5" value="1"/>
+                <enum name="2" value="2"/>
+            </param>
+            <hint lang="pl" value="Ustawia liczbę bitów stopu"/>
+            <hint lang="en" value="Sets stop bit count"/>
+            <desc resKey="modbus_setstopbits"/>
+        </method>
+        <method call="set" index="17" name="SetParity" return="void">
+            <param enum="0,1,2" name="Parity" type="num" unit="-">
+                <enum name="None" value="0"/>
+                <enum name="Odd" value="1"/>
+                <enum name="Even" value="2"/>
+            </param>
+            <hint lang="pl" value="Ustawia sprawdzanie parzystości"/>
+            <hint lang="en" value="Sets parity check type"/>
+            <desc resKey="modbus_setparity"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnChange">
+            <hint lang="pl" value="Zdarzenie wywoływane przy zmianie stanu (niezależnie od wartości)"/>
+            <hint lang="en" value="Event occurring when a change in the state takes place (regardless of the value)"/>
+            <hint lang="de" value="Ereignis, das bei Statusänderung (abgesehen vom Wert) aufgerufen wird"/>
+            <desc resKey="modbus_onchange"/>
+        </event>
+        <event address="1" name="OnError">
+            <hint lang="pl" value="Zdarzenie wywoływane gdy urządzenie slave zgłasza błąd"/>
+            <hint lang="en" value="Event occurring when the slave device reports an error"/>
+            <hint lang="de" value="Ereignis, das bei einem Slavegerät-Fehler aufgerufen wird"/>
+            <desc resKey="modbus_onerror"/>
+        </event>
+    </events>
 </object>

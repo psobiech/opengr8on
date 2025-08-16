@@ -67,12 +67,12 @@ class ServerDiscoverCommandTest extends BaseServerTest {
             final List<CLUDevice> devices;
             try (CLUClient broadcastClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getBroadcastPort())) {
                 devices = broadcastClient.discover(
-                                             projectCipherKey,
-                                             Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
-                                             Duration.ofMillis(4000L),
-                                             2
-                                         )
-                                         .toList();
+                                projectCipherKey,
+                                Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
+                                Duration.ofMillis(4000L),
+                                2
+                        )
+                        .toList();
             }
 
             assertEquals(1, devices.size());

@@ -62,7 +62,7 @@ public class TlsUtil {
         try {
             CERTIFICATE_FACTORY = CertificateFactory.getInstance("X.509");
 
-            RSA_KEY_FACTORY   = KeyFactory.getInstance("RSA");
+            RSA_KEY_FACTORY = KeyFactory.getInstance("RSA");
             ECDSA_KEY_FACTORY = KeyFactory.getInstance("ECDSA", BOUNCY_CASTLE_PROVIDER);
         } catch (NoSuchAlgorithmException | CertificateException e) {
             throw new UnexpectedException(e);
@@ -84,7 +84,7 @@ public class TlsUtil {
             if (Files.exists(clientCertificatePath) && Files.exists(clientKeyPath)) {
                 final X509Certificate clientCertificate = readCertificate(clientCertificatePath);
                 clientKeyStore.setCertificateEntry("certificate", clientCertificate);
-                clientKeyStore.setKeyEntry("key", readPrivateKey(clientKeyPath), null, new java.security.cert.Certificate[] {clientCertificate});
+                clientKeyStore.setKeyEntry("key", readPrivateKey(clientKeyPath), null, new java.security.cert.Certificate[]{clientCertificate});
             }
 
             final KeyManagerFactory clientKeyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -97,7 +97,8 @@ public class TlsUtil {
             tlsContext.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.RANDOM);
 
             return tlsContext.getSocketFactory();
-        } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {
+        } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException |
+                 UnrecoverableKeyException | KeyManagementException e) {
             throw new UnexpectedException(e);
         }
     }
@@ -112,7 +113,7 @@ public class TlsUtil {
 
     private static PrivateKey readPrivateKey(Path path) {
         final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(
-            readPem(path)
+                readPem(path)
         );
 
         try {
@@ -129,11 +130,11 @@ public class TlsUtil {
 
     private static byte[] readPem(Path path) {
         try (
-            PemReader pemReader = new PemReader(
-                new InputStreamReader(
-                    Files.newInputStream(path)
-                )
-            );
+                PemReader pemReader = new PemReader(
+                        new InputStreamReader(
+                                Files.newInputStream(path)
+                        )
+                );
         ) {
             return pemReader.readPemObject().getContent();
         } catch (IOException e) {

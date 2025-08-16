@@ -49,73 +49,73 @@ public class CLUDevice {
 
     public CLUDevice(Inet4Address address, CipherTypeEnum cipherType) {
         this(
-            null, null, address,
-            cipherType
+                null, null, address,
+                cipherType
         );
     }
 
     public CLUDevice(Long serialNumber, String macAddress, Inet4Address address, CipherTypeEnum cipherType) {
         this(
-            serialNumber, macAddress, address,
-            cipherType,
-            null, null
+                serialNumber, macAddress, address,
+                cipherType,
+                null, null
         );
     }
 
     public CLUDevice(Long serialNumber, String macAddress, Inet4Address address, CipherTypeEnum cipherType, byte[] iv, byte[] privateKey) {
         this(
-            Util.mapNullSafe(serialNumber, value -> CLU + value),
-            serialNumber, macAddress, address, Client.COMMAND_PORT,
-            cipherType,
-            iv, privateKey
+                Util.mapNullSafe(serialNumber, value -> CLU + value),
+                serialNumber, macAddress, address, Client.COMMAND_PORT,
+                cipherType,
+                iv, privateKey
         );
     }
 
     public CLUDevice(Long serialNumber, String macAddress, Inet4Address address, int port, CipherTypeEnum cipherType, byte[] iv, byte[] privateKey) {
         this(
-            Util.mapNullSafe(serialNumber, value -> CLU + value),
-            serialNumber, macAddress, address, port,
-            cipherType,
-            iv, privateKey
+                Util.mapNullSafe(serialNumber, value -> CLU + value),
+                serialNumber, macAddress, address, port,
+                cipherType,
+                iv, privateKey
         );
     }
 
     public CLUDevice(
-        String name,
-        Long serialNumber,
-        String macAddress,
-        Inet4Address address,
-        int port,
-        CipherTypeEnum cipherType,
-        byte[] iv,
-        byte[] privateKey
+            String name,
+            Long serialNumber,
+            String macAddress,
+            Inet4Address address,
+            int port,
+            CipherTypeEnum cipherType,
+            byte[] iv,
+            byte[] privateKey
     ) {
         this(
-            name,
-            serialNumber, macAddress, address, port,
-            cipherType,
-            iv, privateKey,
-            (iv != null && privateKey != null) ? CipherKey.getInitialCipherKey(iv, privateKey) : null
+                name,
+                serialNumber, macAddress, address, port,
+                cipherType,
+                iv, privateKey,
+                (iv != null && privateKey != null) ? CipherKey.getInitialCipherKey(iv, privateKey) : null
         );
     }
 
     public CLUDevice(
-        String name,
-        Long serialNumber, String macAddress, Inet4Address address, int port,
-        CipherTypeEnum cipherType,
-        byte[] iv, byte[] privateKey,
-        CipherKey cipherKey
+            String name,
+            Long serialNumber, String macAddress, Inet4Address address, int port,
+            CipherTypeEnum cipherType,
+            byte[] iv, byte[] privateKey,
+            CipherKey cipherKey
     ) {
         this.name = name;
 
         this.serialNumber = serialNumber;
-        this.macAddress   = Util.mapNullSafe(macAddress, value -> value.replaceAll(":", ""));
-        this.address      = address;
-        this.port         = port;
+        this.macAddress = Util.mapNullSafe(macAddress, value -> value.replaceAll(":", ""));
+        this.address = address;
+        this.port = port;
 
         this.cipherType = cipherType;
 
-        this.iv         = iv;
+        this.iv = iv;
         this.privateKey = privateKey;
 
         this.cipherKey = cipherKey;
@@ -158,22 +158,22 @@ public class CLUDevice {
     }
 
     public void setCipherKey(CipherKey cipherKey) {
-        this.iv        = cipherKey.getIV();
+        this.iv = cipherKey.getIV();
         this.cipherKey = cipherKey;
     }
 
     @Override
     public String toString() {
         return "GrentonDevice{" +
-               "name=" + name +
-               ", serialNumber=" + ToStringUtil.toString(serialNumber) +
-               ", macAddress=" + macAddress +
-               ", address=" + ToStringUtil.toString(address) +
-               ", cipherType=" + cipherType +
-               ", iv=" + ToStringUtil.toString(iv) +
-               ", privateKey=" + ToStringUtil.toString(privateKey) +
-               ", cipherKey=" + cipherKey +
-               '}';
+                "name=" + name +
+                ", serialNumber=" + ToStringUtil.toString(serialNumber) +
+                ", macAddress=" + macAddress +
+                ", address=" + ToStringUtil.toString(address) +
+                ", cipherType=" + cipherType +
+                ", iv=" + ToStringUtil.toString(iv) +
+                ", privateKey=" + ToStringUtil.toString(privateKey) +
+                ", cipherKey=" + cipherKey +
+                '}';
     }
 
     @Override

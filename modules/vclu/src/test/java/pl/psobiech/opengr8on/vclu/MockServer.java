@@ -65,15 +65,15 @@ public class MockServer implements Closeable {
 
     public MockServer(CipherKey projectCipherKey, long serialNumber) throws Exception {
         this(
-            projectCipherKey,
-            new CLUDevice(
-                serialNumber,
-                Mocks.macAddress(),
-                MockServer.LOCALHOST,
-                CipherTypeEnum.PROJECT,
-                Mocks.iv(),
-                Mocks.pin()
-            )
+                projectCipherKey,
+                new CLUDevice(
+                        serialNumber,
+                        Mocks.macAddress(),
+                        MockServer.LOCALHOST,
+                        CipherTypeEnum.PROJECT,
+                        Mocks.iv(),
+                        Mocks.pin()
+                )
         );
     }
 
@@ -84,31 +84,31 @@ public class MockServer implements Closeable {
         FileUtil.mkdir(aDriveDirectory);
 
         this.broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
-        this.commandSocket   = new UDPSocket(LOCALHOST, 0, false);
-        this.responseSocket  = new UDPSocket(LOCALHOST, 0, false);
-        this.tftpServer      = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
+        this.commandSocket = new UDPSocket(LOCALHOST, 0, false);
+        this.responseSocket = new UDPSocket(LOCALHOST, 0, false);
+        this.tftpServer = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
 
         this.tftpServer.start();
         this.tftpServer.stop();
 
         FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
         FileUtil.linkOrCopy(
-            ResourceUtil.classPath(CLUFiles.OM_LUA.getFileName()),
-            aDriveDirectory.resolve(CLUFiles.OM_LUA.getFileName())
+                ResourceUtil.classPath(CLUFiles.OM_LUA.getFileName()),
+                aDriveDirectory.resolve(CLUFiles.OM_LUA.getFileName())
         );
 
         final Path mainLuaPath = aDriveDirectory.resolve(CLUFiles.MAIN_LUA.getFileName());
         Files.writeString(
-            mainLuaPath,
-            JStachio.render(new MainLuaTemplate(StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(cluDevice.getSerialNumber()), 8, '0'))))
+                mainLuaPath,
+                JStachio.render(new MainLuaTemplate(StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(cluDevice.getSerialNumber()), 8, '0'))))
         );
 
         this.server = new Server(
-            rootDirectory,
-            projectCipherKey,
-            cluDevice,
-            broadcastSocket, commandSocket, responseSocket,
-            tftpServer
+                rootDirectory,
+                projectCipherKey,
+                cluDevice,
+                broadcastSocket, commandSocket, responseSocket,
+                tftpServer
         );
     }
 
@@ -122,10 +122,10 @@ public class MockServer implements Closeable {
         CLUClient client = null;
         try {
             client = new CLUClient(
-                LOCALHOST,
-                getServer().getDevice(),
-                cipherKey,
-                MockServer.LOCALHOST, getPort()
+                    LOCALHOST,
+                    getServer().getDevice(),
+                    cipherKey,
+                    MockServer.LOCALHOST, getPort()
             );
 
             fn.execute(cipherKey, this, client);

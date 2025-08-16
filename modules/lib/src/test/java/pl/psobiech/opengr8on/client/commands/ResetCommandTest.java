@@ -33,13 +33,13 @@ class ResetCommandTest {
     @Test
     void correctRequest() {
         final Request input = ResetCommand.request(
-            Mocks.ipAddress()
+                Mocks.ipAddress()
         );
 
         //
 
         final Request output = ResetCommand.requestFromByteArray(input.asByteArray())
-                                           .get();
+                .get();
 
         //
 
@@ -49,13 +49,13 @@ class ResetCommandTest {
     @Test
     void correctResponse() {
         final Response input = ResetCommand.response(
-            Mocks.ipAddress()
+                Mocks.ipAddress()
         );
 
         //
 
         final Response output = ResetCommand.responseFromByteArray(input.asByteArray())
-                                            .get();
+                .get();
 
         //
 
@@ -71,7 +71,7 @@ class ResetCommandTest {
         assertFalse(ResetCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(ResetCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                           = new byte[100];
+        buffer = new byte[100];
         buffer[Request.COMMAND.length()] = ':';
         assertFalse(ResetCommand.requestFromByteArray(buffer).isPresent());
 
@@ -80,7 +80,7 @@ class ResetCommandTest {
         assertFalse(ResetCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(ResetCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                            = new byte[100];
+        buffer = new byte[100];
         buffer[Response.COMMAND.length()] = ':';
         assertFalse(ResetCommand.responseFromByteArray(buffer).isPresent());
     }

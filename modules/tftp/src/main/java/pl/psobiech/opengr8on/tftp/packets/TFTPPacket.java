@@ -39,14 +39,14 @@ public abstract class TFTPPacket {
     private InetAddress address;
 
     TFTPPacket(TFTPPacketType type, InetAddress address, int port) {
-        this.type    = type;
+        this.type = type;
         this.address = address;
-        this.port    = port;
+        this.port = port;
     }
 
     public static TFTPPacket newTFTPPacket(Payload payload) throws TFTPPacketException {
         return TFTPPacketType.ofPacketType(payload.buffer()[OPERATOR_TYPE_OFFSET])
-                             .parse(payload);
+                .parse(payload);
     }
 
     public InetAddress getAddress() {
@@ -73,7 +73,7 @@ public abstract class TFTPPacket {
 
     public static String readNullTerminatedString(byte[] buffer, int from, int to) {
         return new String(
-            readNullTerminated(buffer, from, to), StandardCharsets.US_ASCII
+                readNullTerminated(buffer, from, to), StandardCharsets.US_ASCII
         );
     }
 
@@ -107,7 +107,7 @@ public abstract class TFTPPacket {
     }
 
     public static void writeInt(int value, byte[] buffer, int offset) {
-        buffer[offset]     = highNibble(value);
+        buffer[offset] = highNibble(value);
         buffer[offset + 1] = lowNibble(value);
     }
 

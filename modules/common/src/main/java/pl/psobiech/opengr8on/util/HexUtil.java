@@ -44,8 +44,8 @@ public final class HexUtil {
     public static long asLong(String hexAsString) {
         try {
             return Long.parseUnsignedLong(
-                stripPrefix(hexAsString),
-                HEX_BASE
+                    stripPrefix(hexAsString),
+                    HEX_BASE
             );
         } catch (NumberFormatException e) {
             throw new UnexpectedException(String.format("Value %s is not in the correct HEX format", hexAsString), e);
@@ -58,8 +58,8 @@ public final class HexUtil {
     public static int asInt(String hexAsString) {
         try {
             return Integer.parseUnsignedInt(
-                stripPrefix(hexAsString),
-                HEX_BASE
+                    stripPrefix(hexAsString),
+                    HEX_BASE
             );
         } catch (NumberFormatException e) {
             throw new UnexpectedException(String.format("Value %s is not in the correct HEX format", hexAsString), e);
@@ -72,7 +72,7 @@ public final class HexUtil {
     public static byte[] asBytes(String hexAsString) {
         try {
             return Hex.decodeHex(
-                stripPrefix(hexAsString)
+                    stripPrefix(hexAsString)
             );
         } catch (DecoderException e) {
             throw new UnexpectedException(String.format("Value %s is not in the correct HEX format", hexAsString), e);
@@ -142,7 +142,7 @@ public final class HexUtil {
      */
     private static String format(String valueAsString) {
         return evenZeroLeftPad(
-            upperCase(valueAsString)
+                upperCase(valueAsString)
         );
     }
 

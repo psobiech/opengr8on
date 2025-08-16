@@ -16,7 +16,8 @@ cp ./easy-rsa/easyrsa3/pki/issued/clu0.crt ./runtime/mqtt/certificate.crt # requ
 cp ./easy-rsa/easyrsa3/pki/private/clu0.key ./runtime/mqtt/key.pem # required only if using client certificate authentication
 ```
 
-Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 if using client certificate authentication)
+Configure MQTTUrl, eg. ssl://user:pass@localhost:8883 (or ssl://localhost:8883 if using client certificate
+authentication)
 Run VCLU and enable UseMQTT in OM.
 
 ## Examples
@@ -25,30 +26,30 @@ Example publish:
 
 ```lua
 -- Publishes simple text message
-CLU0->myTopic->Publish("topic", "message")
+CLU0 - > myTopic - > Publish("topic", "message")
 
 -- Publishes JSON message: { "data": { "value": 1 } }
-CLU0->myTopic->Publish("topic", { data = { value = 1 } })
+CLU0 - > myTopic - > Publish("topic", { data = { value = 1 } })
 ```
 
 Example onInit script with auto subscription:
 
 ```lua
 -- subscribe to the topic (supports MQTT topic patterns)
-CLU0->myTopic->Subscribe("zigbee2mqtt/#")
+CLU0 - > myTopic - > Subscribe("zigbee2mqtt/#")
 ```
 
 Example onMessage script:
 
 ```lua
 -- read current message
-logDebug(CLU0->myTopic->Topic, ": ", CLU0->myTopic->Message)
+logDebug(CLU0 - > myTopic - > Topic, ": ", CLU0 - > myTopic - > Message)
 
 -- read current message `jsonKey` value
-logDebug(CLU0->myTopic->Topic, ": ", CLU0->myTopic->Message["jsonKey"])
+logDebug(CLU0 - > myTopic - > Topic, ": ", CLU0 - > myTopic - > Message["jsonKey"])
 
 -- publish the same message to some other topic
-CLU0->myTopic->Publish("innytopic", CLU0->myTopic->Message)
+CLU0 - > myTopic - > Publish("innytopic", CLU0 - > myTopic - > Message)
 ```
 
 # Configure MQTT broker

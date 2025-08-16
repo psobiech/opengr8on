@@ -60,21 +60,21 @@ public class HttpRequest extends BaseHttpObject {
 
     public HttpRequest(VirtualSystem virtualSystem, String name, Inet4Address localAddress) {
         super(
-            virtualSystem, name,
-            Features.class, Methods.class, Events.class
+                virtualSystem, name,
+                Features.class, Methods.class, Events.class
         );
 
         this.httpClient = HttpClient.newBuilder()
-                                    .localAddress(localAddress)
-                                    .proxy(ProxySelector.getDefault())
-                                    .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_NONE))
-                                    .connectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MILLIS))
-                                    .executor(scheduler)
-                                    .version(Version.HTTP_2)
-                                    .build();
+                .localAddress(localAddress)
+                .proxy(ProxySelector.getDefault())
+                .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_NONE))
+                .connectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MILLIS))
+                .executor(scheduler)
+                .version(Version.HTTP_2)
+                .build();
 
         register(Features.ACTIVE, () ->
-            LuaValue.valueOf(responseFuture != null && !responseFuture.isDone())
+                LuaValue.valueOf(responseFuture != null && !responseFuture.isDone())
         );
 
         register(Methods.SEND_REQUEST, this::onSendRequest);
@@ -94,41 +94,41 @@ public class HttpRequest extends BaseHttpObject {
         final java.net.http.HttpRequest request = createRequest(requestType, requestBodyAsString);
 
         this.responseFuture = scheduler.submit(
-            () -> {
-                final Path temporaryFile = FileUtil.temporaryFile();
-                try {
-                    LOGGER.trace("HTTP Request {} {} / BODY: {}", request.method(), request.uri(), requestBodyAsString);
+                () -> {
+                    final Path temporaryFile = FileUtil.temporaryFile();
+                    try {
+                        LOGGER.trace("HTTP Request {} {} / BODY: {}", request.method(), request.uri(), requestBodyAsString);
 
-                    this.httpFuture = httpClient.sendAsync(request, BodyHandlers.ofFile(temporaryFile));
+                        this.httpFuture = httpClient.sendAsync(request, BodyHandlers.ofFile(temporaryFile));
 
-                    triggerEvent(Events.REQUEST_SENT);
+                        triggerEvent(Events.REQUEST_SENT);
 
-                    final HttpResponse<Path> response = httpFuture.get();
-                    final int statusCode = response.statusCode();
-                    final HttpHeaders headers = response.headers();
-                    final HttpType responseType = headers.firstValue(HEADER_CONTENT_TYPE)
-                                                         .map(HttpType::ofContentType)
-                                                         .orElse(HttpType.OTHER);
+                        final HttpResponse<Path> response = httpFuture.get();
+                        final int statusCode = response.statusCode();
+                        final HttpHeaders headers = response.headers();
+                        final HttpType responseType = headers.firstValue(HEADER_CONTENT_TYPE)
+                                .map(HttpType::ofContentType)
+                                .orElse(HttpType.OTHER);
 
-                    set(Features.RESPONSE_STATUS, LuaValue.valueOf(statusCode));
-                    set(Features.RESPONSE_TYPE, LuaValue.valueOf(responseType.ordinal()));
-                    set(Features.RESPONSE_HEADERS, LuaUtil.fromObject(getHeaders(headers)));
-                    final LuaValue responseBodyValue = parseResponseBody(responseType, response.body());
-                    set(Features.RESPONSE_BODY, responseBodyValue);
+                        set(Features.RESPONSE_STATUS, LuaValue.valueOf(statusCode));
+                        set(Features.RESPONSE_TYPE, LuaValue.valueOf(responseType.ordinal()));
+                        set(Features.RESPONSE_HEADERS, LuaUtil.fromObject(getHeaders(headers)));
+                        final LuaValue responseBodyValue = parseResponseBody(responseType, response.body());
+                        set(Features.RESPONSE_BODY, responseBodyValue);
 
-                    LOGGER.trace("HTTP Response {} {} / BODY: {}", request.method(), request.uri(), LuaUtil.stringifyRaw(responseBodyValue));
+                        LOGGER.trace("HTTP Response {} {} / BODY: {}", request.method(), request.uri(), LuaUtil.stringifyRaw(responseBodyValue));
 
-                    triggerEvent(Events.RESPONSE);
-                } catch (Exception e) {
-                    LOGGER.error("HTTP Error {} {}", request.method(), request.uri(), e);
+                        triggerEvent(Events.RESPONSE);
+                    } catch (Exception e) {
+                        LOGGER.error("HTTP Error {} {}", request.method(), request.uri(), e);
 
-                    clear(Features.RESPONSE_STATUS);
-                    clear(Features.RESPONSE_HEADERS);
-                    clear(Features.RESPONSE_BODY);
-                } finally {
-                    FileUtil.deleteQuietly(temporaryFile);
+                        clear(Features.RESPONSE_STATUS);
+                        clear(Features.RESPONSE_HEADERS);
+                        clear(Features.RESPONSE_BODY);
+                    } finally {
+                        FileUtil.deleteQuietly(temporaryFile);
+                    }
                 }
-            }
         );
 
         return LuaValue.NIL;
@@ -161,14 +161,14 @@ public class HttpRequest extends BaseHttpObject {
         set(Features.REQUEST_HEADERS, LuaUtil.fromObject(headers));
 
         return java.net.http.HttpRequest.newBuilder()
-                                        .method(
-                                            requestMethod,
-                                            requestMethod.equals(METHOD_GET) ? BodyPublishers.noBody() : BodyPublishers.ofString(requestBodyAsString)
-                                        )
-                                        .uri(uri)
-                                        .timeout(timeout)
-                                        .headers(asKeyValueArray(headers))
-                                        .build();
+                .method(
+                        requestMethod,
+                        requestMethod.equals(METHOD_GET) ? BodyPublishers.noBody() : BodyPublishers.ofString(requestBodyAsString)
+                )
+                .uri(uri)
+                .timeout(timeout)
+                .headers(asKeyValueArray(headers))
+                .build();
     }
 
     private static String[] asKeyValueArray(Map<String, String> headers) {

@@ -18,154 +18,161 @@
   -->
 
 <object class="120" className="GATE" name="HttpListener" version="1">
-  <features>
-    <feature get="true" index="0" name="Path" set="true" type="str" unit="string">
-      <hint lang="pl" value="Ścieżka zapytania"/>
-      <hint lang="en" value="Query path"/>
-      <hint lang="de" value="Abfragepfad"/>
-      <desc resKey="httplistener_path"/>
-    </feature>
-    <feature get="true" index="1" name="Method" set="false" type="str" unit="string">
-      <hint lang="pl" value="Typ metody otrzymanej w zapytaniu np. GET, POST"/>
-      <hint lang="en" value="The type of method sent in the request i.e. GET, POST"/>
-      <hint lang="de" value="Der in der Anfrage gesendete Methodentyp, z.B. GET, POST"/>
-      <desc resKey="httplistener_method"/>
-    </feature>
-    <feature default="\z" get="false" index="2" name="QueryStringParams" set="true" type="str" unit="string">
-      <hint lang="pl" value="Zwraca parametry zapytania HTTP (cecha wykorzystywana do odczytu w skryptach - nieustawialna)"/>
-      <hint lang="en" value="Returns HTTP query's parameters (characteristic used for reading in scripts - unchangeable)"/>
-      <hint lang="de" value="Gibt die Parameter der HTTP-Abfrage zurück (Merkmal zum Einlesen von Skripten - unveränderbar)"/>
-      <desc resKey="httplistener_querystringparams"/>
-    </feature>
-    <feature enum="0,1,2,3,4,5" get="true" index="3" name="RequestType" set="false" type="num" unit="-">
-      <enum name="None" resKey="httplistener_requesttype_enum_none" value="0"/>
-      <enum name="Text" resKey="httplistener_requesttype_enum_text" value="1"/>
-      <enum name="JSON" resKey="httplistener_requesttype_enum_json" value="2"/>
-      <enum name="XML" resKey="httplistener_requesttype_enum_xml" value="3"/>
-      <enum name="FormData" resKey="httplistener_requesttype_enum_formdata" value="4"/>
-      <enum name="Other" resKey="httplistener_requesttype_enum_other" value="5"/>
-      <hint lang="pl"
-        value="Typ otrzymanego zapytania. W zależności od wybranego typu, zawartość otrzymanego zapytania (cechy RequestBody) jest odpowiednio parsowana do tabeli:&#13;0 - None - Odpowiedź nie jest parsowana.&#13;1 - Text - Odpowiedź nie jest parsowana.&#13;2 - JSON - Odpowiedź jest parsowana z JSON.&#13;3 - XML - Odpowiedź jest parsowana z XML.&#13;4 - FormData - Odpowiedź jest parsowana.&#13;5 - Other - Odpowiedź nie jest parsowana"/>
-      <hint lang="en"
-        value="The received request's type. Depending on the chosen type, the request's content (RequestBody characteristic) is appropriately parsed to the table:&#13;0 - None - The response is not parsed.&#13;1 - Text - The response is not parsed.&#13;2 - JSON - The response is parsed in JSON format.&#13;3 - XML - The response is parsed in XML format.&#13;4 - FormData - The response is parsed.&#13;5 - Other - The response is not parsed"/>
-      <hint lang="de"
-        value="Der Typ der empfangenen Anfrage. Je nach gewähltem Typ wird der Inhalt der Anforderung (RequestBody-Merkmal) entsprechend in die Tabelle geparst\:&#13;0 – None – Die Antwort wird nicht geparst.&#13;1 – Text – Die Antwort wird nicht geparst.&#13;2 – JSON – Die Antwort wird im JSON-Format analysiert.&#13;3 - XML ​​- Die Antwort wird im XML-Format analysiert.&#13;4 - FormData - Die Antwort wird analysiert.&#13;5 - Other - Die Antwort wird nicht analysiert"/>
-      <desc resKey="httplistener_requesttype"/>
-    </feature>
-    <!-- <feature name="RequestHeaders" index="4" get="false" set="true" type="str" unit="string" default="\z">
-      <hint lang="pl" value="Zwraca nagłówki zapytania HTTP"/>
-      <hint lang="en" value=""/>
-    </feature> -->
-    <feature default="\z" get="false" index="5" name="RequestBody" set="true" type="str" unit="string">
-      <hint lang="pl" value="Zwraca treść zapytania HTTP (cecha wykorzystywana do odczytu w skryptach - nieustawialna)"/>
-      <hint lang="en" value="Returns HTTP request's content (characteristic using to read the value in scripts - unchangeable)"/>
-      <hint lang="de" value="Gibt den Inhalt der HTTP-Anfrage zurück (Merkmal zum Lesen des Wertes in Skripten - unveränderbar)"/>
-      <desc resKey="httplistener_requestbody"/>
-    </feature>
-    <feature default="1" enum="0,1,2,3,4" get="true" index="6" name="ResponseType" set="true" type="num" unit="-">
-      <enum name="None" resKey="httplistener_responsetype_enum_none" value="0"/>
-      <enum name="Text" resKey="httplistener_responsetype_enum_text" value="1"/>
-      <enum name="JSON" resKey="httplistener_responsetype_enum_json" value="2"/>
-      <enum name="XML" resKey="httplistener_responsetype_enum_xml" value="3"/>
-      <enum name="FormData" resKey="httplistener_responsetype_enum_formdata" value="4"/>
-      <hint lang="pl"
-        value="Typ zawartości wysłanej odpowiedzi na zapytanie. Definiuje parametr content-type w nagłówku odpowiedzi. W zależności od wybranego typu, zawartość cechy ResponseBody jest odpowiednio serializowana:&#13;0 - None - niezdefiniowany. W nagłówku nie jest wysyłane content-type. Zawartość nie jest serializowana.&#13;1 - Text - content-type: text/plain. Zawartość nie jest serializowana.&#13;2 - JSON - content-type: application/json. Zawartość RequestBody jest serializowana do formatu JSON.&#13;3 - XML - content-type: text/xml. Zawartość RequestBody jest serializowana do formatu XML.&#13;4 - FormData - content-type: application/x-www-form-urlencoded. Zawartość RequestBody jest serializowana"/>
-      <hint lang="en"
-        value="The type of sent request's answer. Defines parameter content-type in the response's header. Depending on chosen type, characteristic ResponseBody is properly serialized:&#13;0 - None - unidentified. The content-type is not sent in the header. The content is not serialized.&#13;1 - Text - content-type: text/plain. The RequestBody characteristic is not serialized.&#13;2 - JSON - content-type: application/json. The RequestBody characteristic is serialized in JSON format.&#13;3 - XML - content-type: text/xml. The RequestBody characteristic is serialized in XML format.&#13;4 - FormData - content-type: application/x-www-form-urlencoded. The RequestBody characteristic is serialized to the table"/>
-      <desc resKey="httplistener_responsetype"/>
-    </feature>
-    <!-- <feature name="ResponseHeaders" index="7" get="false" set="true" type="str" unit="string" default="\z">
-      <hint lang="pl" value="Zwraca nagłówki odpowiedzi HTTP"/>
-      <hint lang="en" value=""/>
-    </feature> -->
-    <feature default="\z" get="false" index="8" name="ResponseBody" set="true" type="str" unit="string">
-      <hint lang="pl" value="Zwraca treść odpowiedzi HTTP (cecha wykorzystywana do odczytu w skryptach)"/>
-      <hint lang="en" value="The content of HTTP response (characteristic used for reading in scripts)"/>
-      <hint lang="de" value="Der Inhalt der HTTP-Antwort (Merkmal, das zum Einlesen von Skripten verwendet wird)"/>
-      <desc resKey="httplistener_responsebody"/>
-    </feature>
-    <feature default="200" get="true" index="9" name="StatusCode" set="true" type="num" unit="-">
-      <hint lang="pl"
-        value="Status wysyłanej odpowiedzi HTTP. Obsługiwane statusy:&#13;200 - OK&#13;201 - Utworzono&#13;202 - Przyjęto&#13;204 - Brak zawartości&#13;205 - Przywróć zawartość&#13;400 - Nieprawidłowe zapytanie&#13;403 - Zabroniony&#13;404 - Nie znaleziono&#13;405 - Niedozwolona metoda&#13;406 - Niedozwolone&#13;408 - Koniec czasu oczekiwania na żądanie&#13;409 - Konflikt&#13;410 - Zniknął (usunięto)"/>
-      <hint lang="en"
-        value="HTTP status code. List of supported HTTP status codes:&#13;200 - OK&#13;201 - Created&#13;202 - Accepted&#13;204 - No Content&#13;205 - Reset Content&#13;400 - Bad Request&#13;403 - Forbidden&#13;404 - Not Found&#13;405 - Method Not Allowed&#13;406 - Not Acceptable&#13;408 - Request Timeout&#13;409 - Conflict&#13;410 - Gone"/>
-      <hint lang="de"
-        value="HTTP-Statuscode. Liste der unterstützten HTTP-Statuscodes\:&#13;200 – OK&#13;201 – Erstellt&#13;202 – Akzeptiert&#13;204 – Kein Inhalt&#13;205 – Inhalt zurücksetzen&#13;400 – Ungültige Anfrage&#13;403 – Verboten&#13;404 – Nicht gefunden&#13;405 – Methode nicht erlaubt &#13;406 - Nicht akzeptabel&#13;408 - Zeitüberschreitung bei Anforderung&#13;409 - Konflikt&#13;410 - Beendet"/>
-      <desc resKey="httplistener_statuscode"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="execute" index="0" name="SendResponse" return="void">
-      <hint lang="pl" value="Wysyła odpowiedź na zapytanie"/>
-      <hint lang="en" value="Sends the request's response"/>
-      <hint lang="de" value="Sendet die Antwort der Anfrage"/>
-      <desc resKey="httplistener_sendresponse"/>
-    </method>
-    <method call="execute" index="1" name="Clear" return="void">
-      <hint lang="pl" value="Usuwa treść odpowiedzi"/>
-      <hint lang="en" value="Deletes response's content"/>
-      <hint lang="de" value=""/>
-      <desc resKey="httplistener_clear"/>
-    </method>
-    <method call="set" index="0" name="SetPath" return="void">
-      <param name="Path" type="str" unit="string"/>
-      <hint lang="pl" value="Ustawia ścieżkę zapytania"/>
-      <hint lang="en" value="Sets request's path"/>
-      <hint lang="de" value="Löscht den Inhalt der Antwort"/>
-      <desc resKey="httplistener_setpath"/>
-    </method>
-    <method call="set" index="2" name="SetQueryStringParams" return="void" unit="string" visible="false">
-      <param name="Params" type="str" unit="string"/>
-      <hint lang="pl" value="Ustawia parametry zapytania"/>
-      <hint lang="en" value="Sets query's parameters"/>
-      <hint lang="de" value="Legt die Abfrageparameter fest"/>
-      <desc resKey="httplistener_setquerystringparams"/>
-    </method>
-    <!-- <method name="SetRequestHeaders" call="set" index="4" return="void" unit="string" visible="false">
-      <param name="Headers" type="str" unit="string"/>
-      <hint lang="pl" value=""/>
-      <hint lang="en" value=""/>
-    </method> -->
-    <method call="set" index="5" name="SetRequestBody" return="void" unit="string" visible="false">
-      <param name="Body" type="str" unit="string"/>
-      <hint lang="pl" value="Ustawia zawartość wiadomości w zapytaniu"/>
-      <hint lang="en" value="Sets the request's message content"/>
-      <hint lang="de" value="Legt den Nachrichteninhalt der Anfrage fest"/>
-      <desc resKey="httplistener_setrequestbody"/>
-    </method>
-    <method call="set" index="6" name="SetResponseType" return="void">
-      <param name="ResponseType" type="num" unit="-"/>
-      <hint lang="pl" value="Ustawia typ oczekiwanej odpowiedzi na zapytanie"/>
-      <hint lang="en" value="Sets the expected request's answer type"/>
-      <hint lang="de" value="Legt den Antworttyp der erwarteten Anfrage fest"/>
-      <desc resKey="httplistener_setresponsetype"/>
-    </method>
-    <!-- <method name="SetResponseHeaders" call="set" index="7" return="void" unit="string">
-      <param name="Headers" type="str" unit="string"/>
-      <hint lang="pl" value="Ustawia dodatkowe nagłówki odpowiedzi HTTP"/>
-      <hint lang="en" value=""/>
-    </method> -->
-    <method call="set" index="8" name="SetResponseBody" return="void" unit="string">
-      <param name="Body" type="str" unit="string"/>
-      <hint lang="pl" value="Ustawia treść odpowiedzi"/>
-      <hint lang="en" value="Sets the response's content"/>
-      <hint lang="de" value="Legt den Inhalt der Antwort fest"/>
-      <desc resKey="httplistener_setresponsebody"/>
-    </method>
-    <method call="set" index="9" name="SetStatusCode" return="void">
-      <param name="StatusCode" type="num" unit="-"/>
-      <hint lang="pl" value="Ustawia status odpowiedzi"/>
-      <hint lang="en" value="Sets respone's state"/>
-      <hint lang="de" value="Setzt den Status der Antwort"/>
-      <desc resKey="httplistener_setstatuscode"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnRequest">
-      <hint lang="pl" value="Zdarzenie wywoływane w momencie otrzymania zapytania"/>
-      <hint lang="en" value="Event occurring when the request is received"/>
-      <hint lang="de" value="Ereignis, das auftritt, wenn die Anfrage empfangen wird"/>
-      <desc resKey="httplistener_onrequest"/>
-    </event>
-  </events>
+    <features>
+        <feature get="true" index="0" name="Path" set="true" type="str" unit="string">
+            <hint lang="pl" value="Ścieżka zapytania"/>
+            <hint lang="en" value="Query path"/>
+            <hint lang="de" value="Abfragepfad"/>
+            <desc resKey="httplistener_path"/>
+        </feature>
+        <feature get="true" index="1" name="Method" set="false" type="str" unit="string">
+            <hint lang="pl" value="Typ metody otrzymanej w zapytaniu np. GET, POST"/>
+            <hint lang="en" value="The type of method sent in the request i.e. GET, POST"/>
+            <hint lang="de" value="Der in der Anfrage gesendete Methodentyp, z.B. GET, POST"/>
+            <desc resKey="httplistener_method"/>
+        </feature>
+        <feature default="\z" get="false" index="2" name="QueryStringParams" set="true" type="str" unit="string">
+            <hint lang="pl"
+                  value="Zwraca parametry zapytania HTTP (cecha wykorzystywana do odczytu w skryptach - nieustawialna)"/>
+            <hint lang="en"
+                  value="Returns HTTP query's parameters (characteristic used for reading in scripts - unchangeable)"/>
+            <hint lang="de"
+                  value="Gibt die Parameter der HTTP-Abfrage zurück (Merkmal zum Einlesen von Skripten - unveränderbar)"/>
+            <desc resKey="httplistener_querystringparams"/>
+        </feature>
+        <feature enum="0,1,2,3,4,5" get="true" index="3" name="RequestType" set="false" type="num" unit="-">
+            <enum name="None" resKey="httplistener_requesttype_enum_none" value="0"/>
+            <enum name="Text" resKey="httplistener_requesttype_enum_text" value="1"/>
+            <enum name="JSON" resKey="httplistener_requesttype_enum_json" value="2"/>
+            <enum name="XML" resKey="httplistener_requesttype_enum_xml" value="3"/>
+            <enum name="FormData" resKey="httplistener_requesttype_enum_formdata" value="4"/>
+            <enum name="Other" resKey="httplistener_requesttype_enum_other" value="5"/>
+            <hint lang="pl"
+                  value="Typ otrzymanego zapytania. W zależności od wybranego typu, zawartość otrzymanego zapytania (cechy RequestBody) jest odpowiednio parsowana do tabeli:&#13;0 - None - Odpowiedź nie jest parsowana.&#13;1 - Text - Odpowiedź nie jest parsowana.&#13;2 - JSON - Odpowiedź jest parsowana z JSON.&#13;3 - XML - Odpowiedź jest parsowana z XML.&#13;4 - FormData - Odpowiedź jest parsowana.&#13;5 - Other - Odpowiedź nie jest parsowana"/>
+            <hint lang="en"
+                  value="The received request's type. Depending on the chosen type, the request's content (RequestBody characteristic) is appropriately parsed to the table:&#13;0 - None - The response is not parsed.&#13;1 - Text - The response is not parsed.&#13;2 - JSON - The response is parsed in JSON format.&#13;3 - XML - The response is parsed in XML format.&#13;4 - FormData - The response is parsed.&#13;5 - Other - The response is not parsed"/>
+            <hint lang="de"
+                  value="Der Typ der empfangenen Anfrage. Je nach gewähltem Typ wird der Inhalt der Anforderung (RequestBody-Merkmal) entsprechend in die Tabelle geparst\:&#13;0 – None – Die Antwort wird nicht geparst.&#13;1 – Text – Die Antwort wird nicht geparst.&#13;2 – JSON – Die Antwort wird im JSON-Format analysiert.&#13;3 - XML ​​- Die Antwort wird im XML-Format analysiert.&#13;4 - FormData - Die Antwort wird analysiert.&#13;5 - Other - Die Antwort wird nicht analysiert"/>
+            <desc resKey="httplistener_requesttype"/>
+        </feature>
+        <!-- <feature name="RequestHeaders" index="4" get="false" set="true" type="str" unit="string" default="\z">
+          <hint lang="pl" value="Zwraca nagłówki zapytania HTTP"/>
+          <hint lang="en" value=""/>
+        </feature> -->
+        <feature default="\z" get="false" index="5" name="RequestBody" set="true" type="str" unit="string">
+            <hint lang="pl"
+                  value="Zwraca treść zapytania HTTP (cecha wykorzystywana do odczytu w skryptach - nieustawialna)"/>
+            <hint lang="en"
+                  value="Returns HTTP request's content (characteristic using to read the value in scripts - unchangeable)"/>
+            <hint lang="de"
+                  value="Gibt den Inhalt der HTTP-Anfrage zurück (Merkmal zum Lesen des Wertes in Skripten - unveränderbar)"/>
+            <desc resKey="httplistener_requestbody"/>
+        </feature>
+        <feature default="1" enum="0,1,2,3,4" get="true" index="6" name="ResponseType" set="true" type="num" unit="-">
+            <enum name="None" resKey="httplistener_responsetype_enum_none" value="0"/>
+            <enum name="Text" resKey="httplistener_responsetype_enum_text" value="1"/>
+            <enum name="JSON" resKey="httplistener_responsetype_enum_json" value="2"/>
+            <enum name="XML" resKey="httplistener_responsetype_enum_xml" value="3"/>
+            <enum name="FormData" resKey="httplistener_responsetype_enum_formdata" value="4"/>
+            <hint lang="pl"
+                  value="Typ zawartości wysłanej odpowiedzi na zapytanie. Definiuje parametr content-type w nagłówku odpowiedzi. W zależności od wybranego typu, zawartość cechy ResponseBody jest odpowiednio serializowana:&#13;0 - None - niezdefiniowany. W nagłówku nie jest wysyłane content-type. Zawartość nie jest serializowana.&#13;1 - Text - content-type: text/plain. Zawartość nie jest serializowana.&#13;2 - JSON - content-type: application/json. Zawartość RequestBody jest serializowana do formatu JSON.&#13;3 - XML - content-type: text/xml. Zawartość RequestBody jest serializowana do formatu XML.&#13;4 - FormData - content-type: application/x-www-form-urlencoded. Zawartość RequestBody jest serializowana"/>
+            <hint lang="en"
+                  value="The type of sent request's answer. Defines parameter content-type in the response's header. Depending on chosen type, characteristic ResponseBody is properly serialized:&#13;0 - None - unidentified. The content-type is not sent in the header. The content is not serialized.&#13;1 - Text - content-type: text/plain. The RequestBody characteristic is not serialized.&#13;2 - JSON - content-type: application/json. The RequestBody characteristic is serialized in JSON format.&#13;3 - XML - content-type: text/xml. The RequestBody characteristic is serialized in XML format.&#13;4 - FormData - content-type: application/x-www-form-urlencoded. The RequestBody characteristic is serialized to the table"/>
+            <desc resKey="httplistener_responsetype"/>
+        </feature>
+        <!-- <feature name="ResponseHeaders" index="7" get="false" set="true" type="str" unit="string" default="\z">
+          <hint lang="pl" value="Zwraca nagłówki odpowiedzi HTTP"/>
+          <hint lang="en" value=""/>
+        </feature> -->
+        <feature default="\z" get="false" index="8" name="ResponseBody" set="true" type="str" unit="string">
+            <hint lang="pl" value="Zwraca treść odpowiedzi HTTP (cecha wykorzystywana do odczytu w skryptach)"/>
+            <hint lang="en" value="The content of HTTP response (characteristic used for reading in scripts)"/>
+            <hint lang="de"
+                  value="Der Inhalt der HTTP-Antwort (Merkmal, das zum Einlesen von Skripten verwendet wird)"/>
+            <desc resKey="httplistener_responsebody"/>
+        </feature>
+        <feature default="200" get="true" index="9" name="StatusCode" set="true" type="num" unit="-">
+            <hint lang="pl"
+                  value="Status wysyłanej odpowiedzi HTTP. Obsługiwane statusy:&#13;200 - OK&#13;201 - Utworzono&#13;202 - Przyjęto&#13;204 - Brak zawartości&#13;205 - Przywróć zawartość&#13;400 - Nieprawidłowe zapytanie&#13;403 - Zabroniony&#13;404 - Nie znaleziono&#13;405 - Niedozwolona metoda&#13;406 - Niedozwolone&#13;408 - Koniec czasu oczekiwania na żądanie&#13;409 - Konflikt&#13;410 - Zniknął (usunięto)"/>
+            <hint lang="en"
+                  value="HTTP status code. List of supported HTTP status codes:&#13;200 - OK&#13;201 - Created&#13;202 - Accepted&#13;204 - No Content&#13;205 - Reset Content&#13;400 - Bad Request&#13;403 - Forbidden&#13;404 - Not Found&#13;405 - Method Not Allowed&#13;406 - Not Acceptable&#13;408 - Request Timeout&#13;409 - Conflict&#13;410 - Gone"/>
+            <hint lang="de"
+                  value="HTTP-Statuscode. Liste der unterstützten HTTP-Statuscodes\:&#13;200 – OK&#13;201 – Erstellt&#13;202 – Akzeptiert&#13;204 – Kein Inhalt&#13;205 – Inhalt zurücksetzen&#13;400 – Ungültige Anfrage&#13;403 – Verboten&#13;404 – Nicht gefunden&#13;405 – Methode nicht erlaubt &#13;406 - Nicht akzeptabel&#13;408 - Zeitüberschreitung bei Anforderung&#13;409 - Konflikt&#13;410 - Beendet"/>
+            <desc resKey="httplistener_statuscode"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="execute" index="0" name="SendResponse" return="void">
+            <hint lang="pl" value="Wysyła odpowiedź na zapytanie"/>
+            <hint lang="en" value="Sends the request's response"/>
+            <hint lang="de" value="Sendet die Antwort der Anfrage"/>
+            <desc resKey="httplistener_sendresponse"/>
+        </method>
+        <method call="execute" index="1" name="Clear" return="void">
+            <hint lang="pl" value="Usuwa treść odpowiedzi"/>
+            <hint lang="en" value="Deletes response's content"/>
+            <hint lang="de" value=""/>
+            <desc resKey="httplistener_clear"/>
+        </method>
+        <method call="set" index="0" name="SetPath" return="void">
+            <param name="Path" type="str" unit="string"/>
+            <hint lang="pl" value="Ustawia ścieżkę zapytania"/>
+            <hint lang="en" value="Sets request's path"/>
+            <hint lang="de" value="Löscht den Inhalt der Antwort"/>
+            <desc resKey="httplistener_setpath"/>
+        </method>
+        <method call="set" index="2" name="SetQueryStringParams" return="void" unit="string" visible="false">
+            <param name="Params" type="str" unit="string"/>
+            <hint lang="pl" value="Ustawia parametry zapytania"/>
+            <hint lang="en" value="Sets query's parameters"/>
+            <hint lang="de" value="Legt die Abfrageparameter fest"/>
+            <desc resKey="httplistener_setquerystringparams"/>
+        </method>
+        <!-- <method name="SetRequestHeaders" call="set" index="4" return="void" unit="string" visible="false">
+          <param name="Headers" type="str" unit="string"/>
+          <hint lang="pl" value=""/>
+          <hint lang="en" value=""/>
+        </method> -->
+        <method call="set" index="5" name="SetRequestBody" return="void" unit="string" visible="false">
+            <param name="Body" type="str" unit="string"/>
+            <hint lang="pl" value="Ustawia zawartość wiadomości w zapytaniu"/>
+            <hint lang="en" value="Sets the request's message content"/>
+            <hint lang="de" value="Legt den Nachrichteninhalt der Anfrage fest"/>
+            <desc resKey="httplistener_setrequestbody"/>
+        </method>
+        <method call="set" index="6" name="SetResponseType" return="void">
+            <param name="ResponseType" type="num" unit="-"/>
+            <hint lang="pl" value="Ustawia typ oczekiwanej odpowiedzi na zapytanie"/>
+            <hint lang="en" value="Sets the expected request's answer type"/>
+            <hint lang="de" value="Legt den Antworttyp der erwarteten Anfrage fest"/>
+            <desc resKey="httplistener_setresponsetype"/>
+        </method>
+        <!-- <method name="SetResponseHeaders" call="set" index="7" return="void" unit="string">
+          <param name="Headers" type="str" unit="string"/>
+          <hint lang="pl" value="Ustawia dodatkowe nagłówki odpowiedzi HTTP"/>
+          <hint lang="en" value=""/>
+        </method> -->
+        <method call="set" index="8" name="SetResponseBody" return="void" unit="string">
+            <param name="Body" type="str" unit="string"/>
+            <hint lang="pl" value="Ustawia treść odpowiedzi"/>
+            <hint lang="en" value="Sets the response's content"/>
+            <hint lang="de" value="Legt den Inhalt der Antwort fest"/>
+            <desc resKey="httplistener_setresponsebody"/>
+        </method>
+        <method call="set" index="9" name="SetStatusCode" return="void">
+            <param name="StatusCode" type="num" unit="-"/>
+            <hint lang="pl" value="Ustawia status odpowiedzi"/>
+            <hint lang="en" value="Sets respone's state"/>
+            <hint lang="de" value="Setzt den Status der Antwort"/>
+            <desc resKey="httplistener_setstatuscode"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnRequest">
+            <hint lang="pl" value="Zdarzenie wywoływane w momencie otrzymania zapytania"/>
+            <hint lang="en" value="Event occurring when the request is received"/>
+            <hint lang="de" value="Ereignis, das auftritt, wenn die Anfrage empfangen wird"/>
+            <desc resKey="httplistener_onrequest"/>
+        </event>
+    </events>
 </object>

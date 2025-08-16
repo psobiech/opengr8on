@@ -66,18 +66,18 @@ public class MqttClient implements Closeable {
     private MqttAsyncClient mqttClient;
 
     public void start(
-        String mqttUrl, String name,
-        Path caCertificatePath, Path certificatePath, Path keyPath,
-        VirtualCLU currentClu
+            String mqttUrl, String name,
+            Path caCertificatePath, Path certificatePath, Path keyPath,
+            VirtualCLU currentClu
     ) {
         final URI mqttUri = URI.create(mqttUrl);
 
         try {
             mqttClient = new MqttAsyncClient(
-                mqttUrl, name,
-                null,
-                new ScheduledExecutorPingSender(executor),
-                executor
+                    mqttUrl, name,
+                    null,
+                    new ScheduledExecutorPingSender(executor),
+                    executor
             );
 
             mqttClient.setManualAcks(true);
@@ -91,15 +91,15 @@ public class MqttClient implements Closeable {
                 public void messageArrived(String topic, MqttMessage message) {
                     for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
                         mqttTopic.onMessage(
-                            topic, message.getPayload(),
-                            () ->
-                                executor.submit(() -> {
-                                    try {
-                                        mqttClient.messageArrivedComplete(message.getId(), message.getQos());
-                                    } catch (MqttException e) {
-                                        LOGGER.error(e.getMessage(), e);
-                                    }
-                                })
+                                topic, message.getPayload(),
+                                () ->
+                                        executor.submit(() -> {
+                                            try {
+                                                mqttClient.messageArrivedComplete(message.getId(), message.getQos());
+                                            } catch (MqttException e) {
+                                                LOGGER.error(e.getMessage(), e);
+                                            }
+                                        })
                         );
                     }
                 }
@@ -152,10 +152,10 @@ public class MqttClient implements Closeable {
 
         if (!SCHEME_TCP.equals(mqttUri.getScheme()) && Files.exists(caCertificatePath)) {
             options.setSocketFactory(
-                TlsUtil.createSocketFactory(
-                    caCertificatePath,
-                    certificatePath, keyPath
-                )
+                    TlsUtil.createSocketFactory(
+                            caCertificatePath,
+                            certificatePath, keyPath
+                    )
             );
         }
 
@@ -205,10 +205,10 @@ public class MqttClient implements Closeable {
         LOGGER.trace("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
 
         return mqttClient.publish(
-                             topic, payload,
-                             MQTT_QOS_AT_LEAST_ONCE, false
-                         )
-                         .getMessageId();
+                        topic, payload,
+                        MQTT_QOS_AT_LEAST_ONCE, false
+                )
+                .getMessageId();
     }
 
     @Override

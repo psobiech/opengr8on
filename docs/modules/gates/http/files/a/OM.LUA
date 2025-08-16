@@ -16,25 +16,23 @@ CLU50XXXXXXX = OBJECT:new(1, 0xA489008, "CLU50XXXXXXX")
 
 
 function setVar(name, value)
-	_G[name] = value
+    _G[name] = value
 end
 
 function getVar(name)
-	return _G[name]
+    return _G[name]
 end
-
-
 
 function OnInit()
 
--- INIT_CLU_OBJECTS
-CLU50XXXXXXX:set(1, 1000)
-CLU50XXXXXXX:set(14, 0)
-CLU50XXXXXXX:set(18, 0)
-CLU50XXXXXXX:set(20, 5000)
-CLU50XXXXXXX:set(21, 1)
-CLU50XXXXXXX:set(2, "8.8.8.8")
-CLU50XXXXXXX:set(3, "8.8.4.4")
+    -- INIT_CLU_OBJECTS
+    CLU50XXXXXXX:set(1, 1000)
+    CLU50XXXXXXX:set(14, 0)
+    CLU50XXXXXXX:set(18, 0)
+    CLU50XXXXXXX:set(20, 5000)
+    CLU50XXXXXXX:set(21, 1)
+    CLU50XXXXXXX:set(2, "8.8.8.8")
+    CLU50XXXXXXX:set(3, "8.8.4.4")
 
 end
 

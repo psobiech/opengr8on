@@ -48,10 +48,10 @@ public abstract class TFTPTransfer {
     public abstract void execute(TFTP tftp) throws IOException, TFTPPacketException;
 
     protected TFTPPacket readResponsePacket(
-        TFTP tftp,
-        boolean allowAllOrigins,
-        InetAddress requestAddress, int requestPort,
-        TFTPPacket lastPacket
+            TFTP tftp,
+            boolean allowAllOrigins,
+            InetAddress requestAddress, int requestPort,
+            TFTPPacket lastPacket
     ) throws IOException, TFTPPacketException {
         int retires = 3;
 
@@ -68,9 +68,9 @@ public abstract class TFTPTransfer {
             final InetAddress responseAddress = responsePacket.getAddress();
             final int responsePort = responsePacket.getPort();
             if (!allowAllOrigins
-                && (
+                    && (
                     !responseAddress.equals(requestAddress) || !(responsePort == requestPort)
-                )) {
+            )) {
                 final TFTPPacketException packetException = new TFTPPacketException(TFTPErrorType.UNKNOWN_TID, "Unexpected Host or Port");
                 LOGGER.debug("TFTP Server ignoring message from unexpected source.", packetException);
 

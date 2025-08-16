@@ -92,12 +92,12 @@ class TFTPTest {
 
     @ParameterizedTest
     @ValueSource(
-        ints = {
-            0,
-            1,
-            1023, 1024, 1025, // multiple blocks
-            0xFFFF * TFTPPacket.MAX_DATA_LENGTH + 1025 // block number rollover
-        }
+            ints = {
+                    0,
+                    1,
+                    1023, 1024, 1025, // multiple blocks
+                    0xFFFF * TFTPPacket.MAX_DATA_LENGTH + 1025 // block number rollover
+            }
     )
     void uploadBinary(int fileSize) throws Exception {
         final Path temporaryPathFrom = FileUtil.temporaryFile();
@@ -111,15 +111,15 @@ class TFTPTest {
             assertFalse(Files.exists(expectedPath));
 
             client.upload(
-                LOCALHOST, TFTPTransferMode.OCTET,
-                temporaryPathFrom,
-                fileName
+                    LOCALHOST, TFTPTransferMode.OCTET,
+                    temporaryPathFrom,
+                    fileName
             );
 
             client.download(
-                LOCALHOST, TFTPTransferMode.OCTET,
-                fileName,
-                temporaryPathTo
+                    LOCALHOST, TFTPTransferMode.OCTET,
+                    fileName,
+                    temporaryPathTo
             );
 
             assertTrue(Files.exists(expectedPath));
@@ -154,18 +154,18 @@ class TFTPTest {
         final byte[] expectedBuffer = new byte[1024];
         final byte[] actualBuffer = new byte[1024];
         try (
-            InputStream expectedInputStream = new BufferedInputStream(Files.newInputStream(expectedPath));
-            InputStream actualInputStream = new BufferedInputStream(Files.newInputStream(actualPath));
+                InputStream expectedInputStream = new BufferedInputStream(Files.newInputStream(expectedPath));
+                InputStream actualInputStream = new BufferedInputStream(Files.newInputStream(actualPath));
         ) {
             int expectedRead;
             int actualRead;
             do {
                 expectedRead = expectedInputStream.readNBytes(expectedBuffer, 0, expectedBuffer.length);
-                actualRead   = actualInputStream.readNBytes(actualBuffer, 0, actualBuffer.length);
+                actualRead = actualInputStream.readNBytes(actualBuffer, 0, actualBuffer.length);
 
                 assertArrayEquals(
-                    Arrays.copyOf(expectedBuffer, expectedRead), Arrays.copyOf(actualBuffer, actualRead),
-                    "Files differ after offset: " + offset
+                        Arrays.copyOf(expectedBuffer, expectedRead), Arrays.copyOf(actualBuffer, actualRead),
+                        "Files differ after offset: " + offset
                 );
 
                 offset += expectedRead;
@@ -189,15 +189,15 @@ class TFTPTest {
             assertFalse(Files.exists(expectedPath));
 
             client.upload(
-                LOCALHOST, TFTPTransferMode.NETASCII,
-                temporaryPathFrom,
-                fileName
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    temporaryPathFrom,
+                    fileName
             );
 
             client.download(
-                LOCALHOST, TFTPTransferMode.NETASCII,
-                fileName,
-                temporaryPathTo
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    fileName,
+                    temporaryPathTo
             );
 
             assertTrue(Files.exists(expectedPath));
@@ -225,15 +225,15 @@ class TFTPTest {
             assertFalse(Files.exists(expectedPath));
 
             client.upload(
-                LOCALHOST, TFTPTransferMode.NETASCII,
-                temporaryPathFrom,
-                fileName
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    temporaryPathFrom,
+                    fileName
             );
 
             client.download(
-                LOCALHOST, TFTPTransferMode.NETASCII,
-                fileName,
-                temporaryPathTo
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    fileName,
+                    temporaryPathTo
             );
 
             assertTrue(Files.exists(expectedPath));
@@ -261,9 +261,9 @@ class TFTPTest {
             Files.writeString(expectedPath, inputString);
 
             client.download(
-                LOCALHOST, TFTPTransferMode.NETASCII,
-                fileName,
-                temporaryPathTo
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    fileName,
+                    temporaryPathTo
             );
 
             assertEquals(expectedString, Files.readString(temporaryPathTo));
@@ -289,9 +289,9 @@ class TFTPTest {
             Files.writeString(expectedPath, inputString);
 
             client.download(
-                LOCALHOST, TFTPTransferMode.NETASCII,
-                fileName,
-                temporaryPathTo
+                    LOCALHOST, TFTPTransferMode.NETASCII,
+                    fileName,
+                    temporaryPathTo
             );
 
             assertEquals(expectedString, Files.readString(temporaryPathTo));
@@ -312,9 +312,9 @@ class TFTPTest {
 
             try {
                 client.download(
-                    LOCALHOST, TFTPTransferMode.NETASCII,
-                    fileName,
-                    temporaryPathTo
+                        LOCALHOST, TFTPTransferMode.NETASCII,
+                        fileName,
+                        temporaryPathTo
                 );
             } catch (TFTPException e) {
                 assertEquals(TFTPErrorType.FILE_NOT_FOUND, e.getError());
@@ -337,9 +337,9 @@ class TFTPTest {
 
             try {
                 client.download(
-                    LOCALHOST, TFTPTransferMode.NETASCII,
-                    fileName,
-                    temporaryPathTo
+                        LOCALHOST, TFTPTransferMode.NETASCII,
+                        fileName,
+                        temporaryPathTo
                 );
             } catch (TFTPException e) {
                 assertEquals(TFTPErrorType.UNDEFINED, e.getError());
@@ -360,9 +360,9 @@ class TFTPTest {
 
             try {
                 client.upload(
-                    LOCALHOST, TFTPTransferMode.NETASCII,
-                    temporaryPathFrom,
-                    fileName
+                        LOCALHOST, TFTPTransferMode.NETASCII,
+                        temporaryPathFrom,
+                        fileName
                 );
             } catch (TFTPException e) {
                 assertEquals(TFTPErrorType.FILE_EXISTS, e.getError());

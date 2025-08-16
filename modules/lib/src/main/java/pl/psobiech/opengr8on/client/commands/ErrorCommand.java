@@ -44,12 +44,12 @@ public class ErrorCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length != Response.COMMAND.length()
-            && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
+                && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -63,7 +63,7 @@ public class ErrorCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND
+                    COMMAND
             );
         }
     }

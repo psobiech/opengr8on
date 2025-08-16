@@ -16,25 +16,27 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 <configuration>
-  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] [%thread] %logger{15} - %message%n%xException{10}</pattern>
-    </encoder>
-  </appender>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] [%thread] %logger{15} -
+                %message%n%xException{10}
+            </pattern>
+        </encoder>
+    </appender>
 
-  <logger name="pl.psobiech" level="DEBUG"/>
-  <logger name="pl.psobiech.opengr8on.vclu" level="DEBUG"/>
-  <logger name="pl.psobiech.opengr8on.client" level="DEBUG"/>
-  <logger name="pl.psobiech.opengr8on.vclu.Server" level="TRACE"/>
-  <logger name="pl.psobiech.opengr8on.xml" level="DEBUG"/>
+    <logger name="pl.psobiech" level="DEBUG"/>
+    <logger name="pl.psobiech.opengr8on.vclu" level="DEBUG"/>
+    <logger name="pl.psobiech.opengr8on.client" level="DEBUG"/>
+    <logger name="pl.psobiech.opengr8on.vclu.Server" level="TRACE"/>
+    <logger name="pl.psobiech.opengr8on.xml" level="DEBUG"/>
 
-  <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
-    <appender-ref ref="STDOUT" />
-  </appender>
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT"/>
+    </appender>
 
-  <root level="WARN">
-    <appender-ref ref="ASYNC"/>
-  </root>
+    <root level="WARN">
+        <appender-ref ref="ASYNC"/>
+    </root>
 </configuration>

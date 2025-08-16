@@ -70,24 +70,24 @@ public class Slf4jLoggingOutputStream extends OutputStream {
 
     /**
      * @param logger the Logger to write to
-     * @param level log level of the log
+     * @param level  log level of the log
      */
     public Slf4jLoggingOutputStream(Logger logger, Level level) {
         this(logger, level, DEFAULT_MAXIMUM_BUFFER_SIZE);
     }
 
     /**
-     * @param logger the Logger to write to
-     * @param level log level of the log
+     * @param logger        the Logger to write to
+     * @param level         log level of the log
      * @param maxBufferSize buffer that determines the maximum length of line to be flushed as a single log
      */
     public Slf4jLoggingOutputStream(Logger logger, Level level, int maxBufferSize) {
         this.logger = logger;
-        this.level  = level;
+        this.level = level;
 
         this.maxBufferSize = maxBufferSize;
-        this.buffer        = new byte[Math.min(maxBufferSize, INITIAL_BUFFER_SIZE)];
-        this.offset        = 0;
+        this.buffer = new byte[Math.min(maxBufferSize, INITIAL_BUFFER_SIZE)];
+        this.offset = 0;
     }
 
     @Override
@@ -147,7 +147,7 @@ public class Slf4jLoggingOutputStream extends OutputStream {
         // don't print out blank lines; flushing from PrintStream puts out these
         if (offset == LINE_SEPARATOR.length) {
             if (((char) buffer[LINE_SEPARATOR.length - 1]) == LINE_SEPARATOR[LINE_SEPARATOR.length - 1]
-                && (LINE_SEPARATOR.length == 2 && ((char) buffer[0]) == LINE_SEPARATOR[0])) {
+                    && (LINE_SEPARATOR.length == 2 && ((char) buffer[0]) == LINE_SEPARATOR[0])) {
                 reset();
 
                 return;
@@ -158,7 +158,7 @@ public class Slf4jLoggingOutputStream extends OutputStream {
 
         reset();
         logger.makeLoggingEventBuilder(level)
-              .log(log);
+                .log(log);
     }
 
     private void reset() {

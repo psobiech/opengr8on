@@ -51,8 +51,8 @@ public class MqttTopic extends VirtualObject {
 
     public MqttTopic(VirtualSystem virtualSystem, String name) {
         super(
-            virtualSystem, name,
-            Features.class, Methods.class, Events.class
+                virtualSystem, name,
+                Features.class, Methods.class, Events.class
         );
 
         register(Methods.SUBSCRIBE, this::subscribe);
@@ -144,7 +144,7 @@ public class MqttTopic extends VirtualObject {
         }
 
         return luaValue.checkjstring()
-                       .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
     }
 
     public void onMessage(String topic, byte[] payload, Runnable acknowledged) {
@@ -186,7 +186,7 @@ public class MqttTopic extends VirtualObject {
                 set(Features.MESSAGE, messageFromPayload(message));
                 if (triggerEvent(Events.MESSAGE, this::clearMessage)) {
                     message.acknowledgement()
-                           .run();
+                            .run();
                 }
 
                 Thread.yield();
@@ -227,7 +227,8 @@ public class MqttTopic extends VirtualObject {
         clear(Features.MESSAGE);
     }
 
-    private record Message(byte[] payload, Runnable acknowledgement) { }
+    private record Message(byte[] payload, Runnable acknowledgement) {
+    }
 
     private enum Features implements IFeature {
         TOPIC(0),

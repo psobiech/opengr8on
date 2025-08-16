@@ -136,9 +136,9 @@ public class ThreadUtil {
      */
     public static void addShutdownHook(Runnable runnable) {
         Runtime.getRuntime()
-               .addShutdownHook(
-                   SHUTDOWN_THREAD_FACTORY.newThread(runnable)
-               );
+                .addShutdownHook(
+                        SHUTDOWN_THREAD_FACTORY.newThread(runnable)
+                );
     }
 
     /**
@@ -211,9 +211,9 @@ public class ThreadUtil {
      */
     private static ThreadFactory virtualThreadFactory(String groupName) {
         return Thread.ofVirtual()
-                     .name(groupName)
-                     .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
-                     .factory();
+                .name(groupName)
+                .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
+                .factory();
     }
 
     /**
@@ -236,9 +236,9 @@ public class ThreadUtil {
      */
     private static ThreadFactory platformThreadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()
-                     .name(groupName)
-                     .daemon(daemon)
-                     .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
-                     .factory();
+                .name(groupName)
+                .daemon(daemon)
+                .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
+                .factory();
     }
 }

@@ -53,7 +53,7 @@ public enum CLUTimeZone {
     private final ZoneId zoneId;
 
     CLUTimeZone(int value, ZoneId zoneId) {
-        this.value  = value;
+        this.value = value;
         this.zoneId = zoneId;
     }
 

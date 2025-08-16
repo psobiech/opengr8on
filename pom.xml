@@ -18,90 +18,90 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>pl.psobiech.opengr8on</groupId>
-  <artifactId>aggregator</artifactId>
-  <version>0.5.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
+    <groupId>pl.psobiech.opengr8on</groupId>
+    <artifactId>aggregator</artifactId>
+    <version>0.5.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-  <name>OpenGr8on Aggregator</name>
+    <name>OpenGr8on Aggregator</name>
 
-  <modules>
-    <module>modules/parent</module>
+    <modules>
+        <module>modules/parent</module>
 
-    <module>modules/common</module>
-    <module>modules/tftp</module>
-    <module>modules/mysensors</module>
+        <module>modules/common</module>
+        <module>modules/tftp</module>
+        <module>modules/mysensors</module>
 
-    <module>modules/lib</module>
-    <module>modules/parsers</module>
-    <module>modules/client</module>
-    <module>modules/vclu</module>
-  </modules>
+        <module>modules/lib</module>
+        <module>modules/parsers</module>
+        <module>modules/client</module>
+        <module>modules/vclu</module>
+    </modules>
 
-  <repositories>
-    <repository>
-      <id>github</id>
-      <url>https://maven.pkg.github.com/psobiech/opengr8on</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-    </repository>
-    <repository>
-      <id>central</id>
-      <url>https://repo1.maven.org/maven2</url>
-    </repository>
-  </repositories>
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/psobiech/opengr8on</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
+    </repositories>
 
-  <scm>
-    <connection>scm:git:${project.scm.url}</connection>
-    <developerConnection>scm:git:${project.scm.url}</developerConnection>
-    <url>git@github.com:psobiech/opengr8on.git</url>
-    <tag>HEAD</tag>
-  </scm>
+    <scm>
+        <connection>scm:git:${project.scm.url}</connection>
+        <developerConnection>scm:git:${project.scm.url}</developerConnection>
+        <url>git@github.com:psobiech/opengr8on.git</url>
+        <tag>HEAD</tag>
+    </scm>
 
-  <distributionManagement>
-    <repository>
-      <id>github</id>
-      <url>https://maven.pkg.github.com/psobiech/opengr8on</url>
-    </repository>
-  </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/psobiech/opengr8on</url>
+        </repository>
+    </distributionManagement>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>versions-maven-plugin</artifactId>
-        <version>2.16.2</version>
-        <configuration>
-          <processAllModules>true</processAllModules>
-          <generateBackupPoms>false</generateBackupPoms>
-        </configuration>
-      </plugin>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.16.2</version>
+                <configuration>
+                    <processAllModules>true</processAllModules>
+                    <generateBackupPoms>false</generateBackupPoms>
+                </configuration>
+            </plugin>
 
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.10</version>
-        <executions>
-          <execution>
-            <id>coverage-report</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <id>coverage-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

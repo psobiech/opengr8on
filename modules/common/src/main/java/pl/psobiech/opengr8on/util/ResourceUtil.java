@@ -80,7 +80,7 @@ public class ResourceUtil {
                 final String jarPath = classPathUriAsString.split(JAR_PATH_SEPARATOR, 2)[0];
 
                 path = getOrCreateJarFileSystemFor(jarPath).provider()
-                                                           .getPath(classPathUri);
+                        .getPath(classPathUri);
             } else {
                 path = Paths.get(classPathUri);
             }
@@ -98,16 +98,16 @@ public class ResourceUtil {
         JAR_FILE_SYSTEMS_LOCK.lock();
         try {
             return JAR_FILE_SYSTEMS.computeIfAbsent(
-                jarPath,
-                ignored -> {
-                    try {
-                        final URI jarUri = URI.create(jarPath);
+                    jarPath,
+                    ignored -> {
+                        try {
+                            final URI jarUri = URI.create(jarPath);
 
-                        return FileSystems.newFileSystem(jarUri, Collections.emptyMap());
-                    } catch (IOException e) {
-                        throw new UnexpectedException(e);
+                            return FileSystems.newFileSystem(jarUri, Collections.emptyMap());
+                        } catch (IOException e) {
+                            throw new UnexpectedException(e);
+                        }
                     }
-                }
             );
         } finally {
             JAR_FILE_SYSTEMS_LOCK.unlock();

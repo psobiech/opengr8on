@@ -35,13 +35,13 @@ class SetKeyCommandTest {
     @Test
     void correctRequest() {
         final Request input = SetKeyCommand.request(
-            RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.key(), Mocks.iv()
+                RandomUtil.bytes(Command.RANDOM_ENCRYPTED_BYTES), Mocks.key(), Mocks.iv()
         );
 
         //
 
         final Request output = SetKeyCommand.requestFromByteArray(input.asByteArray())
-                                            .get();
+                .get();
 
         //
 
@@ -55,7 +55,7 @@ class SetKeyCommandTest {
         //
 
         final Response output = SetKeyCommand.responseFromByteArray(input.asByteArray())
-                                             .get();
+                .get();
 
         //
 
@@ -71,9 +71,9 @@ class SetKeyCommandTest {
         assertFalse(SetKeyCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(SetKeyCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                       = new byte[100];
-        buffer[Command.RANDOM_ENCRYPTED_BYTES]                                                       = ':';
-        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES]                                = ':';
+        buffer = new byte[100];
+        buffer[Command.RANDOM_ENCRYPTED_BYTES] = ':';
+        buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] = ':';
         buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] = ':';
         assertFalse(SetKeyCommand.requestFromByteArray(buffer).isPresent());
 
@@ -82,7 +82,7 @@ class SetKeyCommandTest {
         assertFalse(SetKeyCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(SetKeyCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                            = new byte[100];
+        buffer = new byte[100];
         buffer[Response.COMMAND.length()] = ':';
         assertFalse(SetKeyCommand.responseFromByteArray(buffer).isPresent());
     }

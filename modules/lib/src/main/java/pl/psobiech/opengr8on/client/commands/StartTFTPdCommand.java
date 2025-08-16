@@ -46,12 +46,12 @@ public class StartTFTPdCommand {
 
     public static boolean requestMatches(byte[] buffer) {
         if (buffer.length != Request.COMMAND.length()
-            && buffer.length != Request.COMMAND.length() + FileUtil.CRLF.length()) {
+                && buffer.length != Request.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 
         return Request.COMMAND.equals(
-            Command.asString(buffer, 0, Request.COMMAND.length())
+                Command.asString(buffer, 0, Request.COMMAND.length())
         );
     }
 
@@ -69,12 +69,12 @@ public class StartTFTPdCommand {
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length != Response.COMMAND.length()
-            && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
+                && buffer.length != Response.COMMAND.length() + FileUtil.CRLF.length()) {
             return false;
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -101,7 +101,7 @@ public class StartTFTPdCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND
+                    COMMAND
             );
         }
     }

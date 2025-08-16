@@ -63,10 +63,10 @@ public class DiscoverCLUsCommand {
         final String[] requestParts = requestPartsOptional.get();
 
         return Optional.of(
-            new Request(
-                encrypted, iv,
-                IPv4AddressUtil.parseIPv4(requestParts[1])
-            )
+                new Request(
+                        encrypted, iv,
+                        IPv4AddressUtil.parseIPv4(requestParts[1])
+                )
         );
     }
 
@@ -76,17 +76,17 @@ public class DiscoverCLUsCommand {
         }
 
         if (buffer[Command.RANDOM_ENCRYPTED_BYTES] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] != ':') {
+                || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
+                || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Request.COMMAND.length()] != ':') {
             return false;
         }
 
         return Request.COMMAND.equals(
-            Command.asString(
-                buffer,
-                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
-                Request.COMMAND.length()
-            )
+                Command.asString(
+                        buffer,
+                        Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
+                        Request.COMMAND.length()
+                )
         );
     }
 
@@ -108,10 +108,10 @@ public class DiscoverCLUsCommand {
         final CipherTypeEnum cipherType = getCipherType(randomBytes, response.encrypted, iv, privateKey);
 
         return Optional.of(
-            new CLUDevice(
-                serialNumberAsLong, response.macAddress, payload.address(),
-                cipherType, iv, privateKey
-            )
+                new CLUDevice(
+                        serialNumberAsLong, response.macAddress, payload.address(),
+                        cipherType, iv, privateKey
+                )
         );
     }
 
@@ -132,32 +132,32 @@ public class DiscoverCLUsCommand {
         final String[] responseParts = responsePartsOptional.get();
 
         return Optional.of(
-            new Response(
-                encrypted, iv,
-                HexUtil.asLong(responseParts[1]),
-                responseParts[2]
-            )
+                new Response(
+                        encrypted, iv,
+                        HexUtil.asLong(responseParts[1]),
+                        responseParts[2]
+                )
         );
     }
 
     public static boolean responseMatches(byte[] buffer) {
         if (buffer.length
-            < Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS + 1 + Command.MAC_CHARACTERS) {
+                < Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS + 1 + Command.MAC_CHARACTERS) {
             return false;
         }
 
         if (buffer[Command.RANDOM_ENCRYPTED_BYTES] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
-            || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length()] != ':') {
+                || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES] != ':'
+                || buffer[Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1 + Response.COMMAND.length()] != ':') {
             return false;
         }
 
         return Response.COMMAND.equals(
-            Command.asString(
-                buffer,
-                Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
-                Response.COMMAND.length()
-            )
+                Command.asString(
+                        buffer,
+                        Command.RANDOM_ENCRYPTED_BYTES + 1 + Command.IV_BYTES + 1,
+                        Response.COMMAND.length()
+                )
         );
     }
 
@@ -168,7 +168,7 @@ public class DiscoverCLUsCommand {
 
         final byte[] randomBytesHash = hash(randomBytes);
         final byte[] randomEncrypted = CipherKey.getInitialCipherKey(iv, privateKey)
-                                                .encrypt(randomBytesHash);
+                .encrypt(randomBytesHash);
         if (Arrays.equals(randomEncrypted, encrypted)) {
             return CipherTypeEnum.PROJECT;
         }
@@ -201,20 +201,20 @@ public class DiscoverCLUsCommand {
 
         private Request(byte[] encrypted, byte[] iv, Inet4Address ipAddress) {
             this.encrypted = encrypted;
-            this.iv        = iv;
+            this.iv = iv;
             this.ipAddress = ipAddress;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                encrypted,
-                ":",
-                iv,
-                ":",
-                COMMAND,
-                ":",
-                ipAddress
+                    encrypted,
+                    ":",
+                    iv,
+                    ":",
+                    COMMAND,
+                    ":",
+                    ipAddress
             );
         }
 
@@ -252,15 +252,15 @@ public class DiscoverCLUsCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                encrypted,
-                ":",
-                iv,
-                ":",
-                COMMAND,
-                ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_CHARACTERS, '0'),
-                ":",
-                macAddress
+                    encrypted,
+                    ":",
+                    iv,
+                    ":",
+                    COMMAND,
+                    ":",
+                    StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_CHARACTERS, '0'),
+                    ":",
+                    macAddress
             );
         }
 

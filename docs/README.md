@@ -1,6 +1,7 @@
 An effort to analyze and validate modules made by Grenton, before installing them into my own house.
 
-My main objective is to understand how the whole system works and to be able to extend and service it even without commercial support.
+My main objective is to understand how the whole system works and to be able to extend and service it even without
+commercial support.
 
 # Current Objectives
 

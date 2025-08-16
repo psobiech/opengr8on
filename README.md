@@ -6,9 +6,11 @@
 
 # Virtual CLU
 
-As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager can be used, before buying the device itself.
+As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager can be used,
+before buying the device itself.
 
-Just run VCLU docker image (or multiple images on different devices, just adjust the serial numbers) in the same network as computer running Grenton Object
+Just run VCLU docker image (or multiple images on different devices, just adjust the serial numbers) in the same network
+as computer running Grenton Object
 Manager (https://grentonsmarthome.github.io/release-en/om/).
 
 What works:
@@ -19,9 +21,11 @@ What works:
 
 Does not work:
 
-- If OM decides to assign different IP address for a device, the discovery will not work. As a workaround starting a fresh OM project seems to work best. 
+- If OM decides to assign different IP address for a device, the discovery will not work. As a workaround starting a
+  fresh OM project seems to work best.
 
-  Other workaround would be to assign the device the same IP address as OM tries to force on it, then on next discovery the device should be accepted.
+  Other workaround would be to assign the device the same IP address as OM tries to force on it, then on next discovery
+  the device should be accepted.
 
 TODOs:
 
@@ -31,7 +35,7 @@ TODOs:
 
 ## Virtual Objects
 
-Object behaviour may differ from physical CLU ones, in some cases its intentional. 
+Object behaviour may differ from physical CLU ones, in some cases its intentional.
 
 ### MqttTopic
 
@@ -90,7 +94,8 @@ Implemented: No
 
 * Assuming OM is extracted in $OM_HOME (https://grentonsmarthome.github.io/release-en/om/).
 
-1. Copy all VCLU [device-interfaces](runtime%2Fdevice-interfaces) to `$OM_HOME/configuration/com.grenton.om/device-interfaces/`
+1. Copy all VCLU [device-interfaces](runtime%2Fdevice-interfaces) to
+   `$OM_HOME/configuration/com.grenton.om/device-interfaces/`
 1. Restart/Launch OM or Reload Device Interfaces
 1. Clone ./runtime directory from this repository
 1. Run Virtual CLU (replace eth0 with your network interface name or specify a local IP address)
@@ -103,7 +108,8 @@ Implemented: No
 1. Start OM Discovery
 1. When prompted for KEY type: `00000000`
    ![vclu_sn.png](docs%2Fimg%2Fvclu_sn.png)
-1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address assignment, since we cannot change IP address from an application, currently its best to start a fresh OM project):
+1. Virtual CLU should be available like normal CLU (you might see errors regarding IP address assignment, since we
+   cannot change IP address from an application, currently its best to start a fresh OM project):
    ![vclu_discover.png](docs%2Fimg%2Fvclu_discover.png)
    ![vclu_features.png](docs%2Fimg%2Fvclu_features.png)
 
@@ -111,7 +117,7 @@ Implemented: No
 
 ## Docker
 
-Host networking is required, since Grenton protocol requires broadcast packets. 
+Host networking is required, since Grenton protocol requires broadcast packets.
 
 ```bash
 docker run --net host --mount type=bind,source=./runtime,target=/opt/docker/runtime ghcr.io/psobiech/opengr8on-linux-amd64:latest eth0
@@ -159,6 +165,7 @@ sudo setcap 'cap_net_bind_service=+ep' "$JAVA_HOME/bin/java"
 ```
 
 # Performance
+
 [PERFORMANCE.md](modules%2FPERFORMANCE.md)
 
 # Licenses
@@ -173,11 +180,14 @@ All other code is licensed under AGPLv3.
 
 This project is not endorsed by, directly affiliated with, maintained, authorized, or sponsored by Grenton Sp. z o.o.
 
-The use of any trade name or trademark is for identification and reference purposes only and does not imply any association with the trademark holder of their
+The use of any trade name or trademark is for identification and reference purposes only and does not imply any
+association with the trademark holder of their
 product brand.
 
-Any product names, logos, brands, and other trademarks or images featured or referred to within this page are the property of their respective trademark
+Any product names, logos, brands, and other trademarks or images featured or referred to within this page are the
+property of their respective trademark
 holders.
 
-Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work, and disclaims liability for all uses of
+Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work,
+and disclaims liability for all uses of
 the work, to the fullest extent permitted by applicable law.

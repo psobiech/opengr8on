@@ -59,8 +59,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     public VirtualCLU(VirtualSystem virtualSystem, String name) {
         super(
-            virtualSystem, name,
-            Features.class, Methods.class, Events.class
+                virtualSystem, name,
+                Features.class, Methods.class, Events.class
         );
 
         register(Features.UPTIME, this::getUptime);
@@ -80,13 +80,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         register(Features.USE_MQTT, arg1 -> {
             if (LuaUtil.isNil(arg1)) {
                 return LuaValue.valueOf(
-                    LuaUtil.trueish(getValue(Features.USE_MQTT))
+                        LuaUtil.trueish(getValue(Features.USE_MQTT))
                 );
             }
 
             // Sometimes OM uses true/false and sometimes 0/1
             return LuaValue.valueOf(
-                LuaUtil.trueish(arg1)
+                    LuaUtil.trueish(arg1)
             );
         });
         set(Features.MQTT_CONNECTION, LuaValue.valueOf(false));
@@ -95,21 +95,21 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         register(Methods.CLEAR_LOG, this::clearLog);
 
         scheduler.scheduleAtFixedRate(() -> {
-                final ZonedDateTime lastDateTime = currentDateTime;
-                currentDateTime = getCurrentDateTime();
+                    final ZonedDateTime lastDateTime = currentDateTime;
+                    currentDateTime = getCurrentDateTime();
 
-                if (!currentDateTime.getZone().equals(lastDateTime.getZone())
-                    || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
-                    triggerEvent(Events.TIME_CHANGE);
-                }
-            },
-            1, 1, TimeUnit.SECONDS
+                    if (!currentDateTime.getZone().equals(lastDateTime.getZone())
+                            || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
+                        triggerEvent(Events.TIME_CHANGE);
+                    }
+                },
+                1, 1, TimeUnit.SECONDS
         );
     }
 
     public boolean isMqttEnabled() {
         return LuaUtil.trueish(
-            get(Features.USE_MQTT)
+                get(Features.USE_MQTT)
         );
     }
 
@@ -123,66 +123,66 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private LuaNumber getUptime() {
         return LuaValue.valueOf(
-            TimeUnit.MILLISECONDS.toSeconds(
-                runtimeBean.getUptime()
-            )
+                TimeUnit.MILLISECONDS.toSeconds(
+                        runtimeBean.getUptime()
+                )
         );
     }
 
     private LuaString getCurrentDateAsString() {
         return LuaValue.valueOf(
-            currentDateTime
-                .format(DATE_FORMATTER)
+                currentDateTime
+                        .format(DATE_FORMATTER)
         );
     }
 
     private LuaString getCurrentTimeAsString() {
         return LuaValue.valueOf(
-            currentDateTime
-                .format(TIME_FORMATTER)
+                currentDateTime
+                        .format(TIME_FORMATTER)
         );
     }
 
     private LuaInteger getCurrentDayOfMonth() {
         return LuaValue.valueOf(
-            currentDateTime
-                .getDayOfMonth()
+                currentDateTime
+                        .getDayOfMonth()
         );
     }
 
     private LuaInteger getCurrentMonth() {
         return LuaValue.valueOf(
-            currentDateTime
-                .getMonthValue()
+                currentDateTime
+                        .getMonthValue()
         );
     }
 
     private LuaInteger getCurrentYear() {
         return LuaValue.valueOf(
-            currentDateTime
-                .getYear()
+                currentDateTime
+                        .getYear()
         );
     }
 
     private LuaInteger getCurrentDayOfWeek() {
         return LuaValue.valueOf(
-            currentDateTime
-                .getDayOfWeek()
-                .getValue()
+                currentDateTime
+                        .getDayOfWeek()
+                        .getValue()
         );
     }
 
     private LuaInteger getCurrentHour() {
         return LuaValue.valueOf(
-            currentDateTime
-                .getHour()
+                currentDateTime
+                        .getHour()
         );
     }
 
     private LuaInteger getCurrentMinute() {
         return LuaValue.valueOf(
-            currentDateTime
-                .getMinute()
+                currentDateTime
+                        .getMinute()
         );
     }
 
@@ -190,7 +190,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         final ZoneId zoneId = getCurrentZoneId();
 
         return ZonedDateTime.now()
-                            .withZoneSameInstant(zoneId);
+                .withZoneSameInstant(zoneId);
     }
 
     private ZoneId getCurrentZoneId() {
@@ -200,13 +200,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         }
 
         return CLUTimeZone.valueOf(zoneIdLuaValue.checkint())
-                          .zoneId();
+                .zoneId();
     }
 
     private LuaNumber getCurrentEpochSeconds() {
         return LuaValue.valueOf(
-            currentDateTime.toInstant()
-                           .getEpochSecond()
+                currentDateTime.toInstant()
+                        .getEpochSecond()
         );
     }
 

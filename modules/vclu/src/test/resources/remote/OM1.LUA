@@ -17,20 +17,19 @@ CLU1 = OBJECT:new(1, 0x7F000001, "CLU1")
 
 
 function setVar(name, value)
-	_G[name] = value
+    _G[name] = value
 end
 
 function getVar(name)
-	return _G[name]
+    return _G[name]
 end
-
 
 function OnInit()
 
--- INIT_CLU_OBJECTS
-CLU0:set(14, 22)
-CLU0:set(20, "tcp://z2m:moh4aT8Kah9ethoh9veu7Xub9gah5tai@192.168.31.31:1883")
-CLU0:set(21, 0)
+    -- INIT_CLU_OBJECTS
+    CLU0:set(14, 22)
+    CLU0:set(20, "tcp://z2m:moh4aT8Kah9ethoh9veu7Xub9gah5tai@192.168.31.31:1883")
+    CLU0:set(21, 0)
 
 end
 

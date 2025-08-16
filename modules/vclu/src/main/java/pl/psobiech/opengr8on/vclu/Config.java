@@ -52,15 +52,15 @@ public class Config {
         final Path keysPath = runtimeDirectory.resolve("keys.json");
         if (Files.exists(keysPath)) {
             return ObjectMapperFactory.JSON.readerFor(CluKeys.class)
-                                           .readValue(keysPath.toFile());
+                    .readValue(keysPath.toFile());
         }
 
         final String pin = StringUtils.upperCase(RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS));
 
         final byte[] ivBytes = RandomUtil.bytes(Command.IV_BYTES);
         final CluKeys cluKeys = new CluKeys(
-            RandomUtil.bytes(Command.KEY_BYTES), ivBytes,
-            ivBytes, pin.getBytes(StandardCharsets.US_ASCII)
+                RandomUtil.bytes(Command.KEY_BYTES), ivBytes,
+                ivBytes, pin.getBytes(StandardCharsets.US_ASCII)
         );
 
         writeKeys(runtimeDirectory, cluKeys);
@@ -72,45 +72,45 @@ public class Config {
         final Path keysPath = runtimeDirectory.resolve("keys.json");
 
         ObjectMapperFactory.JSON.writerFor(CluKeys.class)
-                                .writeValue(keysPath.toFile(), cluKeys);
+                .writeValue(keysPath.toFile(), cluKeys);
     }
 
     public static CLUDeviceConfig read(Path aDriveDirectory, NetworkInterfaceDto networkInterface) throws IOException {
         final String macAddress = macAddressAsString(
-            networkInterface.getNetworkInterface()
-                            .getHardwareAddress()
+                networkInterface.getNetworkInterface()
+                        .getHardwareAddress()
         );
 
         final CLUDeviceConfig cluDeviceConfig;
         final Path configJsonPath = aDriveDirectory.resolve(CLUFiles.CONFIG_JSON.getFileName());
         if (Files.exists(configJsonPath)) {
             final CLUDeviceConfig configJson = ObjectMapperFactory.JSON.readerFor(CLUDeviceConfig.class)
-                                                                       .readValue(configJsonPath.toFile());
+                    .readValue(configJsonPath.toFile());
 
             cluDeviceConfig = new CLUDeviceConfig(
-                configJson.getSerialNumber(),
-                macAddress,
-                configJson.getHardwareType(), configJson.getHardwareVersion(),
-                configJson.getFirmwareType(), configJson.getFirmwareVersion(),
-                configJson.getFirmwareVersionString(),
-                configJson.getStatus(),
-                configJson.getTFBusDevices()
+                    configJson.getSerialNumber(),
+                    macAddress,
+                    configJson.getHardwareType(), configJson.getHardwareVersion(),
+                    configJson.getFirmwareType(), configJson.getFirmwareVersion(),
+                    configJson.getFirmwareVersionString(),
+                    configJson.getStatus(),
+                    configJson.getTFBusDevices()
             );
         } else {
             cluDeviceConfig = new CLUDeviceConfig(
-                HexUtil.asLong(RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS)),
-                macAddress,
-                HARDWARE_TYPE, HARDWARE_VERSION,
-                FIRMWARE_TYPE, FIRMWARE_VERSION,
-                HexUtil.asString(FIRMWARE_VERSION) + "-0000",
-                "OK",
-                List.of()
+                    HexUtil.asLong(RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS)),
+                    macAddress,
+                    HARDWARE_TYPE, HARDWARE_VERSION,
+                    FIRMWARE_TYPE, FIRMWARE_VERSION,
+                    HexUtil.asString(FIRMWARE_VERSION) + "-0000",
+                    "OK",
+                    List.of()
             );
         }
 
         write(
-            aDriveDirectory,
-            cluDeviceConfig
+                aDriveDirectory,
+                cluDeviceConfig
         );
 
         return cluDeviceConfig;
@@ -120,29 +120,29 @@ public class Config {
         final Path configJsonPath = aDriveDirectory.resolve(CLUFiles.CONFIG_JSON.getFileName());
 
         ObjectMapperFactory.JSON.writerFor(CLUDeviceConfig.class)
-                                .writeValue(
-                                    configJsonPath.toFile(),
-                                    cluDevice
-                                );
+                .writeValue(
+                        configJsonPath.toFile(),
+                        cluDevice
+                );
 
         final String macAddress = macAddressAsString(
-            HexUtil.asBytes(
-                cluDevice.getMacAddress()
-                         .replaceAll(":", "")
-            )
+                HexUtil.asBytes(
+                        cluDevice.getMacAddress()
+                                .replaceAll(":", "")
+                )
         );
 
         final Path configTxtPath = configJsonPath.getParent().resolve("config.txt");
 
         Files.writeString(
-            configTxtPath,
-            asConfigTxtHexValue(0x00000000) + FileUtil.CRLF
-            + asConfigTxtHexValue(cluDevice.getSerialNumber()) + FileUtil.CRLF
-            + macAddress + FileUtil.CRLF
-            + asConfigTxtHexValue(cluDevice.getFirmwareType()) + FileUtil.CRLF
-            + asConfigTxtHexValue(cluDevice.getFirmwareVersion()) + FileUtil.CRLF
-            + asConfigTxtHexValue(cluDevice.getHardwareType()) + FileUtil.CRLF
-            + asConfigTxtHexValue(cluDevice.getHardwareVersion()) + FileUtil.CRLF
+                configTxtPath,
+                asConfigTxtHexValue(0x00000000) + FileUtil.CRLF
+                        + asConfigTxtHexValue(cluDevice.getSerialNumber()) + FileUtil.CRLF
+                        + macAddress + FileUtil.CRLF
+                        + asConfigTxtHexValue(cluDevice.getFirmwareType()) + FileUtil.CRLF
+                        + asConfigTxtHexValue(cluDevice.getFirmwareVersion()) + FileUtil.CRLF
+                        + asConfigTxtHexValue(cluDevice.getHardwareType()) + FileUtil.CRLF
+                        + asConfigTxtHexValue(cluDevice.getHardwareVersion()) + FileUtil.CRLF
         );
     }
 
@@ -161,9 +161,9 @@ public class Config {
 
     private static String asConfigTxtHexValue(long value) {
         return StringUtils.lowerCase(
-            StringUtils.leftPad(
-                HexUtil.asString(value), Integer.BYTES * 2, '0'
-            )
+                StringUtils.leftPad(
+                        HexUtil.asString(value), Integer.BYTES * 2, '0'
+                )
         );
     }
 

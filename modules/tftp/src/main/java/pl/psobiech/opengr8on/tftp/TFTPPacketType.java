@@ -29,10 +29,10 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public enum TFTPPacketType {
     UNKNOWN(
-        0,
-        payload -> {
-            throw new TFTPPacketException("Bad packet. Invalid TFTP operator code.");
-        }
+            0,
+            payload -> {
+                throw new TFTPPacketException("Bad packet. Invalid TFTP operator code.");
+            }
     ),
     READ_REQUEST(1, TFTPReadRequestPacket::new),
     WRITE_REQUEST(2, TFTPWriteRequestPacket::new),
@@ -52,7 +52,7 @@ public enum TFTPPacketType {
         }
 
         this.packetType = (byte) (packetType & 0xFF);
-        this.parser     = parser;
+        this.parser = parser;
     }
 
     public byte packetType() {

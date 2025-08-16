@@ -80,7 +80,7 @@ public class CipherKey {
     }
 
     public CipherKey(SecretKeySpec keySpecification, IvParameterSpec ivParameterSpecification) {
-        this.keySpecification         = keySpecification;
+        this.keySpecification = keySpecification;
         this.ivParameterSpecification = ivParameterSpecification;
     }
 
@@ -143,11 +143,12 @@ public class CipherKey {
             cipher.init(Cipher.DECRYPT_MODE, keySpecification(), ivSpecification());
 
             return Optional.of(
-                process(cipher, input, offset, limit)
+                    process(cipher, input, offset, limit)
             );
         } catch (IllegalBlockSizeException | BadPaddingException e) {
             return Optional.empty();
-        } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | ShortBufferException | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | ShortBufferException |
+                 NoSuchAlgorithmException | InvalidKeyException e) {
             throw new UnexpectedException(e);
         }
     }
@@ -161,7 +162,8 @@ public class CipherKey {
             cipher.init(Cipher.ENCRYPT_MODE, keySpecification(), ivSpecification());
 
             return process(cipher, message, 0, message.length);
-        } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | ShortBufferException | IllegalBlockSizeException | NoSuchAlgorithmException |
+        } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | ShortBufferException |
+                 IllegalBlockSizeException | NoSuchAlgorithmException |
                  BadPaddingException | InvalidKeyException e) {
             throw new UnexpectedException(e);
         }
@@ -171,12 +173,12 @@ public class CipherKey {
      * Performs encryption or decryption process using the provided cipher
      */
     private static byte[] process(Cipher cipher, byte[] input, int offset, int limit)
-        throws IllegalBlockSizeException, ShortBufferException, BadPaddingException {
+            throws IllegalBlockSizeException, ShortBufferException, BadPaddingException {
         final byte[] inputBuffer = new byte[INPUT_BUFFER_SIZE];
         byte[] outputBuffer = new byte[cipher.getOutputSize(inputBuffer.length)];
         try (
-            InputStream inputStream = new ByteArrayInputStream(input, offset, limit);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(cipher.getOutputSize(input.length));
+                InputStream inputStream = new ByteArrayInputStream(input, offset, limit);
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(cipher.getOutputSize(input.length));
         ) {
             int read;
             do {
@@ -242,7 +244,7 @@ public class CipherKey {
         }
 
         return Arrays.equals(keySpecification.getEncoded(), cipherKey.keySpecification.getEncoded())
-               && Arrays.equals(ivParameterSpecification.getIV(), cipherKey.ivParameterSpecification.getIV());
+                && Arrays.equals(ivParameterSpecification.getIV(), cipherKey.ivParameterSpecification.getIV());
     }
 
     @Override
@@ -253,8 +255,8 @@ public class CipherKey {
     @Override
     public String toString() {
         return "CipherKey{" +
-               "key=" + Base64.encodeBase64String(keySpecification.getEncoded()) +
-               ", iv=" + Base64.encodeBase64String(ivParameterSpecification.getIV()) +
-               '}';
+                "key=" + Base64.encodeBase64String(keySpecification.getEncoded()) +
+                ", iv=" + Base64.encodeBase64String(ivParameterSpecification.getIV()) +
+                '}';
     }
 }

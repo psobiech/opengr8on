@@ -48,8 +48,8 @@ class MySensorsClientTest {
         final ScheduledExecutorService executorService = ThreadUtil.virtualScheduler("MySensors");
 
         final MySensorsClient client = new MySensorsClient(
-            executorService,
-            SocketUtil.tcpClient(IPv4AddressUtil.parseIPv4("192.168.0.240"), 5003)
+                executorService,
+                SocketUtil.tcpClient(IPv4AddressUtil.parseIPv4("192.168.0.240"), 5003)
         );
 
         final Hashtable<String, String> names = new Hashtable<>();
@@ -59,10 +59,10 @@ class MySensorsClientTest {
                 Thread.sleep(10_000);
 
                 client.send(
-                    MessageFactory.internal(
-                        0, 255,
-                        I_HEARTBEAT_REQUEST
-                    )
+                        MessageFactory.internal(
+                                0, 255,
+                                I_HEARTBEAT_REQUEST
+                        )
                 );
             }
 
@@ -72,51 +72,51 @@ class MySensorsClientTest {
         final AtomicInteger nodeIdSequence = new AtomicInteger(0);
 
         client.open(
-            (mySensorsClient, internalMessage) -> nodeIdSequence.incrementAndGet(),
-            (controller, message) -> {
-                names.put(message.getNodeId() + ":" + message.getChildSensorId(), message.getPayload());
+                (mySensorsClient, internalMessage) -> nodeIdSequence.incrementAndGet(),
+                (controller, message) -> {
+                    names.put(message.getNodeId() + ":" + message.getChildSensorId(), message.getPayload());
 
-                final Optional<Message> responseMessage = switch (message.getTypeEnum()) {
-                    case S_BINARY -> {
-                        executorService.schedule(() ->
-                                client.send(
+                    final Optional<Message> responseMessage = switch (message.getTypeEnum()) {
+                        case S_BINARY -> {
+                            executorService.schedule(() ->
+                                            client.send(
+                                                    MessageFactory.set(
+                                                            message.getNodeId(), message.getChildSensorId(),
+                                                            0,
+                                                            SensorDataType.V_STATUS,
+                                                            "0"
+                                                    )
+                                            ),
+                                    2000, TimeUnit.MILLISECONDS
+                            );
+
+                            yield Optional.of(
                                     MessageFactory.set(
-                                        message.getNodeId(), message.getChildSensorId(),
-                                        0,
-                                        SensorDataType.V_STATUS,
-                                        "0"
+                                            message.getNodeId(), message.getChildSensorId(),
+                                            0,
+                                            SensorDataType.V_STATUS,
+                                            "1"
                                     )
-                                ),
-                            2000, TimeUnit.MILLISECONDS
-                        );
+                            );
+                        }
+                        default -> Optional.empty();
+                    };
 
-                        yield Optional.of(
-                            MessageFactory.set(
+                    responseMessage.ifPresent(controller::send);
+                },
+                (controller, message) -> {
+                    if (message.getCommandEnum() == SensorCommandType.C_SET) {
+                        LOGGER.info("SET: {}:{} ({}) == {}",
                                 message.getNodeId(), message.getChildSensorId(),
-                                0,
-                                SensorDataType.V_STATUS,
-                                "1"
-                            )
+                                names.get(message.getNodeId() + ":" + message.getChildSensorId()),
+                                switch (message.getTypeEnum()) {
+                                    case V_TEMP -> message.getPayloadAsFloat();
+                                    case V_STATUS -> message.getPayloadAsBoolean();
+                                    default -> message.getPayload();
+                                }
                         );
                     }
-                    default -> Optional.empty();
-                };
-
-                responseMessage.ifPresent(controller::send);
-            },
-            (controller, message) -> {
-                if (message.getCommandEnum() == SensorCommandType.C_SET) {
-                    LOGGER.info("SET: {}:{} ({}) == {}",
-                        message.getNodeId(), message.getChildSensorId(),
-                        names.get(message.getNodeId() + ":" + message.getChildSensorId()),
-                        switch (message.getTypeEnum()) {
-                            case V_TEMP -> message.getPayloadAsFloat();
-                            case V_STATUS -> message.getPayloadAsBoolean();
-                            default -> message.getPayload();
-                        }
-                    );
                 }
-            }
         );
 
         new CountDownLatch(1).await();

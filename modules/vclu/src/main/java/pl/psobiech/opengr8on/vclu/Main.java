@@ -63,10 +63,10 @@ public class Main {
 
         final String networkInterfaceNameOrIpAddress = args[args.length - 1];
         final NetworkInterfaceDto networkInterface = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(networkInterfaceNameOrIpAddress)
-                                                                    .or(() ->
-                                                                        IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
-                                                                    )
-                                                                    .get();
+                .or(() ->
+                        IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
+                )
+                .get();
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 
@@ -84,9 +84,9 @@ public class Main {
         final CLUDeviceConfig cluDeviceConfig = Config.read(aDriveDirectory, networkInterface);
 
         return new CLUDevice(
-            cluDeviceConfig.getSerialNumber(), cluDeviceConfig.getMacAddress(),
-            localAddress,
-            CipherTypeEnum.PROJECT, cluKeys.defaultIV(), cluKeys.pin()
+                cluDeviceConfig.getSerialNumber(), cluDeviceConfig.getMacAddress(),
+                localAddress,
+                CipherTypeEnum.PROJECT, cluKeys.defaultIV(), cluKeys.pin()
         );
     }
 

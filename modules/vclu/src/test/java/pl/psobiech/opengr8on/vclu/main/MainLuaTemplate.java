@@ -21,4 +21,5 @@ package pl.psobiech.opengr8on.vclu.main;
 import io.jstach.jstache.JStache;
 
 @JStache(path = "classpath:/stache/MAIN.LUA.mustache")
-public record MainLuaTemplate(String serialNumberHex) { }
+public record MainLuaTemplate(String serialNumberHex) {
+}

@@ -29,7 +29,7 @@ public class DataMessage extends Message {
         super(nodeId, childSensorId, commandEnum.type(), echo, typeEnum.type(), payload);
 
         this.commandEnum = commandEnum;
-        this.typeEnum    = typeEnum;
+        this.typeEnum = typeEnum;
     }
 
     @Override
@@ -45,13 +45,13 @@ public class DataMessage extends Message {
     @Override
     public String toString() {
         return "DataMessage{" +
-               "nodeId=" + nodeId +
-               ", childSensorId=" + childSensorId +
-               ", command=" + command + " // " + commandEnum +
-               ", echo=" + echo +
-               ", type=" + type + " // " + typeEnum +
-               ", payload='" + payload + '\'' +
-               '}';
+                "nodeId=" + nodeId +
+                ", childSensorId=" + childSensorId +
+                ", command=" + command + " // " + commandEnum +
+                ", echo=" + echo +
+                ", type=" + type + " // " + typeEnum +
+                ", payload='" + payload + '\'' +
+                '}';
     }
 
     public enum SensorDataType implements TypeEnum {

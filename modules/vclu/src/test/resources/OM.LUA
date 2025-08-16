@@ -14,15 +14,15 @@ CLU0 = OBJECT:new(0, 0x7F000001, "CLU0")
 
 
 function setVar(name, value)
-  _G[name] = value
+    _G[name] = value
 end
 
 function getVar(name)
-  return _G[name]
+    return _G[name]
 end
 
 function OnInit()
-  -- INIT_CLU_OBJECTS
+    -- INIT_CLU_OBJECTS
 
 end
 

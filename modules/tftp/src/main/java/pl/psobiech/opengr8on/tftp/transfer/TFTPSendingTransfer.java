@@ -44,9 +44,9 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPSendingTransfer.class);
 
     protected void outgoingTransfer(
-        TFTP tftp, boolean server,
-        Path path, TFTPTransferMode mode,
-        InetAddress requestAddress, int requestPort
+            TFTP tftp, boolean server,
+            Path path, TFTPTransferMode mode,
+            InetAddress requestAddress, int requestPort
     ) throws TFTPPacketException, IOException {
         try (InputStream inputStream = createInputStream(path, mode)) {
             int retry = maxRetries;
@@ -72,12 +72,12 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
                     firstPacket = false;
 
                     requestAddress = responsePacket.getAddress();
-                    requestPort    = responsePacket.getPort();
+                    requestPort = responsePacket.getPort();
                 }
 
                 if (!(responsePacket instanceof final TFTPAcknowledgementPacket ack)) {
                     throw new TFTPException(
-                        TFTPErrorType.UNDEFINED, "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
+                            TFTPErrorType.UNDEFINED, "Unexpected response from tftp client during transfer (" + responsePacket + "). Transfer aborted."
                     );
                 }
 
@@ -97,7 +97,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
                     if (retry-- < 0) {
                         throw new TFTPException(
-                            TFTPErrorType.UNDEFINED, "Communication error, no more retries available"
+                                TFTPErrorType.UNDEFINED, "Communication error, no more retries available"
                         );
                     }
                 }
@@ -108,7 +108,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
             throw packetException;
         } catch (FileNotFoundException | NoSuchFileException e) {
             final TFTPPacketException packetException = new TFTPPacketException(
-                TFTPErrorType.FILE_NOT_FOUND, e.getMessage(), e
+                    TFTPErrorType.FILE_NOT_FOUND, e.getMessage(), e
             );
             tftp.send(packetException.asError(requestAddress, requestPort));
 
@@ -117,7 +117,7 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
             throw e;
         } catch (Exception e) {
             final TFTPPacketException packetException = new TFTPPacketException(
-                TFTPErrorType.UNDEFINED, e.getMessage(), e
+                    TFTPErrorType.UNDEFINED, e.getMessage(), e
             );
             tftp.send(packetException.asError(requestAddress, requestPort));
 

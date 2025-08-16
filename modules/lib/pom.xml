@@ -18,56 +18,56 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>pl.psobiech.opengr8on</groupId>
-    <artifactId>parent</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <parent>
+        <groupId>pl.psobiech.opengr8on</groupId>
+        <artifactId>parent</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
 
-    <relativePath>../parent</relativePath>
-  </parent>
+        <relativePath>../parent</relativePath>
+    </parent>
 
-  <artifactId>lib</artifactId>
+    <artifactId>lib</artifactId>
 
-  <dependencies>
-    <dependency>
-      <groupId>pl.psobiech.opengr8on</groupId>
-      <artifactId>common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>pl.psobiech.opengr8on</groupId>
-      <artifactId>tftp</artifactId>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>pl.psobiech.opengr8on</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>pl.psobiech.opengr8on</groupId>
+            <artifactId>tftp</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk18on</artifactId>
-    </dependency>
-  </dependencies>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+        </dependency>
+    </dependencies>
 
-  <build>
-    <resources>
-      <resource>
-        <directory>${basedir}/src/main/resources</directory>
-        <filtering>false</filtering>
-      </resource>
-      <resource>
-        <directory>../</directory>
-        <targetPath>META-INF</targetPath>
-        <includes>
-          <include>LICENSE.txt</include>
-          <include>THIRD-PARTY.txt</include>
-        </includes>
-      </resource>
-    </resources>
-  </build>
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
+                <directory>../</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE.txt</include>
+                    <include>THIRD-PARTY.txt</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
 </project>

@@ -18,159 +18,176 @@
   -->
 
 <object class="40" name="PresenceSensor" version="2">
-  <features>
-    <feature default="60" get="true" index="0" name="Timeout" range="5-31556926" set="true" type="num" unit="s">
-      <hint lang="pl" value="Czas (w sekundach) od ostatniej aktywności, po którym wartość cechy PresenceDetected zostaje ustawiona na 0"/>
-      <hint lang="en" value="Time (in seconds) from last movement detection. When this time elapses PresenceDetected sets on 0"/>
-      <hint lang="de" value="Zeit (in Sekunden) seit der letzten Bewegungserkennung. Nach Ablauf dieser Zeit wird PresenceDetected auf 0 gesetzt"/>
-      <desc resKey="presencesensor_timeout"/>
-    </feature>
-    <feature enum="0,1" get="true" index="1" name="State" set="true" type="num">
-      <enum name="Off" resKey="presencesensor_state_enum_off" value="0"/>
-      <enum name="On" resKey="presencesensor_state_enum_on" value="1"/>
-      <hint lang="pl" value="Aktualny stan czujnika obecności, 1 - włączony, 0 - wyłączony"/>
-      <hint lang="en" value="Current state of presence sensor, 1 - On, 0 - Off"/>
-      <hint lang="de" value="Aktueller Status des Präsenzsensors, 1 - Ein, 0 - Aus"/>
-      <desc resKey="presencesensor_state"/>
-    </feature>
-    <feature get="true" index="2" name="PresenceDetected" set="false" type="num">
-      <hint lang="pl" value="Wartość mówiąca o wykryciu ruchu przez czujnik"/>
-      <hint lang="en" value="Movement detection state"/>
-      <hint lang="de" value="Bewegungserkennungsstatus"/>
-      <desc resKey="presencesensor_presencedetected"/>
-    </feature>
-    <feature get="true" index="3" name="TimeFromLastPresence" set="false" type="num" unit="s">
-      <hint lang="pl"
-        value="Czas od ostatniego wykrycia ruchu (z czujnika lub włączenia swiatła z przycisku). Resetowany po wywołaniu:&#13;- DetectPresence() - bez względu na Locked, DetectionDelay&#13;- SwitchLocked() przy zmianie Locked na 1&#13;- SetLocked(On)&#13;W trybie stanowym po wywołaniu DetectPresence(), TimeFromLastPresence = 0, aż do wywołania UndetectPresence()"/>
-      <hint lang="en"
-        value="The time since the last motion detection (from the sensor or switching on the light from the button). Reset after calling: &#13;- DetectPresence () - regardless of Locked, DetectionDelay &#13;- SwitchLocked () when changing Locked to 1 &#13;- SetLocked (On) &#13; In state mode after calling DetectPresence (), TimeFromLastPresence = 0, until UndetectPresence () is called"/>
-      <hint lang="de"
-        value="Die Zeit seit der letzten Bewegungserkennung (durch den Sensor oder das Einschalten des Lichts durch die Taste). Reset nach Aufruf: &#13;- DetectPresence () - unabhängig von Locked, DetectionDelay &#13;- SwitchLocked () beim Wechsel von Locked auf 1 &#13;- SetLocked (On) &#13; Im Zustandsmodus nach Aufruf von DetectPresence (), TimeFromLastPresence = 0, until UndetectPresence() wird aufgerufen"/>
-      <desc resKey="presencesensor_timefromlastpresence"/>
-    </feature>
-    <feature default="2" get="true" index="4" name="DetectionDelay" range="0-31556926" set="true" type="num" unit="s">
-      <hint lang="pl" value="Czas ignorowania DetectPresence po zmianie Locked On-&gt;Off"/>
-      <hint lang="en" value="Time to ignore DetectPresence after changing Locked On-&gt;Off"/>
-      <hint lang="de" value="Zeit, DetectPresence zu ignorieren, nachdem Locked On-&gt;Off"/>
-      <desc resKey="presencesensor_detectiondelay"/>
-    </feature>
-    <feature enum="0,1" get="true" index="5" name="Locked" set="false" type="num" unit="bool">
-      <enum name="Off" resKey="presencesensor_locked_enum_off" value="0"/>
-      <enum name="On" resKey="presencesensor_locked_enum_on" value="1"/>
-      <hint lang="pl" value="Stan zablokowania obecności. 0 - reagowanie na DetectPresence. 1 - podtrzymanie PresenceDetected jako 1"/>
-      <hint lang="en" value="Presence blocked status. 0 - reacting to DetectPresence. 1 - maintain PresenceDetected as 1"/>
-      <hint lang="de" value="Anwesenheit gesperrter Status. 0 - Reaktion auf DetectPresence. 1 - PresenceDetected als 1 beibehalten"/>
-      <desc resKey="presencesensor_locked"/>
-    </feature>
-    <feature default="0" enum="0,1" get="true" index="6" name="Mode" set="true" type="num">
-      <enum name="Impulse input" resKey="presencesensor_mode_enum_impulseinput" value="0"/>
-      <enum name="State input" resKey="presencesensor_mode_enum_stateinput" value="1"/>
-      <hint lang="pl" value="Tryb działania obiektu w zależności od typu używanego czujnika ruchu: 0 - impulsowy, 1 - stanowy."/>
-      <hint lang="en" value="Operation mode depending on the type of motion sensor used. 0 - impulse, 1 - state"/>
-      <hint lang="de" value="Betriebsmodus abhängig vom verwendeten Bewegungssensortyp. 0 - Impuls, 1 - Zustand"/>
-      <desc resKey="presencesensor_mode"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="execute" index="0" name="Start" return="void">
-      <hint lang="pl" value="Uruchamia czujnik obecności"/>
-      <hint lang="en" value="Start a presence sensor"/>
-      <hint lang="de" value="Präsenzsensor starten"/>
-      <desc resKey="presencesensor_start"/>
-    </method>
-    <method call="execute" index="1" name="Stop" return="void">
-      <hint lang="pl" value="Zatrzymuje czujnik obecności"/>
-      <hint lang="en" value="Stop a presence sensor"/>
-      <hint lang="de" value="Stoppen Sie einen Anwesenheitssensor"/>
-      <desc resKey="presencesensor_stop"/>
-    </method>
-    <method call="execute" index="2" name="DetectPresence" return="void">
-      <hint lang="pl"
-        value="Metoda wywoływana podczas wykrycia obecności. Ustawia wartość cechy PresenceDetected na 1 oraz resetuje licznik TimeFromLastPresence czujnika obecności"/>
-      <hint lang="en" value="Method called while presence detection. Sets PresenceDetected value to 1 and resets TimeFromLastPresence timer"/>
-      <hint lang="de"
-        value="Methode, die während der Anwesenheitserkennung aufgerufen wird. Setzt den PresenceDetected-Wert auf 1 und setzt den TimeFromLastPresence-Timer zurück"/>
-      <desc resKey="presencesensor_detectpresence"/>
-    </method>
-    <method call="execute" index="3" name="UndetectPresence" return="void">
-      <hint lang="pl" value="Używana w trybie stanowym (Mode = 1). Kończy podtrzymywanie parametru PresenceDetected (po upływie Timeout'u)"/>
-      <hint lang="en" value="Used in state mode (Mode = 1). Ends keeping the PresenceDetected parameter (after Timeout)"/>
-      <hint lang="de" value="Wird im Zustandsmodus verwendet (Modus = 1). Beendet die Beibehaltung des PresenceDetected-Parameters (nach Timeout)"/>
-      <desc resKey="presencesensor_undetectpresence"/>
-    </method>
-    <method call="execute" index="4" name="SwitchLocked" return="void">
-      <hint lang="pl"
-        value="Zmienia wartość parametru Locked na przeciwny. Przypadki:&#13;- zmiana Locked z 0 na 1 - ustawienie na 1 i zablokowanie PresenceDetected, wywołanie zdarzenia OnSwitchOn (jeśli wcześniej PresenceDetected = 0), reset TimeFromLastPresence&#13;- zmiana Locked z 1 na 0 - ustawienie na 0 i odblokowanie Presence Detected, wywołanie zdarzenia OnSwitchOff"/>
-      <hint lang="en"
-        value="Changes the value of the Locked parameter to the opposite. Cases: &#13;- changing Locked from 0 to 1 - setting to 1 and blocking PresenceDetected, triggering the OnSwitchOn event (if PresenceDetected = 0 before), resetting TimeFromLastPresence &#13;- changing Locked from 1 to 0 - setting to 0 and unlocking Presence Detected, triggering the OnSwitchOff event"/>
-      <hint lang="de"
-        value="Ändert den Wert des Locked-Parameters in das Gegenteil. Fälle: &#13;- Ändern von Locked von 0 auf 1 - Setzen auf 1 und Blockieren von PresenceDetected, Auslösen des OnSwitchOn-Ereignisses (wenn PresenceDetected = 0 zuvor), Zurücksetzen von TimeFromLastPresence &#13;- Ändern von Locked von 1 auf 0 - Setzen auf 0 und Entsperren von Presence Detected , wodurch das OnSwitchOff-Ereignis ausgelöst wird"/>
-      <desc resKey="presencesensor_switchlocked"/>
-    </method>
-    <method call="set" index="5" name="SetLocked" return="void">
-      <param name="Locked"/>
-      <hint lang="pl"
-        value="Ustawia wartość parametru Locked. Przypadki:&#13;- zmiana Locked z 0 na 1 - ustawienie na 1 i zablokowanie PresenceDetected, wywołanie zdarzenia OnSwitchOn (jeśli wcześniej PresenceDetected = 0), reset TimeFromLastPresence&#13;- zmiana Locked z 1 na 0 - ustawienie na 0 i odblokowanie Presence Detected, wywołanie zdarzenia OnSwitchOff&#13;- SetLocked(On) jeśli Locked = 1 - resetuje TimeFromLastPresence&#13;- SetLocked(Off) jeśli Locked = 0 - brak reakcji"/>
-      <hint lang="en"
-        value="Sets the value of the Locked parameter. Cases: &#13;- changing Locked from 0 to 1 - setting to 1 and blocking PresenceDetected, triggering the OnSwitchOn event (if PresenceDetected = 0 before), resetting TimeFromLastPresence &#13;- changing Locked from 1 to 0 - setting to 0 and unlocking Presence Detected, triggering the OnSwitchOff event &#13;- SetLocked (On) if Locked = 1 - resets TimeFromLastPresence &#13;- SetLocked (Off) if Locked = 0 - no reaction"/>
-      <hint lang="de"
-        value="Legt den Wert des Locked-Parameters fest. Fälle: &#13;- Ändern von Locked von 0 auf 1 - Setzen auf 1 und Blockieren von PresenceDetected, Auslösen des OnSwitchOn-Ereignisses (wenn PresenceDetected = 0 zuvor), Zurücksetzen von TimeFromLastPresence &#13;- Ändern von Locked von 1 auf 0 - Setzen auf 0 und Entsperren von Presence Detected , Auslösen des OnSwitchOff-Ereignisses &#13;- SetLocked (On) if Locked = 1 - setzt TimeFromLastPresence zurück &#13;- SetLocked (Off) if Locked = 0 - keine Reaktion"/>
-      <desc resKey="presencesensor_setlocked"/>
-    </method>
-    <method call="set" index="0" name="SetTimeout" return="void">
-      <param name="Timeout" type="num" unit="s"/>
-      <hint lang="pl" value="Ustawia parametr Timeout (wyrażony w sekundach)"/>
-      <hint lang="en" value="Set a Timeout parameter (in seconds)"/>
-      <hint lang="de" value="Legen Sie einen Timeout-Parameter fest (in Sekunden)"/>
-      <desc resKey="presencesensor_settimeout"/>
-    </method>
-    <method call="set" index="1" name="State" return="void" visible="false">
-      <param name="State" type="num"/>
-      <hint lang="pl" value="Ustawia Aktualny stan czujnika obecności, 1 - włączony, 0 - wyłączony"/>
-      <hint lang="en" value="Set Current state of presence sensor, 1 - On, 0 - Off"/>
-      <hint lang="de" value="Aktuellen Status des Präsenzsensors einstellen, 1 - Ein, 0 - Aus"/>
-      <desc resKey="presencesensor_state_1"/>
-    </method>
-    <method call="set" index="4" name="SetDetectionDelay" return="void">
-      <param name="DetectionDelay" type="num" unit="s"/>
-      <hint lang="pl" value="Ustawia parametr DetectionDelay (wyrażony w sekundach)"/>
-      <hint lang="en" value="Sets the DetectionDelay parameter (in seconds)"/>
-      <hint lang="de" value="Setzt den Parameter DetectionDelay (in Sekunden)"/>
-      <desc resKey="presencesensor_setdetectiondelay"/>
-    </method>
-    <method call="set" index="6" name="SetMode" return="void">
-      <param name="Mode"/>
-      <hint lang="pl" value="Ustawia parametr Mode"/>
-      <hint lang="en" value="Sets the Mode parameter"/>
-      <hint lang="de" value="Setzt den Modus-Parameter"/>
-      <desc resKey="presencesensor_setmode"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnStart">
-      <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu czujnika"/>
-      <hint lang="en" value="A event called when sensor starts"/>
-      <hint lang="de" value="Ein Ereignis, das beim Start des Sensors aufgerufen wird"/>
-      <desc resKey="presencesensor_onstart"/>
-    </event>
-    <event address="1" name="OnStop">
-      <hint lang="pl" value="Zdarzenie wywoływane przy dezaktywacji czujnika"/>
-      <hint lang="en" value="A event called when sensor stops"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Sensor stoppt"/>
-      <desc resKey="presencesensor_onstop"/>
-    </event>
-    <event address="2" name="OnSwitchOn">
-      <hint lang="pl" value="Zdarzenie wywoływane podczas wykrycia obecności (zmiana wartości parametru PresenceDetected z 0 na 1)"/>
-      <hint lang="en" value="A event called if a presence detected (change of PresenceDetected parameter value from 0 to 1)"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn eine Präsenz erkannt wird (Änderung des Parameterwerts PresenceDetected von 0 auf 1)"/>
-      <desc resKey="presencesensor_onswitchon"/>
-    </event>
-    <event address="3" name="OnSwitchOff">
-      <hint lang="pl" value="Zdarzenie wywoływane na timeout licznika (zmiana parametru PresenceDetected z 1 na 0)"/>
-      <hint lang="en" value="A event called when a timer timeouts (change of PresenceDetected parameter value from 1 to 0)"/>
-      <hint lang="de"
-        value="Ein Ereignis, das bei einer Zeitüberschreitung eines Timers aufgerufen wird (Änderung des Parameterwerts PresenceDetected von 1 auf 0)"/>
-      <desc resKey="presencesensor_onswitchoff"/>
-    </event>
-  </events>
+    <features>
+        <feature default="60" get="true" index="0" name="Timeout" range="5-31556926" set="true" type="num" unit="s">
+            <hint lang="pl"
+                  value="Czas (w sekundach) od ostatniej aktywności, po którym wartość cechy PresenceDetected zostaje ustawiona na 0"/>
+            <hint lang="en"
+                  value="Time (in seconds) from last movement detection. When this time elapses PresenceDetected sets on 0"/>
+            <hint lang="de"
+                  value="Zeit (in Sekunden) seit der letzten Bewegungserkennung. Nach Ablauf dieser Zeit wird PresenceDetected auf 0 gesetzt"/>
+            <desc resKey="presencesensor_timeout"/>
+        </feature>
+        <feature enum="0,1" get="true" index="1" name="State" set="true" type="num">
+            <enum name="Off" resKey="presencesensor_state_enum_off" value="0"/>
+            <enum name="On" resKey="presencesensor_state_enum_on" value="1"/>
+            <hint lang="pl" value="Aktualny stan czujnika obecności, 1 - włączony, 0 - wyłączony"/>
+            <hint lang="en" value="Current state of presence sensor, 1 - On, 0 - Off"/>
+            <hint lang="de" value="Aktueller Status des Präsenzsensors, 1 - Ein, 0 - Aus"/>
+            <desc resKey="presencesensor_state"/>
+        </feature>
+        <feature get="true" index="2" name="PresenceDetected" set="false" type="num">
+            <hint lang="pl" value="Wartość mówiąca o wykryciu ruchu przez czujnik"/>
+            <hint lang="en" value="Movement detection state"/>
+            <hint lang="de" value="Bewegungserkennungsstatus"/>
+            <desc resKey="presencesensor_presencedetected"/>
+        </feature>
+        <feature get="true" index="3" name="TimeFromLastPresence" set="false" type="num" unit="s">
+            <hint lang="pl"
+                  value="Czas od ostatniego wykrycia ruchu (z czujnika lub włączenia swiatła z przycisku). Resetowany po wywołaniu:&#13;- DetectPresence() - bez względu na Locked, DetectionDelay&#13;- SwitchLocked() przy zmianie Locked na 1&#13;- SetLocked(On)&#13;W trybie stanowym po wywołaniu DetectPresence(), TimeFromLastPresence = 0, aż do wywołania UndetectPresence()"/>
+            <hint lang="en"
+                  value="The time since the last motion detection (from the sensor or switching on the light from the button). Reset after calling: &#13;- DetectPresence () - regardless of Locked, DetectionDelay &#13;- SwitchLocked () when changing Locked to 1 &#13;- SetLocked (On) &#13; In state mode after calling DetectPresence (), TimeFromLastPresence = 0, until UndetectPresence () is called"/>
+            <hint lang="de"
+                  value="Die Zeit seit der letzten Bewegungserkennung (durch den Sensor oder das Einschalten des Lichts durch die Taste). Reset nach Aufruf: &#13;- DetectPresence () - unabhängig von Locked, DetectionDelay &#13;- SwitchLocked () beim Wechsel von Locked auf 1 &#13;- SetLocked (On) &#13; Im Zustandsmodus nach Aufruf von DetectPresence (), TimeFromLastPresence = 0, until UndetectPresence() wird aufgerufen"/>
+            <desc resKey="presencesensor_timefromlastpresence"/>
+        </feature>
+        <feature default="2" get="true" index="4" name="DetectionDelay" range="0-31556926" set="true" type="num"
+                 unit="s">
+            <hint lang="pl" value="Czas ignorowania DetectPresence po zmianie Locked On-&gt;Off"/>
+            <hint lang="en" value="Time to ignore DetectPresence after changing Locked On-&gt;Off"/>
+            <hint lang="de" value="Zeit, DetectPresence zu ignorieren, nachdem Locked On-&gt;Off"/>
+            <desc resKey="presencesensor_detectiondelay"/>
+        </feature>
+        <feature enum="0,1" get="true" index="5" name="Locked" set="false" type="num" unit="bool">
+            <enum name="Off" resKey="presencesensor_locked_enum_off" value="0"/>
+            <enum name="On" resKey="presencesensor_locked_enum_on" value="1"/>
+            <hint lang="pl"
+                  value="Stan zablokowania obecności. 0 - reagowanie na DetectPresence. 1 - podtrzymanie PresenceDetected jako 1"/>
+            <hint lang="en"
+                  value="Presence blocked status. 0 - reacting to DetectPresence. 1 - maintain PresenceDetected as 1"/>
+            <hint lang="de"
+                  value="Anwesenheit gesperrter Status. 0 - Reaktion auf DetectPresence. 1 - PresenceDetected als 1 beibehalten"/>
+            <desc resKey="presencesensor_locked"/>
+        </feature>
+        <feature default="0" enum="0,1" get="true" index="6" name="Mode" set="true" type="num">
+            <enum name="Impulse input" resKey="presencesensor_mode_enum_impulseinput" value="0"/>
+            <enum name="State input" resKey="presencesensor_mode_enum_stateinput" value="1"/>
+            <hint lang="pl"
+                  value="Tryb działania obiektu w zależności od typu używanego czujnika ruchu: 0 - impulsowy, 1 - stanowy."/>
+            <hint lang="en" value="Operation mode depending on the type of motion sensor used. 0 - impulse, 1 - state"/>
+            <hint lang="de" value="Betriebsmodus abhängig vom verwendeten Bewegungssensortyp. 0 - Impuls, 1 - Zustand"/>
+            <desc resKey="presencesensor_mode"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="execute" index="0" name="Start" return="void">
+            <hint lang="pl" value="Uruchamia czujnik obecności"/>
+            <hint lang="en" value="Start a presence sensor"/>
+            <hint lang="de" value="Präsenzsensor starten"/>
+            <desc resKey="presencesensor_start"/>
+        </method>
+        <method call="execute" index="1" name="Stop" return="void">
+            <hint lang="pl" value="Zatrzymuje czujnik obecności"/>
+            <hint lang="en" value="Stop a presence sensor"/>
+            <hint lang="de" value="Stoppen Sie einen Anwesenheitssensor"/>
+            <desc resKey="presencesensor_stop"/>
+        </method>
+        <method call="execute" index="2" name="DetectPresence" return="void">
+            <hint lang="pl"
+                  value="Metoda wywoływana podczas wykrycia obecności. Ustawia wartość cechy PresenceDetected na 1 oraz resetuje licznik TimeFromLastPresence czujnika obecności"/>
+            <hint lang="en"
+                  value="Method called while presence detection. Sets PresenceDetected value to 1 and resets TimeFromLastPresence timer"/>
+            <hint lang="de"
+                  value="Methode, die während der Anwesenheitserkennung aufgerufen wird. Setzt den PresenceDetected-Wert auf 1 und setzt den TimeFromLastPresence-Timer zurück"/>
+            <desc resKey="presencesensor_detectpresence"/>
+        </method>
+        <method call="execute" index="3" name="UndetectPresence" return="void">
+            <hint lang="pl"
+                  value="Używana w trybie stanowym (Mode = 1). Kończy podtrzymywanie parametru PresenceDetected (po upływie Timeout'u)"/>
+            <hint lang="en"
+                  value="Used in state mode (Mode = 1). Ends keeping the PresenceDetected parameter (after Timeout)"/>
+            <hint lang="de"
+                  value="Wird im Zustandsmodus verwendet (Modus = 1). Beendet die Beibehaltung des PresenceDetected-Parameters (nach Timeout)"/>
+            <desc resKey="presencesensor_undetectpresence"/>
+        </method>
+        <method call="execute" index="4" name="SwitchLocked" return="void">
+            <hint lang="pl"
+                  value="Zmienia wartość parametru Locked na przeciwny. Przypadki:&#13;- zmiana Locked z 0 na 1 - ustawienie na 1 i zablokowanie PresenceDetected, wywołanie zdarzenia OnSwitchOn (jeśli wcześniej PresenceDetected = 0), reset TimeFromLastPresence&#13;- zmiana Locked z 1 na 0 - ustawienie na 0 i odblokowanie Presence Detected, wywołanie zdarzenia OnSwitchOff"/>
+            <hint lang="en"
+                  value="Changes the value of the Locked parameter to the opposite. Cases: &#13;- changing Locked from 0 to 1 - setting to 1 and blocking PresenceDetected, triggering the OnSwitchOn event (if PresenceDetected = 0 before), resetting TimeFromLastPresence &#13;- changing Locked from 1 to 0 - setting to 0 and unlocking Presence Detected, triggering the OnSwitchOff event"/>
+            <hint lang="de"
+                  value="Ändert den Wert des Locked-Parameters in das Gegenteil. Fälle: &#13;- Ändern von Locked von 0 auf 1 - Setzen auf 1 und Blockieren von PresenceDetected, Auslösen des OnSwitchOn-Ereignisses (wenn PresenceDetected = 0 zuvor), Zurücksetzen von TimeFromLastPresence &#13;- Ändern von Locked von 1 auf 0 - Setzen auf 0 und Entsperren von Presence Detected , wodurch das OnSwitchOff-Ereignis ausgelöst wird"/>
+            <desc resKey="presencesensor_switchlocked"/>
+        </method>
+        <method call="set" index="5" name="SetLocked" return="void">
+            <param name="Locked"/>
+            <hint lang="pl"
+                  value="Ustawia wartość parametru Locked. Przypadki:&#13;- zmiana Locked z 0 na 1 - ustawienie na 1 i zablokowanie PresenceDetected, wywołanie zdarzenia OnSwitchOn (jeśli wcześniej PresenceDetected = 0), reset TimeFromLastPresence&#13;- zmiana Locked z 1 na 0 - ustawienie na 0 i odblokowanie Presence Detected, wywołanie zdarzenia OnSwitchOff&#13;- SetLocked(On) jeśli Locked = 1 - resetuje TimeFromLastPresence&#13;- SetLocked(Off) jeśli Locked = 0 - brak reakcji"/>
+            <hint lang="en"
+                  value="Sets the value of the Locked parameter. Cases: &#13;- changing Locked from 0 to 1 - setting to 1 and blocking PresenceDetected, triggering the OnSwitchOn event (if PresenceDetected = 0 before), resetting TimeFromLastPresence &#13;- changing Locked from 1 to 0 - setting to 0 and unlocking Presence Detected, triggering the OnSwitchOff event &#13;- SetLocked (On) if Locked = 1 - resets TimeFromLastPresence &#13;- SetLocked (Off) if Locked = 0 - no reaction"/>
+            <hint lang="de"
+                  value="Legt den Wert des Locked-Parameters fest. Fälle: &#13;- Ändern von Locked von 0 auf 1 - Setzen auf 1 und Blockieren von PresenceDetected, Auslösen des OnSwitchOn-Ereignisses (wenn PresenceDetected = 0 zuvor), Zurücksetzen von TimeFromLastPresence &#13;- Ändern von Locked von 1 auf 0 - Setzen auf 0 und Entsperren von Presence Detected , Auslösen des OnSwitchOff-Ereignisses &#13;- SetLocked (On) if Locked = 1 - setzt TimeFromLastPresence zurück &#13;- SetLocked (Off) if Locked = 0 - keine Reaktion"/>
+            <desc resKey="presencesensor_setlocked"/>
+        </method>
+        <method call="set" index="0" name="SetTimeout" return="void">
+            <param name="Timeout" type="num" unit="s"/>
+            <hint lang="pl" value="Ustawia parametr Timeout (wyrażony w sekundach)"/>
+            <hint lang="en" value="Set a Timeout parameter (in seconds)"/>
+            <hint lang="de" value="Legen Sie einen Timeout-Parameter fest (in Sekunden)"/>
+            <desc resKey="presencesensor_settimeout"/>
+        </method>
+        <method call="set" index="1" name="State" return="void" visible="false">
+            <param name="State" type="num"/>
+            <hint lang="pl" value="Ustawia Aktualny stan czujnika obecności, 1 - włączony, 0 - wyłączony"/>
+            <hint lang="en" value="Set Current state of presence sensor, 1 - On, 0 - Off"/>
+            <hint lang="de" value="Aktuellen Status des Präsenzsensors einstellen, 1 - Ein, 0 - Aus"/>
+            <desc resKey="presencesensor_state_1"/>
+        </method>
+        <method call="set" index="4" name="SetDetectionDelay" return="void">
+            <param name="DetectionDelay" type="num" unit="s"/>
+            <hint lang="pl" value="Ustawia parametr DetectionDelay (wyrażony w sekundach)"/>
+            <hint lang="en" value="Sets the DetectionDelay parameter (in seconds)"/>
+            <hint lang="de" value="Setzt den Parameter DetectionDelay (in Sekunden)"/>
+            <desc resKey="presencesensor_setdetectiondelay"/>
+        </method>
+        <method call="set" index="6" name="SetMode" return="void">
+            <param name="Mode"/>
+            <hint lang="pl" value="Ustawia parametr Mode"/>
+            <hint lang="en" value="Sets the Mode parameter"/>
+            <hint lang="de" value="Setzt den Modus-Parameter"/>
+            <desc resKey="presencesensor_setmode"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnStart">
+            <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu czujnika"/>
+            <hint lang="en" value="A event called when sensor starts"/>
+            <hint lang="de" value="Ein Ereignis, das beim Start des Sensors aufgerufen wird"/>
+            <desc resKey="presencesensor_onstart"/>
+        </event>
+        <event address="1" name="OnStop">
+            <hint lang="pl" value="Zdarzenie wywoływane przy dezaktywacji czujnika"/>
+            <hint lang="en" value="A event called when sensor stops"/>
+            <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Sensor stoppt"/>
+            <desc resKey="presencesensor_onstop"/>
+        </event>
+        <event address="2" name="OnSwitchOn">
+            <hint lang="pl"
+                  value="Zdarzenie wywoływane podczas wykrycia obecności (zmiana wartości parametru PresenceDetected z 0 na 1)"/>
+            <hint lang="en"
+                  value="A event called if a presence detected (change of PresenceDetected parameter value from 0 to 1)"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das aufgerufen wird, wenn eine Präsenz erkannt wird (Änderung des Parameterwerts PresenceDetected von 0 auf 1)"/>
+            <desc resKey="presencesensor_onswitchon"/>
+        </event>
+        <event address="3" name="OnSwitchOff">
+            <hint lang="pl"
+                  value="Zdarzenie wywoływane na timeout licznika (zmiana parametru PresenceDetected z 1 na 0)"/>
+            <hint lang="en"
+                  value="A event called when a timer timeouts (change of PresenceDetected parameter value from 1 to 0)"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das bei einer Zeitüberschreitung eines Timers aufgerufen wird (Änderung des Parameterwerts PresenceDetected von 1 auf 0)"/>
+            <desc resKey="presencesensor_onswitchoff"/>
+        </event>
+    </events>
 </object>

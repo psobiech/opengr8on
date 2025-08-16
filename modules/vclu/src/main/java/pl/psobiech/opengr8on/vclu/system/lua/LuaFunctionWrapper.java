@@ -41,7 +41,7 @@ public class LuaFunctionWrapper extends LibFunction {
 
     LuaFunctionWrapper(Logger logger, BaseLuaFunction fn) {
         this.logger = logger;
-        this.fn     = fn;
+        this.fn = fn;
     }
 
     @Override

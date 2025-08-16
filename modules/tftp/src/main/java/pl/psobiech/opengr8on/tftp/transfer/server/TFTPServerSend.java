@@ -41,12 +41,12 @@ public class TFTPServerSend extends TFTPSendingTransfer {
     private final Path path;
 
     public TFTPServerSend(
-        InetAddress requestAddress, int requestPort,
-        TFTPTransferMode mode,
-        Path path, String location
+            InetAddress requestAddress, int requestPort,
+            TFTPTransferMode mode,
+            Path path, String location
     ) {
         this.requestAddress = requestAddress;
-        this.requestPort    = requestPort;
+        this.requestPort = requestPort;
 
         this.mode = mode;
 

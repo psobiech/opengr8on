@@ -77,94 +77,94 @@ class ServerTest extends BaseServerTest {
     @Timeout(30)
     void emergencyMode() throws Exception {
         execute(
-            server -> {
-                try {
-                    Files.delete(server.getADriveDirectory().resolve(CLUFiles.MAIN_LUA.getFileName()));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            },
-            (projectCipherKey, server, client) -> {
-                final Optional<String> aliveOptional = client.execute(LuaScriptCommand.CHECK_ALIVE);
+                server -> {
+                    try {
+                        Files.delete(server.getADriveDirectory().resolve(CLUFiles.MAIN_LUA.getFileName()));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                },
+                (projectCipherKey, server, client) -> {
+                    final Optional<String> aliveOptional = client.execute(LuaScriptCommand.CHECK_ALIVE);
 
-                assertTrue(aliveOptional.isPresent());
-                assertEquals("emergency", aliveOptional.get());
-            }
+                    assertTrue(aliveOptional.isPresent());
+                    assertEquals("emergency", aliveOptional.get());
+                }
         );
     }
 
     @Test
     void startTFTPdServer() throws Exception {
         execute(
-            (projectCipherKey, server, client) -> {
-                assertTFTPdDisabled(server);
+                (projectCipherKey, server, client) -> {
+                    assertTFTPdDisabled(server);
 
-                final Path rootDirectory = server.getRootDirectory();
-                final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
+                    final Path rootDirectory = server.getRootDirectory();
+                    final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
 
-                final Optional<Boolean> response1Optional = client.startTFTPdServer();
-                assertTrue(response1Optional.isPresent());
-                assertTrue(response1Optional.get());
+                    final Optional<Boolean> response1Optional = client.startTFTPdServer();
+                    assertTrue(response1Optional.isPresent());
+                    assertTrue(response1Optional.get());
 
-                try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
-                    tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
+                    try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
+                        tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
+                    }
+
+                    final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4000L));
+                    assertTrue(response2Optional.isPresent());
+                    assertTrue(response2Optional.get());
+
+                    assertTFTPdDisabled(server);
                 }
-
-                final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4000L));
-                assertTrue(response2Optional.isPresent());
-                assertTrue(response2Optional.get());
-
-                assertTFTPdDisabled(server);
-            }
         );
     }
 
     @Test
     void generateMeasurements() throws Exception {
         execute(
-            (projectCipherKey, server, client) -> {
-                assertTFTPdDisabled(server);
+                (projectCipherKey, server, client) -> {
+                    assertTFTPdDisabled(server);
 
-                final Path rootDirectory = server.getRootDirectory();
-                final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
-                final int sessionId = Mocks.sessionId();
+                    final Path rootDirectory = server.getRootDirectory();
+                    final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
+                    final int sessionId = Mocks.sessionId();
 
-                final Optional<GenerateMeasurementsCommand.Response> response1Optional = client.request(
-                                                                                                   GenerateMeasurementsCommand.request(LOCALHOST, sessionId, "1345"),
-                                                                                                   Duration.ofMillis(4000L)
-                                                                                               )
-                                                                                               .flatMap(payload ->
-                                                                                                   GenerateMeasurementsCommand.responseFromByteArray(payload.buffer())
-                                                                                               );
+                    final Optional<GenerateMeasurementsCommand.Response> response1Optional = client.request(
+                                    GenerateMeasurementsCommand.request(LOCALHOST, sessionId, "1345"),
+                                    Duration.ofMillis(4000L)
+                            )
+                            .flatMap(payload ->
+                                    GenerateMeasurementsCommand.responseFromByteArray(payload.buffer())
+                            );
 
-                assertTrue(response1Optional.isPresent());
-                assertEquals(sessionId, response1Optional.get().getSessionId());
-                assertEquals(GenerateMeasurementsCommand.RESPONSE_OK, response1Optional.get().getReturnValue());
+                    assertTrue(response1Optional.isPresent());
+                    assertEquals(sessionId, response1Optional.get().getSessionId());
+                    assertEquals(GenerateMeasurementsCommand.RESPONSE_OK, response1Optional.get().getReturnValue());
 
-                try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
-                    tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
+                    try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
+                        tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
+                    }
+
+                    final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4000L));
+                    assertTrue(response2Optional.isPresent());
+                    assertTrue(response2Optional.get());
+
+                    assertTFTPdDisabled(server);
                 }
-
-                final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4000L));
-                assertTrue(response2Optional.isPresent());
-                assertTrue(response2Optional.get());
-
-                assertTFTPdDisabled(server);
-            }
         );
     }
 
     @Test
     void stopTFTPdServer() throws Exception {
         execute(
-            (projectCipherKey, server, client) -> {
-                final Optional<Boolean> responseOptional = client.stopTFTPdServer();
+                (projectCipherKey, server, client) -> {
+                    final Optional<Boolean> responseOptional = client.stopTFTPdServer();
 
-                assertTrue(responseOptional.isPresent());
-                assertTrue(responseOptional.get());
+                    assertTrue(responseOptional.isPresent());
+                    assertTrue(responseOptional.get());
 
-                assertTFTPdDisabled(server);
-            });
+                    assertTFTPdDisabled(server);
+                });
     }
 
     private static void assertTFTPdDisabled(MockServer server) throws TFTPPacketException, IOException {
@@ -225,59 +225,59 @@ class ServerTest extends BaseServerTest {
             });
 
             execute(
-                server -> {
-                    FileUtil.linkOrCopy(
-                        ResourceUtil.classPath("full/" + CLUFiles.USER_LUA.getFileName()),
-                        server.getADriveDirectory().resolve(CLUFiles.USER_LUA.getFileName())
-                    );
-                    FileUtil.linkOrCopy(
-                        ResourceUtil.classPath("full/" + CLUFiles.OM_LUA.getFileName()),
-                        server.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
-                    );
-                },
-                (projectCipherKey, server, client) -> {
-                    final Optional<Boolean> aliveOptional = client.checkAlive();
+                    server -> {
+                        FileUtil.linkOrCopy(
+                                ResourceUtil.classPath("full/" + CLUFiles.USER_LUA.getFileName()),
+                                server.getADriveDirectory().resolve(CLUFiles.USER_LUA.getFileName())
+                        );
+                        FileUtil.linkOrCopy(
+                                ResourceUtil.classPath("full/" + CLUFiles.OM_LUA.getFileName()),
+                                server.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
+                        );
+                    },
+                    (projectCipherKey, server, client) -> {
+                        final Optional<Boolean> aliveOptional = client.checkAlive();
 
-                    assertTrue(aliveOptional.isPresent());
-                    assertTrue(aliveOptional.get());
+                        assertTrue(aliveOptional.isPresent());
+                        assertTrue(aliveOptional.get());
 
-                    final Collection<ClientDescriptor> clientDescriptors = mqttServer.listConnectedClients();
-                    while (clientDescriptors.isEmpty()) {
-                        Thread.sleep(100L);
+                        final Collection<ClientDescriptor> clientDescriptors = mqttServer.listConnectedClients();
+                        while (clientDescriptors.isEmpty()) {
+                            Thread.sleep(100L);
+                        }
+
+                        assertEquals("CLU0", clientDescriptors.iterator().next().getClientID());
+
+                        mqttServer.internalPublish(
+                                MqttMessageBuilders.publish()
+                                        .topicName("zigbee2mqtt/testTopic")
+                                        .retained(false)
+                                        .messageId(1)
+                                        .qos(MqttQoS.AT_LEAST_ONCE)
+                                        .payload(Unpooled.copiedBuffer("mqttTest".getBytes(StandardCharsets.UTF_8)))
+                                        .build(),
+                                "BROKER"
+                        );
+
+                        mqttServer.internalPublish(
+                                MqttMessageBuilders.publish()
+                                        .topicName("zigbee2mqtt/otherTopic")
+                                        .retained(false)
+                                        .messageId(2)
+                                        .qos(MqttQoS.AT_LEAST_ONCE)
+                                        .payload(Unpooled.copiedBuffer("mqttTestOther".getBytes(StandardCharsets.UTF_8)))
+                                        .build(),
+                                "BROKER"
+                        );
+
+                        while (testTopicMessages.size() < 2) {
+                            Thread.sleep(100L);
+                        }
+
+                        assertEquals(2, testTopicMessages.size());
+                        assertEquals("mqttTest", testTopicMessages.get(0));
+                        assertEquals("mqttTestOther", testTopicMessages.get(1));
                     }
-
-                    assertEquals("CLU0", clientDescriptors.iterator().next().getClientID());
-
-                    mqttServer.internalPublish(
-                        MqttMessageBuilders.publish()
-                                           .topicName("zigbee2mqtt/testTopic")
-                                           .retained(false)
-                                           .messageId(1)
-                                           .qos(MqttQoS.AT_LEAST_ONCE)
-                                           .payload(Unpooled.copiedBuffer("mqttTest".getBytes(StandardCharsets.UTF_8)))
-                                           .build(),
-                        "BROKER"
-                    );
-
-                    mqttServer.internalPublish(
-                        MqttMessageBuilders.publish()
-                                           .topicName("zigbee2mqtt/otherTopic")
-                                           .retained(false)
-                                           .messageId(2)
-                                           .qos(MqttQoS.AT_LEAST_ONCE)
-                                           .payload(Unpooled.copiedBuffer("mqttTestOther".getBytes(StandardCharsets.UTF_8)))
-                                           .build(),
-                        "BROKER"
-                    );
-
-                    while (testTopicMessages.size() < 2) {
-                        Thread.sleep(100L);
-                    }
-
-                    assertEquals(2, testTopicMessages.size());
-                    assertEquals("mqttTest", testTopicMessages.get(0));
-                    assertEquals("mqttTestOther", testTopicMessages.get(1));
-                }
             );
         } finally {
             mqttServer.stopServer();

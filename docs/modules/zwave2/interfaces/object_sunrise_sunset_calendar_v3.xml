@@ -18,211 +18,235 @@
   -->
 
 <object class="39" name="SunriseSunsetCalendar" version="3">
-  <features>
-    <feature default="0" get="true" index="1" name="Latitude" set="true" type="num">
-      <hint lang="pl" value="Szerokość geograficzna w stopniach dziesiętnych (DD), zakres -90 do 90"/>
-      <hint lang="en" value="Latitude in decimal degrees (DD), range -90 to 90"/>
-      <hint lang="de" value="Breitengrad in Dezimalgrad (DD), Bereich -90 bis 90"/>
-      <desc resKey="sunrisesunsetcalendar_latitude"/>
-    </feature>
-    <feature default="0" get="true" index="0" name="Longitude" set="true" type="num">
-      <hint lang="pl" value="Długość geograficzna w stopniach dziesiętnych (DD), zakres -180 do 180"/>
-      <hint lang="en" value="Longitude in decimal degrees (DD), range -180 to 180"/>
-      <hint lang="de" value="Längengrad in Dezimalgrad (DD), Bereich -180 bis 180"/>
-      <desc resKey="sunrisesunsetcalendar_longitude"/>
-    </feature>
-    <feature enum="1,0" get="true" index="2" name="State" set="true" type="num">
-      <enum name="Off" resKey="sunrisesunsetcalendar_state_enum_off" value="0"/>
-      <enum name="On" resKey="sunrisesunsetcalendar_state_enum_on" value="1"/>
-      <hint lang="pl" value="Aktualny stan kalendarza wschodów i zachodów słońca"/>
-      <hint lang="en" value="Current state of sunrise and sunset calendar"/>
-      <hint lang="de" value="Aktueller Stand des Sonnenaufgangs- und Sonnenuntergangskalenders"/>
-      <desc resKey="sunrisesunsetcalendar_state"/>
-    </feature>
-    <feature get="true" index="3" name="SunriseUTC" set="false" type="str">
-      <hint lang="pl" value="Czas wschodu słońca dla ustawionej lokalizacji w UTC (± 5 minut)&#13;N\A - Brak możliwości wyliczenia wschodu słońca"/>
-      <hint lang="en" value="UTC sunrise time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunrise time"/>
-      <hint lang="de" value="UTC-Sonnenaufgangszeit für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenaufgangszeit kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunriseutc"/>
-    </feature>
-    <feature get="true" index="4" name="SunsetUTC" set="false" type="str">
-      <hint lang="pl" value="Czas zachodu słońca dla ustawionej lokalizacji w UTC (± 5 minut)&#13;N\A - Brak możliwości wyliczenia zachodu słońca"/>
-      <hint lang="en" value="UTC sunset time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunset time"/>
-      <hint lang="de" value="UTC-Sonnenuntergangszeit für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenuntergangszeit kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunsetutc"/>
-    </feature>
-    <feature get="true" index="5" name="SunriseLocal" set="false" type="str">
-      <hint lang="pl"
-        value="Lokalny czas wschodu słońca dla ustawionej lokalizacji (± 5 minut)&#13;N\A - Brak możliwości wyliczenia wschodu słońca dla ustawionej lokalizacji"/>
-      <hint lang="en" value="Sunrise local time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunrise time for a selected location"/>
-      <hint lang="de"
-        value="Ortszeit des Sonnenaufgangs für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenaufgangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunriselocal"/>
-    </feature>
-    <feature get="true" index="6" name="SunsetLocal" set="false" type="str">
-      <hint lang="pl"
-        value="Lokalny czas zachodu słońca dla ustawionej lokalizacji (± 5 minut)&#13;N\A - Brak możliwości wyliczenia zachodu słońca dla ustawionej lokalizacji"/>
-      <hint lang="en" value="Sunset local time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunset time for a selected location"/>
-      <hint lang="de"
-        value="Ortszeit des Sonnenuntergangs für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenuntergangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunsetlocal"/>
-    </feature>
-    <feature get="true" index="7" name="SunriseUTCTimestamp" set="false" type="num" unit="s">
-      <hint lang="pl" value="Czas wschodu słońca dla ustawionej lokalizacji w UTC (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia wschodu słońca"/>
-      <hint lang="en" value="UTC sunrise time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunrise time"/>
-      <hint lang="de"
-        value="UTC-Sonnenaufgangszeit für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenaufgangszeit kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunriseutctimestamp"/>
-    </feature>
-    <feature get="true" index="8" name="SunsetUTCTimestamp" set="false" type="num" unit="s">
-      <hint lang="pl" value="Czas zachodu słońca dla ustawionej lokalizacji w UTC (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia zachodu słońca"/>
-      <hint lang="en" value="UTC sunset time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunset time"/>
-      <hint lang="de"
-        value="UTC-Sonnenuntergangszeit für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenuntergangszeit kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunsetutctimestamp"/>
-    </feature>
-    <feature get="true" index="9" name="SunriseLocalTimestamp" set="false" type="num" unit="s">
-      <hint lang="pl"
-        value="Lokalny czas wschodu słońca dla ustawionej lokalizacji (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia wschodu słońca dla ustawionej lokalizacji"/>
-      <hint lang="en"
-        value="Sunrise local time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunrise time for a selected location"/>
-      <hint lang="de"
-        value="Ortszeit des Sonnenaufgangs für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenaufgangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunriselocaltimestamp"/>
-    </feature>
-    <feature get="true" index="10" name="SunsetLocalTimestamp" set="false" type="num" unit="s">
-      <hint lang="pl"
-        value="Lokalny czas zachodu słońca dla ustawionej lokalizacji (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia zachodu słońca dla ustawionej lokalizacji"/>
-      <hint lang="en"
-        value="Sunset local time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunset time for a selected location"/>
-      <hint lang="de"
-        value="Ortszeit des Sonnenuntergangs für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenuntergangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
-      <desc resKey="sunrisesunsetcalendar_sunsetlocaltimestamp"/>
-    </feature>
-    <feature get="true" index="11" name="IsDayNow" set="false" type="num">
-      <hint lang="pl"
-        value="0 - noc, 1 - dzień&#13;Na podstawie lokalnego wschodu/zachodu słońca(± 5 minut)&#13;-1 - Brak możliwości wyliczenia dla ustawionej lokalizacji"/>
-      <hint lang="en" value="0 - nighttime, 1 - daytime&#13;Based on local sunrise/sunset(± 5 minutes)&#13;-1 - Unable to calculate for a selected location"/>
-      <hint lang="de"
-        value="0 - Nacht, 1 - Tag&#13;Basierend auf lokalem Sonnenaufgang/Sonnenuntergang (± 5 Minuten)&#13;-1 - Berechnung für einen ausgewählten Standort nicht möglich"/>
-      <desc resKey="sunrisesunsetcalendar_isdaynow_v3"/>
-    </feature>
-    <feature default="0" get="true" index="12" name="SunriseOffset" set="true" type="num" unit="m">
-      <hint lang="pl" value="Przesunięcie dla wschodu słońca (w minutach), zakres -1439 do 1439"/>
-      <hint lang="en" value="Offset for the sunrise (in minutes), range -1439 to 1439"/>
-      <hint lang="de" value="Offset für den Sonnenaufgang (in Minuten), Bereich -1439 bis 1439"/>
-      <desc resKey="sunrisesunsetcalendar_sunriseoffset_v3"/>
-    </feature>
-    <feature default="0" get="true" index="13" name="SunsetOffset" set="true" type="num" unit="m">
-      <hint lang="pl" value="Przesunięcie dla zachodu słońca (w minutach), zakres -1439 do 1439"/>
-      <hint lang="en" value="Offset for the sunset (in minutes), range -1439 to 1439"/>
-      <hint lang="de" value="Offset für den Sonnenuntergang (in Minuten), Bereich -1439 bis 1439"/>
-      <desc resKey="sunrisesunsetcalendar_sunsetoffset_v3"/>
-    </feature>
-    <feature get="true" index="14" name="NextSunrise" set="false" type="num" unit="m">
-      <hint lang="pl" value="Pozostały czas do wschodu słońca (w minutach)&#13;-1 - Brak możliwości wyliczenia dla ustawionej lokalizacji"/>
-      <hint lang="en" value="Time left until sunrise (in minutes)&#13;-1 - Unable to calculate for a selected location"/>
-      <hint lang="de" value="Verbleibende Zeit bis Sonnenaufgang (in Minuten)&#13;-1 - Berechnung für einen ausgewählten Ort nicht möglich"/>
-      <desc resKey="sunrisesunsetcalendar_nextsunrise"/>
-    </feature>
-    <feature get="true" index="15" name="NextSunset" set="false" type="num" unit="m">
-      <hint lang="pl" value="Pozostały czas do zachodu słońca (w minutach)&#13;-1 - Brak możliwości wyliczenia dla ustawionej lokalizacji"/>
-      <hint lang="en" value="Time left until sunset (in minutes)&#13;-1 - Unable to calculate for a selected location"/>
-      <hint lang="de" value="Verbleibende Zeit bis Sonnenuntergang (in Minuten)&#13;-1 - Berechnung für einen ausgewählten Ort nicht möglich"/>
-      <desc resKey="sunrisesunsetcalendar_nextsunset"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="execute" index="0" name="Start" return="void">
-      <hint lang="pl" value="Uruchamia kalendarz wschodów i zachodów słońca"/>
-      <hint lang="en" value="Start sunrise and sunset calendar"/>
-      <hint lang="de" value="Sonnenaufgangs- und Sonnenuntergangskalender starten"/>
-      <desc resKey="sunrisesunsetcalendar_start"/>
-    </method>
-    <method call="execute" index="1" name="Stop" return="void">
-      <hint lang="pl" value="Zatrzymuje kalendarz wschodów i zachodów słońca"/>
-      <hint lang="en" value="Stop sunrise and sunset calendar"/>
-      <hint lang="de" value="Stoppen Sie den Sonnenaufgangs- und Sonnenuntergangskalender"/>
-      <desc resKey="sunrisesunsetcalendar_stop"/>
-    </method>
-    <method call="set" index="1" name="SetLatitude" return="void">
-      <param name="Latitude" type="num"/>
-      <hint lang="pl" value="Ustawia szerokość geograficzną w stopniach dziesiętnych (DD), zakres -90 do 90"/>
-      <hint lang="en" value="Set a latitude in decimal degrees (DD), range -90 to 90"/>
-      <hint lang="de" value="Breitengrad in Dezimalgrad (DD) einstellen, Bereich -90 bis 90"/>
-      <desc resKey="sunrisesunsetcalendar_setlatitude"/>
-    </method>
-    <method call="set" index="0" name="SetLongitude" return="void">
-      <param name="Longitude" type="num"/>
-      <hint lang="pl" value="Ustawia długość geograficzną w stopniach dziesiętnych (DD), zakres -180 do 180"/>
-      <hint lang="en" value="Set a longitude in decimal degrees (DD), range -180 to 180"/>
-      <hint lang="de" value="Stellen Sie einen Längengrad in Dezimalgrad (DD) ein, Bereich -180 bis 180"/>
-      <desc resKey="sunrisesunsetcalendar_setlongitude"/>
-    </method>
-    <method call="set" index="2" name="State" return="void" visible="false">
-      <param name="State" type="num"/>
-      <hint lang="pl" value="Aktualny stan kalendarza wschodów i zachodów słońca, 1 - włączony, 0 - wyłączony"/>
-      <hint lang="en" value="Current state of sunrise and sunset calendar, 1 - On, 0 - Off"/>
-      <hint lang="de" value="Aktueller Status des Sonnenauf- und Sonnenuntergangskalenders, 1 - Ein, 0 - Aus"/>
-      <desc resKey="sunrisesunsetcalendar_state_1"/>
-    </method>
-    <method call="set" index="12" name="SetSunriseOffset" return="void">
-      <param name="SunriseOffset" type="num"/>
-      <hint lang="pl" value="Ustawia przesunięcie dla wschodu słońca (w minutach), zakres -1439 do 1439"/>
-      <hint lang="en" value="Set the offset for the sunrise (in minutes), range -1439 to 1439"/>
-      <hint lang="de" value="Setzt die offset für den Sonnenaufgang (in Minuten), Bereich -1439 bis 1439"/>
-      <desc resKey="sunrisesunsetcalendar_setsunriseoffset_v3"/>
-    </method>
-    <method call="set" index="13" name="SetSunsetOffset" return="void">
-      <param name="SunsetOffset" type="num"/>
-      <hint lang="pl" value="Ustawia przesunięcie dla zachodu słońca (w minutach), zakres -1439 do 1439"/>
-      <hint lang="en" value="Set the offset for the local sunset (in minutes), range -1439 to 1439"/>
-      <hint lang="de" value="Setzt die offset für den Sonnenuntergangs (in Minuten), Bereich -1439 bis 1439"/>
-      <desc resKey="sunrisesunsetcalendar_setsunsetoffset_v3"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnStart">
-      <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu kalendarza"/>
-      <hint lang="en" value="A event called when calendar starts"/>
-      <hint lang="de" value="Ein Ereignis, das beim Kalenderstart aufgerufen wird"/>
-      <desc resKey="sunrisesunsetcalendar_onstart"/>
-    </event>
-    <event address="1" name="OnStop">
-      <hint lang="pl" value="Zdarzenie wywoływane przy dezaktywacji kalendarza"/>
-      <hint lang="en" value="A event called when calendar stops"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Kalender stoppt"/>
-      <desc resKey="sunrisesunsetcalendar_onstop"/>
-    </event>
-    <event address="2" name="OnSunrise">
-      <hint lang="pl" value="Zdarzenie wywoływane podczas wschodu słońca z uwzględnieniem offsetu"/>
-      <hint lang="en" value="A event called when the sun rises taking into account the offset property"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn die Sonne aufgeht, unter Berücksichtigung der Offset-Eigenschaft"/>
-      <desc resKey="sunrisesunsetcalendar_onsunrise"/>
-    </event>
-    <event address="3" name="OnSunset">
-      <hint lang="pl" value="Zdarzenie wywoływane podczas zachodu słońca z uwzględnieniem offsetu"/>
-      <hint lang="en" value="A event called when the sun sets taking into account the offset property"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn die Sonne untergeht, unter Berücksichtigung der Offset-Eigenschaft"/>
-      <desc resKey="sunrisesunsetcalendar_onsunset"/>
-    </event>
-    <event address="4" name="OnSunriseSunsetChange">
-      <hint lang="pl" value="Zdarzenie wywoływane podczas wschodu lub zachodu słońca z uwzględnieniem offsetu"/>
-      <hint lang="en" value="A event called when the sun rises or sets taking into account the offset property"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn die Sonne unter Berücksichtigung der Offset-Eigenschaft auf- oder untergeht"/>
-      <desc resKey="sunrisesunsetcalendar_onsunrisesunsetchange"/>
-    </event>
-    <event address="5" name="OnDay">
-      <hint lang="pl" value="Zdarzenie wywoływane podczas zmiany parametru IsDayNow z 0 (noc) na 1 (dzień)"/>
-      <hint lang="en" value="A event called when IsDayNow changes from 0 (nighttime) to 1 (daytime)"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn IsDayNow von 0 (Nacht) auf 1 (Tag) wechselt"/>
-      <desc resKey="sunrisesunsetcalendar_onday"/>
-    </event>
-    <event address="6" name="OnNight">
-      <hint lang="pl" value="Zdarzenie wywoływane podczas zmiany parametru IsDayNow z 1 (dzień) na 0 (noc)"/>
-      <hint lang="en" value="A event called when IsDayNow changes from 1 (daytime) to 0 (nighttime)"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn IsDayNow von 1 (Tag) auf 0 (Nacht) wechselt"/>
-      <desc resKey="sunrisesunsetcalendar_onnight"/>
-    </event>
-  </events>
+    <features>
+        <feature default="0" get="true" index="1" name="Latitude" set="true" type="num">
+            <hint lang="pl" value="Szerokość geograficzna w stopniach dziesiętnych (DD), zakres -90 do 90"/>
+            <hint lang="en" value="Latitude in decimal degrees (DD), range -90 to 90"/>
+            <hint lang="de" value="Breitengrad in Dezimalgrad (DD), Bereich -90 bis 90"/>
+            <desc resKey="sunrisesunsetcalendar_latitude"/>
+        </feature>
+        <feature default="0" get="true" index="0" name="Longitude" set="true" type="num">
+            <hint lang="pl" value="Długość geograficzna w stopniach dziesiętnych (DD), zakres -180 do 180"/>
+            <hint lang="en" value="Longitude in decimal degrees (DD), range -180 to 180"/>
+            <hint lang="de" value="Längengrad in Dezimalgrad (DD), Bereich -180 bis 180"/>
+            <desc resKey="sunrisesunsetcalendar_longitude"/>
+        </feature>
+        <feature enum="1,0" get="true" index="2" name="State" set="true" type="num">
+            <enum name="Off" resKey="sunrisesunsetcalendar_state_enum_off" value="0"/>
+            <enum name="On" resKey="sunrisesunsetcalendar_state_enum_on" value="1"/>
+            <hint lang="pl" value="Aktualny stan kalendarza wschodów i zachodów słońca"/>
+            <hint lang="en" value="Current state of sunrise and sunset calendar"/>
+            <hint lang="de" value="Aktueller Stand des Sonnenaufgangs- und Sonnenuntergangskalenders"/>
+            <desc resKey="sunrisesunsetcalendar_state"/>
+        </feature>
+        <feature get="true" index="3" name="SunriseUTC" set="false" type="str">
+            <hint lang="pl"
+                  value="Czas wschodu słońca dla ustawionej lokalizacji w UTC (± 5 minut)&#13;N\A - Brak możliwości wyliczenia wschodu słońca"/>
+            <hint lang="en"
+                  value="UTC sunrise time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunrise time"/>
+            <hint lang="de"
+                  value="UTC-Sonnenaufgangszeit für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenaufgangszeit kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunriseutc"/>
+        </feature>
+        <feature get="true" index="4" name="SunsetUTC" set="false" type="str">
+            <hint lang="pl"
+                  value="Czas zachodu słońca dla ustawionej lokalizacji w UTC (± 5 minut)&#13;N\A - Brak możliwości wyliczenia zachodu słońca"/>
+            <hint lang="en"
+                  value="UTC sunset time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunset time"/>
+            <hint lang="de"
+                  value="UTC-Sonnenuntergangszeit für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenuntergangszeit kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunsetutc"/>
+        </feature>
+        <feature get="true" index="5" name="SunriseLocal" set="false" type="str">
+            <hint lang="pl"
+                  value="Lokalny czas wschodu słońca dla ustawionej lokalizacji (± 5 minut)&#13;N\A - Brak możliwości wyliczenia wschodu słońca dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="Sunrise local time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunrise time for a selected location"/>
+            <hint lang="de"
+                  value="Ortszeit des Sonnenaufgangs für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenaufgangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunriselocal"/>
+        </feature>
+        <feature get="true" index="6" name="SunsetLocal" set="false" type="str">
+            <hint lang="pl"
+                  value="Lokalny czas zachodu słońca dla ustawionej lokalizacji (± 5 minut)&#13;N\A - Brak możliwości wyliczenia zachodu słońca dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="Sunset local time for a selected location (± 5 minutes)&#13;N\A - Unable to calculate sunset time for a selected location"/>
+            <hint lang="de"
+                  value="Ortszeit des Sonnenuntergangs für einen ausgewählten Ort (± 5 Minuten)&#13;N\A - Sonnenuntergangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunsetlocal"/>
+        </feature>
+        <feature get="true" index="7" name="SunriseUTCTimestamp" set="false" type="num" unit="s">
+            <hint lang="pl"
+                  value="Czas wschodu słońca dla ustawionej lokalizacji w UTC (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia wschodu słońca"/>
+            <hint lang="en"
+                  value="UTC sunrise time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunrise time"/>
+            <hint lang="de"
+                  value="UTC-Sonnenaufgangszeit für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenaufgangszeit kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunriseutctimestamp"/>
+        </feature>
+        <feature get="true" index="8" name="SunsetUTCTimestamp" set="false" type="num" unit="s">
+            <hint lang="pl"
+                  value="Czas zachodu słońca dla ustawionej lokalizacji w UTC (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia zachodu słońca"/>
+            <hint lang="en"
+                  value="UTC sunset time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunset time"/>
+            <hint lang="de"
+                  value="UTC-Sonnenuntergangszeit für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenuntergangszeit kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunsetutctimestamp"/>
+        </feature>
+        <feature get="true" index="9" name="SunriseLocalTimestamp" set="false" type="num" unit="s">
+            <hint lang="pl"
+                  value="Lokalny czas wschodu słońca dla ustawionej lokalizacji (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia wschodu słońca dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="Sunrise local time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunrise time for a selected location"/>
+            <hint lang="de"
+                  value="Ortszeit des Sonnenaufgangs für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenaufgangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunriselocaltimestamp"/>
+        </feature>
+        <feature get="true" index="10" name="SunsetLocalTimestamp" set="false" type="num" unit="s">
+            <hint lang="pl"
+                  value="Lokalny czas zachodu słońca dla ustawionej lokalizacji (timestamp ± 300 sekund)&#13;-1 - Brak możliwości wyliczenia zachodu słońca dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="Sunset local time for a selected location (timestamp ± 300 seconds)&#13;-1 - Unable to calculate sunset time for a selected location"/>
+            <hint lang="de"
+                  value="Ortszeit des Sonnenuntergangs für einen ausgewählten Ort (Zeitstempel ± 300 Sekunden)&#13;-1 - Sonnenuntergangszeit für einen ausgewählten Ort kann nicht berechnet werden"/>
+            <desc resKey="sunrisesunsetcalendar_sunsetlocaltimestamp"/>
+        </feature>
+        <feature get="true" index="11" name="IsDayNow" set="false" type="num">
+            <hint lang="pl"
+                  value="0 - noc, 1 - dzień&#13;Na podstawie lokalnego wschodu/zachodu słońca(± 5 minut)&#13;-1 - Brak możliwości wyliczenia dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="0 - nighttime, 1 - daytime&#13;Based on local sunrise/sunset(± 5 minutes)&#13;-1 - Unable to calculate for a selected location"/>
+            <hint lang="de"
+                  value="0 - Nacht, 1 - Tag&#13;Basierend auf lokalem Sonnenaufgang/Sonnenuntergang (± 5 Minuten)&#13;-1 - Berechnung für einen ausgewählten Standort nicht möglich"/>
+            <desc resKey="sunrisesunsetcalendar_isdaynow_v3"/>
+        </feature>
+        <feature default="0" get="true" index="12" name="SunriseOffset" set="true" type="num" unit="m">
+            <hint lang="pl" value="Przesunięcie dla wschodu słońca (w minutach), zakres -1439 do 1439"/>
+            <hint lang="en" value="Offset for the sunrise (in minutes), range -1439 to 1439"/>
+            <hint lang="de" value="Offset für den Sonnenaufgang (in Minuten), Bereich -1439 bis 1439"/>
+            <desc resKey="sunrisesunsetcalendar_sunriseoffset_v3"/>
+        </feature>
+        <feature default="0" get="true" index="13" name="SunsetOffset" set="true" type="num" unit="m">
+            <hint lang="pl" value="Przesunięcie dla zachodu słońca (w minutach), zakres -1439 do 1439"/>
+            <hint lang="en" value="Offset for the sunset (in minutes), range -1439 to 1439"/>
+            <hint lang="de" value="Offset für den Sonnenuntergang (in Minuten), Bereich -1439 bis 1439"/>
+            <desc resKey="sunrisesunsetcalendar_sunsetoffset_v3"/>
+        </feature>
+        <feature get="true" index="14" name="NextSunrise" set="false" type="num" unit="m">
+            <hint lang="pl"
+                  value="Pozostały czas do wschodu słońca (w minutach)&#13;-1 - Brak możliwości wyliczenia dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="Time left until sunrise (in minutes)&#13;-1 - Unable to calculate for a selected location"/>
+            <hint lang="de"
+                  value="Verbleibende Zeit bis Sonnenaufgang (in Minuten)&#13;-1 - Berechnung für einen ausgewählten Ort nicht möglich"/>
+            <desc resKey="sunrisesunsetcalendar_nextsunrise"/>
+        </feature>
+        <feature get="true" index="15" name="NextSunset" set="false" type="num" unit="m">
+            <hint lang="pl"
+                  value="Pozostały czas do zachodu słońca (w minutach)&#13;-1 - Brak możliwości wyliczenia dla ustawionej lokalizacji"/>
+            <hint lang="en"
+                  value="Time left until sunset (in minutes)&#13;-1 - Unable to calculate for a selected location"/>
+            <hint lang="de"
+                  value="Verbleibende Zeit bis Sonnenuntergang (in Minuten)&#13;-1 - Berechnung für einen ausgewählten Ort nicht möglich"/>
+            <desc resKey="sunrisesunsetcalendar_nextsunset"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="execute" index="0" name="Start" return="void">
+            <hint lang="pl" value="Uruchamia kalendarz wschodów i zachodów słońca"/>
+            <hint lang="en" value="Start sunrise and sunset calendar"/>
+            <hint lang="de" value="Sonnenaufgangs- und Sonnenuntergangskalender starten"/>
+            <desc resKey="sunrisesunsetcalendar_start"/>
+        </method>
+        <method call="execute" index="1" name="Stop" return="void">
+            <hint lang="pl" value="Zatrzymuje kalendarz wschodów i zachodów słońca"/>
+            <hint lang="en" value="Stop sunrise and sunset calendar"/>
+            <hint lang="de" value="Stoppen Sie den Sonnenaufgangs- und Sonnenuntergangskalender"/>
+            <desc resKey="sunrisesunsetcalendar_stop"/>
+        </method>
+        <method call="set" index="1" name="SetLatitude" return="void">
+            <param name="Latitude" type="num"/>
+            <hint lang="pl" value="Ustawia szerokość geograficzną w stopniach dziesiętnych (DD), zakres -90 do 90"/>
+            <hint lang="en" value="Set a latitude in decimal degrees (DD), range -90 to 90"/>
+            <hint lang="de" value="Breitengrad in Dezimalgrad (DD) einstellen, Bereich -90 bis 90"/>
+            <desc resKey="sunrisesunsetcalendar_setlatitude"/>
+        </method>
+        <method call="set" index="0" name="SetLongitude" return="void">
+            <param name="Longitude" type="num"/>
+            <hint lang="pl" value="Ustawia długość geograficzną w stopniach dziesiętnych (DD), zakres -180 do 180"/>
+            <hint lang="en" value="Set a longitude in decimal degrees (DD), range -180 to 180"/>
+            <hint lang="de" value="Stellen Sie einen Längengrad in Dezimalgrad (DD) ein, Bereich -180 bis 180"/>
+            <desc resKey="sunrisesunsetcalendar_setlongitude"/>
+        </method>
+        <method call="set" index="2" name="State" return="void" visible="false">
+            <param name="State" type="num"/>
+            <hint lang="pl" value="Aktualny stan kalendarza wschodów i zachodów słońca, 1 - włączony, 0 - wyłączony"/>
+            <hint lang="en" value="Current state of sunrise and sunset calendar, 1 - On, 0 - Off"/>
+            <hint lang="de" value="Aktueller Status des Sonnenauf- und Sonnenuntergangskalenders, 1 - Ein, 0 - Aus"/>
+            <desc resKey="sunrisesunsetcalendar_state_1"/>
+        </method>
+        <method call="set" index="12" name="SetSunriseOffset" return="void">
+            <param name="SunriseOffset" type="num"/>
+            <hint lang="pl" value="Ustawia przesunięcie dla wschodu słońca (w minutach), zakres -1439 do 1439"/>
+            <hint lang="en" value="Set the offset for the sunrise (in minutes), range -1439 to 1439"/>
+            <hint lang="de" value="Setzt die offset für den Sonnenaufgang (in Minuten), Bereich -1439 bis 1439"/>
+            <desc resKey="sunrisesunsetcalendar_setsunriseoffset_v3"/>
+        </method>
+        <method call="set" index="13" name="SetSunsetOffset" return="void">
+            <param name="SunsetOffset" type="num"/>
+            <hint lang="pl" value="Ustawia przesunięcie dla zachodu słońca (w minutach), zakres -1439 do 1439"/>
+            <hint lang="en" value="Set the offset for the local sunset (in minutes), range -1439 to 1439"/>
+            <hint lang="de" value="Setzt die offset für den Sonnenuntergangs (in Minuten), Bereich -1439 bis 1439"/>
+            <desc resKey="sunrisesunsetcalendar_setsunsetoffset_v3"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnStart">
+            <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu kalendarza"/>
+            <hint lang="en" value="A event called when calendar starts"/>
+            <hint lang="de" value="Ein Ereignis, das beim Kalenderstart aufgerufen wird"/>
+            <desc resKey="sunrisesunsetcalendar_onstart"/>
+        </event>
+        <event address="1" name="OnStop">
+            <hint lang="pl" value="Zdarzenie wywoływane przy dezaktywacji kalendarza"/>
+            <hint lang="en" value="A event called when calendar stops"/>
+            <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Kalender stoppt"/>
+            <desc resKey="sunrisesunsetcalendar_onstop"/>
+        </event>
+        <event address="2" name="OnSunrise">
+            <hint lang="pl" value="Zdarzenie wywoływane podczas wschodu słońca z uwzględnieniem offsetu"/>
+            <hint lang="en" value="A event called when the sun rises taking into account the offset property"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das aufgerufen wird, wenn die Sonne aufgeht, unter Berücksichtigung der Offset-Eigenschaft"/>
+            <desc resKey="sunrisesunsetcalendar_onsunrise"/>
+        </event>
+        <event address="3" name="OnSunset">
+            <hint lang="pl" value="Zdarzenie wywoływane podczas zachodu słońca z uwzględnieniem offsetu"/>
+            <hint lang="en" value="A event called when the sun sets taking into account the offset property"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das aufgerufen wird, wenn die Sonne untergeht, unter Berücksichtigung der Offset-Eigenschaft"/>
+            <desc resKey="sunrisesunsetcalendar_onsunset"/>
+        </event>
+        <event address="4" name="OnSunriseSunsetChange">
+            <hint lang="pl" value="Zdarzenie wywoływane podczas wschodu lub zachodu słońca z uwzględnieniem offsetu"/>
+            <hint lang="en" value="A event called when the sun rises or sets taking into account the offset property"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das aufgerufen wird, wenn die Sonne unter Berücksichtigung der Offset-Eigenschaft auf- oder untergeht"/>
+            <desc resKey="sunrisesunsetcalendar_onsunrisesunsetchange"/>
+        </event>
+        <event address="5" name="OnDay">
+            <hint lang="pl" value="Zdarzenie wywoływane podczas zmiany parametru IsDayNow z 0 (noc) na 1 (dzień)"/>
+            <hint lang="en" value="A event called when IsDayNow changes from 0 (nighttime) to 1 (daytime)"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das aufgerufen wird, wenn IsDayNow von 0 (Nacht) auf 1 (Tag) wechselt"/>
+            <desc resKey="sunrisesunsetcalendar_onday"/>
+        </event>
+        <event address="6" name="OnNight">
+            <hint lang="pl" value="Zdarzenie wywoływane podczas zmiany parametru IsDayNow z 1 (dzień) na 0 (noc)"/>
+            <hint lang="en" value="A event called when IsDayNow changes from 1 (daytime) to 0 (nighttime)"/>
+            <hint lang="de"
+                  value="Ein Ereignis, das aufgerufen wird, wenn IsDayNow von 1 (Tag) auf 0 (Nacht) wechselt"/>
+            <desc resKey="sunrisesunsetcalendar_onnight"/>
+        </event>
+    </events>
 </object>

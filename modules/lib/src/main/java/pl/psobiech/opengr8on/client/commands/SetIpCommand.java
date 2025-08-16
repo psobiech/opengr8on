@@ -58,10 +58,10 @@ public class SetIpCommand {
         final Inet4Address gatewayIpAddress = IPv4AddressUtil.parseIPv4(requestParts[GATEWAY_IP_ADDRESS_PART]);
 
         return Optional.of(
-            new Request(
-                serialNumber,
-                ipAddress, gatewayIpAddress
-            )
+                new Request(
+                        serialNumber,
+                        ipAddress, gatewayIpAddress
+                )
         );
     }
 
@@ -75,7 +75,7 @@ public class SetIpCommand {
         }
 
         return Request.COMMAND.equals(
-            Command.asString(buffer, 0, Request.COMMAND.length())
+                Command.asString(buffer, 0, Request.COMMAND.length())
         );
     }
 
@@ -98,10 +98,10 @@ public class SetIpCommand {
         final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(responseParts[2]);
 
         return Optional.of(
-            new Response(
-                serialNumber,
-                ipAddress
-            )
+                new Response(
+                        serialNumber,
+                        ipAddress
+                )
         );
     }
 
@@ -115,7 +115,7 @@ public class SetIpCommand {
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -137,13 +137,13 @@ public class SetIpCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(serialNumber), MAX_SERIAL_NUMBER_CHARACTERS, '0')),
-                ":",
-                ipAddress,
-                ":",
-                gatewayIpAddress
+                    COMMAND,
+                    ":",
+                    StringUtils.lowerCase(StringUtils.leftPad(HexUtil.asString(serialNumber), MAX_SERIAL_NUMBER_CHARACTERS, '0')),
+                    ":",
+                    ipAddress,
+                    ":",
+                    gatewayIpAddress
             );
         }
 
@@ -169,17 +169,17 @@ public class SetIpCommand {
 
         private Response(Long serialNumber, Inet4Address ipAddress) {
             this.serialNumber = serialNumber;
-            this.ipAddress    = ipAddress;
+            this.ipAddress = ipAddress;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_CHARACTERS, '0'),
-                ":",
-                ipAddress
+                    COMMAND,
+                    ":",
+                    StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(serialNumber)), MAX_SERIAL_NUMBER_CHARACTERS, '0'),
+                    ":",
+                    ipAddress
             );
         }
 

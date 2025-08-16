@@ -63,7 +63,7 @@ public enum CLUFiles {
     }
 
     CLUFiles(String device, String fileName, boolean readable, boolean writable) {
-        this.device   = device;
+        this.device = device;
         this.fileName = fileName;
         this.readable = readable;
         this.writable = writable;

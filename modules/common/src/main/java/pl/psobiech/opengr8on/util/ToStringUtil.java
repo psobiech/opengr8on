@@ -56,8 +56,8 @@ public final class ToStringUtil {
         }
 
         return "%s::%s%s".formatted(
-            address.getHostAddress(),
-            HexUtil.HEX_PREFIX, HexUtil.asString(IPv4AddressUtil.getIPv4AsNumber(address))
+                address.getHostAddress(),
+                HexUtil.HEX_PREFIX, HexUtil.asString(IPv4AddressUtil.getIPv4AsNumber(address))
         );
     }
 
@@ -70,8 +70,8 @@ public final class ToStringUtil {
         }
 
         return "%d::%s%s".formatted(
-            value,
-            HexUtil.HEX_PREFIX, HexUtil.asString(value)
+                value,
+                HexUtil.HEX_PREFIX, HexUtil.asString(value)
         );
     }
 
@@ -84,8 +84,8 @@ public final class ToStringUtil {
         }
 
         return "%d::%s%s".formatted(
-            value,
-            HexUtil.HEX_PREFIX, HexUtil.asString(value)
+                value,
+                HexUtil.HEX_PREFIX, HexUtil.asString(value)
         );
     }
 
@@ -116,18 +116,18 @@ public final class ToStringUtil {
         }
 
         final String asciiValues = new String(buffer)
-            .replaceAll("[^\\p{Graph} ]", ".");
+                .replaceAll("[^\\p{Graph} ]", ".");
 
         final String hexString = StringUtils.stripToEmpty(
-            IntStream.range(0, buffer.length)
-                     .mapToObj(i -> (i % 4 == 0 ? " " : "") + HexUtil.asString(buffer[i]))
-                     .collect(Collectors.joining())
+                IntStream.range(0, buffer.length)
+                        .mapToObj(i -> (i % 4 == 0 ? " " : "") + HexUtil.asString(buffer[i]))
+                        .collect(Collectors.joining())
         );
 
         return "'%s # %s # %s'".formatted(
-            asciiValues,
-            hexString,
-            Base64.encodeBase64String(buffer)
+                asciiValues,
+                hexString,
+                Base64.encodeBase64String(buffer)
         );
     }
 }

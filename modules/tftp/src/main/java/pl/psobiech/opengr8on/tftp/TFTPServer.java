@@ -105,14 +105,14 @@ public class TFTPServer implements Closeable {
         serverTFTP.open();
 
         listener = executor.submit(() -> {
-                LOGGER.debug("Starting TFTP Server on port " + getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
+                    LOGGER.debug("Starting TFTP Server on port " + getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
-                FileUtil.mkdir(serverDirectory);
+                    FileUtil.mkdir(serverDirectory);
 
-                listen();
+                    listen();
 
-                return null;
-            }
+                    return null;
+                }
         );
 
         return listener;
@@ -194,7 +194,7 @@ public class TFTPServer implements Closeable {
                 tftp.open();
 
                 transferType.create(requestPacket, path)
-                            .execute(tftp);
+                        .execute(tftp);
             } catch (UncheckedInterruptedException e) {
                 LOGGER.trace(e.getMessage(), e);
             } catch (Exception e) {
@@ -208,7 +208,7 @@ public class TFTPServer implements Closeable {
             case SERVER_READ_REQUEST -> {
                 if (mode == ServerMode.PUT_ONLY) {
                     throw new TFTPPacketException(
-                        TFTPErrorType.ACCESS_VIOLATION, "Read not allowed by server."
+                            TFTPErrorType.ACCESS_VIOLATION, "Read not allowed by server."
                     );
                 }
             }
@@ -216,13 +216,13 @@ public class TFTPServer implements Closeable {
             case SERVER_WRITE_REQUEST -> {
                 if (mode == ServerMode.GET_ONLY) {
                     throw new TFTPPacketException(
-                        TFTPErrorType.ACCESS_VIOLATION, "Write not allowed by server."
+                            TFTPErrorType.ACCESS_VIOLATION, "Write not allowed by server."
                     );
                 }
 
                 if (mode != ServerMode.GET_AND_REPLACE && Files.exists(path)) {
                     throw new TFTPPacketException(
-                        TFTPErrorType.FILE_EXISTS, "File already exists"
+                            TFTPErrorType.FILE_EXISTS, "File already exists"
                     );
                 }
             }
@@ -233,7 +233,7 @@ public class TFTPServer implements Closeable {
 
     /**
      * @param rootDirectory root directory of the server (all files need to be contained within this directory)
-     * @param location TFTP location, e.g. a:\file.txt /file.txt or file.txt (in case of a:\file.txt, it will be converted to /a/file.txt)
+     * @param location      TFTP location, e.g. a:\file.txt /file.txt or file.txt (in case of a:\file.txt, it will be converted to /a/file.txt)
      */
     protected static Path parseLocation(Path rootDirectory, String location) throws TFTPPacketException {
         final Matcher matcher = PATH_PATTERN.matcher(location.replaceAll("\\\\", "/"));

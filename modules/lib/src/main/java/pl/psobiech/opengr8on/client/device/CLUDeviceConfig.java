@@ -32,19 +32,19 @@ public class CLUDeviceConfig extends DeviceConfig {
 
     @JsonCreator
     public CLUDeviceConfig(
-        Long serialNumber,
-        String macAddress,
-        int hardwareType, long hardwareVersion,
-        int firmwareType, int firmwareVersion,
-        String fwVer,
-        String status,
-        List<DeviceConfig> tfBusDevices
+            Long serialNumber,
+            String macAddress,
+            int hardwareType, long hardwareVersion,
+            int firmwareType, int firmwareVersion,
+            String fwVer,
+            String status,
+            List<DeviceConfig> tfBusDevices
     ) {
         super(
-            serialNumber,
-            hardwareType, hardwareVersion,
-            firmwareType, firmwareVersion, fwVer,
-            status
+                serialNumber,
+                hardwareType, hardwareVersion,
+                firmwareType, firmwareVersion, fwVer,
+                status
         );
 
         this.macAddress = macAddress;
@@ -62,8 +62,8 @@ public class CLUDeviceConfig extends DeviceConfig {
     @Override
     public String toString() {
         return "CLUDeviceConfig{" +
-               "macAddress=" + macAddress +
-               ", tfBusDevices=" + tfBusDevices +
-               "} " + super.toString();
+                "macAddress=" + macAddress +
+                ", tfBusDevices=" + tfBusDevices +
+                "} " + super.toString();
     }
 }

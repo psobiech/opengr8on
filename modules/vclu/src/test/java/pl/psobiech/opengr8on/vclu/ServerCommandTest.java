@@ -48,15 +48,15 @@ class ServerCommandTest extends BaseServerTest {
         projectCipherKey = Mocks.cipherKey();
 
         server = new MockServer(
-            projectCipherKey,
-            new CLUDevice(
-                serialNumber,
-                Mocks.macAddress(),
-                MockServer.LOCALHOST,
-                CipherTypeEnum.PROJECT,
-                Mocks.iv(),
-                Mocks.pin()
-            )
+                projectCipherKey,
+                new CLUDevice(
+                        serialNumber,
+                        Mocks.macAddress(),
+                        MockServer.LOCALHOST,
+                        CipherTypeEnum.PROJECT,
+                        Mocks.iv(),
+                        Mocks.pin()
+                )
         );
 
         server.start();
@@ -113,9 +113,9 @@ class ServerCommandTest extends BaseServerTest {
         final CLUDevice correctDevice = server.getServer().getDevice();
 
         final CLUDevice otherDevice = new CLUDevice(
-            Mocks.serialNumber(),
-            correctDevice.getMacAddress(), correctDevice.getAddress(), correctDevice.getPort(),
-            correctDevice.getCipherType(), correctDevice.getCipherKey().getIV(), Mocks.pin()
+                Mocks.serialNumber(),
+                correctDevice.getMacAddress(), correctDevice.getAddress(), correctDevice.getPort(),
+                correctDevice.getCipherType(), correctDevice.getCipherKey().getIV(), Mocks.pin()
         );
 
         try (CLUClient broadcastClient = new CLUClient(LOCALHOST, otherDevice, projectCipherKey, LOCALHOST, server.getBroadcastPort())) {

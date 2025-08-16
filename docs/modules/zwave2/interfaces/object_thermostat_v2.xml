@@ -18,250 +18,260 @@
   -->
 
 <object class="18" name="Thermostat" version="2">
-  <features>
-    <feature get="false" index="0" name="Source" set="true" type="table">
-      <hint lang="pl" value="Wejście termostatu, powiązanie termostatu z czujnikiem temperatury"/>
-      <hint lang="en" value="Thermostat input, connection to a temperature sensor"/>
-      <desc resKey="thermostat_source"/>
-    </feature>
-    <feature get="false" index="1" name="Control" set="true" type="table">
-      <hint lang="pl" value="Wyjście termostatu, powiązanie termostatu z elementem wykonujacym"/>
-      <hint lang="en" value="Thermostat output, connection with the actuator"/>
-      <desc resKey="thermostat_control"/>
-    </feature>
-    <feature enum="-1,0,1" get="true" index="2" name="OutputType" set="false" type="num">
-      <enum name="Auto" resKey="thermostat_outputtype_enum_auto" value="-1"/>
-      <enum name="Digital" resKey="thermostat_outputtype_enum_digital" value="0"/>
-      <enum name="Analog" resKey="thermostat_outputtype_enum_analog" value="1"/>
-      <hint lang="pl" value="Typ wyjścia:&#13;-1 - autodetekcja&#13;0 - cyfrowe&#13;1 - analogowe"/>
-      <hint lang="en" value="Determination of the output type (-1 - autodetection, 0 - digital output, 1 - analog output)"/>
-      <desc resKey="thermostat_outputtype"/>
-    </feature>
-    <feature acc="1" default="20" get="true" index="3" name="PointValue" set="true" type="num">
-      <hint lang="pl" value="Wartość ręcznie zadanej temperatury"/>
-      <hint lang="en" value="The value of the temperature set manually"/>
-      <desc resKey="thermostat_pointvalue"/>
-    </feature>
-    <feature default="17" get="true" index="4" name="HolidayModeValue" set="true" type="num">
-      <hint lang="pl" value="Wartość temperatury dla trybu wakacyjnego"/>
-      <hint lang="en" value="The temperature value for the holiday mode"/>
-      <desc resKey="thermostat_holidaymodevalue"/>
-    </feature>
-    <feature default="2" get="true" index="5" name="Hysteresis" set="true" type="num">
-      <hint lang="pl" value="Wielkość histerezy"/>
-      <hint lang="en" value="Hysteresis value - defining the limits of thermostat activation and deactivation"/>
-      <desc resKey="thermostat_hysteresis"/>
-    </feature>
-    <feature enum="0,1" get="true" index="6" name="State" set="false" type="num">
-      <hint lang="pl" value="Stan pracy: 1 - aktywny, 0 - zatrzymany"/>
-      <hint lang="en" value="Operation status (1 - active thermostat, 0 - inactive)"/>
-      <desc resKey="thermostat_state"/>
-    </feature>
-    <feature enum="0,1" get="true" index="7" name="ControlDirection" set="true" type="num">
-      <enum name="Normal" resKey="thermostat_controldirection_enum_normal" value="0"/>
-      <enum name="Reverse" resKey="thermostat_controldirection_enum_reverse" value="1"/>
-      <hint lang="pl" value="Kierunek pracy: 0 - tryb normalny (grzanie)&#13;1 - tryb odwrotny (chłodzenie)"/>
-      <hint lang="en" value="Working direction (0 - normal mode (warming up), 1 - reverse mode (cooling))"/>
-      <desc resKey="thermostat_controldirection"/>
-    </feature>
-    <feature enum="0,1,2,3" get="true" index="8" name="Mode" set="false" type="num">
-      <enum name="use PointValue" resKey="thermostat_mode_enum_usepointvalue" value="0"/>
-      <enum name="HolidayMode" resKey="thermostat_mode_enum_holidaymode" value="1"/>
-      <enum name="AutoMode" resKey="thermostat_mode_enum_automode" value="2"/>
-      <enum name="HeatUp" resKey="thermostat_mode_enum_heatup" value="3"/>
-      <hint lang="pl"
-        value="Tryb pracy:&#13;0 - tryb ręczny (użycie PointValue)&#13;1 - tryb wakacyjny (użycie HolidayModeValue)&#13;2 - tryb automatyczny (użycie wartości z Harmonogramu - AutoMode)&#13;3 - tryb podgrzewania (użycie wartości HeatUp)"/>
-      <hint lang="en"
-        value="Operating mode (0 - manual mode (using `PointValue`), 1 - holiday mode (` HolidayModeValue`), 2 - automatic mode (`AutoMode` value from the Schedule), 3 - heating mode (`HeatUp` value))"/>
-      <desc resKey="thermostat_mode"/>
-    </feature>
-    <feature get="true" index="9" name="Data" set="true" type="str">
-      <hint lang="pl" value="Wartość cechy Data"/>
-      <hint lang="en" value="A string that defines the schedule for changing values"/>
-      <desc resKey="thermostat_data"/>
-    </feature>
-    <feature default="0" get="true" index="10" name="Min" set="true" type="num">
-      <hint lang="pl" value="Dolna wartość zakresu wbudowanego harmonogramu"/>
-      <hint lang="en" value="The lower value of the scope of the built-in schedule"/>
-      <desc resKey="thermostat_min"/>
-    </feature>
-    <feature default="30" get="true" index="11" name="Max" set="true" type="num">
-      <hint lang="pl" value="Górna wartość zakresu wbudowanego harmonogramu"/>
-      <hint lang="en" value="The upper value of the scope of the built-in schedule"/>
-      <desc resKey="thermostat_max"/>
-    </feature>
-    <feature get="true" index="12" name="TargetTemp" set="false" type="num">
-      <hint lang="pl" value="Zwraca aktualną wartość docelowej temperatury, w odroznieniu od SetPoint uwzględnia status AutoMode i HolidayMode"/>
-      <hint lang="en" value="The current value of the target temperature"/>
-      <desc resKey="thermostat_targettemp"/>
-    </feature>
-    <feature get="true" index="13" name="ControlOutValue" set="false" type="num">
-      <hint lang="pl" value="Wartość przypisywana do wyjścia sterującego ogrzewaniem"/>
-      <hint lang="en" value="The value assigned to the heating control output"/>
-      <desc resKey="thermostat_controloutvalue"/>
-    </feature>
-    <feature get="true" index="14" name="CurrentTemp" set="false" type="num">
-      <hint lang="pl" value="Zwraca wartość temperatury na czujniku"/>
-      <hint lang="en" value="Returns the temperature value at the sensor"/>
-      <desc resKey="thermostat_currenttemp"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="execute" index="0" name="Start" return="void">
-      <hint lang="pl" value="Przełącza w stan aktywny (State=1)"/>
-      <hint lang="en" value="Switching thermostat to active state (`State` = 1)"/>
-      <desc resKey="thermostat_start"/>
-    </method>
-    <method call="execute" index="1" name="Stop" return="void">
-      <hint lang="pl" value="Przełącza w stan zatrzymania (State=0)"/>
-      <hint lang="en" value="Switching the thermostat to an inactive state (`State` = 0)"/>
-      <desc resKey="thermostat_stop"/>
-    </method>
-    <method call="execute" index="2" name="IncreaseDegree" return="void">
-      <hint lang="pl" value="Zmniejsza PointValue o 1°C"/>
-      <hint lang="en" value="Increase `PointValue` by 1 ° C"/>
-      <desc resKey="thermostat_increasedegree"/>
-    </method>
-    <method call="execute" index="3" name="DecreaseDegree" return="void">
-      <hint lang="pl" value="Zmniejsza PointValue o 1°C"/>
-      <hint lang="en" value="Decrease `PointValue` by 1 ° C"/>
-      <desc resKey="thermostat_decreasedegree"/>
-    </method>
-    <method call="execute" index="4" name="HeatUp" return="void">
-      <param name="Value" type="num"/>
-      <param name="Time" type="num"/>
-      <hint lang="pl" value="Podnosi Wartość PointValue o wartość Value, na wskazany okres czasu(Time) wyrazony w minutach"/>
-      <hint lang="en" value="Increasing `PointValue` by a given value at a specified time"/>
-      <desc resKey="thermostat_heatup"/>
-    </method>
-    <method call="execute" index="5" name="HolidayModeStart" return="void">
-      <hint lang="pl" value="Uruchamia tryb wakacyjny"/>
-      <hint lang="en" value="Starting `holiday mode`"/>
-      <desc resKey="thermostat_holidaymodestart"/>
-    </method>
-    <method call="execute" index="6" name="HolidayModeStop" return="void">
-      <hint lang="pl" value="Zatrzymuje tryb wakacyjny"/>
-      <hint lang="en" value="Stopping the `holiday mode`"/>
-      <desc resKey="thermostat_holidaymodestop"/>
-    </method>
-    <method call="execute" index="7" name="AutoModeStart" return="void">
-      <hint lang="pl" value="Uruchamia tryb AutoMode (pobieranie docelowej temperatury z harmonogramu zamiast z cechy PointValue)"/>
-      <hint lang="en" value="Starting the `AutoMode` mode (downloading temperature from the schedule)"/>
-      <desc resKey="thermostat_automodestart"/>
-    </method>
-    <method call="execute" index="8" name="AutoModeStop" return="void">
-      <hint lang="pl" value="Zatrzymuje tryb AutoMode"/>
-      <hint lang="en" value="Stop the `AutoMode` mode"/>
-      <desc resKey="thermostat_automodestop"/>
-    </method>
-    <method call="set" get="true" index="9" name="SetData" return="void" set="true">
-      <param name="Data" type="str"/>
-      <hint lang="pl" value="Ustawienie tygodniowego harmonogramu"/>
-      <hint lang="en" value="Setting the weekly schedule"/>
-      <desc resKey="thermostat_setdata"/>
-    </method>
-    <method call="set" get="true" index="10" name="SetMin" return="void" set="true" visible="false">
-      <param name="Min" type="num"/>
-      <hint lang="pl" value="Ustawia minimalną wartość zakresu wbudowanego harmonogramu"/>
-      <hint lang="en" value="Sets the minimum value for the built-in schedule range"/>
-      <desc resKey="thermostat_setmin"/>
-    </method>
-    <method call="set" get="true" index="11" name="SetMax" return="void" set="true" visible="false">
-      <param name="Max" type="num"/>
-      <hint lang="pl" value="Ustawia maksymalną wartość zakresu wbudowanego harmonogramu"/>
-      <hint lang="en" value="Sets the maximum value for the built-in schedule range"/>
-      <desc resKey="thermostat_setmax"/>
-    </method>
-    <method call="set" get="true" index="0" name="SetSource" return="void" set="true" visible="false">
-      <param name="Source" type="table"/>
-      <hint lang="pl" value="Ustawia powiązanie termostatu z czujnikiem temperatury"/>
-      <hint lang="en" value="Sets the binding of the thermostat to the temperature sensor"/>
-      <desc resKey="thermostat_setsource"/>
-    </method>
-    <method call="set" get="true" index="1" name="SetControl" return="void" set="true" visible="false">
-      <param name="Control" type="table"/>
-      <hint lang="pl" value="Ustawia powiązanie termostatu z wyjściem sterującym"/>
-      <hint lang="en" value="Act to link the thermostat with the control output"/>
-      <desc resKey="thermostat_setcontrol"/>
-    </method>
-    <method call="set" get="true" index="2" name="SetOutputType" return="void" set="true">
-      <param enum="-1,0,1" name="OutputType" type="num"/>
-      <hint lang="pl" value="Typ wyjścia:&#13;Auto - autodetekcja&#13;Digital - cyfrowe&#13;Analog - analogowe"/>
-      <hint lang="en" value="Output type setting (`Auto` - auto detection,` Digital` - digital output, `Analog` - analog output)"/>
-      <desc resKey="thermostat_setoutputtype"/>
-    </method>
-    <method call="set" get="true" index="3" name="SetPointValue" return="void" set="true">
-      <param name="PointValue" type="num"/>
-      <hint lang="pl" value="Ustawia wartość ręcznie zadanej temperatury"/>
-      <hint lang="en" value="Setting the manually set temperature"/>
-      <desc resKey="thermostat_setpointvalue"/>
-    </method>
-    <method call="set" get="true" index="4" name="SetHolidayModeValue" return="void" set="true">
-      <param name="HolidayModeValue" type="num"/>
-      <hint lang="pl" value="Ustawia wartość temperatury dla trybu wakacyjnego"/>
-      <hint lang="en" value="Setting the temperature value for the holiday mode"/>
-      <desc resKey="thermostat_setholidaymodevalue"/>
-    </method>
-    <method call="set" get="true" index="5" name="SetHysteresis" return="void" set="true">
-      <param name="Hysteresis" type="num"/>
-      <hint lang="pl" value="Ustawia wartość histerezy"/>
-      <hint lang="en" value="Setting the hysteresis value"/>
-      <desc resKey="thermostat_sethysteresis"/>
-    </method>
-    <method call="set" get="true" index="7" name="SetControlDirection" return="void" set="true">
-      <param enum="0,1" name="ControlDirection" type="num"/>
-      <hint lang="pl" value="Ustawia kierunek pracy:&#13;Normal - tryb normalny (grzanie)&#13;Reverse - tryb odwrotny (chłodzenie)"/>
-      <hint lang="en" value="Setting the working direction (0 - normal mode (warming up), 1 - reverse mode (cooling))"/>
-      <desc resKey="thermostat_setcontroldirection"/>
-    </method>
-    <method call="set" get="true" index="6" name="SetState" return="void" set="true">
-      <param name="State" type="num"/>
-      <hint lang="pl" value="Ustawia stan"/>
-      <hint lang="en" value="Sets the state"/>
-      <desc resKey="thermostat_setstate"/>
-    </method>
-    <method call="set" get="true" index="8" name="SetMode" return="void" set="true">
-      <param name="Mode" type="num"/>
-      <hint lang="pl" value="Ustawia tryb pracy"/>
-      <hint lang="en" value="Sets the operation mode"/>
-      <desc resKey="thermostat_setmode"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnChange">
-      <hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości PointValue"/>
-      <hint lang="en" value="An event generated when the value of the `PointValue` property is changed"/>
-      <desc resKey="thermostat_onchange"/>
-    </event>
-    <event address="1" name="OnStart">
-      <hint lang="pl" value="Zdarzenie wywoływane przy wznowieniu pracy termostatu"/>
-      <hint lang="en" value="The event is generated when the thermostat is restarted"/>
-      <desc resKey="thermostat_onstart"/>
-    </event>
-    <event address="2" name="OnStop">
-      <hint lang="pl" value="Zdarzenie wywoływane przy zatrzymaniu pracy termostatu"/>
-      <hint lang="en" value="Event generated when the thermostat stops working"/>
-      <desc resKey="thermostat_onstop"/>
-    </event>
-    <event address="3" name="OnOutOn">
-      <hint lang="pl" value="Zdarzenie wywoływane przy wystawieniu na wyjściu OutValue wartości większej od zera"/>
-      <hint lang="en" value="An event dispatched when the value of `OutValue` is set to a value greater than zero"/>
-      <desc resKey="thermostat_onouton"/>
-    </event>
-    <event address="4" name="OnOutOff">
-      <hint lang="pl" value="Zdarzenie wywoływane przy wystawieniu na wyjściu OutValue wartości mniejszej od zera"/>
-      <hint lang="en" value="An event that is dispatched when the value of `OutValue` is less than zero"/>
-      <desc resKey="thermostat_onoutoff"/>
-    </event>
-    <event address="5" name="OnHolidayModeOn">
-      <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu trybu wakacyjnego"/>
-      <hint lang="en" value="An event generated when starting holiday mode"/>
-      <desc resKey="thermostat_onholidaymodeon"/>
-    </event>
-    <event address="6" name="OnHolidayModeOff">
-      <hint lang="pl" value="Zdarzenie wywoływane przy wyłączeniu trybu wakacyjnego"/>
-      <hint lang="en" value="An event generated when the holiday mode is turned off"/>
-      <desc resKey="thermostat_onholidaymodeoff"/>
-    </event>
-  </events>
+    <features>
+        <feature get="false" index="0" name="Source" set="true" type="table">
+            <hint lang="pl" value="Wejście termostatu, powiązanie termostatu z czujnikiem temperatury"/>
+            <hint lang="en" value="Thermostat input, connection to a temperature sensor"/>
+            <desc resKey="thermostat_source"/>
+        </feature>
+        <feature get="false" index="1" name="Control" set="true" type="table">
+            <hint lang="pl" value="Wyjście termostatu, powiązanie termostatu z elementem wykonujacym"/>
+            <hint lang="en" value="Thermostat output, connection with the actuator"/>
+            <desc resKey="thermostat_control"/>
+        </feature>
+        <feature enum="-1,0,1" get="true" index="2" name="OutputType" set="false" type="num">
+            <enum name="Auto" resKey="thermostat_outputtype_enum_auto" value="-1"/>
+            <enum name="Digital" resKey="thermostat_outputtype_enum_digital" value="0"/>
+            <enum name="Analog" resKey="thermostat_outputtype_enum_analog" value="1"/>
+            <hint lang="pl" value="Typ wyjścia:&#13;-1 - autodetekcja&#13;0 - cyfrowe&#13;1 - analogowe"/>
+            <hint lang="en"
+                  value="Determination of the output type (-1 - autodetection, 0 - digital output, 1 - analog output)"/>
+            <desc resKey="thermostat_outputtype"/>
+        </feature>
+        <feature acc="1" default="20" get="true" index="3" name="PointValue" set="true" type="num">
+            <hint lang="pl" value="Wartość ręcznie zadanej temperatury"/>
+            <hint lang="en" value="The value of the temperature set manually"/>
+            <desc resKey="thermostat_pointvalue"/>
+        </feature>
+        <feature default="17" get="true" index="4" name="HolidayModeValue" set="true" type="num">
+            <hint lang="pl" value="Wartość temperatury dla trybu wakacyjnego"/>
+            <hint lang="en" value="The temperature value for the holiday mode"/>
+            <desc resKey="thermostat_holidaymodevalue"/>
+        </feature>
+        <feature default="2" get="true" index="5" name="Hysteresis" set="true" type="num">
+            <hint lang="pl" value="Wielkość histerezy"/>
+            <hint lang="en" value="Hysteresis value - defining the limits of thermostat activation and deactivation"/>
+            <desc resKey="thermostat_hysteresis"/>
+        </feature>
+        <feature enum="0,1" get="true" index="6" name="State" set="false" type="num">
+            <hint lang="pl" value="Stan pracy: 1 - aktywny, 0 - zatrzymany"/>
+            <hint lang="en" value="Operation status (1 - active thermostat, 0 - inactive)"/>
+            <desc resKey="thermostat_state"/>
+        </feature>
+        <feature enum="0,1" get="true" index="7" name="ControlDirection" set="true" type="num">
+            <enum name="Normal" resKey="thermostat_controldirection_enum_normal" value="0"/>
+            <enum name="Reverse" resKey="thermostat_controldirection_enum_reverse" value="1"/>
+            <hint lang="pl" value="Kierunek pracy: 0 - tryb normalny (grzanie)&#13;1 - tryb odwrotny (chłodzenie)"/>
+            <hint lang="en" value="Working direction (0 - normal mode (warming up), 1 - reverse mode (cooling))"/>
+            <desc resKey="thermostat_controldirection"/>
+        </feature>
+        <feature enum="0,1,2,3" get="true" index="8" name="Mode" set="false" type="num">
+            <enum name="use PointValue" resKey="thermostat_mode_enum_usepointvalue" value="0"/>
+            <enum name="HolidayMode" resKey="thermostat_mode_enum_holidaymode" value="1"/>
+            <enum name="AutoMode" resKey="thermostat_mode_enum_automode" value="2"/>
+            <enum name="HeatUp" resKey="thermostat_mode_enum_heatup" value="3"/>
+            <hint lang="pl"
+                  value="Tryb pracy:&#13;0 - tryb ręczny (użycie PointValue)&#13;1 - tryb wakacyjny (użycie HolidayModeValue)&#13;2 - tryb automatyczny (użycie wartości z Harmonogramu - AutoMode)&#13;3 - tryb podgrzewania (użycie wartości HeatUp)"/>
+            <hint lang="en"
+                  value="Operating mode (0 - manual mode (using `PointValue`), 1 - holiday mode (` HolidayModeValue`), 2 - automatic mode (`AutoMode` value from the Schedule), 3 - heating mode (`HeatUp` value))"/>
+            <desc resKey="thermostat_mode"/>
+        </feature>
+        <feature get="true" index="9" name="Data" set="true" type="str">
+            <hint lang="pl" value="Wartość cechy Data"/>
+            <hint lang="en" value="A string that defines the schedule for changing values"/>
+            <desc resKey="thermostat_data"/>
+        </feature>
+        <feature default="0" get="true" index="10" name="Min" set="true" type="num">
+            <hint lang="pl" value="Dolna wartość zakresu wbudowanego harmonogramu"/>
+            <hint lang="en" value="The lower value of the scope of the built-in schedule"/>
+            <desc resKey="thermostat_min"/>
+        </feature>
+        <feature default="30" get="true" index="11" name="Max" set="true" type="num">
+            <hint lang="pl" value="Górna wartość zakresu wbudowanego harmonogramu"/>
+            <hint lang="en" value="The upper value of the scope of the built-in schedule"/>
+            <desc resKey="thermostat_max"/>
+        </feature>
+        <feature get="true" index="12" name="TargetTemp" set="false" type="num">
+            <hint lang="pl"
+                  value="Zwraca aktualną wartość docelowej temperatury, w odroznieniu od SetPoint uwzględnia status AutoMode i HolidayMode"/>
+            <hint lang="en" value="The current value of the target temperature"/>
+            <desc resKey="thermostat_targettemp"/>
+        </feature>
+        <feature get="true" index="13" name="ControlOutValue" set="false" type="num">
+            <hint lang="pl" value="Wartość przypisywana do wyjścia sterującego ogrzewaniem"/>
+            <hint lang="en" value="The value assigned to the heating control output"/>
+            <desc resKey="thermostat_controloutvalue"/>
+        </feature>
+        <feature get="true" index="14" name="CurrentTemp" set="false" type="num">
+            <hint lang="pl" value="Zwraca wartość temperatury na czujniku"/>
+            <hint lang="en" value="Returns the temperature value at the sensor"/>
+            <desc resKey="thermostat_currenttemp"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="execute" index="0" name="Start" return="void">
+            <hint lang="pl" value="Przełącza w stan aktywny (State=1)"/>
+            <hint lang="en" value="Switching thermostat to active state (`State` = 1)"/>
+            <desc resKey="thermostat_start"/>
+        </method>
+        <method call="execute" index="1" name="Stop" return="void">
+            <hint lang="pl" value="Przełącza w stan zatrzymania (State=0)"/>
+            <hint lang="en" value="Switching the thermostat to an inactive state (`State` = 0)"/>
+            <desc resKey="thermostat_stop"/>
+        </method>
+        <method call="execute" index="2" name="IncreaseDegree" return="void">
+            <hint lang="pl" value="Zmniejsza PointValue o 1°C"/>
+            <hint lang="en" value="Increase `PointValue` by 1 ° C"/>
+            <desc resKey="thermostat_increasedegree"/>
+        </method>
+        <method call="execute" index="3" name="DecreaseDegree" return="void">
+            <hint lang="pl" value="Zmniejsza PointValue o 1°C"/>
+            <hint lang="en" value="Decrease `PointValue` by 1 ° C"/>
+            <desc resKey="thermostat_decreasedegree"/>
+        </method>
+        <method call="execute" index="4" name="HeatUp" return="void">
+            <param name="Value" type="num"/>
+            <param name="Time" type="num"/>
+            <hint lang="pl"
+                  value="Podnosi Wartość PointValue o wartość Value, na wskazany okres czasu(Time) wyrazony w minutach"/>
+            <hint lang="en" value="Increasing `PointValue` by a given value at a specified time"/>
+            <desc resKey="thermostat_heatup"/>
+        </method>
+        <method call="execute" index="5" name="HolidayModeStart" return="void">
+            <hint lang="pl" value="Uruchamia tryb wakacyjny"/>
+            <hint lang="en" value="Starting `holiday mode`"/>
+            <desc resKey="thermostat_holidaymodestart"/>
+        </method>
+        <method call="execute" index="6" name="HolidayModeStop" return="void">
+            <hint lang="pl" value="Zatrzymuje tryb wakacyjny"/>
+            <hint lang="en" value="Stopping the `holiday mode`"/>
+            <desc resKey="thermostat_holidaymodestop"/>
+        </method>
+        <method call="execute" index="7" name="AutoModeStart" return="void">
+            <hint lang="pl"
+                  value="Uruchamia tryb AutoMode (pobieranie docelowej temperatury z harmonogramu zamiast z cechy PointValue)"/>
+            <hint lang="en" value="Starting the `AutoMode` mode (downloading temperature from the schedule)"/>
+            <desc resKey="thermostat_automodestart"/>
+        </method>
+        <method call="execute" index="8" name="AutoModeStop" return="void">
+            <hint lang="pl" value="Zatrzymuje tryb AutoMode"/>
+            <hint lang="en" value="Stop the `AutoMode` mode"/>
+            <desc resKey="thermostat_automodestop"/>
+        </method>
+        <method call="set" get="true" index="9" name="SetData" return="void" set="true">
+            <param name="Data" type="str"/>
+            <hint lang="pl" value="Ustawienie tygodniowego harmonogramu"/>
+            <hint lang="en" value="Setting the weekly schedule"/>
+            <desc resKey="thermostat_setdata"/>
+        </method>
+        <method call="set" get="true" index="10" name="SetMin" return="void" set="true" visible="false">
+            <param name="Min" type="num"/>
+            <hint lang="pl" value="Ustawia minimalną wartość zakresu wbudowanego harmonogramu"/>
+            <hint lang="en" value="Sets the minimum value for the built-in schedule range"/>
+            <desc resKey="thermostat_setmin"/>
+        </method>
+        <method call="set" get="true" index="11" name="SetMax" return="void" set="true" visible="false">
+            <param name="Max" type="num"/>
+            <hint lang="pl" value="Ustawia maksymalną wartość zakresu wbudowanego harmonogramu"/>
+            <hint lang="en" value="Sets the maximum value for the built-in schedule range"/>
+            <desc resKey="thermostat_setmax"/>
+        </method>
+        <method call="set" get="true" index="0" name="SetSource" return="void" set="true" visible="false">
+            <param name="Source" type="table"/>
+            <hint lang="pl" value="Ustawia powiązanie termostatu z czujnikiem temperatury"/>
+            <hint lang="en" value="Sets the binding of the thermostat to the temperature sensor"/>
+            <desc resKey="thermostat_setsource"/>
+        </method>
+        <method call="set" get="true" index="1" name="SetControl" return="void" set="true" visible="false">
+            <param name="Control" type="table"/>
+            <hint lang="pl" value="Ustawia powiązanie termostatu z wyjściem sterującym"/>
+            <hint lang="en" value="Act to link the thermostat with the control output"/>
+            <desc resKey="thermostat_setcontrol"/>
+        </method>
+        <method call="set" get="true" index="2" name="SetOutputType" return="void" set="true">
+            <param enum="-1,0,1" name="OutputType" type="num"/>
+            <hint lang="pl" value="Typ wyjścia:&#13;Auto - autodetekcja&#13;Digital - cyfrowe&#13;Analog - analogowe"/>
+            <hint lang="en"
+                  value="Output type setting (`Auto` - auto detection,` Digital` - digital output, `Analog` - analog output)"/>
+            <desc resKey="thermostat_setoutputtype"/>
+        </method>
+        <method call="set" get="true" index="3" name="SetPointValue" return="void" set="true">
+            <param name="PointValue" type="num"/>
+            <hint lang="pl" value="Ustawia wartość ręcznie zadanej temperatury"/>
+            <hint lang="en" value="Setting the manually set temperature"/>
+            <desc resKey="thermostat_setpointvalue"/>
+        </method>
+        <method call="set" get="true" index="4" name="SetHolidayModeValue" return="void" set="true">
+            <param name="HolidayModeValue" type="num"/>
+            <hint lang="pl" value="Ustawia wartość temperatury dla trybu wakacyjnego"/>
+            <hint lang="en" value="Setting the temperature value for the holiday mode"/>
+            <desc resKey="thermostat_setholidaymodevalue"/>
+        </method>
+        <method call="set" get="true" index="5" name="SetHysteresis" return="void" set="true">
+            <param name="Hysteresis" type="num"/>
+            <hint lang="pl" value="Ustawia wartość histerezy"/>
+            <hint lang="en" value="Setting the hysteresis value"/>
+            <desc resKey="thermostat_sethysteresis"/>
+        </method>
+        <method call="set" get="true" index="7" name="SetControlDirection" return="void" set="true">
+            <param enum="0,1" name="ControlDirection" type="num"/>
+            <hint lang="pl"
+                  value="Ustawia kierunek pracy:&#13;Normal - tryb normalny (grzanie)&#13;Reverse - tryb odwrotny (chłodzenie)"/>
+            <hint lang="en"
+                  value="Setting the working direction (0 - normal mode (warming up), 1 - reverse mode (cooling))"/>
+            <desc resKey="thermostat_setcontroldirection"/>
+        </method>
+        <method call="set" get="true" index="6" name="SetState" return="void" set="true">
+            <param name="State" type="num"/>
+            <hint lang="pl" value="Ustawia stan"/>
+            <hint lang="en" value="Sets the state"/>
+            <desc resKey="thermostat_setstate"/>
+        </method>
+        <method call="set" get="true" index="8" name="SetMode" return="void" set="true">
+            <param name="Mode" type="num"/>
+            <hint lang="pl" value="Ustawia tryb pracy"/>
+            <hint lang="en" value="Sets the operation mode"/>
+            <desc resKey="thermostat_setmode"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnChange">
+            <hint lang="pl" value="Zdarzenie wywoływane przy zmianie wartości PointValue"/>
+            <hint lang="en" value="An event generated when the value of the `PointValue` property is changed"/>
+            <desc resKey="thermostat_onchange"/>
+        </event>
+        <event address="1" name="OnStart">
+            <hint lang="pl" value="Zdarzenie wywoływane przy wznowieniu pracy termostatu"/>
+            <hint lang="en" value="The event is generated when the thermostat is restarted"/>
+            <desc resKey="thermostat_onstart"/>
+        </event>
+        <event address="2" name="OnStop">
+            <hint lang="pl" value="Zdarzenie wywoływane przy zatrzymaniu pracy termostatu"/>
+            <hint lang="en" value="Event generated when the thermostat stops working"/>
+            <desc resKey="thermostat_onstop"/>
+        </event>
+        <event address="3" name="OnOutOn">
+            <hint lang="pl"
+                  value="Zdarzenie wywoływane przy wystawieniu na wyjściu OutValue wartości większej od zera"/>
+            <hint lang="en"
+                  value="An event dispatched when the value of `OutValue` is set to a value greater than zero"/>
+            <desc resKey="thermostat_onouton"/>
+        </event>
+        <event address="4" name="OnOutOff">
+            <hint lang="pl"
+                  value="Zdarzenie wywoływane przy wystawieniu na wyjściu OutValue wartości mniejszej od zera"/>
+            <hint lang="en" value="An event that is dispatched when the value of `OutValue` is less than zero"/>
+            <desc resKey="thermostat_onoutoff"/>
+        </event>
+        <event address="5" name="OnHolidayModeOn">
+            <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu trybu wakacyjnego"/>
+            <hint lang="en" value="An event generated when starting holiday mode"/>
+            <desc resKey="thermostat_onholidaymodeon"/>
+        </event>
+        <event address="6" name="OnHolidayModeOff">
+            <hint lang="pl" value="Zdarzenie wywoływane przy wyłączeniu trybu wakacyjnego"/>
+            <hint lang="en" value="An event generated when the holiday mode is turned off"/>
+            <desc resKey="thermostat_onholidaymodeoff"/>
+        </event>
+    </events>
 </object>

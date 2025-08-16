@@ -87,9 +87,9 @@ public class VirtualSystem implements Closeable {
 
     public VirtualSystem(Path rootDirectory, Inet4Address localAddress, int port, CipherKey cipherKey) {
         this.rootDirectory = rootDirectory;
-        this.localAddress  = localAddress;
-        this.port          = port;
-        this.cipherKey     = cipherKey;
+        this.localAddress = localAddress;
+        this.port = port;
+        this.cipherKey = cipherKey;
 
         this.clientRegistry = new ClientRegistry(localAddress, cipherKey);
     }
@@ -178,24 +178,24 @@ public class VirtualSystem implements Closeable {
     }
 
     public String clientRegister(
-        Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId,
-        List<Subscription> subscription
+            Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId,
+            List<Subscription> subscription
     ) {
         clientRegistry.register(
-            ipAddress, port, sessionId,
-            client -> {
-                final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
+                ipAddress, port, sessionId,
+                client -> {
+                    final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
 
-                sendResponse(client, valuesAsString);
+                    sendResponse(client, valuesAsString);
 
-                if (!ipAddress.equals(remoteIpAddress)) {
-                    // when having docker network interfaces,
-                    // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
-                    try (CLUClient remoteClient = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
-                        sendResponse(remoteClient, valuesAsString);
+                    if (!ipAddress.equals(remoteIpAddress)) {
+                        // when having docker network interfaces,
+                        // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
+                        try (CLUClient remoteClient = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
+                            sendResponse(remoteClient, valuesAsString);
+                        }
                     }
                 }
-            }
         );
 
         return CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
@@ -222,14 +222,14 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public String fetchValues(List<Subscription> subscriptions) {
         return LuaUtil.stringifyList(
-            subscriptions,
-            subscription -> {
-                final VirtualObject object = subscription.object();
-                final int index = subscription.index();
-                final LuaValue value = object.get(index);
+                subscriptions,
+                subscription -> {
+                    final VirtualObject object = subscription.object();
+                    final int index = subscription.index();
+                    final LuaValue value = object.get(index);
 
-                return LuaUtil.stringifyRaw(value, "nil");
-            }
+                    return LuaUtil.stringifyRaw(value, "nil");
+                }
         );
     }
 
@@ -246,19 +246,19 @@ public class VirtualSystem implements Closeable {
 
         for (VirtualObject object : objectsByName.values()) {
             futures.add(
-                executor.submit(() -> {
-                    final long objectStartTime = System.nanoTime();
-                    try {
-                        runnable.accept(object);
-                    } catch (Exception e) {
-                        LOGGER.error(e.getMessage(), e);
-                    } finally {
-                        final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
-                        if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
-                            LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                    executor.submit(() -> {
+                        final long objectStartTime = System.nanoTime();
+                        try {
+                            runnable.accept(object);
+                        } catch (Exception e) {
+                            LOGGER.error(e.getMessage(), e);
+                        } finally {
+                            final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
+                            if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
+                                LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                            }
                         }
-                    }
-                })
+                    })
             );
         }
 

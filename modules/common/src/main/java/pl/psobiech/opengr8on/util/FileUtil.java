@@ -81,7 +81,7 @@ public final class FileUtil {
         }
 
         ThreadUtil.getInstance()
-                  .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
+                .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
 
         mkdir(TEMPORARY_DIRECTORY);
         ThreadUtil.addShutdownHook(() -> {
@@ -110,8 +110,8 @@ public final class FileUtil {
             return Files.createTempDirectory(
                             parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
                             TEMPORARY_FILE_PREFIX
-                        )
-                        .toAbsolutePath();
+                    )
+                    .toAbsolutePath();
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
@@ -144,11 +144,11 @@ public final class FileUtil {
     public static Path temporaryFile(Path parentPath, String fileNameSuffix) {
         try {
             return FILE_TRACKER.tracked(
-                Files.createTempFile(
-                         parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
-                         TEMPORARY_FILE_PREFIX, sanitize(fileNameSuffix)
-                     )
-                     .toAbsolutePath()
+                    Files.createTempFile(
+                                    parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
+                                    TEMPORARY_FILE_PREFIX, sanitize(fileNameSuffix)
+                            )
+                            .toAbsolutePath()
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -172,7 +172,7 @@ public final class FileUtil {
     public static void touch(Path path) {
         try {
             IOUtil.closeQuietly(
-                Files.newOutputStream(path, StandardOpenOption.CREATE)
+                    Files.newOutputStream(path, StandardOpenOption.CREATE)
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -185,7 +185,7 @@ public final class FileUtil {
     public static void truncate(Path path) {
         try {
             IOUtil.closeQuietly(
-                Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+                    Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -210,9 +210,9 @@ public final class FileUtil {
 
         try {
             final Path toTemporaryPath = to.getParent()
-                                           .resolve(
-                                               to.getFileName() + TEMPORARY_FILE_SUFFIX
-                                           );
+                    .resolve(
+                            to.getFileName() + TEMPORARY_FILE_SUFFIX
+                    );
 
             Files.copy(from, toTemporaryPath, StandardCopyOption.REPLACE_EXISTING);
             Files.move(toTemporaryPath, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -302,10 +302,10 @@ public final class FileUtil {
         }
 
         final String fileNameNoDisallowedCharacters = DISALLOWED_FILENAME_CHARACTERS.matcher(fileName)
-                                                                                    .replaceAll("_");
+                .replaceAll("_");
 
         return WHITESPACE_CHARACTERS.matcher(fileNameNoDisallowedCharacters)
-                                    .replaceAll("_");
+                .replaceAll("_");
     }
 
     /**
@@ -325,12 +325,12 @@ public final class FileUtil {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isParentOf(Path parentPath, Path path) {
         return path.toAbsolutePath()
-                   .normalize()
-                   .startsWith(
-                       parentPath
-                           .toAbsolutePath()
-                           .normalize()
-                   );
+                .normalize()
+                .startsWith(
+                        parentPath
+                                .toAbsolutePath()
+                                .normalize()
+                );
     }
 
     public static class TemporaryFileTracker {
@@ -391,7 +391,7 @@ public final class FileUtil {
             final String absolutePathAsString = absolutePath.toString();
 
             final UnexpectedException stacktrace =
-                new UnexpectedException("Temporary Path went out of scope, and the file was not removed: " + absolutePathAsString);
+                    new UnexpectedException("Temporary Path went out of scope, and the file was not removed: " + absolutePathAsString);
             stacktracesLock.lock();
             try {
                 stacktraces.put(absolutePathAsString, stacktrace);

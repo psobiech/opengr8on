@@ -29,7 +29,8 @@ import pl.psobiech.opengr8on.vclu.MockServer.ServerContext;
 
 class BaseServerTest {
     void execute(ServerContext fn) throws Exception {
-        execute((mockServer) -> { }, fn);
+        execute((mockServer) -> {
+        }, fn);
     }
 
     void execute(Consumer<MockServer> prepare, ServerContext fn) throws Exception {
@@ -37,15 +38,15 @@ class BaseServerTest {
         final CipherKey projectCipherKey = Mocks.cipherKey();
 
         final MockServer server = new MockServer(
-            projectCipherKey,
-            new CLUDevice(
-                serialNumber,
-                Mocks.macAddress(),
-                MockServer.LOCALHOST,
-                CipherTypeEnum.PROJECT,
-                Mocks.iv(),
-                Mocks.pin()
-            )
+                projectCipherKey,
+                new CLUDevice(
+                        serialNumber,
+                        Mocks.macAddress(),
+                        MockServer.LOCALHOST,
+                        CipherTypeEnum.PROJECT,
+                        Mocks.iv(),
+                        Mocks.pin()
+                )
         );
 
         try {

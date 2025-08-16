@@ -44,16 +44,16 @@ class LuaScriptCommandTest {
         final String expectedReturnValue = "nil";
 
         final Response input = LuaScriptCommand.response(
-            ipAddress, sessionId, expectedReturnValue
+                ipAddress, sessionId, expectedReturnValue
         );
 
         //
 
         final String returnValue = LuaScriptCommand.parse(
-                                                       sessionId,
-                                                       Payload.of(ipAddress, 404, input.asByteArray())
-                                                   )
-                                                   .get();
+                        sessionId,
+                        Payload.of(ipAddress, 404, input.asByteArray())
+                )
+                .get();
 
         //
 
@@ -63,33 +63,33 @@ class LuaScriptCommandTest {
     @Test
     void correctRequest() {
         final Request input = LuaScriptCommand.request(
-            Mocks.ipAddress(), Mocks.sessionId(), LuaScriptCommand.CHECK_ALIVE
+                Mocks.ipAddress(), Mocks.sessionId(), LuaScriptCommand.CHECK_ALIVE
         );
 
         //
 
         final Request output = LuaScriptCommand.requestFromByteArray(input.asByteArray())
-                                               .get();
+                .get();
 
         //
 
         assertArrayEquals(input.asByteArray(), output.asByteArray());
         assertArrayEquals(
-            FileUtil.CRLF.getBytes(),
-            Arrays.copyOfRange(output.asByteArray(), output.asByteArray().length - 2, output.asByteArray().length)
+                FileUtil.CRLF.getBytes(),
+                Arrays.copyOfRange(output.asByteArray(), output.asByteArray().length - 2, output.asByteArray().length)
         );
     }
 
     @Test
     void correctResponse() {
         final Response input = LuaScriptCommand.response(
-            Mocks.ipAddress(), Mocks.sessionId(), "nil"
+                Mocks.ipAddress(), Mocks.sessionId(), "nil"
         );
 
         //
 
         final Response output = LuaScriptCommand.responseFromByteArray(input.asByteArray())
-                                                .get();
+                .get();
 
         //
 
@@ -105,9 +105,9 @@ class LuaScriptCommandTest {
         assertFalse(LuaScriptCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(LuaScriptCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                                = new byte[100];
-        buffer[Request.COMMAND.length()]                                                                      = ':';
-        buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS]                                      = ':';
+        buffer = new byte[100];
+        buffer[Request.COMMAND.length()] = ':';
+        buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS] = ':';
         buffer[Request.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS] = ':';
         assertFalse(LuaScriptCommand.requestFromByteArray(buffer).isPresent());
 
@@ -116,9 +116,9 @@ class LuaScriptCommandTest {
         assertFalse(LuaScriptCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(LuaScriptCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                                 = new byte[100];
-        buffer[Response.COMMAND.length()]                                                                      = ':';
-        buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS]                                      = ':';
+        buffer = new byte[100];
+        buffer[Response.COMMAND.length()] = ':';
+        buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS] = ':';
         buffer[Response.COMMAND.length() + 1 + Command.MIN_IP_CHARACTERS + 1 + Command.MIN_SESSION_CHARACTERS] = ':';
         assertFalse(LuaScriptCommand.responseFromByteArray(buffer).isPresent());
     }

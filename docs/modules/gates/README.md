@@ -2,17 +2,22 @@
 
 I currently only own MODBUS and HTTP gates, but I assume all should be true for the ALARM gate as well.
 
-The module is divided into two PCB's, the bottom ones are marked: `CLU_Gate_Bottom_v15` and contains connectors, voltage regulator and protection circuits.
+The module is divided into two PCB's, the bottom ones are marked: `CLU_Gate_Bottom_v15` and contains connectors, voltage
+regulator and protection circuits.
 
-The top PCB is marked as `CLU_GATE_Main_v14` and it contains an ESP32-WROVER-B module, modbus transceiver, ethernet transceiver, ethernet connector and a green
+The top PCB is marked as `CLU_GATE_Main_v14` and it contains an ESP32-WROVER-B module, modbus transceiver, ethernet
+transceiver, ethernet connector and a green
 LED.  
 In both cases MODBUS and HTTP gates are completely identical hardware wise.
-To the point that even the HTTP gate also has ST3485EB RS-485 MODBUS transceiver. So technically each of them could work as any gate type (even at the same
+To the point that even the HTTP gate also has ST3485EB RS-485 MODBUS transceiver. So technically each of them could work
+as any gate type (even at the same
 time) with only software change (maybe even at the same time!).
 
-Even software updates are identical for each of the gates. Capabilities are limited somehow using eFuses or using memory that is not updated during normal
+Even software updates are identical for each of the gates. Capabilities are limited somehow using eFuses or using memory
+that is not updated during normal
 firmware update (it might be write protected).
-I tried using HTTP features on the MODBUS gate, but it was throwing LUA errors, so there needs to be some kind of software lock on the features.
+I tried using HTTP features on the MODBUS gate, but it was throwing LUA errors, so there needs to be some kind of
+software lock on the features.
 
 SHA256 sums of firmware updates for the modules in the same version:
 

@@ -92,23 +92,23 @@ public class Client implements Closeable {
     public Stream<CLUDevice> discover(CipherKey projectCipherKey, Map<Long, byte[]> privateKeys, Duration timeout, int limit) {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
         final DiscoverCLUsCommand.Request request = DiscoverCLUsCommand.request(
-            projectCipherKey.encrypt(randomBytes), projectCipherKey.getIV(), localAddress
+                projectCipherKey.encrypt(randomBytes), projectCipherKey.getIV(), localAddress
         );
 
         return broadcastStream(
-            CipherKey.DEFAULT_BROADCAST, CipherKey.DEFAULT_BROADCAST.withIV(projectCipherKey.getIV()),
-            request,
-            broadcastAddress,
-            timeout, limit
+                CipherKey.DEFAULT_BROADCAST, CipherKey.DEFAULT_BROADCAST.withIV(projectCipherKey.getIV()),
+                request,
+                broadcastAddress,
+                timeout, limit
         )
-            .flatMap(payload -> DiscoverCLUsCommand.parse(randomBytes, payload, privateKeys).stream());
+                .flatMap(payload -> DiscoverCLUsCommand.parse(randomBytes, payload, privateKeys).stream());
     }
 
     protected Stream<Payload> broadcastStream(
-        CipherKey requestCipherKey, CipherKey responseCipherKey,
-        Command command,
-        Inet4Address ipAddress,
-        Duration timeout, int limit
+            CipherKey requestCipherKey, CipherKey responseCipherKey,
+            Command command,
+            Inet4Address ipAddress,
+            Duration timeout, int limit
     ) {
         final String uuid = uuid(command);
         final Queue<Payload> queue = new ArrayBlockingQueue<>(ESTIMATED_CLUS);
@@ -145,34 +145,34 @@ public class Client implements Closeable {
         });
 
         return StreamSupport.stream(
-            new AbstractSpliterator<>(ESTIMATED_CLUS, 0) {
-                @Override
-                public boolean tryAdvance(Consumer<? super Payload> action) {
-                    final boolean futureDone = future.isDone();
+                new AbstractSpliterator<>(ESTIMATED_CLUS, 0) {
+                    @Override
+                    public boolean tryAdvance(Consumer<? super Payload> action) {
+                        final boolean futureDone = future.isDone();
 
-                    final Payload payload = queue.poll();
-                    if (payload != null) {
-                        try {
-                            action.accept(payload);
-                        } catch (Exception e) {
-                            LOGGER.error(e.getMessage(), e);
+                        final Payload payload = queue.poll();
+                        if (payload != null) {
+                            try {
+                                action.accept(payload);
+                            } catch (Exception e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+
+                            return true;
                         }
 
-                        return true;
-                    }
+                        if (!futureDone) {
+                            return true;
+                        }
 
-                    if (!futureDone) {
-                        return true;
-                    }
+                        if (future.state() == State.FAILED) {
+                            LOGGER.error("Unexpected error while streaming broadcast responses", future.exceptionNow());
+                        }
 
-                    if (future.state() == State.FAILED) {
-                        LOGGER.error("Unexpected error while streaming broadcast responses", future.exceptionNow());
+                        return false;
                     }
-
-                    return false;
-                }
-            },
-            false
+                },
+                false
         );
     }
 
@@ -182,8 +182,8 @@ public class Client implements Closeable {
     protected void send(String uuid, CipherKey cipherKey, Inet4Address ipAddress, byte[] buffer) {
         final Payload requestPayload = Payload.of(ipAddress, port, buffer);
         LOGGER.trace(
-            "%s\t--D->\t%s // %s"
-                .formatted(uuid, requestPayload, cipherKey)
+                "%s\t--D->\t%s // %s"
+                        .formatted(uuid, requestPayload, cipherKey)
         );
 
         final byte[] encryptedRequest = cipherKey.encrypt(requestPayload.buffer());
@@ -213,8 +213,8 @@ public class Client implements Closeable {
         final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
         if (encryptedPayload.isEmpty()) {
             LOGGER.trace(
-                "%s\t-----\tTIMEOUT // %s"
-                    .formatted(uuid, responseCipherKey)
+                    "%s\t-----\tTIMEOUT // %s"
+                            .formatted(uuid, responseCipherKey)
             );
 
             return Optional.empty();
@@ -227,27 +227,27 @@ public class Client implements Closeable {
      * @return decrypted payload or empty() if the decryption key cannot decipher the response
      */
     public static Optional<Payload> tryDecrypt(
-        String uuid,
-        CipherKey responseCipherKey, Payload encryptedPayload
+            String uuid,
+            CipherKey responseCipherKey, Payload encryptedPayload
     ) {
         final Optional<Payload> payload = responseCipherKey.decrypt(encryptedPayload.buffer())
-                                                           .map(decryptedResponse ->
-                                                               Payload.of(
-                                                                   encryptedPayload.address(), encryptedPayload.port(),
-                                                                   decryptedResponse
-                                                               )
-                                                           );
+                .map(decryptedResponse ->
+                        Payload.of(
+                                encryptedPayload.address(), encryptedPayload.port(),
+                                decryptedResponse
+                        )
+                );
 
         if (LOGGER.isTraceEnabled()) {
             if (payload.isPresent()) {
                 LOGGER.trace(
-                    "%s\t<-D--\t%s // %s"
-                        .formatted(uuid, payload.get(), responseCipherKey)
+                        "%s\t<-D--\t%s // %s"
+                                .formatted(uuid, payload.get(), responseCipherKey)
                 );
             } else {
                 LOGGER.trace(
-                    "%s\t<-E--\t%s // %s"
-                        .formatted(uuid, encryptedPayload, responseCipherKey)
+                        "%s\t<-E--\t%s // %s"
+                                .formatted(uuid, encryptedPayload, responseCipherKey)
                 );
             }
         }

@@ -40,7 +40,7 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
         super(type, destination, port);
 
         this.fileName = fileName;
-        this.mode     = mode;
+        this.mode = mode;
     }
 
     TFTPRequestPacket(TFTPPacketType type, Payload payload) throws TFTPPacketException {
@@ -61,7 +61,7 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
         }
 
         final String modeAsString = readNullTerminatedString(buffer, FILE_NAME_OFFSET + fileNameAsBytes.length + 1, length)
-            .toLowerCase(java.util.Locale.ENGLISH);
+                .toLowerCase(java.util.Locale.ENGLISH);
 
         this.mode = TFTPTransferMode.ofMode(modeAsString);
     }
@@ -83,8 +83,8 @@ public abstract class TFTPRequestPacket extends TFTPPacket {
         final int modeLength = writeNullTerminatedString(mode.value(), data, HEADER_SIZE + fileNameLength);
 
         return new DatagramPacket(
-            data, 0, HEADER_SIZE + fileNameLength + modeLength,
-            getAddress(), getPort()
+                data, 0, HEADER_SIZE + fileNameLength + modeLength,
+                getAddress(), getPort()
         );
     }
 }

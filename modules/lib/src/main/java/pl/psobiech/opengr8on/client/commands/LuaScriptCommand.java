@@ -49,7 +49,7 @@ public class LuaScriptCommand {
 
     public static Request request(Inet4Address ipAddress, Integer sessionId, String script) {
         return new Request(
-            ipAddress, sessionId, script
+                ipAddress, sessionId, script
         );
     }
 
@@ -64,11 +64,11 @@ public class LuaScriptCommand {
         final String script = requestParts[SCRIPT_PART];
 
         return Optional.of(
-            new Request(
-                ipAddress,
-                sessionId,
-                script
-            )
+                new Request(
+                        ipAddress,
+                        sessionId,
+                        script
+                )
         );
     }
 
@@ -82,13 +82,13 @@ public class LuaScriptCommand {
         }
 
         return Request.COMMAND.equals(
-            Command.asString(buffer, 0, Request.COMMAND.length())
+                Command.asString(buffer, 0, Request.COMMAND.length())
         );
     }
 
     public static Response response(Inet4Address ipAddress, int sessionId, String returnValue) {
         return new Response(
-            ipAddress, sessionId, returnValue
+                ipAddress, sessionId, returnValue
         );
     }
 
@@ -104,7 +104,7 @@ public class LuaScriptCommand {
         }
 
         return Optional.of(
-            responseOptional.get().returnValue
+                responseOptional.get().returnValue
         );
     }
 
@@ -119,11 +119,11 @@ public class LuaScriptCommand {
         final String returnValue = responseParts[RETURN_VALUE_PART];
 
         return Optional.of(
-            new Response(
-                ipAddress,
-                sessionId,
-                returnValue
-            )
+                new Response(
+                        ipAddress,
+                        sessionId,
+                        returnValue
+                )
         );
     }
 
@@ -137,7 +137,7 @@ public class LuaScriptCommand {
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -153,20 +153,20 @@ public class LuaScriptCommand {
         private Request(Inet4Address ipAddress, Integer sessionId, String script) {
             this.ipAddress = ipAddress;
             this.sessionId = sessionId;
-            this.script    = script;
+            this.script = script;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                ipAddress,
-                ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
-                ":",
-                script,
-                FileUtil.CRLF
+                    COMMAND,
+                    ":",
+                    ipAddress,
+                    ":",
+                    StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
+                    ":",
+                    script,
+                    FileUtil.CRLF
             );
         }
 
@@ -193,21 +193,21 @@ public class LuaScriptCommand {
         private final String returnValue;
 
         private Response(Inet4Address ipAddress, Integer sessionId, String returnValue) {
-            this.ipAddress   = ipAddress;
-            this.sessionId   = sessionId;
+            this.ipAddress = ipAddress;
+            this.sessionId = sessionId;
             this.returnValue = returnValue;
         }
 
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                ipAddress,
-                ":",
-                StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
-                ":",
-                returnValue
+                    COMMAND,
+                    ":",
+                    ipAddress,
+                    ":",
+                    StringUtils.leftPad(StringUtils.lowerCase(HexUtil.asString(sessionId)), MAX_SESSION_CHARACTERS, '0'),
+                    ":",
+                    returnValue
             );
         }
 

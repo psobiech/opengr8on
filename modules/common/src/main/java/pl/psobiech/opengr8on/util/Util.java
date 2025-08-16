@@ -67,7 +67,7 @@ public final class Util {
             final long startedAt = System.nanoTime();
 
             fn.apply(timeout)
-              .ifPresent(results::add);
+                    .ifPresent(results::add);
 
             timeout = timeout.minusNanos(System.nanoTime() - startedAt);
         } while (timeout.isPositive() && results.size() < limit && !Thread.interrupted());
@@ -146,8 +146,8 @@ public final class Util {
         }
 
         return valueList.stream()
-                        .map(valueAsString -> Enum.valueOf(enumClass, valueAsString))
-                        .collect(Collectors.toCollection(() -> EnumSet.noneOf(enumClass)));
+                .map(valueAsString -> Enum.valueOf(enumClass, valueAsString))
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(enumClass)));
     }
 
     public static <T> String stringifyList(List<T> list, String delimiter, Function<T, String> toString) {
@@ -164,9 +164,9 @@ public final class Util {
     }
 
     public static <V1, V2> String stringifyMap(
-        Map<V1, V2> map,
-        String delimiter, String entryDelimiter,
-        Function<V1, String> toStringKey, Function<V2, String> toStringValue
+            Map<V1, V2> map,
+            String delimiter, String entryDelimiter,
+            Function<V1, String> toStringKey, Function<V2, String> toStringValue
     ) {
         final StringBuilder sb = new StringBuilder();
         for (Entry<V1, V2> entry : map.entrySet()) {
@@ -175,8 +175,8 @@ public final class Util {
             }
 
             sb.append(toStringKey.apply(entry.getKey()))
-              .append(entryDelimiter)
-              .append(toStringValue.apply(entry.getValue()));
+                    .append(entryDelimiter)
+                    .append(toStringValue.apply(entry.getValue()));
         }
 
         return sb.toString();

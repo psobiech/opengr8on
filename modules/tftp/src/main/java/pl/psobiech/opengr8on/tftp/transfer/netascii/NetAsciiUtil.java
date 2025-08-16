@@ -32,9 +32,9 @@ public final class NetAsciiUtil {
     static final byte[] LINE_SEPARATOR_BYTES;
 
     static {
-        LINE_SEPARATOR         = System.lineSeparator();
+        LINE_SEPARATOR = System.lineSeparator();
         NO_CONVERSION_REQUIRED = LINE_SEPARATOR.equals(FileUtil.CRLF);
-        LINE_SEPARATOR_BYTES   = LINE_SEPARATOR.getBytes(StandardCharsets.US_ASCII);
+        LINE_SEPARATOR_BYTES = LINE_SEPARATOR.getBytes(StandardCharsets.US_ASCII);
     }
 
     private NetAsciiUtil() {

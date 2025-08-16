@@ -68,8 +68,8 @@ public class TFTPException extends RuntimeException {
         }
 
         return new TFTPErrorPacket(
-            address, port,
-            getError(), message
+                address, port,
+                getError(), message
         );
     }
 

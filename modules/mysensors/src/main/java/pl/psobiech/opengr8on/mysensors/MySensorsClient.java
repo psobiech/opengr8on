@@ -86,8 +86,8 @@ public class MySensorsClient implements Closeable {
     private volatile long lastSentAt = 0;
 
     public MySensorsClient(
-        ExecutorService executorService,
-        TCPClientSocket socket
+            ExecutorService executorService,
+            TCPClientSocket socket
     ) {
         this.executorService = executorService;
 
@@ -95,9 +95,9 @@ public class MySensorsClient implements Closeable {
     }
 
     public void open(
-        BiFunction<MySensorsClient, InternalMessage, Integer> registrationConsumer,
-        BiConsumer<MySensorsClient, PresentationMessage> presentationConsumer,
-        BiConsumer<MySensorsClient, DataMessage> dataConsumer
+            BiFunction<MySensorsClient, InternalMessage, Integer> registrationConsumer,
+            BiConsumer<MySensorsClient, PresentationMessage> presentationConsumer,
+            BiConsumer<MySensorsClient, DataMessage> dataConsumer
     ) {
         ThreadUtil.cancel(readFuture);
 
@@ -123,18 +123,18 @@ public class MySensorsClient implements Closeable {
                                 final Message message = messageOptional.get();
 
                                 LOGGER.trace(
-                                    "%s\t<-D--\t%s // %s"
-                                        .formatted(uuid, message, messageAsString)
+                                        "%s\t<-D--\t%s // %s"
+                                                .formatted(uuid, message, messageAsString)
                                 );
 
                                 onMessage(
-                                    message,
-                                    registrationConsumer, presentationConsumer, dataConsumer
+                                        message,
+                                        registrationConsumer, presentationConsumer, dataConsumer
                                 );
                             } else {
                                 LOGGER.warn(
-                                    "%s\t<-D--\t%s // %s"
-                                        .formatted(uuid, "IGNORING MESSAGE", messageAsString)
+                                        "%s\t<-D--\t%s // %s"
+                                                .formatted(uuid, "IGNORING MESSAGE", messageAsString)
                                 );
                             }
 
@@ -144,8 +144,8 @@ public class MySensorsClient implements Closeable {
 
                         if (offset == buffer.length) {
                             LOGGER.warn(
-                                "%s\t<-D--\t%s"
-                                    .formatted(uuid, "INVALID PACKET, DISCARDING BUFFER")
+                                    "%s\t<-D--\t%s"
+                                            .formatted(uuid, "INVALID PACKET, DISCARDING BUFFER")
                             );
 
                             discardBuffer(inputStream);
@@ -173,18 +173,18 @@ public class MySensorsClient implements Closeable {
         });
 
         send(
-            MessageFactory.internal(
-                ANY_NODE, ANY_NODE,
-                I_DISCOVER_REQUEST
-            )
+                MessageFactory.internal(
+                        ANY_NODE, ANY_NODE,
+                        I_DISCOVER_REQUEST
+                )
         );
     }
 
     private void onMessage(
-        Message message,
-        BiFunction<MySensorsClient, InternalMessage, Integer> registrationConsumer,
-        BiConsumer<MySensorsClient, PresentationMessage> presentationConsumer,
-        BiConsumer<MySensorsClient, DataMessage> dataConsumer
+            Message message,
+            BiFunction<MySensorsClient, InternalMessage, Integer> registrationConsumer,
+            BiConsumer<MySensorsClient, PresentationMessage> presentationConsumer,
+            BiConsumer<MySensorsClient, DataMessage> dataConsumer
     ) {
         if (message instanceof PresentationMessage presentationMessage) {
             executorService.submit(() -> presentationConsumer.accept(this, presentationMessage));
@@ -199,36 +199,36 @@ public class MySensorsClient implements Closeable {
 
             final Optional<Message> responseMessage = switch (typeEnum) {
                 case I_HEARTBEAT_REQUEST -> Optional.of(
-                    MessageFactory.internal(
-                        message.getNodeId(), ANY_NODE,
-                        I_HEARTBEAT_RESPONSE,
-                        (int) (System.currentTimeMillis() - ManagementFactory.getRuntimeMXBean().getStartTime())
-                    )
+                        MessageFactory.internal(
+                                message.getNodeId(), ANY_NODE,
+                                I_HEARTBEAT_RESPONSE,
+                                (int) (System.currentTimeMillis() - ManagementFactory.getRuntimeMXBean().getStartTime())
+                        )
                 );
                 case I_ID_REQUEST -> Optional.of(
-                    MessageFactory.idResponse(
-                        message.getNodeId(), message.getChildSensorId(),
-                        registrationConsumer.apply(this, internalMessage)
-                    )
+                        MessageFactory.idResponse(
+                                message.getNodeId(), message.getChildSensorId(),
+                                registrationConsumer.apply(this, internalMessage)
+                        )
                 );
                 case I_GATEWAY_READY -> Optional.of(
-                    MessageFactory.internal(
-                        message.getNodeId(), ANY_NODE,
-                        I_VERSION
-                    )
+                        MessageFactory.internal(
+                                message.getNodeId(), ANY_NODE,
+                                I_VERSION
+                        )
                 );
                 case I_CONFIG -> Optional.of(
-                    MessageFactory.internal(
-                        message.getNodeId(), message.getChildSensorId(),
-                        I_CONFIG,
-                        "M" // METRIC
-                    )
+                        MessageFactory.internal(
+                                message.getNodeId(), message.getChildSensorId(),
+                                I_CONFIG,
+                                "M" // METRIC
+                        )
                 );
                 case I_DISCOVER_RESPONSE -> Optional.of(
-                    MessageFactory.internal(
-                        message.getNodeId(), ANY_NODE,
-                        I_PRESENTATION
-                    )
+                        MessageFactory.internal(
+                                message.getNodeId(), ANY_NODE,
+                                I_PRESENTATION
+                        )
                 );
                 default -> Optional.empty();
             };
@@ -269,7 +269,7 @@ public class MySensorsClient implements Closeable {
 
     public Future<?> sendAsync(Message message) {
         return executorService.submit(() ->
-            send(message, false)
+                send(message, false)
         );
     }
 
@@ -293,12 +293,12 @@ public class MySensorsClient implements Closeable {
             }
 
             LOGGER.trace(
-                "%s\t--D->\t%s // %s"
-                    .formatted(UUID.randomUUID(), message, messageAsString)
+                    "%s\t--D->\t%s // %s"
+                            .formatted(UUID.randomUUID(), message, messageAsString)
             );
 
             lastSentAt = System.nanoTime();
-            socket.send(messageAsBytes, new byte[] {FileUtil.LF_CODE_POINT});
+            socket.send(messageAsBytes, new byte[]{FileUtil.LF_CODE_POINT});
         } catch (SocketException e) {
             if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
                 throw new UncheckedInterruptedException(e);

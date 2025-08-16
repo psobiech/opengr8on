@@ -48,40 +48,40 @@ class Server2ServerTest {
 
         final long serialNumber2 = Mocks.serialNumber();
         server2 = new MockServer(
-            projectCipherKey,
-            new CLUDevice(
-                serialNumber2,
-                Mocks.macAddress(),
-                MockServer.LOCALHOST,
-                CipherTypeEnum.PROJECT,
-                Mocks.iv(),
-                Mocks.pin()
-            )
+                projectCipherKey,
+                new CLUDevice(
+                        serialNumber2,
+                        Mocks.macAddress(),
+                        MockServer.LOCALHOST,
+                        CipherTypeEnum.PROJECT,
+                        Mocks.iv(),
+                        Mocks.pin()
+                )
         );
 
         FileUtil.linkOrCopy(
-            ResourceUtil.classPath("remote/OM2.LUA"),
-            server2.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
+                ResourceUtil.classPath("remote/OM2.LUA"),
+                server2.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
         );
 
         server2.start();
 
         final long serialNumber1 = Mocks.serialNumber();
         server1 = new MockServer(
-            projectCipherKey,
-            new CLUDevice(
-                serialNumber1,
-                Mocks.macAddress(),
-                MockServer.LOCALHOST, server2.getPort(),
-                CipherTypeEnum.PROJECT,
-                Mocks.iv(),
-                Mocks.pin()
-            )
+                projectCipherKey,
+                new CLUDevice(
+                        serialNumber1,
+                        Mocks.macAddress(),
+                        MockServer.LOCALHOST, server2.getPort(),
+                        CipherTypeEnum.PROJECT,
+                        Mocks.iv(),
+                        Mocks.pin()
+                )
         );
 
         FileUtil.linkOrCopy(
-            ResourceUtil.classPath("remote/OM1.LUA"),
-            server1.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
+                ResourceUtil.classPath("remote/OM1.LUA"),
+                server1.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
         );
 
         server1.start();

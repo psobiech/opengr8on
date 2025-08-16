@@ -46,18 +46,18 @@ public class DeviceConfig {
 
     @JsonCreator
     public DeviceConfig(
-        Long serialNumber,
-        int hardwareType, long hardwareVersion,
-        int firmwareType, int firmwareVersion, String fwVer,
-        String status
+            Long serialNumber,
+            int hardwareType, long hardwareVersion,
+            int firmwareType, int firmwareVersion, String fwVer,
+            String status
     ) {
-        this.serialNumber    = serialNumber;
-        this.hardwareType    = hardwareType;
+        this.serialNumber = serialNumber;
+        this.hardwareType = hardwareType;
         this.hardwareVersion = hardwareVersion;
-        this.firmwareType    = firmwareType;
+        this.firmwareType = firmwareType;
         this.firmwareVersion = firmwareVersion;
-        this.fwVer           = fwVer;
-        this.status          = status;
+        this.fwVer = fwVer;
+        this.status = status;
     }
 
     public Long getSerialNumber() {
@@ -91,12 +91,12 @@ public class DeviceConfig {
     @Override
     public String toString() {
         return "DeviceConfig{" +
-               "serialNumber=" + ToStringUtil.toString(serialNumber) +
-               ", hardwareType=" + ToStringUtil.toString(hardwareType) +
-               ", hardwareVersion=" + ToStringUtil.toString(hardwareVersion) +
-               ", firmwareType=" + ToStringUtil.toString(firmwareType) +
-               ", firmwareVersion=" + ToStringUtil.toString(firmwareVersion) +
-               ", status=" + status +
-               '}';
+                "serialNumber=" + ToStringUtil.toString(serialNumber) +
+                ", hardwareType=" + ToStringUtil.toString(hardwareType) +
+                ", hardwareVersion=" + ToStringUtil.toString(hardwareVersion) +
+                ", firmwareType=" + ToStringUtil.toString(firmwareType) +
+                ", firmwareVersion=" + ToStringUtil.toString(firmwareVersion) +
+                ", status=" + status +
+                '}';
     }
 }

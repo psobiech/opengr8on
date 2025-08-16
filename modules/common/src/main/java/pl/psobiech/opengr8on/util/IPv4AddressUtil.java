@@ -62,17 +62,17 @@ public final class IPv4AddressUtil {
      * Interface mac address prefixes to ignore
      */
     public static final Set<String> HARDWARE_ADDRESS_PREFIX_BLACKLIST = Set.of(
-        HexUtil.asString(0x000569), // VMware, Inc.
-        HexUtil.asString(0x001c14), // VMware, Inc.
-        HexUtil.asString(0x000c29), // VMware, Inc.
-        HexUtil.asString(0x005056)  // VMware, Inc.
+            HexUtil.asString(0x000569), // VMware, Inc.
+            HexUtil.asString(0x001c14), // VMware, Inc.
+            HexUtil.asString(0x000c29), // VMware, Inc.
+            HexUtil.asString(0x005056)  // VMware, Inc.
     );
 
     /**
      * Interface names to ignore
      */
     public static final Set<String> NETWORK_INTERFACE_NAME_PREFIX_BLACKLIST = Set.of(
-        "vmnet", "vboxnet"
+            "vmnet", "vboxnet"
     );
 
     private IPv4AddressUtil() {
@@ -150,9 +150,9 @@ public final class IPv4AddressUtil {
                 final int networkMask = getNetworkMaskFromPrefix(interfaceAddress.getNetworkPrefixLength());
 
                 networkInterfaces.add(new NetworkInterfaceDto(
-                    (Inet4Address) address, (Inet4Address) broadcastAddress,
-                    networkMask,
-                    networkInterface
+                        (Inet4Address) address, (Inet4Address) broadcastAddress,
+                        networkMask,
+                        networkInterface
                 ));
             }
         }
@@ -175,9 +175,9 @@ public final class IPv4AddressUtil {
         for (NetworkInterface networkInterface : networkInterfaces) {
             try {
                 if (!networkInterface.isUp()
-                    || networkInterface.isLoopback()
-                    || networkInterface.isPointToPoint()
-                    || isBlacklisted(networkInterface)
+                        || networkInterface.isLoopback()
+                        || networkInterface.isPointToPoint()
+                        || isBlacklisted(networkInterface)
                 ) {
                     continue;
                 }
@@ -259,8 +259,8 @@ public final class IPv4AddressUtil {
         final byte[] buffer = asBytes(ipv4AsNumber);
 
         return IntStream.range(0, Integer.BYTES)
-                        .mapToObj(i -> String.valueOf(buffer[i] & 0xFF))
-                        .collect(Collectors.joining("."));
+                .mapToObj(i -> String.valueOf(buffer[i] & 0xFF))
+                .collect(Collectors.joining("."));
     }
 
     /**
@@ -288,7 +288,7 @@ public final class IPv4AddressUtil {
     public static Inet4Address parseIPv4(String ipv4AddressAsString) {
         try {
             return (Inet4Address) InetAddress.getByAddress(
-                asBytes(ipv4AddressAsString)
+                    asBytes(ipv4AddressAsString)
             );
         } catch (UnknownHostException e) {
             throw new UnexpectedException(e);
@@ -307,7 +307,7 @@ public final class IPv4AddressUtil {
      */
     private static byte[] asBytes(String ipv4AddressAsString) {
         final String[] ipAddressParts = Util.splitAtLeast(ipv4AddressAsString, "\\.", Integer.BYTES)
-                                            .orElseThrow(() -> new UnexpectedException("Invalid IPv4 address: " + ipv4AddressAsString));
+                .orElseThrow(() -> new UnexpectedException("Invalid IPv4 address: " + ipv4AddressAsString));
 
         final byte[] addressAsBytes = new byte[Integer.BYTES];
         for (int i = 0; i < addressAsBytes.length; i++) {
@@ -326,7 +326,7 @@ public final class IPv4AddressUtil {
         }
 
         return ByteBuffer.wrap(ipv4AddressAsBytes)
-                         .getInt();
+                .getInt();
     }
 
     /**
@@ -354,9 +354,9 @@ public final class IPv4AddressUtil {
         private final NetworkInterface networkInterface;
 
         public NetworkInterfaceDto(
-            Inet4Address address, Inet4Address broadcastAddress,
-            int networkMask,
-            NetworkInterface networkInterface
+                Inet4Address address, Inet4Address broadcastAddress,
+                int networkMask,
+                NetworkInterface networkInterface
         ) {
             this.address = address;
 
@@ -365,7 +365,7 @@ public final class IPv4AddressUtil {
 
             assert IPv4AddressUtil.getIPv4AsNumber(broadcastAddress) == (networkAddress | (~networkMask));
             this.broadcastAddress = broadcastAddress;
-            this.networkMask      = networkMask;
+            this.networkMask = networkMask;
 
             this.networkInterface = networkInterface;
         }
@@ -416,14 +416,14 @@ public final class IPv4AddressUtil {
 
         /**
          * @param currentAddress local address, so the address is "available" since it's already allocated to the remote host
-         * @param exclusionList list of addresses to omit
+         * @param exclusionList  list of addresses to omit
          * @return optionally, IPv4 address that is available
          */
         public Optional<Inet4Address> nextAvailable(
-            Inet4Address startingAddress,
-            Duration timeout,
-            Inet4Address currentAddress,
-            Collection<Inet4Address> exclusionList
+                Inet4Address startingAddress,
+                Duration timeout,
+                Inet4Address currentAddress,
+                Collection<Inet4Address> exclusionList
         ) {
             final List<Inet4Address> addresses = nextAvailableExcluding(startingAddress, timeout, 1, currentAddress, exclusionList);
             if (addresses.isEmpty()) {
@@ -435,19 +435,19 @@ public final class IPv4AddressUtil {
 
         /**
          * @param currentAddress local address, so the address is "available" since it's already allocated to the remote host
-         * @param exclusionList list of addresses to omit
+         * @param exclusionList  list of addresses to omit
          * @return list of at most `limit` available addresses (might be less than the requested amount)
          */
         public List<Inet4Address> nextAvailableExcluding(
-            Inet4Address startingAddress,
-            Duration timeout,
-            int limit,
-            Inet4Address currentAddress,
-            Collection<Inet4Address> exclusionList
+                Inet4Address startingAddress,
+                Duration timeout,
+                int limit,
+                Inet4Address currentAddress,
+                Collection<Inet4Address> exclusionList
         ) {
             final Set<Integer> excludedIpAddressNumbers = exclusionList.stream()
-                                                                       .map(IPv4AddressUtil::getIPv4AsNumber)
-                                                                       .collect(Collectors.toSet());
+                    .map(IPv4AddressUtil::getIPv4AsNumber)
+                    .collect(Collectors.toSet());
 
             final int currentIpAsNumber = getIPv4AsNumber(currentAddress);
             int ipAsNumber = getIPv4AsNumber(startingAddress);
@@ -480,12 +480,12 @@ public final class IPv4AddressUtil {
         @Override
         public String toString() {
             return "NetworkInterfaceDto{" +
-                   "networkInterface=" + ToStringUtil.toString(networkInterface) +
-                   ", address=" + ToStringUtil.toString(address) +
-                   ", broadcastAddress=" + ToStringUtil.toString(broadcastAddress) +
-                   ", networkAddress=" + ToStringUtil.toString(parseIPv4(networkAddress)) +
-                   ", networkMask=" + ToStringUtil.toString(parseIPv4(networkMask)) +
-                   '}';
+                    "networkInterface=" + ToStringUtil.toString(networkInterface) +
+                    ", address=" + ToStringUtil.toString(address) +
+                    ", broadcastAddress=" + ToStringUtil.toString(broadcastAddress) +
+                    ", networkAddress=" + ToStringUtil.toString(parseIPv4(networkAddress)) +
+                    ", networkMask=" + ToStringUtil.toString(parseIPv4(networkMask)) +
+                    '}';
         }
     }
 }

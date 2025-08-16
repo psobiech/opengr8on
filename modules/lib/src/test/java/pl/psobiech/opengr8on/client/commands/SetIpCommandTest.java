@@ -36,13 +36,13 @@ class SetIpCommandTest {
     @Test
     void correctRequest() {
         final Request input = SetIpCommand.request(
-            Mocks.serialNumber(), Mocks.ipAddress(), Mocks.ipAddress()
+                Mocks.serialNumber(), Mocks.ipAddress(), Mocks.ipAddress()
         );
 
         //
 
         final Request output = SetIpCommand.requestFromByteArray(input.asByteArray())
-                                           .get();
+                .get();
 
         //
 
@@ -52,13 +52,13 @@ class SetIpCommandTest {
     @Test
     void correctResponse() {
         final Response input = SetIpCommand.response(
-            Mocks.serialNumber(), Mocks.ipAddress()
+                Mocks.serialNumber(), Mocks.ipAddress()
         );
 
         //
 
         final Response output = SetIpCommand.responseFromByteArray(input.asByteArray())
-                                            .get();
+                .get();
 
         //
 
@@ -74,9 +74,9 @@ class SetIpCommandTest {
         assertFalse(SetIpCommand.requestFromByteArray(new byte[0]).isPresent());
         assertFalse(SetIpCommand.requestFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                                          = new byte[100];
-        buffer[Request.COMMAND.length()]                                                                      = ':';
-        buffer[Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS]                                 = ':';
+        buffer = new byte[100];
+        buffer[Request.COMMAND.length()] = ':';
+        buffer[Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS] = ':';
         buffer[Request.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS + 1 + Command.MIN_IP_CHARACTERS] = ':';
         assertFalse(SetIpCommand.requestFromByteArray(buffer).isPresent());
 
@@ -85,8 +85,8 @@ class SetIpCommandTest {
         assertFalse(SetIpCommand.responseFromByteArray(new byte[0]).isPresent());
         assertFalse(SetIpCommand.responseFromByteArray(new byte[100]).isPresent());
 
-        buffer                                                                 = new byte[100];
-        buffer[Response.COMMAND.length()]                                            = ':';
+        buffer = new byte[100];
+        buffer[Response.COMMAND.length()] = ':';
         buffer[Response.COMMAND.length() + 1 + Command.MIN_SERIAL_NUMBER_CHARACTERS] = ':';
         assertFalse(SetIpCommand.responseFromByteArray(buffer).isPresent());
     }

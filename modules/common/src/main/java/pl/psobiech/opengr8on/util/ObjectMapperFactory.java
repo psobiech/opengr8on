@@ -56,26 +56,27 @@ public final class ObjectMapperFactory {
             final M objectMapperInstance = clazz.getConstructor().newInstance();
 
             return configureJacksonObjectMapper(objectMapperInstance);
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
             throw new UnexpectedException(e);
         }
     }
 
     private static <M extends ObjectMapper> M configureJacksonObjectMapper(M mapper) {
         mapper.registerModule(new JavaTimeModule())
-              .registerModule(new ParameterNamesModule())
-              .registerModule(new JacksonXmlModule());
+                .registerModule(new ParameterNamesModule())
+                .registerModule(new JacksonXmlModule());
 
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-              .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
-              .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(false));
 
         mapper.setVisibility(
-            mapper.getSerializationConfig()
-                  .getDefaultVisibilityChecker()
-                  .withVisibility(PropertyAccessor.FIELD, Visibility.ANY)
+                mapper.getSerializationConfig()
+                        .getDefaultVisibilityChecker()
+                        .withVisibility(PropertyAccessor.FIELD, Visibility.ANY)
         );
 
         return mapper;

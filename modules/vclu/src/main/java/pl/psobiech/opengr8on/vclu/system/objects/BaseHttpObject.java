@@ -60,11 +60,11 @@ public abstract class BaseHttpObject extends VirtualObject {
     protected static final String ROOT_NAME = "root";
 
     protected BaseHttpObject(
-        VirtualSystem virtualSystem,
-        String name,
-        Class<? extends Enum<? extends IFeature>> featureClass,
-        Class<? extends Enum<? extends IMethod>> methodClass,
-        Class<? extends Enum<? extends IEvent>> eventClass
+            VirtualSystem virtualSystem,
+            String name,
+            Class<? extends Enum<? extends IFeature>> featureClass,
+            Class<? extends Enum<? extends IMethod>> methodClass,
+            Class<? extends Enum<? extends IEvent>> eventClass
     ) {
         super(virtualSystem, name, featureClass, methodClass, eventClass);
     }
@@ -74,7 +74,8 @@ public abstract class BaseHttpObject extends VirtualObject {
             return switch (requestType) {
                 case NONE -> null;
                 case JSON -> ObjectMapperFactory.JSON.writeValueAsString(LuaUtil.asObject(requestBodyValue));
-                case XML -> ObjectMapperFactory.XML.writer().withRootName(ROOT_NAME).writeValueAsString(LuaUtil.asObject(requestBodyValue));
+                case XML ->
+                        ObjectMapperFactory.XML.writer().withRootName(ROOT_NAME).writeValueAsString(LuaUtil.asObject(requestBodyValue));
                 case FORM_DATA -> urlEncode(LuaUtil.tableStringString(requestBodyValue));
                 default -> requestBodyValue.checkjstring();
             };
@@ -179,8 +180,8 @@ public abstract class BaseHttpObject extends VirtualObject {
             final String value = keyValue[1];
 
             map.put(
-                urlDecodeComponent(key),
-                urlDecodeComponent(value)
+                    urlDecodeComponent(key),
+                    urlDecodeComponent(value)
             );
         }
 
@@ -213,10 +214,10 @@ public abstract class BaseHttpObject extends VirtualObject {
 
     protected static String urlEncode(Map<String, String> map) {
         return Util.stringifyMap(
-            map,
-            "&", "=",
-            BaseHttpObject::urlEncodeComponent,
-            BaseHttpObject::urlEncodeComponent
+                map,
+                "&", "=",
+                BaseHttpObject::urlEncodeComponent,
+                BaseHttpObject::urlEncodeComponent
         );
     }
 

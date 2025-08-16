@@ -66,42 +66,42 @@ public class VirtualObject implements Closeable {
 
     public VirtualObject(VirtualSystem virtualSystem, String name) {
         this(
-            virtualSystem,
-            name,
-            IFeature.EMPTY.class, IMethod.EMPTY.class, IEvent.EMPTY.class
+                virtualSystem,
+                name,
+                IFeature.EMPTY.class, IMethod.EMPTY.class, IEvent.EMPTY.class
         );
     }
 
     public VirtualObject(
-        VirtualSystem virtualSystem,
-        String name,
-        Class<? extends Enum<? extends IFeature>> featureClass,
-        Class<? extends Enum<? extends IMethod>> methodClass,
-        Class<? extends Enum<? extends IEvent>> eventClass
+            VirtualSystem virtualSystem,
+            String name,
+            Class<? extends Enum<? extends IFeature>> featureClass,
+            Class<? extends Enum<? extends IMethod>> methodClass,
+            Class<? extends Enum<? extends IEvent>> eventClass
     ) {
         this(
-            virtualSystem,
-            name,
-            featureClass, methodClass, eventClass,
-            ThreadUtil::virtualScheduler
+                virtualSystem,
+                name,
+                featureClass, methodClass, eventClass,
+                ThreadUtil::virtualScheduler
         );
     }
 
     public VirtualObject(
-        VirtualSystem virtualSystem,
-        String name,
-        Class<? extends Enum<? extends IFeature>> featureClass,
-        Class<? extends Enum<? extends IMethod>> methodClass,
-        Class<? extends Enum<? extends IEvent>> eventClass,
-        Function<String, ScheduledExecutorService> schedulerSupplier
+            VirtualSystem virtualSystem,
+            String name,
+            Class<? extends Enum<? extends IFeature>> featureClass,
+            Class<? extends Enum<? extends IMethod>> methodClass,
+            Class<? extends Enum<? extends IEvent>> eventClass,
+            Function<String, ScheduledExecutorService> schedulerSupplier
     ) {
         this.virtualSystem = virtualSystem;
-        this.name          = name;
-        this.scheduler     = schedulerSupplier.apply(name);
+        this.name = name;
+        this.scheduler = schedulerSupplier.apply(name);
 
         this.featureClass = featureClass;
-        this.methodClass  = methodClass;
-        this.eventClass   = eventClass;
+        this.methodClass = methodClass;
+        this.eventClass = eventClass;
     }
 
     public String getName() {
@@ -140,12 +140,12 @@ public class VirtualObject implements Closeable {
             final LuaValue returnValue = fn.invoke(a);
 
             LOGGER.debug(
-                "{}.get({}) = {}",
-                name,
-                IFeature.byIndex(index, featureClass)
-                        .map(Enum::name)
-                        .orElseGet(() -> String.valueOf(index)),
-                LuaUtil.stringify(returnValue)
+                    "{}.get({}) = {}",
+                    name,
+                    IFeature.byIndex(index, featureClass)
+                            .map(Enum::name)
+                            .orElseGet(() -> String.valueOf(index)),
+                    LuaUtil.stringify(returnValue)
             );
 
             return returnValue;
@@ -205,12 +205,12 @@ public class VirtualObject implements Closeable {
 
     public void setValue(int index, LuaValue luaValue) {
         LOGGER.debug(
-            "{}.set({}, {})",
-            name,
-            IFeature.byIndex(index, featureClass)
-                    .map(Enum::name)
-                    .orElseGet(() -> String.valueOf(index)),
-            LuaUtil.stringify(luaValue)
+                "{}.set({}, {})",
+                name,
+                IFeature.byIndex(index, featureClass)
+                        .map(Enum::name)
+                        .orElseGet(() -> String.valueOf(index)),
+                LuaUtil.stringify(luaValue)
         );
 
         featureValues.put(index, luaValue);
@@ -240,24 +240,24 @@ public class VirtualObject implements Closeable {
         final BaseLuaFunction luaFunction = methodFunctions.get(index);
         if (luaFunction == null) {
             LOGGER.warn(
-                "{}.execute({}, {}) -- NOT IMPLEMENTED",
-                name,
-                IMethod.byIndex(index, methodClass)
-                       .map(Enum::name)
-                       .orElseGet(() -> String.valueOf(index)),
-                LuaUtil.stringifyRaw(args)
+                    "{}.execute({}, {}) -- NOT IMPLEMENTED",
+                    name,
+                    IMethod.byIndex(index, methodClass)
+                            .map(Enum::name)
+                            .orElseGet(() -> String.valueOf(index)),
+                    LuaUtil.stringifyRaw(args)
             );
 
             return LuaValue.NIL;
         }
 
         LOGGER.debug(
-            "{}.execute({}, {})",
-            name,
-            IMethod.byIndex(index, methodClass)
-                   .map(Enum::name)
-                   .orElseGet(() -> String.valueOf(index)),
-            LuaUtil.stringifyRaw(args)
+                "{}.execute({}, {})",
+                name,
+                IMethod.byIndex(index, methodClass)
+                        .map(Enum::name)
+                        .orElseGet(() -> String.valueOf(index)),
+                LuaUtil.stringifyRaw(args)
         );
 
         return luaFunction.invoke(args);
@@ -282,14 +282,14 @@ public class VirtualObject implements Closeable {
 
             awaitEventTrigger(event);
             eventTriggerFuture.put(
-                event,
-                scheduler.submit(() -> {
-                    try {
-                        luaFunction.call();
-                    } finally {
-                        tryFireHandler(onCompleted);
-                    }
-                })
+                    event,
+                    scheduler.submit(() -> {
+                        try {
+                            luaFunction.call();
+                        } finally {
+                            tryFireHandler(onCompleted);
+                        }
+                    })
             );
 
             return true;

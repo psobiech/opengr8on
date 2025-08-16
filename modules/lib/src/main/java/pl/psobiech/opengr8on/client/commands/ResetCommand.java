@@ -48,9 +48,9 @@ public class ResetCommand {
         final Inet4Address ipAddress = IPv4AddressUtil.parseIPv4(requestParts[1]);
 
         return Optional.of(
-            new Request(
-                ipAddress
-            )
+                new Request(
+                        ipAddress
+                )
         );
     }
 
@@ -64,7 +64,7 @@ public class ResetCommand {
         }
 
         return Request.COMMAND.equals(
-            Command.asString(buffer, 0, Request.COMMAND.length())
+                Command.asString(buffer, 0, Request.COMMAND.length())
         );
     }
 
@@ -86,9 +86,9 @@ public class ResetCommand {
         final Inet4Address localAddress = IPv4AddressUtil.parseIPv4(responseParts[1]);
 
         return Optional.of(
-            new Response(
-                localAddress
-            )
+                new Response(
+                        localAddress
+                )
         );
     }
 
@@ -102,7 +102,7 @@ public class ResetCommand {
         }
 
         return Response.COMMAND.equals(
-            Command.asString(buffer, 0, Response.COMMAND.length())
+                Command.asString(buffer, 0, Response.COMMAND.length())
         );
     }
 
@@ -118,9 +118,9 @@ public class ResetCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                ipAddress
+                    COMMAND,
+                    ":",
+                    ipAddress
             );
         }
 
@@ -141,9 +141,9 @@ public class ResetCommand {
         @Override
         public byte[] asByteArray() {
             return Command.serialize(
-                COMMAND,
-                ":",
-                ipAddress
+                    COMMAND,
+                    ":",
+                    ipAddress
             );
         }
 

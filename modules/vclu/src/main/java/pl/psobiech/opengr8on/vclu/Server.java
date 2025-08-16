@@ -119,36 +119,36 @@ public class Server implements Closeable {
 
     public Server(Path rootDirectory, CipherKey projectCipherKey, NetworkInterfaceDto networkInterface, CLUDevice cluDevice) {
         this(
-            rootDirectory, projectCipherKey, cluDevice,
-            // TODO: networkInterface.getBroadcastAddress() does not work with OM
-            SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
-            SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
-            SocketUtil.udpRandomPort(cluDevice.getAddress()),
-            new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
+                rootDirectory, projectCipherKey, cluDevice,
+                // TODO: networkInterface.getBroadcastAddress() does not work with OM
+                SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
+                SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
+                SocketUtil.udpRandomPort(cluDevice.getAddress()),
+                new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
         );
     }
 
     protected Server(
-        Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
-        UDPSocket broadcastCommandSocket,
-        UDPSocket commandSocket, UDPSocket responseSocket,
-        TFTPServer tftpServer
+            Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
+            UDPSocket broadcastCommandSocket,
+            UDPSocket commandSocket, UDPSocket responseSocket,
+            TFTPServer tftpServer
     ) {
-        this.rootDirectory   = rootDirectory.toAbsolutePath().normalize();
+        this.rootDirectory = rootDirectory.toAbsolutePath().normalize();
         this.parentDirectory = rootDirectory.getParent();
         this.aDriveDirectory = rootDirectory.resolve("a");
-        this.cluDevice       = cluDevice;
+        this.cluDevice = cluDevice;
 
         this.broadcastCommandSocket = broadcastCommandSocket;
-        this.commandSocket          = commandSocket;
-        this.responseSocket         = responseSocket;
+        this.commandSocket = commandSocket;
+        this.responseSocket = responseSocket;
 
         this.tftpServer = tftpServer;
 
         this.projectCipherKey = projectCipherKey;
 
-        this.broadcastCipherKeys  = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
-        this.unicastCipherKeys    = List.of(projectCipherKey);
+        this.broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
+        this.unicastCipherKeys = List.of(projectCipherKey);
         this.temporaryCipherKeyIV = null;
     }
 
@@ -157,43 +157,43 @@ public class Server implements Closeable {
 
         broadcastCommandSocket.open();
         executor.execute(() -> {
-                handleCommands(
-                    () -> {
-                        cipherKeyLock.lock();
-                        try {
-                            return broadcastCipherKeys;
-                        } finally {
-                            cipherKeyLock.unlock();
-                        }
-                    },
-                    broadcastCommandSocket, this::onBroadcastCommand
-                );
-            }
+                    handleCommands(
+                            () -> {
+                                cipherKeyLock.lock();
+                                try {
+                                    return broadcastCipherKeys;
+                                } finally {
+                                    cipherKeyLock.unlock();
+                                }
+                            },
+                            broadcastCommandSocket, this::onBroadcastCommand
+                    );
+                }
         );
 
         commandSocket.open();
         executor.execute(() -> {
-                handleCommands(
-                    () -> {
-                        cipherKeyLock.lock();
-                        try {
-                            return unicastCipherKeys;
-                        } finally {
-                            cipherKeyLock.unlock();
-                        }
-                    },
-                    commandSocket, this::onCommand
-                );
-            }
+                    handleCommands(
+                            () -> {
+                                cipherKeyLock.lock();
+                                try {
+                                    return unicastCipherKeys;
+                                } finally {
+                                    cipherKeyLock.unlock();
+                                }
+                            },
+                            commandSocket, this::onCommand
+                    );
+                }
         );
 
         startClu();
     }
 
     private void handleCommands(
-        Supplier<List<CipherKey>> cipherKeysSupplier,
-        UDPSocket socket,
-        BiFunction<UUID, Request, Optional<Response>> commandFunction
+            Supplier<List<CipherKey>> cipherKeysSupplier,
+            UDPSocket socket,
+            BiFunction<UUID, Request, Optional<Response>> commandFunction
     ) {
         final DatagramPacket requestPacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
 
@@ -202,10 +202,10 @@ public class Server implements Closeable {
                 final UUID uuid = UUID.randomUUID();
 
                 final Optional<Request> requestOptional = awaitRequestPayload(
-                    String.valueOf(uuid),
-                    socket, requestPacket,
-                    Duration.ofMillis(TIMEOUT_MILLIS),
-                    cipherKeysSupplier.get()
+                        String.valueOf(uuid),
+                        socket, requestPacket,
+                        Duration.ofMillis(TIMEOUT_MILLIS),
+                        cipherKeysSupplier.get()
                 );
                 if (requestOptional.isEmpty()) {
                     continue;
@@ -215,8 +215,8 @@ public class Server implements Closeable {
                 final Optional<Response> responseOptional = commandFunction.apply(uuid, request);
                 if (responseOptional.isEmpty()) {
                     LOGGER.trace(
-                        "%s\tIGNORED\t<-D--\t%s // %s"
-                            .formatted(uuid, request.payload(), request.cipherKey())
+                            "%s\tIGNORED\t<-D--\t%s // %s"
+                                    .formatted(uuid, request.payload(), request.cipherKey())
                     );
 
                     continue;
@@ -234,10 +234,10 @@ public class Server implements Closeable {
     }
 
     private Optional<Request> awaitRequestPayload(
-        String uuid,
-        UDPSocket socket, DatagramPacket requestPacket,
-        Duration timeout,
-        List<CipherKey> responseCipherKeys
+            String uuid,
+            UDPSocket socket, DatagramPacket requestPacket,
+            Duration timeout,
+            List<CipherKey> responseCipherKeys
     ) {
         final Optional<Payload> encryptedPayload = socket.tryReceive(requestPacket, timeout);
         if (encryptedPayload.isEmpty()) {
@@ -248,12 +248,12 @@ public class Server implements Closeable {
             final Optional<Payload> decryptedPayload = Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
             if (decryptedPayload.isPresent()) {
                 return Optional.of(
-                    new Request(responseCipherKey, decryptedPayload.get())
+                        new Request(responseCipherKey, decryptedPayload.get())
                 );
             } else {
                 LOGGER.trace(
-                    "%s\t<-E--\t%s // %s"
-                        .formatted(uuid, encryptedPayload.get(), responseCipherKey)
+                        "%s\t<-E--\t%s // %s"
+                                .formatted(uuid, encryptedPayload.get(), responseCipherKey)
                 );
             }
         }
@@ -288,20 +288,20 @@ public class Server implements Closeable {
         final byte[] encrypted = command.getEncrypted();
         final byte[] iv = command.getIV();
         final byte[] hash = DiscoverCLUsCommand.hash(projectCipherKey.decrypt(encrypted)
-                                                                     .orElse(RandomUtil.bytes(Command.RANDOM_BYTES)));
+                .orElse(RandomUtil.bytes(Command.RANDOM_BYTES)));
 
         final CipherKey temporaryCipherKey = generateTemporaryCipherKey();
 
         return Optional.of(
-            new Response(
-                CipherKey.DEFAULT_BROADCAST.withIV(iv),
-                DiscoverCLUsCommand.response(
-                    temporaryCipherKey.encrypt(hash),
-                    temporaryCipherKey.getIV(),
-                    cluDevice.getSerialNumber(),
-                    cluDevice.getMacAddress()
+                new Response(
+                        CipherKey.DEFAULT_BROADCAST.withIV(iv),
+                        DiscoverCLUsCommand.response(
+                                temporaryCipherKey.encrypt(hash),
+                                temporaryCipherKey.getIV(),
+                                cluDevice.getSerialNumber(),
+                                cluDevice.getMacAddress()
+                        )
                 )
-            )
         );
     }
 
@@ -362,8 +362,8 @@ public class Server implements Closeable {
         }
 
         LOGGER.trace(
-            "%s\tUNSUPPORTED\t<-D--\t%s // %s"
-                .formatted(uuid, request.payload(), request.cipherKey())
+                "%s\tUNSUPPORTED\t<-D--\t%s // %s"
+                        .formatted(uuid, request.payload(), request.cipherKey())
         );
 
         return sendError(request);
@@ -376,13 +376,13 @@ public class Server implements Closeable {
             if (command.getIpAddress().equals(cluDevice.getAddress())) {
                 // we cant change IP address, so we only accept current ip address
                 return Optional.of(
-                    new Response(
-                        request.cipherKey(),
-                        SetIpCommand.response(
-                            cluDevice.getSerialNumber(),
-                            cluDevice.getAddress()
+                        new Response(
+                                request.cipherKey(),
+                                SetIpCommand.response(
+                                        cluDevice.getSerialNumber(),
+                                        cluDevice.getAddress()
+                                )
                         )
-                    )
                 );
             }
         }
@@ -409,10 +409,10 @@ public class Server implements Closeable {
         //}
 
         return Optional.of(
-            new Response(
-                projectCipherKey,
-                SetKeyCommand.response()
-            )
+                new Response(
+                        projectCipherKey,
+                        SetKeyCommand.response()
+                )
         );
     }
 
@@ -426,10 +426,10 @@ public class Server implements Closeable {
             }
 
             final CipherKey temporaryCipherKey = cluDevice.getCipherKey()
-                                                          .withIV(temporaryCipherKeyIV);
+                    .withIV(temporaryCipherKeyIV);
 
             cluDevice.setCipherKey(temporaryCipherKey);
-            unicastCipherKeys   = List.of(temporaryCipherKey, projectCipherKey);
+            unicastCipherKeys = List.of(temporaryCipherKey, projectCipherKey);
             broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, temporaryCipherKey, projectCipherKey);
 
             persistKeys();
@@ -446,9 +446,9 @@ public class Server implements Closeable {
             LOGGER.warn("Updating CIPHER KEY...");
 
             temporaryCipherKeyIV = null;
-            projectCipherKey     = newCipherKey;
+            projectCipherKey = newCipherKey;
 
-            unicastCipherKeys   = List.of(projectCipherKey);
+            unicastCipherKeys = List.of(projectCipherKey);
             broadcastCipherKeys = List.of(CipherKey.DEFAULT_BROADCAST, projectCipherKey);
 
             persistKeys();
@@ -460,11 +460,11 @@ public class Server implements Closeable {
     private void persistKeys() {
         try {
             Config.writeKeys(
-                parentDirectory,
-                new CluKeys(
-                    projectCipherKey.getSecretKey(), projectCipherKey.getIV(),
-                    cluDevice.getCipherKey().getIV(), cluDevice.getPrivateKey()
-                )
+                    parentDirectory,
+                    new CluKeys(
+                            projectCipherKey.getSecretKey(), projectCipherKey.getIV(),
+                            cluDevice.getCipherKey().getIV(), cluDevice.getPrivateKey()
+                    )
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -477,12 +477,12 @@ public class Server implements Closeable {
         restartClu();
 
         return Optional.of(
-            new Response(
-                request.cipherKey(),
-                ResetCommand.response(
-                    cluDevice.getAddress()
+                new Response(
+                        request.cipherKey(),
+                        ResetCommand.response(
+                                cluDevice.getAddress()
+                        )
                 )
-            )
         );
     }
 
@@ -511,8 +511,8 @@ public class Server implements Closeable {
             IOUtil.closeQuietly(this.mainThread);
 
             FileUtil.linkOrCopy(
-                ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
-                aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
+                    ResourceUtil.classPath(CLUFiles.EMERGNCY_LUA.getFileName()),
+                    aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
             );
 
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
@@ -558,10 +558,10 @@ public class Server implements Closeable {
             final Path mqttPath = parentDirectory.resolve("mqtt");
 
             mqttClient.start(
-                currentClu.getMqttUrl(), currentClu.getName(),
-                mqttPath.resolve("ca.crt"),
-                mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
-                currentClu
+                    currentClu.getMqttUrl(), currentClu.getName(),
+                    mqttPath.resolve("ca.crt"),
+                    mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
+                    currentClu
             );
         }
     }
@@ -604,14 +604,14 @@ public class Server implements Closeable {
         }
 
         return Optional.of(
-            new Response(
-                request.cipherKey(),
-                LuaScriptCommand.response(
-                    cluDevice.getAddress(),
-                    command.getSessionId(),
-                    LuaUtil.stringifyRaw(luaValue, "nil")
+                new Response(
+                        request.cipherKey(),
+                        LuaScriptCommand.response(
+                                cluDevice.getAddress(),
+                                command.getSessionId(),
+                                LuaUtil.stringifyRaw(luaValue, "nil")
+                        )
                 )
-            )
         );
     }
 
@@ -627,10 +627,10 @@ public class Server implements Closeable {
         }
 
         return Optional.of(
-            new Response(
-                request.cipherKey(),
-                StartTFTPdCommand.response()
-            )
+                new Response(
+                        request.cipherKey(),
+                        StartTFTPdCommand.response()
+                )
         );
     }
 
@@ -646,13 +646,13 @@ public class Server implements Closeable {
         }
 
         return Optional.of(
-            new Response(
-                projectCipherKey,
-                GenerateMeasurementsCommand.response(
-                    cluDevice.getAddress(), command.getSessionId(),
-                    GenerateMeasurementsCommand.RESPONSE_OK
+                new Response(
+                        projectCipherKey,
+                        GenerateMeasurementsCommand.response(
+                                cluDevice.getAddress(), command.getSessionId(),
+                                GenerateMeasurementsCommand.RESPONSE_OK
+                        )
                 )
-            )
         );
     }
 
@@ -660,26 +660,26 @@ public class Server implements Closeable {
         logCommand(uuid, request, command);
 
         return Optional.of(
-            new Response(
-                projectCipherKey,
-                GenerateMeasurementsCommand.response(
-                    cluDevice.getAddress(), command.getSessionId(),
-                    GenerateMeasurementsCommand.RESPONSE_OK
+                new Response(
+                        projectCipherKey,
+                        GenerateMeasurementsCommand.response(
+                                cluDevice.getAddress(), command.getSessionId(),
+                                GenerateMeasurementsCommand.RESPONSE_OK
+                        )
                 )
-            )
         );
     }
 
     private static void logCommand(UUID uuid, Request request, Command command) {
         LOGGER.trace(
-            "%s\t<-D--\t%s // %s"
-                .formatted(command.uuid(uuid), request.payload(), request.cipherKey())
+                "%s\t<-D--\t%s // %s"
+                        .formatted(command.uuid(uuid), request.payload(), request.cipherKey())
         );
     }
 
     private Optional<Response> sendError(Request request) {
         return Optional.of(
-            new Response(request.cipherKey(), ErrorCommand.response())
+                new Response(request.cipherKey(), ErrorCommand.response())
         );
     }
 
@@ -687,18 +687,18 @@ public class Server implements Closeable {
         final Command command = response.command();
 
         respond(
-            command.uuid(uuid),
-            response.cipherKey(),
-            request.payload().address(), request.payload().port(),
-            command.asByteArray()
+                command.uuid(uuid),
+                response.cipherKey(),
+                request.payload().address(), request.payload().port(),
+                command.asByteArray()
         );
     }
 
     protected void respond(String uuid, CipherKey cipherKey, Inet4Address ipAddress, int port, byte[] buffer) {
         final Payload requestPayload = Payload.of(ipAddress, port, buffer);
         LOGGER.trace(
-            "%s\t--D->\t%s // %s"
-                .formatted(uuid, requestPayload, cipherKey)
+                "%s\t--D->\t%s // %s"
+                        .formatted(uuid, requestPayload, cipherKey)
         );
 
         final byte[] encryptedRequest = cipherKey.encrypt(requestPayload.buffer());
@@ -708,8 +708,8 @@ public class Server implements Closeable {
         //        );
 
         final DatagramPacket requestPacket = new DatagramPacket(
-            encryptedRequest, encryptedRequest.length,
-            requestPayload.address(), requestPayload.port()
+                encryptedRequest, encryptedRequest.length,
+                requestPayload.address(), requestPayload.port()
         );
 
         responseSocket.send(requestPacket);
@@ -727,7 +727,9 @@ public class Server implements Closeable {
         IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, responseSocket);
     }
 
-    private record Request(CipherKey cipherKey, Payload payload) { }
+    private record Request(CipherKey cipherKey, Payload payload) {
+    }
 
-    private record Response(CipherKey cipherKey, Command command) { }
+    private record Response(CipherKey cipherKey, Command command) {
+    }
 }

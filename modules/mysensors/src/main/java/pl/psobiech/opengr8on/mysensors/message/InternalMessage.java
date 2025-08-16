@@ -29,7 +29,7 @@ public class InternalMessage extends Message {
         super(nodeId, childSensorId, commandEnum.type(), echo, typeEnum.type(), payload);
 
         this.commandEnum = commandEnum;
-        this.typeEnum    = typeEnum;
+        this.typeEnum = typeEnum;
     }
 
     @Override
@@ -45,13 +45,13 @@ public class InternalMessage extends Message {
     @Override
     public String toString() {
         return "InternalMessage{" +
-               "nodeId=" + nodeId +
-               ", childSensorId=" + childSensorId +
-               ", command=" + command + " // " + commandEnum +
-               ", echo=" + echo +
-               ", type=" + type + " // " + typeEnum +
-               ", payload='" + payload + '\'' +
-               '}';
+                "nodeId=" + nodeId +
+                ", childSensorId=" + childSensorId +
+                ", command=" + command + " // " + commandEnum +
+                ", echo=" + echo +
+                ", type=" + type + " // " + typeEnum +
+                ", payload='" + payload + '\'' +
+                '}';
     }
 
     public enum SensorInternalMessageType implements TypeEnum {

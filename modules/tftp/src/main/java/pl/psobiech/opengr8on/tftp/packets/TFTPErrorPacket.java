@@ -47,14 +47,14 @@ public class TFTPErrorPacket extends TFTPPacket {
             throw new TFTPPacketException("Bad error packet. No message.");
         }
 
-        error   = TFTPErrorType.ofErrorCode(readInt(buffer, ERROR_OFFSET));
+        error = TFTPErrorType.ofErrorCode(readInt(buffer, ERROR_OFFSET));
         message = readNullTerminatedString(buffer, HEADER_SIZE, length);
     }
 
     public TFTPErrorPacket(InetAddress destination, int port, TFTPErrorType error, String message) {
         super(TFTPPacketType.ERROR, destination, port);
 
-        this.error   = error;
+        this.error = error;
         this.message = message;
     }
 
@@ -76,7 +76,7 @@ public class TFTPErrorPacket extends TFTPPacket {
     }
 
     private void writeHeader(byte[] data) {
-        data[0]                    = 0;
+        data[0] = 0;
         data[OPERATOR_TYPE_OFFSET] = type.packetType();
         writeInt(error.errorCode(), data, ERROR_OFFSET);
     }

@@ -18,165 +18,176 @@
   -->
 
 <object class="43" name="EventScheduler" version="1">
-  <features>
-    <feature get="true" index="0" name="RuleList" set="false" type="str">
-      <hint lang="pl"
-        value="Lista wszystkich reguł w formacie {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
-      <hint lang="en"
-        value="List of all rules in the format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(disabled), 1(enabled)"/>
-      <hint lang="de"
-        value="Liste aller Regeln im Format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
-      <desc resKey="eventscheduler_rulelist"/>
-    </feature>
-    <feature get="true" index="1" name="CurrentRule" set="false" type="str">
-      <hint lang="pl"
-        value="Reguła z listy, która odpowiada za aktualne zdarzenie {id, rule_state, &quot;crone&quot;}&#13;Zwraca uruchomioną regułę przez 1 minutę, następnie &quot;N\A&quot;&#13;rule_state: 0(wyłączona), 1(włączona)"/>
-      <hint lang="en"
-        value="Rule from the list that is responsible for the current event {id, rule_state, &quot;crone&quot;}&#13;Returns a run rule for 1 minute, then &quot;N\A&quot;&#13;rule_state: 0(disabled), 1(enabled)"/>
-      <hint lang="de"
-        value="Regel aus der Liste, die für das aktuelle Ereignis zuständig ist {id, rule_state, &quot;crone&quot;}&#13;Gibt eine Ausführungsregel für 1 Minute zurück, dann &quot;N\A&quot;&#13;rule_state: 0(behindert), 1(aktiviert)"/>
-      <desc resKey="eventscheduler_currentrule"/>
-    </feature>
-    <feature get="true" index="2" name="NextRule" set="false" type="str">
-      <hint lang="pl" value="Reguła z listy dla następnego zdarzenia {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
-      <hint lang="en" value="Rule from the list for the next event in {id, rule_state, &quot;crone&quot;} format&#13;rule_state: 0(disabled), 1(enabled)"/>
-      <hint lang="de"
-        value="Regel aus der Liste für das nächste Ereignis im Format {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
-      <desc resKey="eventscheduler_nextrule"/>
-    </feature>
-    <feature get="true" index="3" name="RuleCount" set="false" type="num">
-      <hint lang="pl" value="Liczba dodanych reguł"/>
-      <hint lang="en" value="Number of rules added"/>
-      <hint lang="de" value="Anzahl der hinzugefügten Regeln"/>
-      <desc resKey="eventscheduler_rulecount"/>
-    </feature>
-    <feature get="true" index="4" name="RuleAvailableCount" set="false" type="num">
-      <hint lang="pl" value="Liczba reguł które mogą być dodane do istniejącej listy (wolne miejsce)"/>
-      <hint lang="en" value="The number of rules that can be added to an existing list (free space)"/>
-      <hint lang="de" value="Die Anzahl der Regeln, die zu einer bestehenden Liste hinzugefügt werden können (freier Speicherplatz)"/>
-      <desc resKey="eventscheduler_rulespace"/>
-    </feature>
-    <feature default="1" enum="1,0" get="true" index="5" name="State" set="true" type="num">
-      <enum name="Off" resKey="eventscheduler_state_enum_off" value="0"/>
-      <enum name="On" resKey="eventscheduler_state_enum_on" value="1"/>
-      <hint lang="pl" value="Aktualny stan Event Schedulera"/>
-      <hint lang="en" value="Current state of event scheduler"/>
-      <hint lang="de" value="Aktueller Stand des Eventplaners"/>
-      <desc resKey="eventscheduler_state"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="execute" index="0" name="Start" return="void">
-      <hint lang="pl" value="Uruchamia Event Scheduler"/>
-      <hint lang="en" value="Start Event Scheduler"/>
-      <hint lang="de" value="Eventplaner starten"/>
-      <desc resKey="eventscheduler_start"/>
-    </method>
-    <method call="execute" index="1" name="Stop" return="void">
-      <hint lang="pl" value="Zatrzymuje Event Scheduler"/>
-      <hint lang="en" value="Stop Event Scheduler"/>
-      <hint lang="de" value="Eventplaner stoppen"/>
-      <desc resKey="eventscheduler_stop"/>
-    </method>
-    <method call="execute" index="2" name="AddRule" return="str">
-      <param name="Record" type="str"/>
-      <hint lang="pl"
-        value="Dodaje regułę do listy. Podaj regułę crone &quot;minute hour * * day_of_week&quot;. Zwraca numer id przydzielonej reguły. 0 - błąd"/>
-      <hint lang="en"
-        value="Adds a rule to the list. Provide a crone rule &quot;minute hour * * day_of_week&quot;. Returns the id number of the assigned rule. 0 - error"/>
-      <hint lang="de"
-        value="Fügt der Liste eine Regel hinzu. Geben Sie eine Crone-Regel &quot;minute hour * * day_of_week&quot; an. Gibt die ID-Nummer der zugewiesenen Regel zurück. 0 - Fehler"/>
-      <desc resKey="eventscheduler_addrule"/>
-    </method>
-    <method call="execute" index="3" name="DeleteRule" return="num">
-      <param name="id" range="1-16" type="num"/>
-      <hint lang="pl" value="Usuwa regułę o podanym id z listy. Zwraca 0 - ok, 1 - błąd"/>
-      <hint lang="en" value="Removes the rule with the given id from the list. Returns 0 - ok, 1 - error"/>
-      <hint lang="de" value="Entfernt die Regel mit der angegebenen ID aus der Liste. Gibt 0 zurück - ok, 1 - Fehler"/>
-      <desc resKey="eventscheduler_deleterule"/>
-    </method>
-    <method call="execute" index="4" name="GetRule" return="str">
-      <param name="id" range="1-16" type="num"/>
-      <hint lang="pl" value="Zwraca regułę w formacie {id, rule_state, &quot;crone&quot;} dla podanego id&#13;rule_state: 0(wyłączona), 1(włączona)"/>
-      <hint lang="en" value="Returns the rule in the format {id, rule_state, &quot;crone&quot;} for the given id&#13;rule_state: 0(disabled), 1(enabled)"/>
-      <hint lang="de"
-        value="Gibt die Regel im Format {id, rule_state, &quot;crone&quot;} für die angegebene ID zurück&#13;rule_state: 0(behindert), 1(aktiviert)"/>
-      <desc resKey="eventscheduler_getrule"/>
-    </method>
-    <method call="execute" index="5" name="EnableRule" return="num">
-      <param name="id" range="1-16" type="num"/>
-      <hint lang="pl" value="Zmienia stan reguły na aktywny. Zwraca 0 - ok, 1 - błąd"/>
-      <hint lang="en" value="Change state of rule to activated. Returns 0 - ok, 1 - error"/>
-      <hint lang="de" value="Status der Regel in aktiviert ändern. Gibt 0 zurück - ok, 1 - Fehler"/>
-      <desc resKey="eventscheduler_enablerule"/>
-    </method>
-    <method call="execute" index="6" name="DisableRule" return="num">
-      <param name="id" range="1-16" type="num"/>
-      <hint lang="pl" value="Zmienia stan reguły na nieaktywny. Zwraca 0 - ok, 1 - błąd"/>
-      <hint lang="en" value="Change state of rule to deactivated. Returns 0 - ok, 1 - error"/>
-      <hint lang="de" value="Status der Regel in deaktiviert ändern. Gibt 0 zurück - ok, 1 - Fehler"/>
-      <desc resKey="eventscheduler_disablerule"/>
-    </method>
-    <method call="execute" index="7" name="GetRules" return="str">
-      <hint lang="pl"
-        value="Lista wszystkich reguł w formacie {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
-      <hint lang="en"
-        value="List of all rules in the format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(disabled), 1(enabled)"/>
-      <hint lang="de"
-        value="Liste aller Regeln im Format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
-      <desc resKey="eventscheduler_rulelist"/>
-    </method>
-    <method call="execute" index="8" name="GetNextRule" return="str">
-      <hint lang="pl" value="Reguła z listy dla następnego zdarzenia {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
-      <hint lang="en" value="Rule from the list for the next event in {id, rule_state, &quot;crone&quot;} format&#13;rule_state: 0(disabled), 1(enabled)"/>
-      <hint lang="de"
-        value="Regel aus der Liste für das nächste Ereignis im Format {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
-      <desc resKey="eventscheduler_nextrule"/>
-    </method>
-    <!--><method call="execute" index="9" name="DeleteAllRules" return="num">
-      <hint lang="pl" value="Usuwa wszystkie reguły. Zwraca 0 - ok, 1 - błąd"/>
-      <hint lang="en" value="Removes all rules. Returns 0 - ok, 1 - error"/>
-      <hint lang="de" value="Entfernt alle Regeln. Gibt 0 zurück - ok, 1 - Fehler"/>
-        <desc resKey="eventscheduler_deleteallrules"/>
-        </method></-->
-    <method call="set" index="5" name="State" return="void" visible="false">
-      <param name="State"/>
-      <hint lang="pl" value="Aktualny stan Event Schedulera"/>
-      <hint lang="en" value="Current state of event scheduler"/>
-      <hint lang="de" value="Aktueller Stand des Eventplaners"/>
-      <desc resKey="eventscheduler_state"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnStart">
-      <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu Event Schedulera"/>
-      <hint lang="en" value="A event called when Event Scheduler starts"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Ereignisplaner gestartet wird"/>
-      <desc resKey="eventscheduler_onstart"/>
-    </event>
-    <event address="1" name="OnStop">
-      <hint lang="pl" value="Zdarzenie wywoływane przy dezaktywacji Event Scheduler"/>
-      <hint lang="en" value="A event called when Event Scheduler stops"/>
-      <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Ereignisplaner stoppt"/>
-      <desc resKey="eventscheduler_onstop"/>
-    </event>
-    <event address="2" name="OnEvent">
-      <hint lang="pl" value="Zdarzenie docelowe wywołane na podstawie ustawionych reguł i aktualnym czasie urządzenia"/>
-      <hint lang="en" value="Target event triggered on the basis of the set rules and the current time of the device"/>
-      <hint lang="de" value="Zielereignis ausgelöst auf Basis der eingestellten Regeln und der aktuellen Uhrzeit des Gerätes"/>
-      <desc resKey="eventscheduler_onevent"/>
-    </event>
-    <event address="3" name="OnRuleAdd">
-      <hint lang="pl" value="Zdarzenie wywołane podczas dodania reguły do listy"/>
-      <hint lang="en" value="The event is raised when adding a rule to the list"/>
-      <hint lang="de" value="Das Ereignis wird ausgelöst, wenn eine Regel zur Liste hinzugefügt wird"/>
-      <desc resKey="eventscheduler_onruleadd"/>
-    </event>
-    <event address="4" name="OnRuleDelete">
-      <hint lang="pl" value="Zdarzenie wywołane podczas usunięcia reguły z listy"/>
-      <hint lang="en" value="The event is raised when removing a rule from the list"/>
-      <hint lang="de" value="Das Ereignis wird ausgelöst, wenn eine Regel aus der Liste entfernt wird"/>
-      <desc resKey="eventscheduler_onruledelete"/>
-    </event>
-  </events>
+    <features>
+        <feature get="true" index="0" name="RuleList" set="false" type="str">
+            <hint lang="pl"
+                  value="Lista wszystkich reguł w formacie {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
+            <hint lang="en"
+                  value="List of all rules in the format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(disabled), 1(enabled)"/>
+            <hint lang="de"
+                  value="Liste aller Regeln im Format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
+            <desc resKey="eventscheduler_rulelist"/>
+        </feature>
+        <feature get="true" index="1" name="CurrentRule" set="false" type="str">
+            <hint lang="pl"
+                  value="Reguła z listy, która odpowiada za aktualne zdarzenie {id, rule_state, &quot;crone&quot;}&#13;Zwraca uruchomioną regułę przez 1 minutę, następnie &quot;N\A&quot;&#13;rule_state: 0(wyłączona), 1(włączona)"/>
+            <hint lang="en"
+                  value="Rule from the list that is responsible for the current event {id, rule_state, &quot;crone&quot;}&#13;Returns a run rule for 1 minute, then &quot;N\A&quot;&#13;rule_state: 0(disabled), 1(enabled)"/>
+            <hint lang="de"
+                  value="Regel aus der Liste, die für das aktuelle Ereignis zuständig ist {id, rule_state, &quot;crone&quot;}&#13;Gibt eine Ausführungsregel für 1 Minute zurück, dann &quot;N\A&quot;&#13;rule_state: 0(behindert), 1(aktiviert)"/>
+            <desc resKey="eventscheduler_currentrule"/>
+        </feature>
+        <feature get="true" index="2" name="NextRule" set="false" type="str">
+            <hint lang="pl"
+                  value="Reguła z listy dla następnego zdarzenia {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
+            <hint lang="en"
+                  value="Rule from the list for the next event in {id, rule_state, &quot;crone&quot;} format&#13;rule_state: 0(disabled), 1(enabled)"/>
+            <hint lang="de"
+                  value="Regel aus der Liste für das nächste Ereignis im Format {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
+            <desc resKey="eventscheduler_nextrule"/>
+        </feature>
+        <feature get="true" index="3" name="RuleCount" set="false" type="num">
+            <hint lang="pl" value="Liczba dodanych reguł"/>
+            <hint lang="en" value="Number of rules added"/>
+            <hint lang="de" value="Anzahl der hinzugefügten Regeln"/>
+            <desc resKey="eventscheduler_rulecount"/>
+        </feature>
+        <feature get="true" index="4" name="RuleAvailableCount" set="false" type="num">
+            <hint lang="pl" value="Liczba reguł które mogą być dodane do istniejącej listy (wolne miejsce)"/>
+            <hint lang="en" value="The number of rules that can be added to an existing list (free space)"/>
+            <hint lang="de"
+                  value="Die Anzahl der Regeln, die zu einer bestehenden Liste hinzugefügt werden können (freier Speicherplatz)"/>
+            <desc resKey="eventscheduler_rulespace"/>
+        </feature>
+        <feature default="1" enum="1,0" get="true" index="5" name="State" set="true" type="num">
+            <enum name="Off" resKey="eventscheduler_state_enum_off" value="0"/>
+            <enum name="On" resKey="eventscheduler_state_enum_on" value="1"/>
+            <hint lang="pl" value="Aktualny stan Event Schedulera"/>
+            <hint lang="en" value="Current state of event scheduler"/>
+            <hint lang="de" value="Aktueller Stand des Eventplaners"/>
+            <desc resKey="eventscheduler_state"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="execute" index="0" name="Start" return="void">
+            <hint lang="pl" value="Uruchamia Event Scheduler"/>
+            <hint lang="en" value="Start Event Scheduler"/>
+            <hint lang="de" value="Eventplaner starten"/>
+            <desc resKey="eventscheduler_start"/>
+        </method>
+        <method call="execute" index="1" name="Stop" return="void">
+            <hint lang="pl" value="Zatrzymuje Event Scheduler"/>
+            <hint lang="en" value="Stop Event Scheduler"/>
+            <hint lang="de" value="Eventplaner stoppen"/>
+            <desc resKey="eventscheduler_stop"/>
+        </method>
+        <method call="execute" index="2" name="AddRule" return="str">
+            <param name="Record" type="str"/>
+            <hint lang="pl"
+                  value="Dodaje regułę do listy. Podaj regułę crone &quot;minute hour * * day_of_week&quot;. Zwraca numer id przydzielonej reguły. 0 - błąd"/>
+            <hint lang="en"
+                  value="Adds a rule to the list. Provide a crone rule &quot;minute hour * * day_of_week&quot;. Returns the id number of the assigned rule. 0 - error"/>
+            <hint lang="de"
+                  value="Fügt der Liste eine Regel hinzu. Geben Sie eine Crone-Regel &quot;minute hour * * day_of_week&quot; an. Gibt die ID-Nummer der zugewiesenen Regel zurück. 0 - Fehler"/>
+            <desc resKey="eventscheduler_addrule"/>
+        </method>
+        <method call="execute" index="3" name="DeleteRule" return="num">
+            <param name="id" range="1-16" type="num"/>
+            <hint lang="pl" value="Usuwa regułę o podanym id z listy. Zwraca 0 - ok, 1 - błąd"/>
+            <hint lang="en" value="Removes the rule with the given id from the list. Returns 0 - ok, 1 - error"/>
+            <hint lang="de"
+                  value="Entfernt die Regel mit der angegebenen ID aus der Liste. Gibt 0 zurück - ok, 1 - Fehler"/>
+            <desc resKey="eventscheduler_deleterule"/>
+        </method>
+        <method call="execute" index="4" name="GetRule" return="str">
+            <param name="id" range="1-16" type="num"/>
+            <hint lang="pl"
+                  value="Zwraca regułę w formacie {id, rule_state, &quot;crone&quot;} dla podanego id&#13;rule_state: 0(wyłączona), 1(włączona)"/>
+            <hint lang="en"
+                  value="Returns the rule in the format {id, rule_state, &quot;crone&quot;} for the given id&#13;rule_state: 0(disabled), 1(enabled)"/>
+            <hint lang="de"
+                  value="Gibt die Regel im Format {id, rule_state, &quot;crone&quot;} für die angegebene ID zurück&#13;rule_state: 0(behindert), 1(aktiviert)"/>
+            <desc resKey="eventscheduler_getrule"/>
+        </method>
+        <method call="execute" index="5" name="EnableRule" return="num">
+            <param name="id" range="1-16" type="num"/>
+            <hint lang="pl" value="Zmienia stan reguły na aktywny. Zwraca 0 - ok, 1 - błąd"/>
+            <hint lang="en" value="Change state of rule to activated. Returns 0 - ok, 1 - error"/>
+            <hint lang="de" value="Status der Regel in aktiviert ändern. Gibt 0 zurück - ok, 1 - Fehler"/>
+            <desc resKey="eventscheduler_enablerule"/>
+        </method>
+        <method call="execute" index="6" name="DisableRule" return="num">
+            <param name="id" range="1-16" type="num"/>
+            <hint lang="pl" value="Zmienia stan reguły na nieaktywny. Zwraca 0 - ok, 1 - błąd"/>
+            <hint lang="en" value="Change state of rule to deactivated. Returns 0 - ok, 1 - error"/>
+            <hint lang="de" value="Status der Regel in deaktiviert ändern. Gibt 0 zurück - ok, 1 - Fehler"/>
+            <desc resKey="eventscheduler_disablerule"/>
+        </method>
+        <method call="execute" index="7" name="GetRules" return="str">
+            <hint lang="pl"
+                  value="Lista wszystkich reguł w formacie {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
+            <hint lang="en"
+                  value="List of all rules in the format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(disabled), 1(enabled)"/>
+            <hint lang="de"
+                  value="Liste aller Regeln im Format {{id, rule_state, &quot;crone&quot;},{id, rule_state, &quot;crone&quot;},...}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
+            <desc resKey="eventscheduler_rulelist"/>
+        </method>
+        <method call="execute" index="8" name="GetNextRule" return="str">
+            <hint lang="pl"
+                  value="Reguła z listy dla następnego zdarzenia {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(wyłączona), 1(włączona)"/>
+            <hint lang="en"
+                  value="Rule from the list for the next event in {id, rule_state, &quot;crone&quot;} format&#13;rule_state: 0(disabled), 1(enabled)"/>
+            <hint lang="de"
+                  value="Regel aus der Liste für das nächste Ereignis im Format {id, rule_state, &quot;crone&quot;}&#13;rule_state: 0(behindert), 1(aktiviert)"/>
+            <desc resKey="eventscheduler_nextrule"/>
+        </method>
+        <!--><method call="execute" index="9" name="DeleteAllRules" return="num">
+          <hint lang="pl" value="Usuwa wszystkie reguły. Zwraca 0 - ok, 1 - błąd"/>
+          <hint lang="en" value="Removes all rules. Returns 0 - ok, 1 - error"/>
+          <hint lang="de" value="Entfernt alle Regeln. Gibt 0 zurück - ok, 1 - Fehler"/>
+            <desc resKey="eventscheduler_deleteallrules"/>
+            </method></-->
+        <method call="set" index="5" name="State" return="void" visible="false">
+            <param name="State"/>
+            <hint lang="pl" value="Aktualny stan Event Schedulera"/>
+            <hint lang="en" value="Current state of event scheduler"/>
+            <hint lang="de" value="Aktueller Stand des Eventplaners"/>
+            <desc resKey="eventscheduler_state"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnStart">
+            <hint lang="pl" value="Zdarzenie wywoływane przy uruchomieniu Event Schedulera"/>
+            <hint lang="en" value="A event called when Event Scheduler starts"/>
+            <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Ereignisplaner gestartet wird"/>
+            <desc resKey="eventscheduler_onstart"/>
+        </event>
+        <event address="1" name="OnStop">
+            <hint lang="pl" value="Zdarzenie wywoływane przy dezaktywacji Event Scheduler"/>
+            <hint lang="en" value="A event called when Event Scheduler stops"/>
+            <hint lang="de" value="Ein Ereignis, das aufgerufen wird, wenn der Ereignisplaner stoppt"/>
+            <desc resKey="eventscheduler_onstop"/>
+        </event>
+        <event address="2" name="OnEvent">
+            <hint lang="pl"
+                  value="Zdarzenie docelowe wywołane na podstawie ustawionych reguł i aktualnym czasie urządzenia"/>
+            <hint lang="en"
+                  value="Target event triggered on the basis of the set rules and the current time of the device"/>
+            <hint lang="de"
+                  value="Zielereignis ausgelöst auf Basis der eingestellten Regeln und der aktuellen Uhrzeit des Gerätes"/>
+            <desc resKey="eventscheduler_onevent"/>
+        </event>
+        <event address="3" name="OnRuleAdd">
+            <hint lang="pl" value="Zdarzenie wywołane podczas dodania reguły do listy"/>
+            <hint lang="en" value="The event is raised when adding a rule to the list"/>
+            <hint lang="de" value="Das Ereignis wird ausgelöst, wenn eine Regel zur Liste hinzugefügt wird"/>
+            <desc resKey="eventscheduler_onruleadd"/>
+        </event>
+        <event address="4" name="OnRuleDelete">
+            <hint lang="pl" value="Zdarzenie wywołane podczas usunięcia reguły z listy"/>
+            <hint lang="en" value="The event is raised when removing a rule from the list"/>
+            <hint lang="de" value="Das Ereignis wird ausgelöst, wenn eine Regel aus der Liste entfernt wird"/>
+            <desc resKey="eventscheduler_onruledelete"/>
+        </event>
+    </events>
 </object>
