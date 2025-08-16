@@ -16,23 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package pl.psobiech.opengr8on.xml.omp;
+package pl.psobiech.opengr8on.xml.omp.properties;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import pl.psobiech.opengr8on.xml.interfaces.Value;
 
-public class ProjectPropertiesCipherKey {
-    @JsonProperty("keyBytes")
-    private Value keyBytes;
+public class ProjectProperties {
+    @JsonProperty("projectCipherKey")
+    private ProjectPropertiesCipherKey projectCipherKey;
 
-    @JsonProperty("ivBytes")
-    private Value ivBytes;
-
-    public Value getKeyBytes() {
-        return keyBytes;
-    }
-
-    public Value getIvBytes() {
-        return ivBytes;
+    public ProjectPropertiesCipherKey getProjectCipherKey() {
+        return projectCipherKey;
     }
 }

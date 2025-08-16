@@ -93,6 +93,10 @@ public final class Util {
         return Optional.of(split);
     }
 
+    public static boolean falseIfNull(Boolean value) {
+        return Boolean.TRUE.equals(value);
+    }
+
     public static <E> List<E> nullAsEmpty(List<E> list) {
         if (list == null) {
             return Collections.emptyList();

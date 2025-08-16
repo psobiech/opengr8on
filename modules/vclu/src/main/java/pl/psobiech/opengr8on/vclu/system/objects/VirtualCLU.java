@@ -274,6 +274,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         USE_MQTT(21),
         MQTT_CONNECTION(22),
         //
+        MQTT_DISCOVERY(23),
+        MQTT_DISCOVERY_PREFIX(24),
+        //
         ;
 
         private final int index;

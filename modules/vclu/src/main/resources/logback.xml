@@ -29,7 +29,7 @@
     <logger name="pl.psobiech" level="DEBUG"/>
     <logger name="pl.psobiech.opengr8on.vclu" level="DEBUG"/>
     <logger name="pl.psobiech.opengr8on.client" level="DEBUG"/>
-    <logger name="pl.psobiech.opengr8on.vclu.Server" level="TRACE"/>
+    <logger name="pl.psobiech.opengr8on.vclu.Server" level="DEBUG"/>
     <logger name="pl.psobiech.opengr8on.xml" level="DEBUG"/>
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">

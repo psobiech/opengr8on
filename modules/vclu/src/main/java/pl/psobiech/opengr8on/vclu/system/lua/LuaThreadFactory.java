@@ -31,6 +31,7 @@ import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Prototype;
 import org.luaj.vm2.compiler.LuaC;
+import org.luaj.vm2.lib.DebugLib;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
@@ -71,6 +72,7 @@ public class LuaThreadFactory {
         LoadState.install(globals);
         LuaC.install(globals);
 
+//        globals.load(new DebugLib());
         globals.load(new JseBaseLib());
         globals.load(new PackageLib());
         // globals.load(new Bit32Lib());

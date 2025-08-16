@@ -1,0 +1,25 @@
+package pl.psobiech.opengr8on.xml.omp.system.specificObjects;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import java.util.List;
+
+public class Clu extends SpecificObject {
+    public Clu(Long id, Long reference, String name, String nameOnCLU, String type, String description, String ipAddress, List<JsonNode> labels, List<Feature> features, List<Event> events, Clu clu, List<JsonNode> module, String classTypeId, String sourceReceiverTypeID, String number, Boolean active, Boolean statisticState, Long tfBusOrder, List<JsonNode> definedFeaturesList, List<Feature> embeddedFeaturesList, List<Event> eventsList, List<IO> iosList, List<JsonNode> scripts, List<JsonNode> peripheryList, List<JsonNode> applicationsList, List<IODefinition> modulesList, List<JsonNode> methodsList, Boolean visible, Boolean validConfigurationOnCLU, String firmwareVersion, String firmwareType, String hardwareVersion, String hardwareType, String serialNumber, String macAddress, String cipherKeyType, String iv, String privateKey, Boolean encrypted, Boolean removed, String objectClass) {
+        super(id, reference, name, nameOnCLU, type, description, ipAddress, labels, features, events, clu, module, classTypeId, sourceReceiverTypeID, number, active, statisticState, tfBusOrder, definedFeaturesList, embeddedFeaturesList, eventsList, iosList, scripts, peripheryList, applicationsList, modulesList, methodsList, visible, validConfigurationOnCLU, firmwareVersion, firmwareType, hardwareVersion, hardwareType, serialNumber, macAddress, cipherKeyType, iv, privateKey, encrypted, removed, objectClass);
+    }
+
+    @Override
+    public String toString() {
+        return "Clu{" +
+                "id=" + getId() +
+                ", reference=" + getReference() +
+                ", name='" + getName() + '\'' +
+                ", nameOnCLU='" + getNameOnCLU() + '\'' +
+                ", clu='" + getClu() + '\'' +
+                ", objectClass='" + getObjectClassAsString() + "'/" + getObjectClass() +
+                ", type='" + getTypeAsString() + "'/" + getType() +
+                '}';
+    }
+
+}
