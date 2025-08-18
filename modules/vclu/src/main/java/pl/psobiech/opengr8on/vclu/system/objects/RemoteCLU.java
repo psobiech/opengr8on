@@ -58,35 +58,39 @@ public class RemoteCLU extends VirtualObject {
         register(Methods.EXECUTE, arg1 -> {
             final String script = arg1.checkjstring();
 
-            return client.execute(script)
-                    .map(returnValue -> {
-                                returnValue = StringUtils.stripToNull(returnValue);
-                                if (returnValue == null) {
-                                    return null;
-                                }
-
-                                if (returnValue.startsWith("{")) {
-                                    try {
-                                        return localLuaContext.load("return %s".formatted(returnValue))
-                                                .call();
-                                    } catch (Exception e) {
-                                        // Might not have been a proper LUA table
-                                        // TODO: implement a more robust check
-
-                                        LOGGER.error(e.getMessage(), e);
-                                    }
-                                }
-
-                                final LuaString luaString = LuaValue.valueOf(returnValue);
-                                if (luaString.isnumber()) {
-                                    return luaString.checknumber();
-                                }
-
-                                return luaString;
-                            }
-                    )
-                    .orElse(LuaValue.NIL);
+            return remoteExecute(script);
         });
+    }
+
+    public LuaValue remoteExecute(String script) {
+        return client.execute(script)
+                .map(returnValue -> {
+                            returnValue = StringUtils.stripToNull(returnValue);
+                            if (returnValue == null) {
+                                return null;
+                            }
+
+                            if (returnValue.startsWith("{")) {
+                                try {
+                                    return localLuaContext.load("return %s".formatted(returnValue))
+                                            .call();
+                                } catch (Exception e) {
+                                    // Might not have been a proper LUA table
+                                    // TODO: implement a more robust check
+
+                                    LOGGER.error(e.getMessage(), e);
+                                }
+                            }
+
+                            final LuaString luaString = LuaValue.valueOf(returnValue);
+                            if (luaString.isnumber()) {
+                                return luaString.checknumber();
+                            }
+
+                            return luaString;
+                        }
+                )
+                .orElse(LuaValue.NIL);
     }
 
     @Override

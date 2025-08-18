@@ -18,14 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.io.Closeable;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
-
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
@@ -38,6 +30,14 @@ import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaSupplier;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
+import java.io.Closeable;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 
 public class VirtualObject implements Closeable {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
@@ -133,6 +133,21 @@ public class VirtualObject implements Closeable {
 
     public void register(IFeature feature, LuaOneArgFunction fn) {
         registerFeature(feature.index(), fn);
+    }
+
+    public void registerBoolean(IFeature feature) {
+        registerFeature(feature.index(), (LuaOneArgFunction) arg1 -> {
+            if (LuaUtil.isNil(arg1)) {
+                return LuaValue.valueOf(
+                        LuaUtil.trueish(getValue(feature))
+                );
+            }
+
+            // Sometimes OM uses true/false and sometimes 0/1
+            return LuaValue.valueOf(
+                    LuaUtil.trueish(arg1)
+            );
+        });
     }
 
     private void registerFeature(int index, BaseLuaFunction fn) {

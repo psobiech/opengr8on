@@ -23,17 +23,19 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -56,21 +58,23 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil;
+import pl.psobiech.opengr8on.util.*;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
-import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.ResourceUtil;
-import pl.psobiech.opengr8on.util.SocketUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
-import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryOrigin;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoverySensor;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThreadFactory;
+import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.xml.omp.OmpReader;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
 public class Server implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -563,7 +567,129 @@ public class Server implements Closeable {
                     mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
                     currentClu
             );
+
+            if (LuaUtil.trueish(currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY))) {
+                initMqttDiscovery(currentClu);
+            }
+
         }
+    }
+
+    private void initMqttDiscovery(VirtualCLU currentClu) {
+        final String discoveryPrefix = currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
+        final Path projectOmpPath = parentDirectory.resolve("project.omp");
+        if (!Files.exists(projectOmpPath)) {
+            return;
+        }
+
+        // TODO: resource cleanup
+        executor.submit(() -> {
+            final Set<SpecificObjectType> supportedTypes = Set.of(
+                    SpecificObjectType.PANEL_TEMPERATURE,
+                    SpecificObjectType.PANEL_LUMINOSITY,
+                    SpecificObjectType.POWER_SUPPLY_VOLTAGE
+            );
+
+            final Map<Long, SpecificObject> allObjects = OmpReader.readAllObjects(projectOmpPath);
+            for (SpecificObject object : allObjects.values()) {
+                if (object.getType() == SpecificObjectType.LED_RGB) {
+                    LOGGER.trace("LED_RGB: {}", object);
+                }
+
+                if (supportedTypes.contains(object.getType())) {
+                    final String nameOnCLU = object.getNameOnCLU();
+
+                    SpecificObject clu = object.getClu();
+                    if (clu.getReference() != null) {
+                        clu = allObjects.get(clu.getReference());
+                    }
+
+                    if (clu == null) {
+                        continue;
+                    }
+
+                    final String deviceId = clu.getNameOnCLU();
+                    final String uniqueId = deviceId + "_" + nameOnCLU;
+
+                    final Optional<Feature> valueFeature = object.getFeatures().stream()
+                            .filter(feature1 -> feature1.getName().equalsIgnoreCase("value"))
+                            .findAny();
+                    if (valueFeature.isEmpty()) {
+                        continue;
+                    }
+
+                    final Feature feature = valueFeature.get();
+
+                    final String objectClass;
+                    if (object.getType() == SpecificObjectType.PANEL_TEMPERATURE) {
+                        objectClass = "temperature";
+                    } else if (object.getType() == SpecificObjectType.PANEL_LUMINOSITY) {
+                        objectClass = null;
+                    } else if (object.getType() == SpecificObjectType.POWER_SUPPLY_VOLTAGE) {
+                        objectClass = "voltage";
+                    } else {
+                        continue;
+                    }
+
+                    final MqttDiscoverySensor discoveryMessage = new MqttDiscoverySensor(
+                            object.getName(),
+                            uniqueId,
+                            "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId), null, "~/state",
+                            objectClass,
+                            feature.getUnit(),
+                            "{{ value | float }}",
+                            new MqttDiscoveryDevice(
+                                    deviceId, clu.getName(), "Grenton",
+                                    clu.getSerialNumber(),
+                                    clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
+                                    clu.getHardwareType() + "_" + clu.getHardwareVersion()
+                            ),
+                            new MqttDiscoveryOrigin(
+                                    "opengr8on", ServerVersion.get(),
+                                    "https://github.com/psobiech/opengr8on"
+                            )
+                    );
+
+                    final RemoteCLU remoteClu = (RemoteCLU) mainThread.virtualSystem().getObject(clu.getNameOnCLU());
+
+                    try {
+                        mqttClient.publish(
+                                "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/config",
+                                ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage)
+                        );
+                    } catch (MqttException | JsonProcessingException e) {
+                        LOGGER.error("Could not publish discovery message for {}", uniqueId, e);
+
+                        continue;
+                    }
+
+                    // TODO: leaking threads ;-)
+                    executor.execute(() -> {
+                        while (!Thread.currentThread().isInterrupted()) {
+                            final LuaValue luaValue = remoteClu.remoteExecute(object.getNameOnCLU() + ":get(" + feature.getIndex() + ")");
+
+                            try {
+                                final String state = String.valueOf(luaValue.checkdouble());
+                                System.out.println(uniqueId + "(" + object.getName() + "): " + state);
+
+                                mqttClient.publish("%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state", state.getBytes(StandardCharsets.UTF_8));
+                            } catch (MqttException e) {
+                                LOGGER.error("Could not publish state update message for {}", uniqueId, e);
+
+                                return;
+                            }
+
+                            try {
+                                Thread.sleep(60_000L);
+                            } catch (InterruptedException e) {
+                                throw new UncheckedInterruptedException(e);
+                            }
+                        }
+                    });
+                }
+
+            }
+        });
     }
 
     protected LuaValue luaCall(String script) {

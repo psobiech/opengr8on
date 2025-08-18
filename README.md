@@ -4,6 +4,10 @@
 ![jacoco.svg](badges%2Fjacoco.svg)
 [![AGPLv3 License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
+# In Progress - Home Assistant Integration via MQTT Discovery (working PoC)
+
+![Home Assistant PoC](docs/img/home_assistant.png)
+
 # Virtual CLU
 
 As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager can be used,

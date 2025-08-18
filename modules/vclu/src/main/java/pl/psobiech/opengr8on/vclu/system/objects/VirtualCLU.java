@@ -77,19 +77,11 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         set(Features.TIME_ZONE, LuaValue.valueOf(CLUTimeZone.UTC.value()));
 
         set(Features.MQTT_URL, LuaValue.valueOf("ssl://localhost:8883"));
-        register(Features.USE_MQTT, arg1 -> {
-            if (LuaUtil.isNil(arg1)) {
-                return LuaValue.valueOf(
-                        LuaUtil.trueish(getValue(Features.USE_MQTT))
-                );
-            }
-
-            // Sometimes OM uses true/false and sometimes 0/1
-            return LuaValue.valueOf(
-                    LuaUtil.trueish(arg1)
-            );
-        });
+        registerBoolean(Features.USE_MQTT);
         set(Features.MQTT_CONNECTION, LuaValue.valueOf(false));
+
+        registerBoolean(Features.MQTT_DISCOVERY);
+        set(Features.MQTT_DISCOVERY_PREFIX, LuaValue.valueOf("homeassistant"));
 
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
