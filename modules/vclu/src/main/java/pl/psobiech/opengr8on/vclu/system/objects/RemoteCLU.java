@@ -32,6 +32,7 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
+import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.ServerVersion;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
@@ -187,34 +188,32 @@ public class RemoteCLU extends VirtualObject {
             scheduler.execute(() -> {
                 String lastState = null;
                 while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        Thread.sleep(55_000L + RandomUtil.integer(10_000));
+                    } catch (InterruptedException e) {
+                        throw new UncheckedInterruptedException(e);
+                    }
+
                     final LuaValue luaValue = remoteExecute(object.getNameOnCLU() + ":get(" + feature.getIndex() + ")");
                     if (LuaUtil.isNil(luaValue)) {
                         continue;
                     }
 
                     final String state = String.valueOf(luaValue.todouble());
-                    if (!state.equals(lastState)) {
-                        lastState = state;
-
-                        LOGGER.debug(uniqueId + "(" + object.getName() + "): " + state);
-
-                        try {
-                            currentClu.getMqttClient()
-                                      .publish(
-                                              "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state",
-                                              state.getBytes(StandardCharsets.UTF_8)
-                                      );
-                        } catch (MqttException e) {
-                            LOGGER.error("Could not publish state update message for {}", uniqueId, e);
-
-                            continue;
-                        }
+                    if (state.equals(lastState)) {
+                        continue;
                     }
+                    lastState = state;
 
+                    LOGGER.debug(uniqueId + "(" + object.getName() + "): " + state);
                     try {
-                        Thread.sleep(60_000L);
-                    } catch (InterruptedException e) {
-                        throw new UncheckedInterruptedException(e);
+                        currentClu.getMqttClient()
+                                  .publish(
+                                          "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state",
+                                          state.getBytes(StandardCharsets.UTF_8)
+                                  );
+                    } catch (MqttException e) {
+                        LOGGER.error("Could not publish state update message for {}", uniqueId, e);
                     }
                 }
             });
