@@ -18,14 +18,12 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.util.ToStringUtil;
-import pl.psobiech.opengr8on.util.Util;
+import pl.psobiech.opengr8on.util.*;
 import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
@@ -191,12 +189,27 @@ public class MqttClient implements Closeable {
         mqttClient.unsubscribe(topicFilter);
     }
 
+    public int publishJson(String topic, Object payloadObject) throws MqttException {
+        final byte[] payload;
+        try {
+            payload = ObjectMapperFactory.JSON.writeValueAsBytes(payloadObject);
+        } catch (JsonProcessingException e) {
+            throw new UnexpectedException(e);
+        }
+
+        return publish(topic, payload);
+    }
+
     public int publish(String topic, byte[] payload) throws MqttException {
+        return publish(topic, payload, false);
+    }
+
+    public int publish(String topic, byte[] payload, boolean retained) throws MqttException {
         LOGGER.trace("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
 
         return mqttClient.publish(
                                  topic, payload,
-                                 MQTT_QOS_AT_LEAST_ONCE, false
+                                 MQTT_QOS_AT_LEAST_ONCE, retained
                          )
                          .getMessageId();
     }

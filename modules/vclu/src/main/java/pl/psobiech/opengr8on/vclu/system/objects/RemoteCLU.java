@@ -111,7 +111,7 @@ public class RemoteCLU extends VirtualObject {
 
         final Set<SpecificObject> specificObjects = objectRegistry.byCluName(name);
         for (SpecificObject object : specificObjects) {
-            final String nameOnCLU = object.getNameOnCLU();
+            final String objectName = object.getNameOnCLU();
 
             SpecificObject clu = object.getClu();
             if (clu != null && clu.getReference() != null) {
@@ -119,19 +119,18 @@ public class RemoteCLU extends VirtualObject {
             }
 
             if (clu == null) {
-                LOGGER.warn("Could not find CLU for object {}", nameOnCLU);
+                LOGGER.warn("Could not find CLU for object {}", objectName);
 
                 continue;
             }
 
-            final String cluName = name;
             if (!supportedTypes.contains(object.getType())) {
-                LOGGER.warn("Ignoring object {} on CLU {}", cluName, nameOnCLU);
+                LOGGER.warn("Ignoring object {} on CLU {}", objectName, name);
 
                 continue;
             }
 
-            final String uniqueId = cluName + "_" + nameOnCLU;
+            final String uniqueId = name + "_" + objectName;
 
             final Optional<Feature> valueFeature = object.getFeatures().stream()
                                                          .filter(feature1 -> feature1.getName().equalsIgnoreCase("value"))
@@ -161,7 +160,7 @@ public class RemoteCLU extends VirtualObject {
                     feature.getUnit(),
                     "{{ value | float }}",
                     new MqttDiscoveryDevice(
-                            cluName, clu.getName(), "Grenton",
+                            name, clu.getName(), "Grenton",
                             clu.getSerialNumber(),
                             clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
                             clu.getHardwareType() + "_" + clu.getHardwareVersion()
@@ -176,7 +175,8 @@ public class RemoteCLU extends VirtualObject {
                 currentClu.getMqttClient()
                           .publish(
                                   "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/config",
-                                  ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage)
+                                  ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
+                                  true
                           );
             } catch (MqttException | JsonProcessingException e) {
                 LOGGER.error("Could not publish discovery message for {}", uniqueId, e);
@@ -184,7 +184,6 @@ public class RemoteCLU extends VirtualObject {
                 continue;
             }
 
-            // TODO: leaking threads ;-)
             scheduler.execute(() -> {
                 while (!Thread.currentThread().isInterrupted()) {
                     final LuaValue luaValue = remoteExecute(object.getNameOnCLU() + ":get(" + feature.getIndex() + ")");
@@ -193,7 +192,8 @@ public class RemoteCLU extends VirtualObject {
                         final String state = String.valueOf(luaValue.checkdouble());
                         LOGGER.debug(uniqueId + "(" + object.getName() + "): " + state);
 
-                        currentClu.getMqttClient().publish("%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state", state.getBytes(StandardCharsets.UTF_8));
+                        currentClu.getMqttClient()
+                                  .publish("%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state", state.getBytes(StandardCharsets.UTF_8));
                     } catch (MqttException e) {
                         LOGGER.error("Could not publish state update message for {}", uniqueId, e);
 
