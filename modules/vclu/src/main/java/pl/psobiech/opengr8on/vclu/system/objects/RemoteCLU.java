@@ -185,19 +185,30 @@ public class RemoteCLU extends VirtualObject {
             }
 
             scheduler.execute(() -> {
+                String lastState = null;
                 while (!Thread.currentThread().isInterrupted()) {
                     final LuaValue luaValue = remoteExecute(object.getNameOnCLU() + ":get(" + feature.getIndex() + ")");
+                    if (LuaUtil.isNil(luaValue)) {
+                        continue;
+                    }
 
-                    try {
-                        final String state = String.valueOf(luaValue.checkdouble());
+                    final String state = String.valueOf(luaValue.todouble());
+                    if (!state.equals(lastState)) {
+                        lastState = state;
+
                         LOGGER.debug(uniqueId + "(" + object.getName() + "): " + state);
 
-                        currentClu.getMqttClient()
-                                  .publish("%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state", state.getBytes(StandardCharsets.UTF_8));
-                    } catch (MqttException e) {
-                        LOGGER.error("Could not publish state update message for {}", uniqueId, e);
+                        try {
+                            currentClu.getMqttClient()
+                                      .publish(
+                                              "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state",
+                                              state.getBytes(StandardCharsets.UTF_8)
+                                      );
+                        } catch (MqttException e) {
+                            LOGGER.error("Could not publish state update message for {}", uniqueId, e);
 
-                        continue;
+                            continue;
+                        }
                     }
 
                     try {
