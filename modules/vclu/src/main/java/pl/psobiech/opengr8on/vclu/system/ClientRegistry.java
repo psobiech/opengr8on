@@ -18,6 +18,14 @@
 
 package pl.psobiech.opengr8on.vclu.system;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.client.CLUClient;
+import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
+
 import java.io.Closeable;
 import java.net.Inet4Address;
 import java.util.HashMap;
@@ -27,14 +35,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.CipherKey;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 
 public class ClientRegistry implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistry.class);

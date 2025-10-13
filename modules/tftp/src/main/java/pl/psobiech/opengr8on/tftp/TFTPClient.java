@@ -18,13 +18,6 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.ReentrantLock;
-
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientReceive;
@@ -32,6 +25,13 @@ import pl.psobiech.opengr8on.tftp.transfer.client.TFTPClientSend;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TFTPClient implements Closeable {
     private final ExecutorService executor = ThreadUtil.virtualExecutor("TFTPClient");

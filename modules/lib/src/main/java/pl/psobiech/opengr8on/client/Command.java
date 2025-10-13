@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.client;
 
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.UUID;
-
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 public interface Command {
     /**
@@ -95,13 +95,6 @@ public interface Command {
     }
 
     /**
-     * @return Command unique UUID (to correlate request / responses)
-     */
-    default String uuid(UUID uuid) {
-        return Client.uuid(uuid, this);
-    }
-
-    /**
      * @return objects serialized as byte array
      */
     static byte[] serialize(Object... objects) {
@@ -137,6 +130,13 @@ public interface Command {
         }
 
         throw new UnexpectedException("Unsupported object type: " + object);
+    }
+
+    /**
+     * @return Command unique UUID (to correlate request / responses)
+     */
+    default String uuid(UUID uuid) {
+        return Client.uuid(uuid, this);
     }
 
     /**

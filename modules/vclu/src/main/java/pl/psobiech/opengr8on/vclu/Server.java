@@ -18,24 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -44,14 +26,7 @@ import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.client.Command;
-import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
-import pl.psobiech.opengr8on.client.commands.ErrorCommand;
-import pl.psobiech.opengr8on.client.commands.GenerateMeasurementsCommand;
-import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
-import pl.psobiech.opengr8on.client.commands.ResetCommand;
-import pl.psobiech.opengr8on.client.commands.SetIpCommand;
-import pl.psobiech.opengr8on.client.commands.SetKeyCommand;
-import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
+import pl.psobiech.opengr8on.client.commands.*;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
@@ -63,31 +38,43 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryOrigin;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoverySensor;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThreadFactory;
-import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-import pl.psobiech.opengr8on.xml.omp.OmpReader;
-import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
-import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
-import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.Inet4Address;
+import java.net.SocketException;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 public class Server implements Closeable {
+    protected static final int BUFFER_SIZE = 2048;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     private static final String CLIENT_REGISTER_METHOD_PREFIX = "SYSTEM:clientRegister(";
-
-    protected static final int BUFFER_SIZE = 2048;
 
     private static final int TIMEOUT_MILLIS = 1000;
 
     private static final int RESTART_RETRIES = 8;
 
     private static final long RETRY_DELAY = 100L;
+
+    protected final UDPSocket broadcastCommandSocket;
+
+    protected final UDPSocket commandSocket;
 
     private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUServer");
 
@@ -99,11 +86,15 @@ public class Server implements Closeable {
 
     private final CLUDevice cluDevice;
 
-    protected final UDPSocket broadcastCommandSocket;
-
-    protected final UDPSocket commandSocket;
+    private final UDPSocket fallbackBroadcastCommandSocket;
 
     private final UDPSocket responseSocket;
+
+    private final ReentrantLock cipherKeyLock = new ReentrantLock();
+
+    private final TFTPServer tftpServer;
+
+    private final MqttClient mqttClient = new MqttClient();
 
     private LuaThread mainThread;
 
@@ -111,21 +102,15 @@ public class Server implements Closeable {
 
     private List<CipherKey> broadcastCipherKeys;
 
-    private final ReentrantLock cipherKeyLock = new ReentrantLock();
-
     private byte[] temporaryCipherKeyIV;
 
     private CipherKey projectCipherKey;
 
-    private final TFTPServer tftpServer;
-
-    private final MqttClient mqttClient = new MqttClient();
-
     public Server(Path rootDirectory, CipherKey projectCipherKey, NetworkInterfaceDto networkInterface, CLUDevice cluDevice) {
         this(
                 rootDirectory, projectCipherKey, cluDevice,
-                // TODO: networkInterface.getBroadcastAddress() does not work with OM
                 SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
+                SocketUtil.udpListener(networkInterface.getBroadcastAddress(), Client.COMMAND_PORT),
                 SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
                 SocketUtil.udpRandomPort(cluDevice.getAddress()),
                 new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
@@ -134,7 +119,7 @@ public class Server implements Closeable {
 
     protected Server(
             Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
-            UDPSocket broadcastCommandSocket,
+            UDPSocket broadcastCommandSocket, UDPSocket fallbackBroadcastCommandSocket,
             UDPSocket commandSocket, UDPSocket responseSocket,
             TFTPServer tftpServer
     ) {
@@ -144,6 +129,8 @@ public class Server implements Closeable {
         this.cluDevice = cluDevice;
 
         this.broadcastCommandSocket = broadcastCommandSocket;
+        this.fallbackBroadcastCommandSocket = fallbackBroadcastCommandSocket;
+
         this.commandSocket = commandSocket;
         this.responseSocket = responseSocket;
 
@@ -156,39 +143,65 @@ public class Server implements Closeable {
         this.temporaryCipherKeyIV = null;
     }
 
+    private static void logCommand(UUID uuid, Request request, Command command) {
+        LOGGER.trace(
+                "%s\t<-D--\t%s // %s"
+                        .formatted(command.uuid(uuid), request.payload(), request.cipherKey())
+        );
+    }
+
     public void start() {
         responseSocket.open();
+        commandSocket.open();
 
-        broadcastCommandSocket.open();
-        executor.execute(() -> {
-                    handleCommands(
-                            () -> {
-                                cipherKeyLock.lock();
-                                try {
-                                    return broadcastCipherKeys;
-                                } finally {
-                                    cipherKeyLock.unlock();
-                                }
-                            },
-                            broadcastCommandSocket, this::onBroadcastCommand
-                    );
-                }
+        boolean broadcastSocketBound;
+        try {
+            broadcastCommandSocket.open();
+
+            broadcastSocketBound = true;
+
+        } catch (UnexpectedException e) {
+            broadcastSocketBound = false;
+
+            LOGGER.warn("Failed to open broadcast socket on: {}, binding on {} instead", broadcastCommandSocket.getAddress(), fallbackBroadcastCommandSocket.getAddress(), e);
+
+            fallbackBroadcastCommandSocket.open();
+        }
+
+        final UDPSocket workingBroadcastSocket;
+        if (broadcastSocketBound) {
+            workingBroadcastSocket = broadcastCommandSocket;
+        } else {
+
+            workingBroadcastSocket = fallbackBroadcastCommandSocket;
+        }
+
+        executor.execute(() ->
+                                 handleCommands(
+                                         () -> {
+                                             cipherKeyLock.lock();
+                                             try {
+                                                 return unicastCipherKeys;
+                                             } finally {
+                                                 cipherKeyLock.unlock();
+                                             }
+                                         },
+                                         commandSocket, this::onCommand
+                                 )
         );
 
-        commandSocket.open();
-        executor.execute(() -> {
-                    handleCommands(
-                            () -> {
-                                cipherKeyLock.lock();
-                                try {
-                                    return unicastCipherKeys;
-                                } finally {
-                                    cipherKeyLock.unlock();
-                                }
-                            },
-                            commandSocket, this::onCommand
-                    );
-                }
+        executor.execute(() ->
+                                 handleCommands(
+                                         () -> {
+                                             cipherKeyLock.lock();
+                                             try {
+                                                 return broadcastCipherKeys;
+                                             } finally {
+                                                 cipherKeyLock.unlock();
+                                             }
+                                         },
+                                         workingBroadcastSocket, this::onBroadcastCommand
+                                 )
         );
 
         startClu();
@@ -292,7 +305,7 @@ public class Server implements Closeable {
         final byte[] encrypted = command.getEncrypted();
         final byte[] iv = command.getIV();
         final byte[] hash = DiscoverCLUsCommand.hash(projectCipherKey.decrypt(encrypted)
-                .orElse(RandomUtil.bytes(Command.RANDOM_BYTES)));
+                                                                     .orElse(RandomUtil.bytes(Command.RANDOM_BYTES)));
 
         final CipherKey temporaryCipherKey = generateTemporaryCipherKey();
 
@@ -430,7 +443,7 @@ public class Server implements Closeable {
             }
 
             final CipherKey temporaryCipherKey = cluDevice.getCipherKey()
-                    .withIV(temporaryCipherKeyIV);
+                                                          .withIV(temporaryCipherKeyIV);
 
             cluDevice.setCipherKey(temporaryCipherKey);
             unicastCipherKeys = List.of(temporaryCipherKey, projectCipherKey);
@@ -567,129 +580,7 @@ public class Server implements Closeable {
                     mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
                     currentClu
             );
-
-            if (LuaUtil.trueish(currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY))) {
-                initMqttDiscovery(currentClu);
-            }
-
         }
-    }
-
-    private void initMqttDiscovery(VirtualCLU currentClu) {
-        final String discoveryPrefix = currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
-        final Path projectOmpPath = parentDirectory.resolve("project.omp");
-        if (!Files.exists(projectOmpPath)) {
-            return;
-        }
-
-        // TODO: resource cleanup
-        executor.submit(() -> {
-            final Set<SpecificObjectType> supportedTypes = Set.of(
-                    SpecificObjectType.PANEL_TEMPERATURE,
-                    SpecificObjectType.PANEL_LUMINOSITY,
-                    SpecificObjectType.POWER_SUPPLY_VOLTAGE
-            );
-
-            final Map<Long, SpecificObject> allObjects = OmpReader.readAllObjects(projectOmpPath);
-            for (SpecificObject object : allObjects.values()) {
-                if (object.getType() == SpecificObjectType.LED_RGB) {
-                    LOGGER.trace("LED_RGB: {}", object);
-                }
-
-                if (supportedTypes.contains(object.getType())) {
-                    final String nameOnCLU = object.getNameOnCLU();
-
-                    SpecificObject clu = object.getClu();
-                    if (clu.getReference() != null) {
-                        clu = allObjects.get(clu.getReference());
-                    }
-
-                    if (clu == null) {
-                        continue;
-                    }
-
-                    final String deviceId = clu.getNameOnCLU();
-                    final String uniqueId = deviceId + "_" + nameOnCLU;
-
-                    final Optional<Feature> valueFeature = object.getFeatures().stream()
-                            .filter(feature1 -> feature1.getName().equalsIgnoreCase("value"))
-                            .findAny();
-                    if (valueFeature.isEmpty()) {
-                        continue;
-                    }
-
-                    final Feature feature = valueFeature.get();
-
-                    final String objectClass;
-                    if (object.getType() == SpecificObjectType.PANEL_TEMPERATURE) {
-                        objectClass = "temperature";
-                    } else if (object.getType() == SpecificObjectType.PANEL_LUMINOSITY) {
-                        objectClass = null;
-                    } else if (object.getType() == SpecificObjectType.POWER_SUPPLY_VOLTAGE) {
-                        objectClass = "voltage";
-                    } else {
-                        continue;
-                    }
-
-                    final MqttDiscoverySensor discoveryMessage = new MqttDiscoverySensor(
-                            object.getName(),
-                            uniqueId,
-                            "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId), null, "~/state",
-                            objectClass,
-                            feature.getUnit(),
-                            "{{ value | float }}",
-                            new MqttDiscoveryDevice(
-                                    deviceId, clu.getName(), "Grenton",
-                                    clu.getSerialNumber(),
-                                    clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
-                                    clu.getHardwareType() + "_" + clu.getHardwareVersion()
-                            ),
-                            new MqttDiscoveryOrigin(
-                                    "opengr8on", ServerVersion.get(),
-                                    "https://github.com/psobiech/opengr8on"
-                            )
-                    );
-
-                    final RemoteCLU remoteClu = (RemoteCLU) mainThread.virtualSystem().getObject(clu.getNameOnCLU());
-
-                    try {
-                        mqttClient.publish(
-                                "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/config",
-                                ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage)
-                        );
-                    } catch (MqttException | JsonProcessingException e) {
-                        LOGGER.error("Could not publish discovery message for {}", uniqueId, e);
-
-                        continue;
-                    }
-
-                    // TODO: leaking threads ;-)
-                    executor.execute(() -> {
-                        while (!Thread.currentThread().isInterrupted()) {
-                            final LuaValue luaValue = remoteClu.remoteExecute(object.getNameOnCLU() + ":get(" + feature.getIndex() + ")");
-
-                            try {
-                                final String state = String.valueOf(luaValue.checkdouble());
-                                System.out.println(uniqueId + "(" + object.getName() + "): " + state);
-
-                                mqttClient.publish("%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state", state.getBytes(StandardCharsets.UTF_8));
-                            } catch (MqttException e) {
-                                LOGGER.error("Could not publish state update message for {}", uniqueId, e);
-
-                                return;
-                            }
-
-                            try {
-                                Thread.sleep(60_000L);
-                            } catch (InterruptedException e) {
-                                throw new UncheckedInterruptedException(e);
-                            }
-                        }
-                    });
-                }
-
-            }
-        });
     }
 
     protected LuaValue luaCall(String script) {
@@ -796,13 +687,6 @@ public class Server implements Closeable {
         );
     }
 
-    private static void logCommand(UUID uuid, Request request, Command command) {
-        LOGGER.trace(
-                "%s\t<-D--\t%s // %s"
-                        .formatted(command.uuid(uuid), request.payload(), request.cipherKey())
-        );
-    }
-
     private Optional<Response> sendError(Request request) {
         return Optional.of(
                 new Response(request.cipherKey(), ErrorCommand.response())
@@ -850,7 +734,7 @@ public class Server implements Closeable {
         ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(tftpServer, mqttClient, mainThread);
-        IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, responseSocket);
+        IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, fallbackBroadcastCommandSocket, responseSocket);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) {

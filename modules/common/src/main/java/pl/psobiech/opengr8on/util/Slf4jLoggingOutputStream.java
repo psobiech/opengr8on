@@ -18,25 +18,25 @@
 
 package pl.psobiech.opengr8on.util;
 
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import org.slf4j.Logger;
-import org.slf4j.event.Level;
 
 /**
  * Redirect stream output to slf4j logger. Splits newlines to separate log events.
  * Based on Log4j implementation, but without infinite scaling buffer.
  */
 public class Slf4jLoggingOutputStream extends OutputStream {
-    private static final char[] LINE_SEPARATOR = System.lineSeparator().toCharArray();
-
     /**
      * The default number of bytes in the buffer.
      */
     public static final int DEFAULT_MAXIMUM_BUFFER_SIZE = 10240;
+
+    private static final char[] LINE_SEPARATOR = System.lineSeparator().toCharArray();
 
     /**
      * Initial buffer size
@@ -49,11 +49,6 @@ public class Slf4jLoggingOutputStream extends OutputStream {
     private final int maxBufferSize;
 
     /**
-     * The internal buffer where data is stored.
-     */
-    private byte[] buffer;
-
-    /**
      * Logger where the output should be redirected
      */
     private final Logger logger;
@@ -62,6 +57,11 @@ public class Slf4jLoggingOutputStream extends OutputStream {
      * Requested log level
      */
     private final Level level;
+
+    /**
+     * The internal buffer where data is stored.
+     */
+    private byte[] buffer;
 
     /**
      * The number of bytes written to the buffer
@@ -158,7 +158,7 @@ public class Slf4jLoggingOutputStream extends OutputStream {
 
         reset();
         logger.makeLoggingEventBuilder(level)
-                .log(log);
+              .log(log);
     }
 
     private void reset() {

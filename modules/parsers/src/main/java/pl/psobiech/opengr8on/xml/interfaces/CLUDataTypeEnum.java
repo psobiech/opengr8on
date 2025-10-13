@@ -35,10 +35,6 @@ public enum CLUDataTypeEnum {
         this.type = type;
     }
 
-    public String getType() {
-        return type;
-    }
-
     public static CLUDataTypeEnum of(String type) {
         for (CLUDataTypeEnum value : values()) {
             if (value.getType().equals(type)) {
@@ -47,5 +43,9 @@ public enum CLUDataTypeEnum {
         }
 
         throw new UnexpectedException("Unsupported data type: " + type);
+    }
+
+    public String getType() {
+        return type;
     }
 }

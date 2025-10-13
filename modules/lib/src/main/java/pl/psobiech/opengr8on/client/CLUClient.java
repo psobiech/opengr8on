@@ -18,22 +18,10 @@
 
 package pl.psobiech.opengr8on.client;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
-import pl.psobiech.opengr8on.client.commands.ResetCommand;
+import pl.psobiech.opengr8on.client.commands.*;
 import pl.psobiech.opengr8on.client.commands.ResetCommand.Response;
-import pl.psobiech.opengr8on.client.commands.SetIpCommand;
-import pl.psobiech.opengr8on.client.commands.SetKeyCommand;
-import pl.psobiech.opengr8on.client.commands.StartTFTPdCommand;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
@@ -41,13 +29,16 @@ import pl.psobiech.opengr8on.tftp.TFTPClient;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.HexUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.SocketUtil;
+import pl.psobiech.opengr8on.util.*;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
-import pl.psobiech.opengr8on.util.Util;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.Optional;
 
 public class CLUClient extends Client implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CLUClient.class);
@@ -138,12 +129,12 @@ public class CLUClient extends Client implements Closeable {
                 DEFAULT_TIMEOUT_DURATION
         )
                 .flatMap(payload ->
-                        SetKeyCommand.responseFromByteArray(payload.buffer())
-                                .map(response -> {
-                                    setCipherKey(newCipherKey);
+                                 SetKeyCommand.responseFromByteArray(payload.buffer())
+                                              .map(response -> {
+                                                  setCipherKey(newCipherKey);
 
-                                    return true;
-                                })
+                                                  return true;
+                                              })
                 );
     }
 
@@ -196,11 +187,11 @@ public class CLUClient extends Client implements Closeable {
     public Optional<Boolean> checkAlive() {
         return execute(LuaScriptCommand.CHECK_ALIVE)
                 .map(returnValue ->
-                        !"emergency".equals(returnValue)
-                                && (
-                                Boolean.parseBoolean(returnValue)
-                                        || Objects.equals(getCluDevice().getSerialNumber(), HexUtil.asLong(returnValue))
-                        )
+                             !"emergency".equals(returnValue)
+                                     && (
+                                     Boolean.parseBoolean(returnValue)
+                                             || Objects.equals(getCluDevice().getSerialNumber(), HexUtil.asLong(returnValue))
+                             )
                 );
     }
 

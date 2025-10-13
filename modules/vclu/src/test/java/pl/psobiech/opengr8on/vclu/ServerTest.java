@@ -18,19 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-
 import io.moquette.broker.ClientDescriptor;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
@@ -56,12 +43,38 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
 class ServerTest extends BaseServerTest {
+    private static void assertTFTPdDisabled(MockServer server) throws TFTPPacketException, IOException {
+        final int port = server.getTFTPdPort();
+        if (port < 1) {
+            // TFTPd disabled
+            return;
+        }
+
+        final Path rootDirectory = server.getRootDirectory();
+        final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
+        try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), port)) {
+            try {
+                tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
+
+                fail();
+            } catch (TFTPException e) {
+                assertEquals(TFTPErrorType.UNDEFINED, e.getError());
+            }
+        }
+    }
+
     @Test
     @Timeout(30)
     void normalMode() throws Exception {
@@ -130,12 +143,12 @@ class ServerTest extends BaseServerTest {
                     final int sessionId = Mocks.sessionId();
 
                     final Optional<GenerateMeasurementsCommand.Response> response1Optional = client.request(
-                                    GenerateMeasurementsCommand.request(LOCALHOST, sessionId, "1345"),
-                                    Duration.ofMillis(4000L)
-                            )
-                            .flatMap(payload ->
-                                    GenerateMeasurementsCommand.responseFromByteArray(payload.buffer())
-                            );
+                                                                                                           GenerateMeasurementsCommand.request(LOCALHOST, sessionId, "1345"),
+                                                                                                           Duration.ofMillis(4000L)
+                                                                                                   )
+                                                                                                   .flatMap(payload ->
+                                                                                                                    GenerateMeasurementsCommand.responseFromByteArray(payload.buffer())
+                                                                                                   );
 
                     assertTrue(response1Optional.isPresent());
                     assertEquals(sessionId, response1Optional.get().getSessionId());
@@ -165,26 +178,6 @@ class ServerTest extends BaseServerTest {
 
                     assertTFTPdDisabled(server);
                 });
-    }
-
-    private static void assertTFTPdDisabled(MockServer server) throws TFTPPacketException, IOException {
-        final int port = server.getTFTPdPort();
-        if (port < 1) {
-            // TFTPd disabled
-            return;
-        }
-
-        final Path rootDirectory = server.getRootDirectory();
-        final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
-        try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), port)) {
-            try {
-                tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
-
-                fail();
-            } catch (TFTPException e) {
-                assertEquals(TFTPErrorType.UNDEFINED, e.getError());
-            }
-        }
     }
 
     @Test
@@ -250,23 +243,23 @@ class ServerTest extends BaseServerTest {
 
                         mqttServer.internalPublish(
                                 MqttMessageBuilders.publish()
-                                        .topicName("zigbee2mqtt/testTopic")
-                                        .retained(false)
-                                        .messageId(1)
-                                        .qos(MqttQoS.AT_LEAST_ONCE)
-                                        .payload(Unpooled.copiedBuffer("mqttTest".getBytes(StandardCharsets.UTF_8)))
-                                        .build(),
+                                                   .topicName("zigbee2mqtt/testTopic")
+                                                   .retained(false)
+                                                   .messageId(1)
+                                                   .qos(MqttQoS.AT_LEAST_ONCE)
+                                                   .payload(Unpooled.copiedBuffer("mqttTest".getBytes(StandardCharsets.UTF_8)))
+                                                   .build(),
                                 "BROKER"
                         );
 
                         mqttServer.internalPublish(
                                 MqttMessageBuilders.publish()
-                                        .topicName("zigbee2mqtt/otherTopic")
-                                        .retained(false)
-                                        .messageId(2)
-                                        .qos(MqttQoS.AT_LEAST_ONCE)
-                                        .payload(Unpooled.copiedBuffer("mqttTestOther".getBytes(StandardCharsets.UTF_8)))
-                                        .build(),
+                                                   .topicName("zigbee2mqtt/otherTopic")
+                                                   .retained(false)
+                                                   .messageId(2)
+                                                   .qos(MqttQoS.AT_LEAST_ONCE)
+                                                   .payload(Unpooled.copiedBuffer("mqttTestOther".getBytes(StandardCharsets.UTF_8)))
+                                                   .build(),
                                 "BROKER"
                         );
 

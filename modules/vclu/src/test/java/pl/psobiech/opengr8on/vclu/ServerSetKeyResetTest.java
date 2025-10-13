@@ -18,19 +18,16 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.time.Duration;
-import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.time.Duration;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
 class ServerSetKeyResetTest extends BaseServerTest {

@@ -18,6 +18,17 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
+import org.luaj.vm2.LuaInteger;
+import org.luaj.vm2.LuaNumber;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.vclu.MqttClient;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
 import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -30,20 +41,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.luaj.vm2.LuaInteger;
-import org.luaj.vm2.LuaNumber;
-import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
-import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-
 public class VirtualCLU extends VirtualObject implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VirtualCLU.class);
-
     public static final int INDEX = 0;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(VirtualCLU.class);
 
     private static final int TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS = 60;
 
@@ -56,6 +57,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
+
+    private MqttClient mqttClient;
 
     public VirtualCLU(VirtualSystem virtualSystem, String name) {
         super(
@@ -77,25 +80,25 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         set(Features.TIME_ZONE, LuaValue.valueOf(CLUTimeZone.UTC.value()));
 
         set(Features.MQTT_URL, LuaValue.valueOf("ssl://localhost:8883"));
-        registerBoolean(Features.USE_MQTT);
+        set(Features.USE_MQTT, LuaValue.valueOf(false));
         set(Features.MQTT_CONNECTION, LuaValue.valueOf(false));
 
-        registerBoolean(Features.MQTT_DISCOVERY);
+        set(Features.MQTT_DISCOVERY, LuaValue.valueOf(false));
         set(Features.MQTT_DISCOVERY_PREFIX, LuaValue.valueOf("homeassistant"));
 
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
 
         scheduler.scheduleAtFixedRate(() -> {
-                    final ZonedDateTime lastDateTime = currentDateTime;
-                    currentDateTime = getCurrentDateTime();
+                                          final ZonedDateTime lastDateTime = currentDateTime;
+                                          currentDateTime = getCurrentDateTime();
 
-                    if (!currentDateTime.getZone().equals(lastDateTime.getZone())
-                            || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
-                        triggerEvent(Events.TIME_CHANGE);
-                    }
-                },
-                1, 1, TimeUnit.SECONDS
+                                          if (!currentDateTime.getZone().equals(lastDateTime.getZone())
+                                                  || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
+                                              triggerEvent(Events.TIME_CHANGE);
+                                          }
+                                      },
+                                      1, 1, TimeUnit.SECONDS
         );
     }
 
@@ -182,7 +185,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         final ZoneId zoneId = getCurrentZoneId();
 
         return ZonedDateTime.now()
-                .withZoneSameInstant(zoneId);
+                            .withZoneSameInstant(zoneId);
     }
 
     private ZoneId getCurrentZoneId() {
@@ -192,13 +195,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         }
 
         return CLUTimeZone.valueOf(zoneIdLuaValue.checkint())
-                .zoneId();
+                          .zoneId();
     }
 
     private LuaNumber getCurrentEpochSeconds() {
         return LuaValue.valueOf(
                 currentDateTime.toInstant()
-                        .getEpochSecond()
+                               .getEpochSecond()
         );
     }
 
@@ -224,6 +227,18 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     public List<MqttTopic> getMqttTopics() {
         return mqttTopics;
+    }
+
+    public MqttClient getMqttClient() {
+        return mqttClient;
+    }
+
+    public void setMqttClient(MqttClient mqttClient) {
+        this.mqttClient = mqttClient;
+
+        for (MqttTopic mqttTopic : getMqttTopics()) {
+            mqttTopic.setMqttClient(mqttClient);
+        }
     }
 
     public enum State {

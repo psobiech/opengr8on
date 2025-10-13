@@ -18,6 +18,20 @@
 
 package pl.psobiech.opengr8on.tftp;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
+import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
+import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
+import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.SocketUtil;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
+import pl.psobiech.opengr8on.util.ThreadUtil;
+
 import java.io.Closeable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -34,26 +48,12 @@ import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
-import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.SocketUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-
 public class TFTPServer implements Closeable {
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
 
     private static final Pattern PATH_PATTERN = Pattern.compile("^((?<drive>[a-zA-Z]):)?/?(?<path>.*)$");
-
-    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
     private final ExecutorService executor = ThreadUtil.virtualExecutor("TFTPServer");
 
@@ -97,6 +97,31 @@ public class TFTPServer implements Closeable {
         throw new IllegalArgumentException("No address found for interface: " + networkInterface.getName());
     }
 
+    /**
+     * @param rootDirectory root directory of the server (all files need to be contained within this directory)
+     * @param location      TFTP location, e.g. a:\file.txt /file.txt or file.txt (in case of a:\file.txt, it will be converted to /a/file.txt)
+     */
+    protected static Path parseLocation(Path rootDirectory, String location) throws TFTPPacketException {
+        final Matcher matcher = PATH_PATTERN.matcher(location.replaceAll("\\\\", "/"));
+        if (!matcher.matches()) {
+            throw new TFTPPacketException(TFTPErrorType.ILLEGAL_OPERATION, "Unsupported file location: " + location);
+        }
+
+        final String drive = matcher.group("drive");
+        Path parentDirectory = rootDirectory.toAbsolutePath().normalize();
+        if (drive != null) {
+            parentDirectory = parentDirectory.resolve(drive);
+        }
+
+        final Path path = Paths.get(matcher.group("path"));
+        final Path filePath = parentDirectory.resolve(path).normalize();
+        if (!FileUtil.isParentOf(rootDirectory, filePath)) {
+            throw new TFTPPacketException(TFTPErrorType.ACCESS_VIOLATION, "Cannot access files outside of TFTP server root");
+        }
+
+        return filePath;
+    }
+
     public Future<Void> start() throws SocketException {
         if (listener != null && !listener.isDone()) {
             return listener;
@@ -105,14 +130,14 @@ public class TFTPServer implements Closeable {
         serverTFTP.open();
 
         listener = executor.submit(() -> {
-                    LOGGER.debug("Starting TFTP Server on port " + getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
+                                       LOGGER.debug("Starting TFTP Server on port " + getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
 
-                    FileUtil.mkdir(serverDirectory);
+                                       FileUtil.mkdir(serverDirectory);
 
-                    listen();
+                                       listen();
 
-                    return null;
-                }
+                                       return null;
+                                   }
         );
 
         return listener;
@@ -194,7 +219,7 @@ public class TFTPServer implements Closeable {
                 tftp.open();
 
                 transferType.create(requestPacket, path)
-                        .execute(tftp);
+                            .execute(tftp);
             } catch (UncheckedInterruptedException e) {
                 LOGGER.trace(e.getMessage(), e);
             } catch (Exception e) {
@@ -229,31 +254,6 @@ public class TFTPServer implements Closeable {
 
             default -> throw new TFTPPacketException("Unsupported TFTP packet: " + requestPacket.getType());
         }
-    }
-
-    /**
-     * @param rootDirectory root directory of the server (all files need to be contained within this directory)
-     * @param location      TFTP location, e.g. a:\file.txt /file.txt or file.txt (in case of a:\file.txt, it will be converted to /a/file.txt)
-     */
-    protected static Path parseLocation(Path rootDirectory, String location) throws TFTPPacketException {
-        final Matcher matcher = PATH_PATTERN.matcher(location.replaceAll("\\\\", "/"));
-        if (!matcher.matches()) {
-            throw new TFTPPacketException(TFTPErrorType.ILLEGAL_OPERATION, "Unsupported file location: " + location);
-        }
-
-        final String drive = matcher.group("drive");
-        Path parentDirectory = rootDirectory.toAbsolutePath().normalize();
-        if (drive != null) {
-            parentDirectory = parentDirectory.resolve(drive);
-        }
-
-        final Path path = Paths.get(matcher.group("path"));
-        final Path filePath = parentDirectory.resolve(path).normalize();
-        if (!FileUtil.isParentOf(rootDirectory, filePath)) {
-            throw new TFTPPacketException(TFTPErrorType.ACCESS_VIOLATION, "Cannot access files outside of TFTP server root");
-        }
-
-        return filePath;
     }
 
     @Override

@@ -18,9 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.net.Inet4Address;
-import java.util.Optional;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,9 +29,10 @@ import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.net.Inet4Address;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
 class ServerCommandTest extends BaseServerTest {

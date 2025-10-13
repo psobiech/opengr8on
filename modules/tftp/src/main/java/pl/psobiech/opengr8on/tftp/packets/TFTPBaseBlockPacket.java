@@ -18,10 +18,10 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
-import java.net.InetAddress;
-
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+
+import java.net.InetAddress;
 
 public abstract class TFTPBaseBlockPacket extends TFTPPacket {
     protected static final int HEADER_SIZE = 4;

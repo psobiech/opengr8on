@@ -18,14 +18,13 @@
 
 package pl.psobiech.opengr8on.util;
 
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,11 +34,6 @@ import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 /**
  * Common nio file operations
@@ -81,7 +75,7 @@ public final class FileUtil {
         }
 
         ThreadUtil.getInstance()
-                .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
+                  .scheduleAtFixedRate(FILE_TRACKER::log, 1, 1, TimeUnit.MINUTES);
 
         mkdir(TEMPORARY_DIRECTORY);
         ThreadUtil.addShutdownHook(() -> {
@@ -108,10 +102,10 @@ public final class FileUtil {
     public static Path temporaryDirectory(Path parentPath) {
         try {
             return Files.createTempDirectory(
-                            parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
-                            TEMPORARY_FILE_PREFIX
-                    )
-                    .toAbsolutePath();
+                                parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
+                                TEMPORARY_FILE_PREFIX
+                        )
+                        .toAbsolutePath();
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
@@ -145,10 +139,10 @@ public final class FileUtil {
         try {
             return FILE_TRACKER.tracked(
                     Files.createTempFile(
-                                    parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
-                                    TEMPORARY_FILE_PREFIX, sanitize(fileNameSuffix)
-                            )
-                            .toAbsolutePath()
+                                 parentPath == null ? TEMPORARY_DIRECTORY : parentPath,
+                                 TEMPORARY_FILE_PREFIX, sanitize(fileNameSuffix)
+                         )
+                         .toAbsolutePath()
             );
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -210,9 +204,9 @@ public final class FileUtil {
 
         try {
             final Path toTemporaryPath = to.getParent()
-                    .resolve(
-                            to.getFileName() + TEMPORARY_FILE_SUFFIX
-                    );
+                                           .resolve(
+                                                   to.getFileName() + TEMPORARY_FILE_SUFFIX
+                                           );
 
             Files.copy(from, toTemporaryPath, StandardCopyOption.REPLACE_EXISTING);
             Files.move(toTemporaryPath, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -302,10 +296,10 @@ public final class FileUtil {
         }
 
         final String fileNameNoDisallowedCharacters = DISALLOWED_FILENAME_CHARACTERS.matcher(fileName)
-                .replaceAll("_");
+                                                                                    .replaceAll("_");
 
         return WHITESPACE_CHARACTERS.matcher(fileNameNoDisallowedCharacters)
-                .replaceAll("_");
+                                    .replaceAll("_");
     }
 
     /**
@@ -325,12 +319,12 @@ public final class FileUtil {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isParentOf(Path parentPath, Path path) {
         return path.toAbsolutePath()
-                .normalize()
-                .startsWith(
-                        parentPath
-                                .toAbsolutePath()
-                                .normalize()
-                );
+                   .normalize()
+                   .startsWith(
+                           parentPath
+                                   .toAbsolutePath()
+                                   .normalize()
+                   );
     }
 
     public static class TemporaryFileTracker {

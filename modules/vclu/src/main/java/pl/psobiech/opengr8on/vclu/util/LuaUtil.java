@@ -18,6 +18,12 @@
 
 package pl.psobiech.opengr8on.vclu.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.luaj.vm2.*;
+import pl.psobiech.opengr8on.util.Util;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -28,18 +34,6 @@ import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.luaj.vm2.LuaBoolean;
-import org.luaj.vm2.LuaDouble;
-import org.luaj.vm2.LuaInteger;
-import org.luaj.vm2.LuaNumber;
-import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
-import pl.psobiech.opengr8on.util.Util;
 
 public class LuaUtil {
     private static final String NIL_AS_STRING = "nil";
@@ -160,8 +154,8 @@ public class LuaUtil {
 
         return stringifyList(
                 IntStream.rangeClosed(1, args.narg())
-                        .mapToObj(args::arg)
-                        .collect(Collectors.toList()),
+                         .mapToObj(args::arg)
+                         .collect(Collectors.toList()),
                 LuaUtil::stringify
         );
     }

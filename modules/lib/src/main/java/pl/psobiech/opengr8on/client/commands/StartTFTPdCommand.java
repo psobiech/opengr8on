@@ -18,10 +18,10 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.util.Optional;
-
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.util.FileUtil;
+
+import java.util.Optional;
 
 public class StartTFTPdCommand {
     private static final Request REQUEST = new Request();

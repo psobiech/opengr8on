@@ -18,12 +18,11 @@
 
 package pl.psobiech.opengr8on.xml.interfaces;
 
-import java.util.List;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class CLUObject {

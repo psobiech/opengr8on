@@ -19,12 +19,7 @@
 package pl.psobiech.opengr8on.tftp;
 
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
+import pl.psobiech.opengr8on.tftp.packets.*;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public enum TFTPPacketType {
@@ -55,14 +50,6 @@ public enum TFTPPacketType {
         this.parser = parser;
     }
 
-    public byte packetType() {
-        return packetType;
-    }
-
-    public TFTPPacket parse(Payload payload) throws TFTPPacketException {
-        return parser.parse(payload);
-    }
-
     public static TFTPPacketType ofPacketType(byte packetType) {
         for (TFTPPacketType value : values()) {
             if (value.packetType() == packetType) {
@@ -71,6 +58,14 @@ public enum TFTPPacketType {
         }
 
         return UNKNOWN;
+    }
+
+    public byte packetType() {
+        return packetType;
+    }
+
+    public TFTPPacket parse(Payload payload) throws TFTPPacketException {
+        return parser.parse(payload);
     }
 
     @FunctionalInterface

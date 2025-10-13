@@ -40,11 +40,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 
 public class VirtualObject implements Closeable {
-    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
-
     protected final VirtualSystem virtualSystem;
 
     protected final String name;
+
+    protected final ScheduledExecutorService scheduler;
+
+    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     private final Map<Integer, LuaValue> featureValues = new Hashtable<>();
 
@@ -53,8 +55,6 @@ public class VirtualObject implements Closeable {
     private final Map<Integer, BaseLuaFunction> methodFunctions = new Hashtable<>();
 
     private final Map<Integer, LuaFunction> eventFunctions = new Hashtable<>();
-
-    protected final ScheduledExecutorService scheduler;
 
     private final Class<? extends Enum<? extends IFeature>> featureClass;
 
@@ -133,21 +133,6 @@ public class VirtualObject implements Closeable {
 
     public void register(IFeature feature, LuaOneArgFunction fn) {
         registerFeature(feature.index(), fn);
-    }
-
-    public void registerBoolean(IFeature feature) {
-        registerFeature(feature.index(), (LuaOneArgFunction) arg1 -> {
-            if (LuaUtil.isNil(arg1)) {
-                return LuaValue.valueOf(
-                        LuaUtil.trueish(getValue(feature))
-                );
-            }
-
-            // Sometimes OM uses true/false and sometimes 0/1
-            return LuaValue.valueOf(
-                    LuaUtil.trueish(arg1)
-            );
-        });
     }
 
     private void registerFeature(int index, BaseLuaFunction fn) {
@@ -258,8 +243,8 @@ public class VirtualObject implements Closeable {
                     "{}.execute({}, {}) -- NOT IMPLEMENTED",
                     name,
                     IMethod.byIndex(index, methodClass)
-                            .map(Enum::name)
-                            .orElseGet(() -> String.valueOf(index)),
+                           .map(Enum::name)
+                           .orElseGet(() -> String.valueOf(index)),
                     LuaUtil.stringifyRaw(args)
             );
 
@@ -270,8 +255,8 @@ public class VirtualObject implements Closeable {
                 "{}.execute({}, {})",
                 name,
                 IMethod.byIndex(index, methodClass)
-                        .map(Enum::name)
-                        .orElseGet(() -> String.valueOf(index)),
+                       .map(Enum::name)
+                       .orElseGet(() -> String.valueOf(index)),
                 LuaUtil.stringifyRaw(args)
         );
 
@@ -341,10 +326,6 @@ public class VirtualObject implements Closeable {
     }
 
     public interface IFeature {
-        int index();
-
-        String name();
-
         static <E extends Enum<? extends IFeature>> Optional<E> byIndex(int index, Class<E> clazz) {
             for (E enumConstant : clazz.getEnumConstants()) {
                 final IFeature feature = (IFeature) enumConstant;
@@ -355,6 +336,10 @@ public class VirtualObject implements Closeable {
 
             return Optional.empty();
         }
+
+        int index();
+
+        String name();
 
         enum EMPTY implements IFeature {
             //
@@ -368,10 +353,6 @@ public class VirtualObject implements Closeable {
     }
 
     public interface IMethod {
-        int index();
-
-        String name();
-
         static <E extends Enum<? extends IMethod>> Optional<E> byIndex(int index, Class<E> clazz) {
             for (E enumConstant : clazz.getEnumConstants()) {
                 final IMethod feature = (IMethod) enumConstant;
@@ -382,6 +363,10 @@ public class VirtualObject implements Closeable {
 
             return Optional.empty();
         }
+
+        int index();
+
+        String name();
 
         enum EMPTY implements IMethod {
             //
@@ -395,10 +380,6 @@ public class VirtualObject implements Closeable {
     }
 
     public interface IEvent {
-        int address();
-
-        String name();
-
         static <E extends Enum<? extends IEvent>> Optional<E> byAddress(int address, Class<E> clazz) {
             for (E enumConstant : clazz.getEnumConstants()) {
                 final IEvent feature = (IEvent) enumConstant;
@@ -409,6 +390,10 @@ public class VirtualObject implements Closeable {
 
             return Optional.empty();
         }
+
+        int address();
+
+        String name();
 
         enum EMPTY implements IEvent {
             //

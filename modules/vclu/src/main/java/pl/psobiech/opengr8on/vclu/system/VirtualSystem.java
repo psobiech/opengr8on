@@ -18,19 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.system;
 
-import java.io.Closeable;
-import java.net.Inet4Address;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,17 +31,23 @@ import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
-import pl.psobiech.opengr8on.vclu.system.objects.HttpListener;
-import pl.psobiech.opengr8on.vclu.system.objects.HttpRequest;
-import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
-import pl.psobiech.opengr8on.vclu.system.objects.RemoteCLU;
-import pl.psobiech.opengr8on.vclu.system.objects.Storage;
-import pl.psobiech.opengr8on.vclu.system.objects.Timer;
-import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.*;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.Features;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.State;
-import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
+import java.io.Closeable;
+import java.net.Inet4Address;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
@@ -81,6 +74,8 @@ public class VirtualSystem implements Closeable {
 
     private final ClientRegistry clientRegistry;
 
+    private final ProjectObjectRegistry projectObjectRegistry;
+
     private LuaThread luaThread;
 
     private VirtualCLU currentClu = null;
@@ -92,6 +87,7 @@ public class VirtualSystem implements Closeable {
         this.cipherKey = cipherKey;
 
         this.clientRegistry = new ClientRegistry(localAddress, cipherKey);
+        this.projectObjectRegistry = new ProjectObjectRegistry(rootDirectory);
     }
 
     public VirtualObject getObject(String name) {
@@ -106,7 +102,8 @@ public class VirtualSystem implements Closeable {
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
             case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, name));
-            case RemoteCLU.INDEX -> new RemoteCLU(this, name, ipAddress, localAddress, cipherKey, port);
+            case RemoteCLU.INDEX ->
+                    new RemoteCLU(this, projectObjectRegistry, name, ipAddress, localAddress, cipherKey, port);
             case Timer.INDEX -> new Timer(this, name);
             case Storage.INDEX -> new Storage(this, name, rootDirectory.getParent().resolve("storage"));
             case MqttTopic.INDEX -> new MqttTopic(this, name);
@@ -177,26 +174,20 @@ public class VirtualSystem implements Closeable {
         }
     }
 
-    public String clientRegister(
-            Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId,
-            List<Subscription> subscription
-    ) {
-        clientRegistry.register(
-                ipAddress, port, sessionId,
-                client -> {
-                    final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
+    public String clientRegister(Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId, List<Subscription> subscription) {
+        clientRegistry.register(ipAddress, port, sessionId, client -> {
+            final String valuesAsString = CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
 
-                    sendResponse(client, valuesAsString);
+            sendResponse(client, valuesAsString);
 
-                    if (!ipAddress.equals(remoteIpAddress)) {
-                        // when having docker network interfaces,
-                        // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
-                        try (CLUClient remoteClient = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
-                            sendResponse(remoteClient, valuesAsString);
-                        }
-                    }
+            if (!ipAddress.equals(remoteIpAddress)) {
+                // when having docker network interfaces,
+                // OM often picks incorrect/unreachable local address - so we send to both reported by OM and real source address
+                try (CLUClient remoteClient = new CLUClient(localAddress, remoteIpAddress, cipherKey, port)) {
+                    sendResponse(remoteClient, valuesAsString);
                 }
-        );
+            }
+        });
 
         return CLIENT_REPORT_PREFIX + sessionId + ":" + fetchValues(subscription);
     }
@@ -221,16 +212,13 @@ public class VirtualSystem implements Closeable {
 
     @SuppressWarnings("resource")
     public String fetchValues(List<Subscription> subscriptions) {
-        return LuaUtil.stringifyList(
-                subscriptions,
-                subscription -> {
-                    final VirtualObject object = subscription.object();
-                    final int index = subscription.index();
-                    final LuaValue value = object.get(index);
+        return LuaUtil.stringifyList(subscriptions, subscription -> {
+            final VirtualObject object = subscription.object();
+            final int index = subscription.index();
+            final LuaValue value = object.get(index);
 
-                    return LuaUtil.stringifyRaw(value, "nil");
-                }
-        );
+            return LuaUtil.stringifyRaw(value, "nil");
+        });
     }
 
     @Override
@@ -245,21 +233,19 @@ public class VirtualSystem implements Closeable {
         final ArrayList<Future<?>> futures = new ArrayList<>(objectsByName.size());
 
         for (VirtualObject object : objectsByName.values()) {
-            futures.add(
-                    executor.submit(() -> {
-                        final long objectStartTime = System.nanoTime();
-                        try {
-                            runnable.accept(object);
-                        } catch (Exception e) {
-                            LOGGER.error(e.getMessage(), e);
-                        } finally {
-                            final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
-                            if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
-                                LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
-                            }
-                        }
-                    })
-            );
+            futures.add(executor.submit(() -> {
+                final long objectStartTime = System.nanoTime();
+                try {
+                    runnable.accept(object);
+                } catch (Exception e) {
+                    LOGGER.error(e.getMessage(), e);
+                } finally {
+                    final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
+                    if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
+                        LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                    }
+                }
+            }));
         }
 
         Thread.yield();

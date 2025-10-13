@@ -18,11 +18,16 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.net.Inet4Address;
-import java.net.ProxySelector;
-import java.net.URI;
+import org.luaj.vm2.LuaValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
+import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpHeaders;
@@ -36,21 +41,12 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Future;
 
-import org.luaj.vm2.LuaValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-
 import static org.apache.commons.lang3.StringUtils.upperCase;
 
 public class HttpRequest extends BaseHttpObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequest.class);
-
     public static final int INDEX = 121;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequest.class);
 
     private final HttpClient httpClient;
 
@@ -65,13 +61,13 @@ public class HttpRequest extends BaseHttpObject {
         );
 
         this.httpClient = HttpClient.newBuilder()
-                .localAddress(localAddress)
-                .proxy(ProxySelector.getDefault())
-                .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_NONE))
-                .connectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MILLIS))
-                .executor(scheduler)
-                .version(Version.HTTP_2)
-                .build();
+                                    .localAddress(localAddress)
+                                    .proxy(ProxySelector.getDefault())
+                                    .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_NONE))
+                                    .connectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MILLIS))
+                                    .executor(scheduler)
+                                    .version(Version.HTTP_2)
+                                    .build();
 
         register(Features.ACTIVE, () ->
                 LuaValue.valueOf(responseFuture != null && !responseFuture.isDone())
@@ -80,6 +76,17 @@ public class HttpRequest extends BaseHttpObject {
         register(Methods.SEND_REQUEST, this::onSendRequest);
         register(Methods.ABORT_REQUEST, this::onAbortRequest);
         register(Methods.CLEAR, this::onClear);
+    }
+
+    private static String[] asKeyValueArray(Map<String, String> headers) {
+        int i = 0;
+        final String[] headerArray = new String[headers.size() * 2];
+        for (Entry<String, String> entry : headers.entrySet()) {
+            headerArray[i++] = entry.getKey();
+            headerArray[i++] = entry.getValue();
+        }
+
+        return headerArray;
     }
 
     private LuaValue onSendRequest(LuaValue bodyArg) {
@@ -107,8 +114,8 @@ public class HttpRequest extends BaseHttpObject {
                         final int statusCode = response.statusCode();
                         final HttpHeaders headers = response.headers();
                         final HttpType responseType = headers.firstValue(HEADER_CONTENT_TYPE)
-                                .map(HttpType::ofContentType)
-                                .orElse(HttpType.OTHER);
+                                                             .map(HttpType::ofContentType)
+                                                             .orElse(HttpType.OTHER);
 
                         set(Features.RESPONSE_STATUS, LuaValue.valueOf(statusCode));
                         set(Features.RESPONSE_TYPE, LuaValue.valueOf(responseType.ordinal()));
@@ -161,25 +168,14 @@ public class HttpRequest extends BaseHttpObject {
         set(Features.REQUEST_HEADERS, LuaUtil.fromObject(headers));
 
         return java.net.http.HttpRequest.newBuilder()
-                .method(
-                        requestMethod,
-                        requestMethod.equals(METHOD_GET) ? BodyPublishers.noBody() : BodyPublishers.ofString(requestBodyAsString)
-                )
-                .uri(uri)
-                .timeout(timeout)
-                .headers(asKeyValueArray(headers))
-                .build();
-    }
-
-    private static String[] asKeyValueArray(Map<String, String> headers) {
-        int i = 0;
-        final String[] headerArray = new String[headers.size() * 2];
-        for (Entry<String, String> entry : headers.entrySet()) {
-            headerArray[i++] = entry.getKey();
-            headerArray[i++] = entry.getValue();
-        }
-
-        return headerArray;
+                                        .method(
+                                                requestMethod,
+                                                requestMethod.equals(METHOD_GET) ? BodyPublishers.noBody() : BodyPublishers.ofString(requestBodyAsString)
+                                        )
+                                        .uri(uri)
+                                        .timeout(timeout)
+                                        .headers(asKeyValueArray(headers))
+                                        .build();
     }
 
     private LuaValue onAbortRequest() {

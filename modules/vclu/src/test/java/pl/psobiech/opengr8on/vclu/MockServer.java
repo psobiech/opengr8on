@@ -18,13 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.io.Closeable;
-import java.net.Inet4Address;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import io.jstach.jstachio.JStachio;
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.CLUClient;
@@ -35,14 +28,16 @@ import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.HexUtil;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.ResourceUtil;
+import pl.psobiech.opengr8on.util.*;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
-import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.main.MainLuaTemplate;
+
+import java.io.Closeable;
+import java.net.Inet4Address;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MockServer implements Closeable {
     public static final Inet4Address LOCALHOST = IPv4AddressUtil.parseIPv4("127.0.0.1");
@@ -107,7 +102,8 @@ public class MockServer implements Closeable {
                 rootDirectory,
                 projectCipherKey,
                 cluDevice,
-                broadcastSocket, commandSocket, responseSocket,
+                broadcastSocket, broadcastSocket,
+                commandSocket, responseSocket,
                 tftpServer
         );
     }

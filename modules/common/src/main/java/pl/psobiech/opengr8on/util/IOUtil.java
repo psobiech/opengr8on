@@ -18,10 +18,10 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.util.Collection;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
 
 /**
  * Common IO operations

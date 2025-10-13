@@ -18,11 +18,11 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.util.FileUtil;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 public class SetKeyCommand {
     private static final Response RESPONSE = new Response();

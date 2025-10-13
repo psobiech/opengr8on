@@ -18,6 +18,13 @@
 
 package pl.psobiech.opengr8on.client;
 
+import org.apache.commons.codec.binary.Base64;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.RandomUtil;
+
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,27 +36,11 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.ShortBufferException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.apache.commons.codec.binary.Base64;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.RandomUtil;
-
 /**
  * Cipher Key
  */
 public class CipherKey {
     public static final int INPUT_BUFFER_SIZE = 256;
-
-    private static final String ALGORITHM = "AES";
-
-    private static final String CIPHER = "AES/CBC/PKCS5Padding";
 
     protected static final byte[] DEFAULT_KEY = Base64.decodeBase64("hd5SHpxl0N5+WEXTXlPQmw==");
 
@@ -58,6 +49,10 @@ public class CipherKey {
     protected static final byte[] DEFAULT_BROADCAST_IV = Base64.decodeBase64("BwYFBAMCAQAEAgkDBAEFBw==");
 
     public static final CipherKey DEFAULT_BROADCAST = new CipherKey(CipherKey.DEFAULT_KEY, CipherKey.DEFAULT_BROADCAST_IV);
+
+    private static final String ALGORITHM = "AES";
+
+    private static final String CIPHER = "AES/CBC/PKCS5Padding";
 
     private final SecretKeySpec keySpecification;
 
@@ -121,6 +116,54 @@ public class CipherKey {
     }
 
     /**
+     * Performs encryption or decryption process using the provided cipher
+     */
+    private static byte[] process(Cipher cipher, byte[] input, int offset, int limit)
+            throws IllegalBlockSizeException, ShortBufferException, BadPaddingException {
+        final byte[] inputBuffer = new byte[INPUT_BUFFER_SIZE];
+        byte[] outputBuffer = new byte[cipher.getOutputSize(inputBuffer.length)];
+        try (
+                InputStream inputStream = new ByteArrayInputStream(input, offset, limit);
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(cipher.getOutputSize(input.length));
+        ) {
+            int read;
+            do {
+                read = inputStream.read(inputBuffer, 0, inputBuffer.length);
+                if (read < 0) {
+                    outputBuffer = ensureCapacity(outputBuffer, cipher.getOutputSize(0));
+                    final int written = cipher.doFinal(outputBuffer, 0);
+                    if (written > 0) {
+                        outputStream.write(outputBuffer, 0, written);
+                    }
+
+                    break;
+                }
+
+                outputBuffer = ensureCapacity(outputBuffer, cipher.getOutputSize(read));
+                final int written = cipher.update(inputBuffer, 0, read, outputBuffer, 0);
+                if (written > 0) {
+                    outputStream.write(outputBuffer, 0, written);
+                }
+            } while (!Thread.interrupted());
+
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
+        }
+    }
+
+    /**
+     * @return new (empty) buffer if capacity is exceeded or the same buffer otherwise
+     */
+    private static byte[] ensureCapacity(byte[] buffer, int requiredCapacity) {
+        if (requiredCapacity > buffer.length) {
+            return new byte[requiredCapacity];
+        }
+
+        return buffer;
+    }
+
+    /**
      * @return new instance of the CipherKey, with same Key, but different IV
      */
     public CipherKey withIV(byte[] iv) {
@@ -167,54 +210,6 @@ public class CipherKey {
                  BadPaddingException | InvalidKeyException e) {
             throw new UnexpectedException(e);
         }
-    }
-
-    /**
-     * Performs encryption or decryption process using the provided cipher
-     */
-    private static byte[] process(Cipher cipher, byte[] input, int offset, int limit)
-            throws IllegalBlockSizeException, ShortBufferException, BadPaddingException {
-        final byte[] inputBuffer = new byte[INPUT_BUFFER_SIZE];
-        byte[] outputBuffer = new byte[cipher.getOutputSize(inputBuffer.length)];
-        try (
-                InputStream inputStream = new ByteArrayInputStream(input, offset, limit);
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(cipher.getOutputSize(input.length));
-        ) {
-            int read;
-            do {
-                read = inputStream.read(inputBuffer, 0, inputBuffer.length);
-                if (read < 0) {
-                    outputBuffer = ensureCapacity(outputBuffer, cipher.getOutputSize(0));
-                    final int written = cipher.doFinal(outputBuffer, 0);
-                    if (written > 0) {
-                        outputStream.write(outputBuffer, 0, written);
-                    }
-
-                    break;
-                }
-
-                outputBuffer = ensureCapacity(outputBuffer, cipher.getOutputSize(read));
-                final int written = cipher.update(inputBuffer, 0, read, outputBuffer, 0);
-                if (written > 0) {
-                    outputStream.write(outputBuffer, 0, written);
-                }
-            } while (!Thread.interrupted());
-
-            return outputStream.toByteArray();
-        } catch (IOException e) {
-            throw new UnexpectedException(e);
-        }
-    }
-
-    /**
-     * @return new (empty) buffer if capacity is exceeded or the same buffer otherwise
-     */
-    private static byte[] ensureCapacity(byte[] buffer, int requiredCapacity) {
-        if (requiredCapacity > buffer.length) {
-            return new byte[requiredCapacity];
-        }
-
-        return buffer;
     }
 
     public byte[] getSecretKey() {

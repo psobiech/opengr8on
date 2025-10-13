@@ -18,6 +18,11 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import org.junit.jupiter.api.Test;
+import pl.psobiech.opengr8on.client.CLUClient;
+import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.util.ThreadUtil;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -26,14 +31,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.junit.jupiter.api.Test;
-import pl.psobiech.opengr8on.client.CLUClient;
-import pl.psobiech.opengr8on.client.device.CLUDevice;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static pl.psobiech.opengr8on.vclu.MockServer.LOCALHOST;
 
 class ServerDiscoverCommandTest extends BaseServerTest {
@@ -67,12 +65,12 @@ class ServerDiscoverCommandTest extends BaseServerTest {
             final List<CLUDevice> devices;
             try (CLUClient broadcastClient = new CLUClient(LOCALHOST, cluDevice, cluDevice.getCipherKey(), LOCALHOST, server.getBroadcastPort())) {
                 devices = broadcastClient.discover(
-                                projectCipherKey,
-                                Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
-                                Duration.ofMillis(4000L),
-                                2
-                        )
-                        .toList();
+                                                 projectCipherKey,
+                                                 Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
+                                                 Duration.ofMillis(4000L),
+                                                 2
+                                         )
+                                         .toList();
             }
 
             assertEquals(1, devices.size());

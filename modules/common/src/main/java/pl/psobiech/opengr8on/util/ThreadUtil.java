@@ -18,17 +18,10 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.*;
 
 public class ThreadUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtil.class);
@@ -136,9 +129,9 @@ public class ThreadUtil {
      */
     public static void addShutdownHook(Runnable runnable) {
         Runtime.getRuntime()
-                .addShutdownHook(
-                        SHUTDOWN_THREAD_FACTORY.newThread(runnable)
-                );
+               .addShutdownHook(
+                       SHUTDOWN_THREAD_FACTORY.newThread(runnable)
+               );
     }
 
     /**
@@ -211,9 +204,9 @@ public class ThreadUtil {
      */
     private static ThreadFactory virtualThreadFactory(String groupName) {
         return Thread.ofVirtual()
-                .name(groupName)
-                .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
-                .factory();
+                     .name(groupName)
+                     .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
+                     .factory();
     }
 
     /**
@@ -236,9 +229,9 @@ public class ThreadUtil {
      */
     private static ThreadFactory platformThreadFactory(String groupName, boolean daemon) {
         return Thread.ofPlatform()
-                .name(groupName)
-                .daemon(daemon)
-                .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
-                .factory();
+                     .name(groupName)
+                     .daemon(daemon)
+                     .uncaughtExceptionHandler(Thread.getDefaultUncaughtExceptionHandler())
+                     .factory();
     }
 }

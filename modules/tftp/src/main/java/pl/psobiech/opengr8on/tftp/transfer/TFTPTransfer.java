@@ -18,12 +18,6 @@
 
 package pl.psobiech.opengr8on.tftp.transfer;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.net.InetAddress;
-import java.time.Duration;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
@@ -32,12 +26,18 @@ import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 
-public abstract class TFTPTransfer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TFTPTransfer.class);
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.InetAddress;
+import java.time.Duration;
+import java.util.Optional;
 
+public abstract class TFTPTransfer {
     public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
     public static final int DEFAULT_RETRIES = 3;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TFTPTransfer.class);
 
     protected int maxRetries = DEFAULT_RETRIES;
 

@@ -18,19 +18,19 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import pl.psobiech.opengr8on.tftp.TFTPPacketType;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.util.SocketUtil.Payload;
-
 public abstract class TFTPPacket {
-    protected static final int OPERATOR_TYPE_OFFSET = 1;
-
     public static final int MAX_DATA_LENGTH = 512;
+
+    protected static final int OPERATOR_TYPE_OFFSET = 1;
 
     final TFTPPacketType type;
 
@@ -46,29 +46,7 @@ public abstract class TFTPPacket {
 
     public static TFTPPacket newTFTPPacket(Payload payload) throws TFTPPacketException {
         return TFTPPacketType.ofPacketType(payload.buffer()[OPERATOR_TYPE_OFFSET])
-                .parse(payload);
-    }
-
-    public InetAddress getAddress() {
-        return address;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public TFTPPacketType getType() {
-        return type;
-    }
-
-    public abstract DatagramPacket newDatagram(byte[] data);
-
-    public void setAddress(InetAddress address) {
-        this.address = address;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+                             .parse(payload);
     }
 
     public static String readNullTerminatedString(byte[] buffer, int from, int to) {
@@ -126,6 +104,28 @@ public abstract class TFTPPacket {
     private static int asInt(byte value) {
         return value & 0xFF;
     }
+
+    public InetAddress getAddress() {
+        return address;
+    }
+
+    public void setAddress(InetAddress address) {
+        this.address = address;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public TFTPPacketType getType() {
+        return type;
+    }
+
+    public abstract DatagramPacket newDatagram(byte[] data);
 
     @Override
     public String toString() {

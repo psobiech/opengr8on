@@ -18,21 +18,6 @@
 
 package pl.psobiech.opengr8on.xml.interfaces;
 
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -40,6 +25,14 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
+
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
 
 public class InterfaceRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceRegistry.class);
@@ -126,7 +119,7 @@ public class InterfaceRegistry {
                 final String version = createObjectVersionKey(object.getVersion());
 
                 objects.computeIfAbsent(name, ignored -> new TreeMap<>(String::compareTo))
-                        .put(version, object);
+                       .put(version, object);
 
                 LOGGER.trace("Loaded: " + name + SEPARATOR + version);
             } catch (IOException e) {
@@ -156,14 +149,6 @@ public class InterfaceRegistry {
         this.objects = Collections.emptyMap();
     }
 
-    public Optional<CLU> getCLU(int hardwareType, long hardwareVersion, int firmwareType, int firmwareVersion) {
-        return Optional.ofNullable(
-                clus.get(
-                        createCluKey(hardwareType, hardwareVersion, firmwareType, firmwareVersion)
-                )
-        );
-    }
-
     private static String createCluKey(CLU clu) {
         return createCluKey(
                 HexUtil.asInt(clu.getHardwareType()), HexUtil.asLong(clu.getHardwareVersion()),
@@ -178,17 +163,6 @@ public class InterfaceRegistry {
         return createKey(
                 hardwareType & 0xFFFFFFFFL, hardwareVersion,
                 firmwareType, firmwareVersion
-        );
-    }
-
-    public Optional<CLUModule> getModule(long hardwareType, int firmwareType, int firmwareVersion) {
-        return Optional.ofNullable(
-                modules.get(
-                        createModuleKey(
-                                hardwareType,
-                                firmwareType, firmwareVersion
-                        )
-                )
         );
     }
 
@@ -213,17 +187,6 @@ public class InterfaceRegistry {
                 + parse(firmwareType, FIRMWARE_TYPE_LENGTH) + SEPARATOR + parse(firmwareVersion, FIRMWARE_VERSION_LENGTH);
     }
 
-    public Optional<CLUObject> getObject(String name, int version) {
-        final Map<String, CLUObject> objectVersions = objects.get(name);
-        if (objectVersions == null) {
-            return Optional.empty();
-        }
-
-        return Optional.ofNullable(
-                objectVersions.get(createObjectVersionKey(version))
-        );
-    }
-
     private static String createObjectVersionKey(String version) {
         return createObjectVersionKey(HexUtil.asInt(version));
     }
@@ -234,5 +197,35 @@ public class InterfaceRegistry {
 
     private static String parse(long hexAsLong, int length) {
         return StringUtils.leftPad(HexUtil.asString(hexAsLong), length, '0');
+    }
+
+    public Optional<CLU> getCLU(int hardwareType, long hardwareVersion, int firmwareType, int firmwareVersion) {
+        return Optional.ofNullable(
+                clus.get(
+                        createCluKey(hardwareType, hardwareVersion, firmwareType, firmwareVersion)
+                )
+        );
+    }
+
+    public Optional<CLUModule> getModule(long hardwareType, int firmwareType, int firmwareVersion) {
+        return Optional.ofNullable(
+                modules.get(
+                        createModuleKey(
+                                hardwareType,
+                                firmwareType, firmwareVersion
+                        )
+                )
+        );
+    }
+
+    public Optional<CLUObject> getObject(String name, int version) {
+        final Map<String, CLUObject> objectVersions = objects.get(name);
+        if (objectVersions == null) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(
+                objectVersions.get(createObjectVersionKey(version))
+        );
     }
 }

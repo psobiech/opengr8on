@@ -18,6 +18,16 @@
 
 package pl.psobiech.opengr8on.tftp.transfer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.tftp.TFTP;
+import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.tftp.packets.*;
+import pl.psobiech.opengr8on.tftp.transfer.netascii.FromNetASCIIOutputStream;
+import pl.psobiech.opengr8on.util.FileUtil;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,23 +36,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.tftp.TFTP;
-import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPDataPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
-import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
-import pl.psobiech.opengr8on.tftp.transfer.netascii.FromNetASCIIOutputStream;
-import pl.psobiech.opengr8on.util.FileUtil;
-
 public abstract class TFTPReceivingTransfer extends TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPReceivingTransfer.class);
+
+    private static OutputStream createOutputStream(Path targetPath, TFTPTransferMode mode) throws IOException {
+        final OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(targetPath));
+        if (mode == TFTPTransferMode.NETASCII) {
+            return new FromNetASCIIOutputStream(outputStream);
+        }
+
+        return outputStream;
+    }
 
     protected void incomingTransfer(
             TFTP tftp, boolean server,
@@ -169,14 +173,5 @@ public abstract class TFTPReceivingTransfer extends TFTPTransfer {
         } finally {
             FileUtil.deleteQuietly(temporaryPath);
         }
-    }
-
-    private static OutputStream createOutputStream(Path targetPath, TFTPTransferMode mode) throws IOException {
-        final OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(targetPath));
-        if (mode == TFTPTransferMode.NETASCII) {
-            return new FromNetASCIIOutputStream(outputStream);
-        }
-
-        return outputStream;
     }
 }

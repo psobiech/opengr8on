@@ -18,6 +18,15 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
+import org.luaj.vm2.LuaValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.FileUtil;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
+import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,19 +38,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.luaj.vm2.LuaValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.FileUtil;
-import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-
 public class Storage extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Storage.class);
-
     public static final int INDEX = 44;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Storage.class);
 
     private final Path storagePath;
 

@@ -18,15 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.system.lua;
 
-import java.net.Inet4Address;
-import java.util.ArrayList;
-import java.util.function.Consumer;
-
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaFunction;
-import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
+import org.luaj.vm2.*;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.slf4j.Logger;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
@@ -35,6 +27,10 @@ import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgConsumer;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
+import java.net.Inet4Address;
+import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public class InitLuaLib extends TwoArgFunction {
     private static final String FETCH_VALUES_PREFIX = "values:";
@@ -49,6 +45,21 @@ public class InitLuaLib extends TwoArgFunction {
         this.logger = logger;
         this.virtualSystem = virtualSystem;
         this.globals = globals;
+    }
+
+    private static LuaVarArgConsumer argsToString(Consumer<String> consumer) {
+        return args -> consumer.accept(argsToString(args));
+    }
+
+    private static String argsToString(Varargs args) {
+        final StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= args.narg(); i++) {
+            sb.append(
+                    LuaUtil.stringifyRaw(args.arg(i))
+            );
+        }
+
+        return sb.toString();
     }
 
     @Override
@@ -161,21 +172,6 @@ public class InitLuaLib extends TwoArgFunction {
         return prototype;
     }
 
-    private static LuaVarArgConsumer argsToString(Consumer<String> consumer) {
-        return args -> consumer.accept(argsToString(args));
-    }
-
-    private static String argsToString(Varargs args) {
-        final StringBuilder sb = new StringBuilder();
-        for (int i = 1; i <= args.narg(); i++) {
-            sb.append(
-                    LuaUtil.stringifyRaw(args.arg(i))
-            );
-        }
-
-        return sb.toString();
-    }
-
     public LuaValue clientRegister(Varargs args) {
         final int sessionId = args.checkint(5);
 
@@ -246,7 +242,7 @@ public class InitLuaLib extends TwoArgFunction {
                                         LuaUtil.stringify(
                                                 // TODO: sanitize input
                                                 globals.load("return %s".formatted(value))
-                                                        .call()
+                                                       .call()
                                         )
                                 )
                 );
@@ -275,7 +271,7 @@ public class InitLuaLib extends TwoArgFunction {
         final String objectName = object.get("name").checkjstring();
 
         return virtualSystem.getObject(objectName)
-                .get(args.checkint(2));
+                            .get(args.checkint(2));
     }
 
     public LuaValue setObjectValue(Varargs args) {
@@ -283,7 +279,7 @@ public class InitLuaLib extends TwoArgFunction {
         final String objectName = object.get("name").checkjstring();
 
         virtualSystem.getObject(objectName)
-                .set(args.checkint(2), args.arg(3));
+                     .set(args.checkint(2), args.arg(3));
 
         return LuaValue.NIL;
     }
@@ -296,7 +292,7 @@ public class InitLuaLib extends TwoArgFunction {
         final Varargs otherArgs = args.subargs(3);
 
         return virtualSystem.getObject(objectName)
-                .execute(index, otherArgs);
+                            .execute(index, otherArgs);
     }
 
     public void registerObjectEvent(Varargs args) {
@@ -307,6 +303,6 @@ public class InitLuaLib extends TwoArgFunction {
         final LuaFunction function = args.checkfunction(3);
 
         virtualSystem.getObject(objectName)
-                .addEventHandler(address, function);
+                     .addEventHandler(address, function);
     }
 }

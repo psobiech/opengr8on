@@ -34,7 +34,6 @@
 
         <module>modules/common</module>
         <module>modules/tftp</module>
-        <module>modules/mysensors</module>
 
         <module>modules/lib</module>
         <module>modules/parsers</module>
@@ -88,7 +87,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <id>coverage-report</id>

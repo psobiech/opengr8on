@@ -18,15 +18,6 @@
 
 package pl.psobiech.opengr8on.tftp.transfer;
 
-import java.io.BufferedInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
@@ -40,8 +31,26 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.transfer.netascii.ToNetASCIIInputStream;
 
+import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+
 public abstract class TFTPSendingTransfer extends TFTPTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPSendingTransfer.class);
+
+    protected static InputStream createInputStream(Path path, TFTPTransferMode mode) throws IOException {
+        final InputStream inputStream = new BufferedInputStream(Files.newInputStream(path));
+        if (mode == TFTPTransferMode.NETASCII) {
+            return new ToNetASCIIInputStream(inputStream);
+        }
+
+        return inputStream;
+    }
 
     protected void outgoingTransfer(
             TFTP tftp, boolean server,
@@ -123,14 +132,5 @@ public abstract class TFTPSendingTransfer extends TFTPTransfer {
 
             throw packetException;
         }
-    }
-
-    protected static InputStream createInputStream(Path path, TFTPTransferMode mode) throws IOException {
-        final InputStream inputStream = new BufferedInputStream(Files.newInputStream(path));
-        if (mode == TFTPTransferMode.NETASCII) {
-            return new ToNetASCIIInputStream(inputStream);
-        }
-
-        return inputStream;
     }
 }

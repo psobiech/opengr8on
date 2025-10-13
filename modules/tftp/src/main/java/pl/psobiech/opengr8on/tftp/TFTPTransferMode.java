@@ -18,9 +18,9 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.nio.charset.StandardCharsets;
-
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+
+import java.nio.charset.StandardCharsets;
 
 public enum TFTPTransferMode {
     /**

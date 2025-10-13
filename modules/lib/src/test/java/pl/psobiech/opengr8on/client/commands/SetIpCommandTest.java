@@ -25,8 +25,6 @@ import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand.Request;
 import pl.psobiech.opengr8on.client.commands.SetIpCommand.Response;
-import pl.psobiech.opengr8on.util.HexUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,7 +40,7 @@ class SetIpCommandTest {
         //
 
         final Request output = SetIpCommand.requestFromByteArray(input.asByteArray())
-                .get();
+                                           .get();
 
         //
 
@@ -58,7 +56,7 @@ class SetIpCommandTest {
         //
 
         final Response output = SetIpCommand.responseFromByteArray(input.asByteArray())
-                .get();
+                                            .get();
 
         //
 

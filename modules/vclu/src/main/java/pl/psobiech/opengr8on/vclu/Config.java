@@ -18,12 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.CLUFiles;
 import pl.psobiech.opengr8on.client.Command;
@@ -34,6 +28,12 @@ import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 public class Config {
     private static final int HARDWARE_TYPE = 0x13;
@@ -52,7 +52,7 @@ public class Config {
         final Path keysPath = runtimeDirectory.resolve("keys.json");
         if (Files.exists(keysPath)) {
             return ObjectMapperFactory.JSON.readerFor(CluKeys.class)
-                    .readValue(keysPath.toFile());
+                                           .readValue(keysPath.toFile());
         }
 
         final String pin = StringUtils.upperCase(RandomUtil.hexString(Command.MAX_SERIAL_NUMBER_CHARACTERS));
@@ -72,20 +72,20 @@ public class Config {
         final Path keysPath = runtimeDirectory.resolve("keys.json");
 
         ObjectMapperFactory.JSON.writerFor(CluKeys.class)
-                .writeValue(keysPath.toFile(), cluKeys);
+                                .writeValue(keysPath.toFile(), cluKeys);
     }
 
     public static CLUDeviceConfig read(Path aDriveDirectory, NetworkInterfaceDto networkInterface) throws IOException {
         final String macAddress = macAddressAsString(
                 networkInterface.getNetworkInterface()
-                        .getHardwareAddress()
+                                .getHardwareAddress()
         );
 
         final CLUDeviceConfig cluDeviceConfig;
         final Path configJsonPath = aDriveDirectory.resolve(CLUFiles.CONFIG_JSON.getFileName());
         if (Files.exists(configJsonPath)) {
             final CLUDeviceConfig configJson = ObjectMapperFactory.JSON.readerFor(CLUDeviceConfig.class)
-                    .readValue(configJsonPath.toFile());
+                                                                       .readValue(configJsonPath.toFile());
 
             cluDeviceConfig = new CLUDeviceConfig(
                     configJson.getSerialNumber(),
@@ -120,15 +120,15 @@ public class Config {
         final Path configJsonPath = aDriveDirectory.resolve(CLUFiles.CONFIG_JSON.getFileName());
 
         ObjectMapperFactory.JSON.writerFor(CLUDeviceConfig.class)
-                .writeValue(
-                        configJsonPath.toFile(),
-                        cluDevice
-                );
+                                .writeValue(
+                                        configJsonPath.toFile(),
+                                        cluDevice
+                                );
 
         final String macAddress = macAddressAsString(
                 HexUtil.asBytes(
                         cluDevice.getMacAddress()
-                                .replaceAll(":", "")
+                                 .replaceAll(":", "")
                 )
         );
 

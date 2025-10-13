@@ -18,14 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -38,10 +30,18 @@ import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
-public class MqttTopic extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MqttTopic.class);
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.LinkedBlockingDeque;
 
+public class MqttTopic extends VirtualObject {
     public static final int INDEX = 999;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttTopic.class);
 
     private final Set<String> topicFilters = new HashSet<>();
 
@@ -58,6 +58,32 @@ public class MqttTopic extends VirtualObject {
         register(Methods.SUBSCRIBE, this::subscribe);
         register(Methods.UNSUBSCRIBE, this::unsubscribe);
         register(Methods.PUBLISH, this::publish);
+    }
+
+    private static byte[] messageAsPayload(LuaValue luaValue) throws JsonProcessingException {
+        if (luaValue.istable()) {
+            return ObjectMapperFactory.JSON.writeValueAsBytes(LuaUtil.asObject(luaValue));
+        }
+
+        return luaValue.checkjstring()
+                       .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static LuaValue messageFromPayload(Message message) {
+        final byte[] messagePayload = message.payload();
+
+        try {
+            final JsonNode jsonNode = ObjectMapperFactory.JSON.readTree(messagePayload);
+            if (jsonNode.isTextual()) {
+                return LuaValue.valueOf(jsonNode.asText());
+            }
+
+            return LuaUtil.fromJson(jsonNode);
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage(), e);
+
+            return LuaValue.valueOf(new String(messagePayload));
+        }
     }
 
     public void setMqttClient(MqttClient mqttClient) {
@@ -138,15 +164,6 @@ public class MqttTopic extends VirtualObject {
         return LuaValue.FALSE;
     }
 
-    private static byte[] messageAsPayload(LuaValue luaValue) throws JsonProcessingException {
-        if (luaValue.istable()) {
-            return ObjectMapperFactory.JSON.writeValueAsBytes(LuaUtil.asObject(luaValue));
-        }
-
-        return luaValue.checkjstring()
-                .getBytes(StandardCharsets.UTF_8);
-    }
-
     public void onMessage(String topic, byte[] payload, Runnable acknowledged) {
         if (!isSubscribedTo(topic)) {
             return;
@@ -186,28 +203,11 @@ public class MqttTopic extends VirtualObject {
                 set(Features.MESSAGE, messageFromPayload(message));
                 if (triggerEvent(Events.MESSAGE, this::clearMessage)) {
                     message.acknowledgement()
-                            .run();
+                           .run();
                 }
 
                 Thread.yield();
             }
-        }
-    }
-
-    private static LuaValue messageFromPayload(Message message) {
-        final byte[] messagePayload = message.payload();
-
-        try {
-            final JsonNode jsonNode = ObjectMapperFactory.JSON.readTree(messagePayload);
-            if (jsonNode.isTextual()) {
-                return LuaValue.valueOf(jsonNode.asText());
-            }
-
-            return LuaUtil.fromJson(jsonNode);
-        } catch (IOException e) {
-            LOGGER.warn(e.getMessage(), e);
-
-            return LuaValue.valueOf(new String(messagePayload));
         }
     }
 
@@ -225,9 +225,6 @@ public class MqttTopic extends VirtualObject {
 
     private void clearMessage() {
         clear(Features.MESSAGE);
-    }
-
-    private record Message(byte[] payload, Runnable acknowledgement) {
     }
 
     private enum Features implements IFeature {
@@ -283,5 +280,8 @@ public class MqttTopic extends VirtualObject {
         public int address() {
             return address;
         }
+    }
+
+    private record Message(byte[] payload, Runnable acknowledgement) {
     }
 }

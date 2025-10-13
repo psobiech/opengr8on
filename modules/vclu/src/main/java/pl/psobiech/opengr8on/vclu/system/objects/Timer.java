@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.luaj.vm2.LuaValue;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Timer extends VirtualObject {
     public static final int INDEX = 6;
@@ -115,36 +115,6 @@ public class Timer extends VirtualObject {
         return LuaValue.NIL;
     }
 
-    private class TimerTask implements Runnable {
-        private final long time;
-
-        private TimerTask(long time) {
-            this.time = time;
-        }
-
-        @Override
-        public void run() {
-            if (state != State.COUNTING) {
-                return;
-            }
-
-            final long now = System.nanoTime();
-            final long delta = now - lastLoopTime;
-            lastLoopTime = now;
-
-            final long value = counter.addAndGet(-delta);
-            if (value <= 0) {
-                if (get(Features.MODE).checkint() == Mode.INTERVAL.mode()) {
-                    counter.set(time - (value % time));
-                } else {
-                    onStop();
-                }
-
-                triggerEvent(Events.TIMER);
-            }
-        }
-    }
-
     private enum Mode {
         COUNT_DOWN(0),
         INTERVAL(1),
@@ -226,6 +196,36 @@ public class Timer extends VirtualObject {
         @Override
         public int address() {
             return address;
+        }
+    }
+
+    private class TimerTask implements Runnable {
+        private final long time;
+
+        private TimerTask(long time) {
+            this.time = time;
+        }
+
+        @Override
+        public void run() {
+            if (state != State.COUNTING) {
+                return;
+            }
+
+            final long now = System.nanoTime();
+            final long delta = now - lastLoopTime;
+            lastLoopTime = now;
+
+            final long value = counter.addAndGet(-delta);
+            if (value <= 0) {
+                if (get(Features.MODE).checkint() == Mode.INTERVAL.mode()) {
+                    counter.set(time - (value % time));
+                } else {
+                    onStop();
+                }
+
+                triggerEvent(Events.TIMER);
+            }
         }
     }
 }

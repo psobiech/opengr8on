@@ -36,7 +36,7 @@ class StartTFTPdTest {
         //
 
         final Request output = StartTFTPdCommand.requestFromByteArray(input.asByteArray())
-                .get();
+                                                .get();
 
         //
 
@@ -50,7 +50,7 @@ class StartTFTPdTest {
         //
 
         final Response output = StartTFTPdCommand.responseFromByteArray(input.asByteArray())
-                .get();
+                                                 .get();
 
         //
 

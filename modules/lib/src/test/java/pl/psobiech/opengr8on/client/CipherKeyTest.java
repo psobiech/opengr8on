@@ -41,9 +41,9 @@ class CipherKeyTest {
         //
 
         final byte[] actual = cipherKey.decrypt(
-                        cipherKey.encrypt(expected)
-                )
-                .get();
+                                               cipherKey.encrypt(expected)
+                                       )
+                                       .get();
 
         assertArrayEquals(expected, actual);
     }

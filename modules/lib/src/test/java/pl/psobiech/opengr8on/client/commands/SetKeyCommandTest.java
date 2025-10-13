@@ -41,7 +41,7 @@ class SetKeyCommandTest {
         //
 
         final Request output = SetKeyCommand.requestFromByteArray(input.asByteArray())
-                .get();
+                                            .get();
 
         //
 
@@ -55,7 +55,7 @@ class SetKeyCommandTest {
         //
 
         final Response output = SetKeyCommand.responseFromByteArray(input.asByteArray())
-                .get();
+                                             .get();
 
         //
 

@@ -18,9 +18,9 @@
 
 package pl.psobiech.opengr8on.tftp.transfer.netascii;
 
-import java.nio.charset.StandardCharsets;
-
 import pl.psobiech.opengr8on.util.FileUtil;
+
+import java.nio.charset.StandardCharsets;
 
 public final class NetAsciiUtil {
     public static final int END_OF_STREAM = -1;

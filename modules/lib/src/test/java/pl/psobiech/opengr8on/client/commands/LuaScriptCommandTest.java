@@ -18,9 +18,6 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.net.Inet4Address;
-import java.util.Arrays;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -31,9 +28,10 @@ import pl.psobiech.opengr8on.client.commands.LuaScriptCommand.Response;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import java.net.Inet4Address;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @Execution(ExecutionMode.CONCURRENT)
 class LuaScriptCommandTest {
@@ -50,10 +48,10 @@ class LuaScriptCommandTest {
         //
 
         final String returnValue = LuaScriptCommand.parse(
-                        sessionId,
-                        Payload.of(ipAddress, 404, input.asByteArray())
-                )
-                .get();
+                                                           sessionId,
+                                                           Payload.of(ipAddress, 404, input.asByteArray())
+                                                   )
+                                                   .get();
 
         //
 
@@ -69,7 +67,7 @@ class LuaScriptCommandTest {
         //
 
         final Request output = LuaScriptCommand.requestFromByteArray(input.asByteArray())
-                .get();
+                                               .get();
 
         //
 
@@ -89,7 +87,7 @@ class LuaScriptCommandTest {
         //
 
         final Response output = LuaScriptCommand.responseFromByteArray(input.asByteArray())
-                .get();
+                                                .get();
 
         //
 

@@ -18,41 +18,22 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+
+import java.io.IOException;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Common IPv4 address operations
  */
 public final class IPv4AddressUtil {
-    private static final Logger LOGGER = LoggerFactory.getLogger(IPv4AddressUtil.class);
-
-    /**
-     * Timeout to wait for host availability / ping
-     */
-    private static final int PING_TIMEOUT = 2000;
-
     /**
      * Wildcard broadcast address
      */
@@ -74,6 +55,13 @@ public final class IPv4AddressUtil {
     public static final Set<String> NETWORK_INTERFACE_NAME_PREFIX_BLACKLIST = Set.of(
             "vmnet", "vboxnet"
     );
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(IPv4AddressUtil.class);
+
+    /**
+     * Timeout to wait for host availability / ping
+     */
+    private static final int PING_TIMEOUT = 2000;
 
     private IPv4AddressUtil() {
         // NOP
@@ -259,8 +247,8 @@ public final class IPv4AddressUtil {
         final byte[] buffer = asBytes(ipv4AsNumber);
 
         return IntStream.range(0, Integer.BYTES)
-                .mapToObj(i -> String.valueOf(buffer[i] & 0xFF))
-                .collect(Collectors.joining("."));
+                        .mapToObj(i -> String.valueOf(buffer[i] & 0xFF))
+                        .collect(Collectors.joining("."));
     }
 
     /**
@@ -307,7 +295,7 @@ public final class IPv4AddressUtil {
      */
     private static byte[] asBytes(String ipv4AddressAsString) {
         final String[] ipAddressParts = Util.splitAtLeast(ipv4AddressAsString, "\\.", Integer.BYTES)
-                .orElseThrow(() -> new UnexpectedException("Invalid IPv4 address: " + ipv4AddressAsString));
+                                            .orElseThrow(() -> new UnexpectedException("Invalid IPv4 address: " + ipv4AddressAsString));
 
         final byte[] addressAsBytes = new byte[Integer.BYTES];
         for (int i = 0; i < addressAsBytes.length; i++) {
@@ -326,7 +314,7 @@ public final class IPv4AddressUtil {
         }
 
         return ByteBuffer.wrap(ipv4AddressAsBytes)
-                .getInt();
+                         .getInt();
     }
 
     /**
@@ -446,8 +434,8 @@ public final class IPv4AddressUtil {
                 Collection<Inet4Address> exclusionList
         ) {
             final Set<Integer> excludedIpAddressNumbers = exclusionList.stream()
-                    .map(IPv4AddressUtil::getIPv4AsNumber)
-                    .collect(Collectors.toSet());
+                                                                       .map(IPv4AddressUtil::getIPv4AsNumber)
+                                                                       .collect(Collectors.toSet());
 
             final int currentIpAsNumber = getIPv4AsNumber(currentAddress);
             int ipAsNumber = getIPv4AsNumber(startingAddress);

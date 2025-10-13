@@ -18,13 +18,13 @@
 
 package pl.psobiech.opengr8on.client.device;
 
-import java.net.Inet4Address;
-import java.util.Objects;
-
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Client;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
+
+import java.net.Inet4Address;
+import java.util.Objects;
 
 public class CLUDevice {
     private static final String CLU = "CLU";
@@ -35,13 +35,13 @@ public class CLUDevice {
 
     private final String macAddress;
 
-    private Inet4Address address;
-
     private final int port;
 
     private final CipherTypeEnum cipherType;
 
     private final byte[] privateKey;
+
+    private Inet4Address address;
 
     private byte[] iv;
 

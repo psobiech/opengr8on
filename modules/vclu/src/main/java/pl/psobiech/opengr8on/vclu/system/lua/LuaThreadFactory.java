@@ -18,20 +18,9 @@
 
 package pl.psobiech.opengr8on.vclu.system.lua;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import org.apache.commons.lang3.StringUtils;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LoadState;
-import org.luaj.vm2.LuaClosure;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Prototype;
+import org.luaj.vm2.*;
 import org.luaj.vm2.compiler.LuaC;
-import org.luaj.vm2.lib.DebugLib;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
@@ -46,6 +35,12 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.Slf4jLoggingOutputStream;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class LuaThreadFactory {
     private static final Logger LOGGER_LUA = LoggerFactory.getLogger(LuaThread.class);

@@ -18,9 +18,9 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.net.Inet4Address;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
@@ -29,25 +29,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.ServerVersion;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryOrigin;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoverySensor;
+import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
+
+import java.net.Inet4Address;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.Set;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
 
     public static final int INDEX = 1;
 
+    private final ProjectObjectRegistry objectRegistry;
+
     private final CLUClient client;
 
     private final Globals localLuaContext;
 
-    public RemoteCLU(VirtualSystem virtualSystem, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
+    private final VirtualCLU currentClu;
+
+    private boolean mqttInitialized = false;
+
+    public RemoteCLU(VirtualSystem virtualSystem, ProjectObjectRegistry projectObjectRegistry, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(
                 virtualSystem, name,
                 IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class,
                 ThreadUtil::virtualScheduler
         );
+
+        this.objectRegistry = projectObjectRegistry;
 
         this.localLuaContext = new Globals();
         // LoadState.install(globals);
@@ -60,37 +84,162 @@ public class RemoteCLU extends VirtualObject {
 
             return remoteExecute(script);
         });
+
+        this.currentClu = virtualSystem.getCurrentClu();
+    }
+
+    @Override
+    public void loop() {
+        if (currentClu.isMqttEnabled() && currentClu.getMqttClient() != null && !mqttInitialized) {
+            if (LuaUtil.trueish(currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY))) {
+                final String discoveryPrefix = currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
+                if (discoveryPrefix != null) {
+                    initMqttDiscovery(discoveryPrefix);
+
+                    mqttInitialized = true;
+                }
+            }
+        }
+    }
+
+    private void initMqttDiscovery(String discoveryPrefix) {
+        final Set<SpecificObjectType> supportedTypes = Set.of(
+                SpecificObjectType.PANEL_TEMPERATURE,
+                SpecificObjectType.PANEL_LUMINOSITY
+//                    SpecificObjectType.POWER_SUPPLY_VOLTAGE
+        );
+
+        final Set<SpecificObject> specificObjects = objectRegistry.byCluName(name);
+        for (SpecificObject object : specificObjects) {
+            final String nameOnCLU = object.getNameOnCLU();
+
+            SpecificObject clu = object.getClu();
+            if (clu != null && clu.getReference() != null) {
+                clu = objectRegistry.byReference(clu.getReference()).orElse(null);
+            }
+
+            if (clu == null) {
+                LOGGER.warn("Could not find CLU for object {}", nameOnCLU);
+
+                continue;
+            }
+
+            final String cluName = name;
+            if (!supportedTypes.contains(object.getType())) {
+                LOGGER.warn("Ignoring object {} on CLU {}", cluName, nameOnCLU);
+
+                continue;
+            }
+
+            final String uniqueId = cluName + "_" + nameOnCLU;
+
+            final Optional<Feature> valueFeature = object.getFeatures().stream()
+                                                         .filter(feature1 -> feature1.getName().equalsIgnoreCase("value"))
+                                                         .findAny();
+            if (valueFeature.isEmpty()) {
+                continue;
+            }
+
+            final Feature feature = valueFeature.get();
+
+            final String objectClass;
+            if (object.getType() == SpecificObjectType.PANEL_TEMPERATURE) {
+                objectClass = "temperature";
+            } else if (object.getType() == SpecificObjectType.PANEL_LUMINOSITY) {
+                objectClass = null;
+            } else if (object.getType() == SpecificObjectType.POWER_SUPPLY_VOLTAGE) {
+                objectClass = "voltage";
+            } else {
+                continue;
+            }
+
+            final MqttDiscoverySensor discoveryMessage = new MqttDiscoverySensor(
+                    object.getName(),
+                    uniqueId,
+                    "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId), null, "~/state",
+                    objectClass,
+                    feature.getUnit(),
+                    "{{ value | float }}",
+                    new MqttDiscoveryDevice(
+                            cluName, clu.getName(), "Grenton",
+                            clu.getSerialNumber(),
+                            clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
+                            clu.getHardwareType() + "_" + clu.getHardwareVersion()
+                    ),
+                    new MqttDiscoveryOrigin(
+                            "opengr8on", ServerVersion.get(),
+                            "https://github.com/psobiech/opengr8on"
+                    )
+            );
+
+            try {
+                currentClu.getMqttClient()
+                          .publish(
+                                  "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/config",
+                                  ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage)
+                          );
+            } catch (MqttException | JsonProcessingException e) {
+                LOGGER.error("Could not publish discovery message for {}", uniqueId, e);
+
+                continue;
+            }
+
+            // TODO: leaking threads ;-)
+            scheduler.execute(() -> {
+                while (!Thread.currentThread().isInterrupted()) {
+                    final LuaValue luaValue = remoteExecute(object.getNameOnCLU() + ":get(" + feature.getIndex() + ")");
+
+                    try {
+                        final String state = String.valueOf(luaValue.checkdouble());
+                        LOGGER.debug(uniqueId + "(" + object.getName() + "): " + state);
+
+                        currentClu.getMqttClient().publish("%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId) + "/state", state.getBytes(StandardCharsets.UTF_8));
+                    } catch (MqttException e) {
+                        LOGGER.error("Could not publish state update message for {}", uniqueId, e);
+
+                        continue;
+                    }
+
+                    try {
+                        Thread.sleep(60_000L);
+                    } catch (InterruptedException e) {
+                        throw new UncheckedInterruptedException(e);
+                    }
+                }
+            });
+
+        }
     }
 
     public LuaValue remoteExecute(String script) {
         return client.execute(script)
-                .map(returnValue -> {
-                            returnValue = StringUtils.stripToNull(returnValue);
-                            if (returnValue == null) {
-                                return null;
-                            }
+                     .map(returnValue -> {
+                              returnValue = StringUtils.stripToNull(returnValue);
+                              if (returnValue == null) {
+                                  return null;
+                              }
 
-                            if (returnValue.startsWith("{")) {
-                                try {
-                                    return localLuaContext.load("return %s".formatted(returnValue))
-                                            .call();
-                                } catch (Exception e) {
-                                    // Might not have been a proper LUA table
-                                    // TODO: implement a more robust check
+                              if (returnValue.startsWith("{")) {
+                                  try {
+                                      return localLuaContext.load("return %s".formatted(returnValue))
+                                                            .call();
+                                  } catch (Exception e) {
+                                      // Might not have been a proper LUA table
+                                      // TODO: implement a more robust check
 
-                                    LOGGER.error(e.getMessage(), e);
-                                }
-                            }
+                                      LOGGER.error(e.getMessage(), e);
+                                  }
+                              }
 
-                            final LuaString luaString = LuaValue.valueOf(returnValue);
-                            if (luaString.isnumber()) {
-                                return luaString.checknumber();
-                            }
+                              final LuaString luaString = LuaValue.valueOf(returnValue);
+                              if (luaString.isnumber()) {
+                                  return luaString.checknumber();
+                              }
 
-                            return luaString;
-                        }
-                )
-                .orElse(LuaValue.NIL);
+                              return luaString;
+                          }
+                     )
+                     .orElse(LuaValue.NIL);
     }
 
     @Override

@@ -23,13 +23,7 @@ import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.LibFunction;
 import org.slf4j.Logger;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaNoArgConsumer;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaThreeArgConsumer;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaThreeArgFunction;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgConsumer;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.*;
 
 /**
  * Function wrapper that logs any exceptions that otherwise would be swallowed in the LUA thread
@@ -42,6 +36,34 @@ public class LuaFunctionWrapper extends LibFunction {
     LuaFunctionWrapper(Logger logger, BaseLuaFunction fn) {
         this.logger = logger;
         this.fn = fn;
+    }
+
+    public static LibFunction wrap(Logger logger, LuaNoArgConsumer luaFunction) {
+        return wrap(logger, (BaseLuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaThreeArgConsumer luaFunction) {
+        return wrap(logger, (BaseLuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaVarArgConsumer luaFunction) {
+        return wrap(logger, (BaseLuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaVarArgFunction luaFunction) {
+        return wrap(logger, (BaseLuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaTwoArgFunction luaFunction) {
+        return wrap(logger, (BaseLuaFunction) luaFunction);
+    }
+
+    public static LibFunction wrap(Logger logger, LuaThreeArgFunction luaFunction) {
+        return wrap(logger, (BaseLuaFunction) luaFunction);
+    }
+
+    private static LibFunction wrap(Logger logger, BaseLuaFunction luaFunction) {
+        return new LuaFunctionWrapper(logger, luaFunction);
     }
 
     @Override
@@ -84,33 +106,5 @@ public class LuaFunctionWrapper extends LibFunction {
 
             throw e;
         }
-    }
-
-    public static LibFunction wrap(Logger logger, LuaNoArgConsumer luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    public static LibFunction wrap(Logger logger, LuaThreeArgConsumer luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    public static LibFunction wrap(Logger logger, LuaVarArgConsumer luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    public static LibFunction wrap(Logger logger, LuaVarArgFunction luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    public static LibFunction wrap(Logger logger, LuaTwoArgFunction luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    public static LibFunction wrap(Logger logger, LuaThreeArgFunction luaFunction) {
-        return wrap(logger, (BaseLuaFunction) luaFunction);
-    }
-
-    private static LibFunction wrap(Logger logger, BaseLuaFunction luaFunction) {
-        return new LuaFunctionWrapper(logger, luaFunction);
     }
 }

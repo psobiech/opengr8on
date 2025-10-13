@@ -18,17 +18,20 @@
 
 package pl.psobiech.opengr8on.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
+import pl.psobiech.opengr8on.client.device.CLUDevice;
+import pl.psobiech.opengr8on.util.*;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
+
 import java.io.Closeable;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.Spliterators.AbstractSpliterator;
-import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -38,36 +41,24 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.commands.DiscoverCLUsCommand;
-import pl.psobiech.opengr8on.client.device.CLUDevice;
-import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil;
-import pl.psobiech.opengr8on.util.RandomUtil;
-import pl.psobiech.opengr8on.util.SocketUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.Payload;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
-import pl.psobiech.opengr8on.util.ThreadUtil;
-
 public class Client implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
-
     public static final int COMMAND_PORT = 1234;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
 
     private static final int BUFFER_SIZE = 2048;
 
     private static final int ESTIMATED_CLUS = 8;
 
-    private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
-
     protected final ReentrantLock socketLock = new ReentrantLock();
 
     protected final UDPSocket socket;
 
-    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUClient");
-
     protected final Inet4Address localAddress;
+
+    private final DatagramPacket responsePacket = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
+
+    private final ExecutorService executor = ThreadUtil.virtualExecutor("CLUClient");
 
     private final Inet4Address broadcastAddress;
 
@@ -84,6 +75,53 @@ public class Client implements Closeable {
 
         this.socket = SocketUtil.udpRandomPort(localAddress);
         this.socket.open();
+    }
+
+    /**
+     * @return decrypted payload or empty() if the decryption key cannot decipher the response
+     */
+    public static Optional<Payload> tryDecrypt(
+            String uuid,
+            CipherKey responseCipherKey, Payload encryptedPayload
+    ) {
+        final Optional<Payload> payload = responseCipherKey.decrypt(encryptedPayload.buffer())
+                                                           .map(decryptedResponse ->
+                                                                        Payload.of(
+                                                                                encryptedPayload.address(), encryptedPayload.port(),
+                                                                                decryptedResponse
+                                                                        )
+                                                           );
+
+        if (LOGGER.isTraceEnabled()) {
+            if (payload.isPresent()) {
+                LOGGER.trace(
+                        "%s\t<-D--\t%s // %s"
+                                .formatted(uuid, payload.get(), responseCipherKey)
+                );
+            } else {
+                LOGGER.trace(
+                        "%s\t<-E--\t%s // %s"
+                                .formatted(uuid, encryptedPayload, responseCipherKey)
+                );
+            }
+        }
+
+        return payload;
+    }
+
+    public static String uuid(Command command) {
+        return uuid(UUID.randomUUID(), command.getClass());
+    }
+
+    public static String uuid(UUID uuid, Command command) {
+        return uuid(uuid, command.getClass());
+    }
+
+    public static String uuid(UUID uuid, Class<? extends Command> clazz) {
+        final String className = clazz.getName();
+        final String[] classParts = className.split("\\.");
+
+        return "%s\t%s".formatted(classParts[classParts.length - 1], uuid);
     }
 
     /**
@@ -223,38 +261,6 @@ public class Client implements Closeable {
         return Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
     }
 
-    /**
-     * @return decrypted payload or empty() if the decryption key cannot decipher the response
-     */
-    public static Optional<Payload> tryDecrypt(
-            String uuid,
-            CipherKey responseCipherKey, Payload encryptedPayload
-    ) {
-        final Optional<Payload> payload = responseCipherKey.decrypt(encryptedPayload.buffer())
-                .map(decryptedResponse ->
-                        Payload.of(
-                                encryptedPayload.address(), encryptedPayload.port(),
-                                decryptedResponse
-                        )
-                );
-
-        if (LOGGER.isTraceEnabled()) {
-            if (payload.isPresent()) {
-                LOGGER.trace(
-                        "%s\t<-D--\t%s // %s"
-                                .formatted(uuid, payload.get(), responseCipherKey)
-                );
-            } else {
-                LOGGER.trace(
-                        "%s\t<-E--\t%s // %s"
-                                .formatted(uuid, encryptedPayload, responseCipherKey)
-                );
-            }
-        }
-
-        return payload;
-    }
-
     @Override
     public void close() {
         ThreadUtil.closeQuietly(executor);
@@ -265,20 +271,5 @@ public class Client implements Closeable {
         } finally {
             socketLock.unlock();
         }
-    }
-
-    public static String uuid(Command command) {
-        return uuid(UUID.randomUUID(), command.getClass());
-    }
-
-    public static String uuid(UUID uuid, Command command) {
-        return uuid(uuid, command.getClass());
-    }
-
-    public static String uuid(UUID uuid, Class<? extends Command> clazz) {
-        final String className = clazz.getName();
-        final String[] classParts = className.split("\\.");
-
-        return "%s\t%s".formatted(classParts[classParts.length - 1], uuid);
     }
 }

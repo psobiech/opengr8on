@@ -18,16 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Inet4Address;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -39,10 +29,20 @@ import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
-public class HttpListener extends BaseHttpObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpListener.class);
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
+public class HttpListener extends BaseHttpObject {
     public static final int INDEX = 120;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpListener.class);
 
     private static final int STOP_DELAY_SECONDS = 1;
 
@@ -110,6 +110,20 @@ public class HttpListener extends BaseHttpObject {
         register(Methods.CLEAR, this::onClear);
     }
 
+    private static void tryErrorIfNotClosed(int statusCode, HttpExchange newExchange) {
+        if (newExchange == null) {
+            return;
+        }
+
+        try {
+            newExchange.sendResponseHeaders(statusCode, 0);
+        } catch (Exception e) {
+            // NOP
+        }
+
+        IOUtil.closeQuietly(newExchange);
+    }
+
     private LuaValue onSendResponse(LuaValue bodyArg) {
         final HttpExchange currentExchange = this.exchange;
 
@@ -162,20 +176,6 @@ public class HttpListener extends BaseHttpObject {
         httpServer.stop(STOP_DELAY_SECONDS);
 
         super.close();
-    }
-
-    private static void tryErrorIfNotClosed(int statusCode, HttpExchange newExchange) {
-        if (newExchange == null) {
-            return;
-        }
-
-        try {
-            newExchange.sendResponseHeaders(statusCode, 0);
-        } catch (Exception e) {
-            // NOP
-        }
-
-        IOUtil.closeQuietly(newExchange);
     }
 
     private enum Features implements IFeature {

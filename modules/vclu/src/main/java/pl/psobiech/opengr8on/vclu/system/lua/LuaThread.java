@@ -18,9 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.system.lua;
 
-import java.io.Closeable;
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
@@ -30,6 +27,9 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+
+import java.io.Closeable;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class LuaThread implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(LuaThread.class);
@@ -46,26 +46,26 @@ public class LuaThread implements Closeable {
 
     public LuaThread(VirtualSystem virtualSystem, Globals globals, boolean emergency, LuaClosure mainLuaClosure) {
         this.thread = Thread.ofVirtual()
-                .name(getClass().getSimpleName())
-                .unstarted(
-                        () -> {
-                            virtualSystem.setLuaThread(LuaThread.this);
+                            .name(getClass().getSimpleName())
+                            .unstarted(
+                                    () -> {
+                                        virtualSystem.setLuaThread(LuaThread.this);
 
-                            try {
-                                mainLuaClosure.call();
-                            } catch (LuaError e) {
-                                if (e.getCause() instanceof UncheckedInterruptedException) {
-                                    LOGGER.trace(e.getMessage(), e);
+                                        try {
+                                            mainLuaClosure.call();
+                                        } catch (LuaError e) {
+                                            if (e.getCause() instanceof UncheckedInterruptedException) {
+                                                LOGGER.trace(e.getMessage(), e);
 
-                                    return;
-                                }
+                                                return;
+                                            }
 
-                                LOGGER.error(e.getMessage(), e);
-                            } catch (Exception e) {
-                                LOGGER.error(e.getMessage(), e);
-                            }
-                        }
-                );
+                                            LOGGER.error(e.getMessage(), e);
+                                        } catch (Exception e) {
+                                            LOGGER.error(e.getMessage(), e);
+                                        }
+                                    }
+                            );
 
         this.virtualSystem = virtualSystem;
         this.globals = globals;
@@ -76,7 +76,7 @@ public class LuaThread implements Closeable {
         globalsLock.lock();
         try {
             return globals.load("return %s".formatted(script))
-                    .call();
+                          .call();
         } finally {
             globalsLock.unlock();
         }

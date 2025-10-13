@@ -18,13 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.CountDownLatch;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CipherKey;
@@ -35,6 +28,13 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * VCLU Entry Point
@@ -63,10 +63,10 @@ public class Main {
 
         final String networkInterfaceNameOrIpAddress = args[args.length - 1];
         final NetworkInterfaceDto networkInterface = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(networkInterfaceNameOrIpAddress)
-                .or(() ->
-                        IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
-                )
-                .get();
+                                                                    .or(() ->
+                                                                                IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
+                                                                    )
+                                                                    .get();
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 

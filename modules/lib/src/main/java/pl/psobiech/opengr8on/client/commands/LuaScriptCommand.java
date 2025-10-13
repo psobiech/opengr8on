@@ -18,15 +18,15 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.net.Inet4Address;
-import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+
+import java.net.Inet4Address;
+import java.util.Optional;
 
 public class LuaScriptCommand {
     public static final String CHECK_ALIVE = "checkAlive()";

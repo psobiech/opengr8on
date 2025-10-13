@@ -18,9 +18,6 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.net.InetAddress;
-import java.nio.file.Path;
-
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPReadRequestPacket;
@@ -29,6 +26,9 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPTransfer;
 import pl.psobiech.opengr8on.tftp.transfer.server.TFTPServerReceive;
 import pl.psobiech.opengr8on.tftp.transfer.server.TFTPServerSend;
+
+import java.net.InetAddress;
+import java.nio.file.Path;
 
 public enum TFTPTransferType {
     SERVER_READ_REQUEST(TFTPReadRequestPacket.class, TFTPServerSend::new),
@@ -45,14 +45,6 @@ public enum TFTPTransferType {
         this.creator = creator;
     }
 
-    public TFTPTransfer create(TFTPRequestPacket packet, Path path) throws TFTPPacketException {
-        return creator.create(packet, path);
-    }
-
-    public TFTPTransfer create(InetAddress host, int port, TFTPTransferMode mode, Path path, String location) throws TFTPPacketException {
-        return creator.create(host, port, mode, path, location);
-    }
-
     public static TFTPTransferType ofServerPacket(TFTPPacket packet) throws TFTPPacketException {
         for (TFTPTransferType value : values()) {
             if (value.packetClass().isInstance(packet)) {
@@ -61,6 +53,14 @@ public enum TFTPTransferType {
         }
 
         throw new TFTPPacketException("Unexpected TFTP packet: " + packet.getType());
+    }
+
+    public TFTPTransfer create(TFTPRequestPacket packet, Path path) throws TFTPPacketException {
+        return creator.create(packet, path);
+    }
+
+    public TFTPTransfer create(InetAddress host, int port, TFTPTransferMode mode, Path path, String location) throws TFTPPacketException {
+        return creator.create(host, port, mode, path, location);
     }
 
     private Class<? extends TFTPPacket> packetClass() {

@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 
 public abstract class TFTPRequestPacket extends TFTPPacket {
     private static final int HEADER_SIZE = 2;

@@ -18,12 +18,6 @@
 
 package pl.psobiech.opengr8on.tftp;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.time.Duration;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
@@ -33,18 +27,24 @@ import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 
-public class TFTP implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TFTP.class);
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.time.Duration;
+import java.util.Optional;
 
+public class TFTP implements Closeable {
     public static final int DEFAULT_PORT = 69;
 
     static final int MIN_PACKET_SIZE = 4;
 
     static final int MAX_PACKET_SIZE = TFTPPacket.MAX_DATA_LENGTH + 4;
 
-    private final byte[] receiveBuffer = new byte[MAX_PACKET_SIZE];
+    private static final Logger LOGGER = LoggerFactory.getLogger(TFTP.class);
 
     protected final byte[] sendBuffer = new byte[MAX_PACKET_SIZE];
+
+    private final byte[] receiveBuffer = new byte[MAX_PACKET_SIZE];
 
     private final UDPSocket socket;
 

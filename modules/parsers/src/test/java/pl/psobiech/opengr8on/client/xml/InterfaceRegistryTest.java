@@ -18,23 +18,16 @@
 
 package pl.psobiech.opengr8on.client.xml;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import pl.psobiech.opengr8on.util.HexUtil;
+import pl.psobiech.opengr8on.xml.interfaces.*;
+
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import pl.psobiech.opengr8on.util.HexUtil;
-import pl.psobiech.opengr8on.xml.interfaces.CLU;
-import pl.psobiech.opengr8on.xml.interfaces.CLUClassNameEnum;
-import pl.psobiech.opengr8on.xml.interfaces.CLUInterface;
-import pl.psobiech.opengr8on.xml.interfaces.CLUObject;
-import pl.psobiech.opengr8on.xml.interfaces.CLUObjectRestriction;
-import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class InterfaceRegistryTest {
     private static InterfaceRegistry interfaceRegistry;
@@ -68,7 +61,7 @@ public class InterfaceRegistryTest {
 
         // TODO: more granular checks
         final CLUInterface anInterface = vclu.getInterface();
-        assertEquals(16, anInterface.getFeatures().size());
+        assertEquals(18, anInterface.getFeatures().size());
         assertEquals(2, anInterface.getMethods().size());
         assertEquals(2, anInterface.getEvents().size());
 

@@ -18,9 +18,9 @@
 
 package pl.psobiech.opengr8on.xml.interfaces;
 
-import java.util.List;
-
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+
+import java.util.List;
 
 public class CLUInterfaceMethod {
     @JacksonXmlProperty(isAttribute = true)

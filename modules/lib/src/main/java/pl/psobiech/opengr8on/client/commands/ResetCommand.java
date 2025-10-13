@@ -18,12 +18,12 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.net.Inet4Address;
-import java.util.Optional;
-
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.Util;
+
+import java.net.Inet4Address;
+import java.util.Optional;
 
 public class ResetCommand {
     private ResetCommand() {

@@ -18,6 +18,8 @@
 
 package pl.psobiech.opengr8on.util;
 
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,11 +34,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-
-import static org.apache.commons.lang3.StringUtils.lowerCase;
-import static org.apache.commons.lang3.StringUtils.stripToEmpty;
-import static org.apache.commons.lang3.StringUtils.stripToNull;
+import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Common resource loading operations
@@ -80,7 +78,7 @@ public class ResourceUtil {
                 final String jarPath = classPathUriAsString.split(JAR_PATH_SEPARATOR, 2)[0];
 
                 path = getOrCreateJarFileSystemFor(jarPath).provider()
-                        .getPath(classPathUri);
+                                                           .getPath(classPathUri);
             } else {
                 path = Paths.get(classPathUri);
             }

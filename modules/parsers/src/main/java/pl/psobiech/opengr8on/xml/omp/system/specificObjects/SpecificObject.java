@@ -16,6 +16,7 @@ public class SpecificObject {
     private final Long reference;
 
     private final String name;
+
     private final String nameOnCLU;
 
     @JsonProperty("class")
@@ -23,46 +24,78 @@ public class SpecificObject {
     private final String objectClass;
 
     private final String type;
+
     private final String description;
 
     private final String ipAddress;
+
     private final List<JsonNode> labels;
+
     private final List<Feature> features;
+
     private final List<Event> events;
+
     private final Clu clu;
+
     private final List<JsonNode> module;
+
     private final String classTypeId;
+
     private final String sourceReceiverTypeID;
+
     private final String number;
+
     private final Boolean active;
+
     private final Boolean statisticState;
+
     private final Long tfBusOrder;
+
     //
     private final List<JsonNode> definedFeaturesList;
+
     @JsonProperty("embeddedFeaturesList")
     private final List<Feature> embeddedFeaturesList;
+
     private final List<Event> eventsList;
+
     private final List<IO> iosList;
+
     private final List<JsonNode> scripts;
+
     private final List<JsonNode> peripheryList;
+
     private final List<JsonNode> applicationsList;
+
     private final List<IODefinition> modulesList;
+
     private final List<JsonNode> methodsList;
 
     @JsonProperty("isRemoved")
     private final Boolean removed;
+
     private final Boolean visible;
+
     private final Boolean validConfigurationOnCLU;
 
     private final String firmwareVersion;
+
     private final String firmwareType;
+
     private final String hardwareVersion;
+
     private final String hardwareType;
+
     private final String serialNumber;
+
     private final String macAddress;
+
     private final String cipherKeyType;
+
     private final String iv;
+
     private final String privateKey;
+
     private final Boolean encrypted;
 
     public SpecificObject(Long id, Long reference, String name, String nameOnCLU, String type, String description, String ipAddress, List<JsonNode> labels, List<Feature> features, List<Event> events, Clu clu, List<JsonNode> module, String classTypeId, String sourceReceiverTypeID, String number, Boolean active, Boolean statisticState, Long tfBusOrder, List<JsonNode> definedFeaturesList, List<Feature> embeddedFeaturesList, List<Event> eventsList, List<IO> iosList, List<JsonNode> scripts, List<JsonNode> peripheryList, List<JsonNode> applicationsList, List<IODefinition> modulesList, List<JsonNode> methodsList, Boolean visible, Boolean validConfigurationOnCLU, String firmwareVersion, String firmwareType, String hardwareVersion, String hardwareType, String serialNumber, String macAddress, String cipherKeyType, String iv, String privateKey, Boolean encrypted, Boolean removed, String objectClass) {

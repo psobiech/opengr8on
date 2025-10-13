@@ -18,11 +18,11 @@
 
 package pl.psobiech.opengr8on.client;
 
-import java.net.Inet4Address;
-import java.nio.charset.StandardCharsets;
-
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
+
+import java.net.Inet4Address;
+import java.nio.charset.StandardCharsets;
 
 public class Mocks {
     private Mocks() {
@@ -71,6 +71,6 @@ public class Mocks {
 
     public static byte[] pin() {
         return RandomUtil.hexString(Command.PIN_CHARACTERS)
-                .getBytes(StandardCharsets.US_ASCII);
+                         .getBytes(StandardCharsets.US_ASCII);
     }
 }

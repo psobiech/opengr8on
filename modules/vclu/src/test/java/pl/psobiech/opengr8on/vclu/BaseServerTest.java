@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.util.function.Consumer;
-
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Mocks;
 import pl.psobiech.opengr8on.client.device.CLUDevice;
 import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.vclu.MockServer.ServerContext;
+
+import java.util.function.Consumer;
 
 class BaseServerTest {
     void execute(ServerContext fn) throws Exception {

@@ -18,24 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import java.io.Closeable;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.ScheduledExecutorPingSender;
+import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
@@ -47,12 +30,21 @@ import pl.psobiech.opengr8on.vclu.system.objects.MqttTopic;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
+import java.io.Closeable;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+
 public class MqttClient implements Closeable {
+    public static final int MQTT_QOS_AT_LEAST_ONCE = 1;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttClient.class);
 
     private static final String SCHEME_TCP = "tcp";
-
-    public static final int MQTT_QOS_AT_LEAST_ONCE = 1;
 
     private static final int CONNECTION_TIMEOUT_SECONDS = 4;
 
@@ -64,6 +56,37 @@ public class MqttClient implements Closeable {
     private final ScheduledExecutorService executor = ThreadUtil.daemonScheduler(4, "MQTT");
 
     private MqttAsyncClient mqttClient;
+
+    private static MqttConnectOptions createConnectionOptions(URI mqttUri, Path caCertificatePath, Path certificatePath, Path keyPath) {
+        final MqttConnectOptions options = new MqttConnectOptions();
+        options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
+        options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(true);
+        options.setMaxInflight(MAX_INFLIGHT);
+
+        final String userInfo = mqttUri.getUserInfo();
+        if (userInfo != null) {
+            final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
+            if (userInfoPartsOptional.isPresent()) {
+                final String[] userInfoParts = userInfoPartsOptional.get();
+
+                options.setUserName(userInfoParts[0]);
+                options.setPassword(userInfoParts[1].toCharArray());
+            }
+        }
+
+        if (!SCHEME_TCP.equals(mqttUri.getScheme()) && Files.exists(caCertificatePath)) {
+            options.setSocketFactory(
+                    TlsUtil.createSocketFactory(
+                            caCertificatePath,
+                            certificatePath, keyPath
+                    )
+            );
+        }
+
+        return options;
+    }
 
     public void start(
             String mqttUrl, String name,
@@ -79,6 +102,7 @@ public class MqttClient implements Closeable {
                     new ScheduledExecutorPingSender(executor),
                     executor
             );
+            currentClu.setMqttClient(this);
 
             mqttClient.setManualAcks(true);
             mqttClient.setCallback(new MqttCallback() {
@@ -111,9 +135,6 @@ public class MqttClient implements Closeable {
             });
 
             final MqttConnectOptions options = createConnectionOptions(mqttUri, caCertificatePath, certificatePath, keyPath);
-            for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
-                mqttTopic.setMqttClient(this);
-            }
 
             mqttClient.connect(options, null, new IMqttActionListener() {
                 @Override
@@ -129,37 +150,6 @@ public class MqttClient implements Closeable {
         } catch (MqttException e) {
             throw new UnexpectedException(e);
         }
-    }
-
-    private static MqttConnectOptions createConnectionOptions(URI mqttUri, Path caCertificatePath, Path certificatePath, Path keyPath) {
-        final MqttConnectOptions options = new MqttConnectOptions();
-        options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
-        options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
-        options.setAutomaticReconnect(true);
-        options.setCleanSession(true);
-        options.setMaxInflight(MAX_INFLIGHT);
-
-        final String userInfo = mqttUri.getUserInfo();
-        if (userInfo != null) {
-            final Optional<String[]> userInfoPartsOptional = Util.splitAtLeast(userInfo, ":", 2);
-            if (userInfoPartsOptional.isPresent()) {
-                final String[] userInfoParts = userInfoPartsOptional.get();
-
-                options.setUserName(userInfoParts[0]);
-                options.setPassword(userInfoParts[1].toCharArray());
-            }
-        }
-
-        if (!SCHEME_TCP.equals(mqttUri.getScheme()) && Files.exists(caCertificatePath)) {
-            options.setSocketFactory(
-                    TlsUtil.createSocketFactory(
-                            caCertificatePath,
-                            certificatePath, keyPath
-                    )
-            );
-        }
-
-        return options;
     }
 
     private void onMqttConnectionChange(VirtualCLU currentClu, Throwable exception) {
@@ -205,10 +195,10 @@ public class MqttClient implements Closeable {
         LOGGER.trace("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
 
         return mqttClient.publish(
-                        topic, payload,
-                        MQTT_QOS_AT_LEAST_ONCE, false
-                )
-                .getMessageId();
+                                 topic, payload,
+                                 MQTT_QOS_AT_LEAST_ONCE, false
+                         )
+                         .getMessageId();
     }
 
     @Override

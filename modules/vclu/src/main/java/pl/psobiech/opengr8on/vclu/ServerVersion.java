@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.ResourceUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
-import pl.psobiech.opengr8on.util.ResourceUtil;
 
 public class ServerVersion {
     private static final Properties GIT_PROPERTIES;

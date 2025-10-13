@@ -35,7 +35,7 @@ class ErrorCommandTest {
         //
 
         final Response output = ErrorCommand.responseFromByteArray(input.asByteArray())
-                .get();
+                                            .get();
 
         //
 

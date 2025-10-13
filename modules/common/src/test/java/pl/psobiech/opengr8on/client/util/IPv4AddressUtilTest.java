@@ -18,13 +18,13 @@
 
 package pl.psobiech.opengr8on.client.util;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.util.Collection;
-
 import org.junit.jupiter.api.Test;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

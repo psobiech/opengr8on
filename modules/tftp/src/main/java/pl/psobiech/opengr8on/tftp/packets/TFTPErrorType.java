@@ -42,10 +42,6 @@ public enum TFTPErrorType {
         this.errorCode = (int) (errorCode & 0xFFFFFFFFL);
     }
 
-    public int errorCode() {
-        return errorCode;
-    }
-
     public static TFTPErrorType ofErrorCode(int errorCode) {
         for (TFTPErrorType value : values()) {
             if (value.errorCode() == errorCode) {
@@ -54,5 +50,9 @@ public enum TFTPErrorType {
         }
 
         return UNDEFINED;
+    }
+
+    public int errorCode() {
+        return errorCode;
     }
 }

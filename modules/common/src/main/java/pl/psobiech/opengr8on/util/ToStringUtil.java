@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.util;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
+
 import java.net.Inet4Address;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Common toString() operations
@@ -120,8 +120,8 @@ public final class ToStringUtil {
 
         final String hexString = StringUtils.stripToEmpty(
                 IntStream.range(0, buffer.length)
-                        .mapToObj(i -> (i % 4 == 0 ? " " : "") + HexUtil.asString(buffer[i]))
-                        .collect(Collectors.joining())
+                         .mapToObj(i -> (i % 4 == 0 ? " " : "") + HexUtil.asString(buffer[i]))
+                         .collect(Collectors.joining())
         );
 
         return "'%s # %s # %s'".formatted(

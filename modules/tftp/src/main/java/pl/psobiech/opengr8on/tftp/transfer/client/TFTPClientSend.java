@@ -18,22 +18,18 @@
 
 package pl.psobiech.opengr8on.tftp.transfer.client;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.file.Path;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPException;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.tftp.packets.TFTPAcknowledgementPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
-import pl.psobiech.opengr8on.tftp.packets.TFTPPacket;
-import pl.psobiech.opengr8on.tftp.packets.TFTPWriteRequestPacket;
+import pl.psobiech.opengr8on.tftp.packets.*;
 import pl.psobiech.opengr8on.tftp.transfer.TFTPSendingTransfer;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.file.Path;
 
 public class TFTPClientSend extends TFTPSendingTransfer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPClientSend.class);

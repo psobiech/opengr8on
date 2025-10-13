@@ -18,14 +18,14 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
+import pl.psobiech.opengr8on.tftp.TFTPPacketType;
+import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
+import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-
-import pl.psobiech.opengr8on.tftp.TFTPPacketType;
-import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
-import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 
 public class TFTPDataPacket extends TFTPBaseBlockPacket {
     private final int length;

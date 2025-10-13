@@ -18,11 +18,11 @@
 
 package pl.psobiech.opengr8on.tftp.exceptions;
 
-import java.io.IOException;
-import java.net.InetAddress;
-
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorPacket;
 import pl.psobiech.opengr8on.tftp.packets.TFTPErrorType;
+
+import java.io.IOException;
+import java.net.InetAddress;
 
 /**
  * TFTP protocol exception, should cause an error to be sent to the remote client

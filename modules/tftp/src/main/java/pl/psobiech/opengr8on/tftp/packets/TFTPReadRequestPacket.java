@@ -18,12 +18,12 @@
 
 package pl.psobiech.opengr8on.tftp.packets;
 
-import java.net.InetAddress;
-
 import pl.psobiech.opengr8on.tftp.TFTPPacketType;
 import pl.psobiech.opengr8on.tftp.TFTPTransferMode;
 import pl.psobiech.opengr8on.tftp.exceptions.TFTPPacketException;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
+
+import java.net.InetAddress;
 
 public class TFTPReadRequestPacket extends TFTPRequestPacket {
     public TFTPReadRequestPacket(Payload payload) throws TFTPPacketException {

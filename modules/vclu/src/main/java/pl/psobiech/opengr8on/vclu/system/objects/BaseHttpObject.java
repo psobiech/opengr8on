@@ -18,18 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import java.io.IOException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.net.http.HttpHeaders;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sun.net.httpserver.Headers;
 import org.luaj.vm2.LuaValue;
@@ -42,9 +30,19 @@ import pl.psobiech.opengr8on.vclu.ServerVersion;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
-public abstract class BaseHttpObject extends VirtualObject {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseHttpObject.class);
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.net.http.HttpHeaders;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
+public abstract class BaseHttpObject extends VirtualObject {
     protected static final String METHOD_GET = "GET";
 
     protected static final String HEADER_CONTENT_TYPE = "Content-Type";
@@ -59,6 +57,8 @@ public abstract class BaseHttpObject extends VirtualObject {
 
     protected static final String ROOT_NAME = "root";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseHttpObject.class);
+
     protected BaseHttpObject(
             VirtualSystem virtualSystem,
             String name,
@@ -67,21 +67,6 @@ public abstract class BaseHttpObject extends VirtualObject {
             Class<? extends Enum<? extends IEvent>> eventClass
     ) {
         super(virtualSystem, name, featureClass, methodClass, eventClass);
-    }
-
-    protected String stringifyBody(HttpType requestType, LuaValue requestBodyValue) {
-        try {
-            return switch (requestType) {
-                case NONE -> null;
-                case JSON -> ObjectMapperFactory.JSON.writeValueAsString(LuaUtil.asObject(requestBodyValue));
-                case XML ->
-                        ObjectMapperFactory.XML.writer().withRootName(ROOT_NAME).writeValueAsString(LuaUtil.asObject(requestBodyValue));
-                case FORM_DATA -> urlEncode(LuaUtil.tableStringString(requestBodyValue));
-                default -> requestBodyValue.checkjstring();
-            };
-        } catch (JsonProcessingException e) {
-            throw new UnexpectedException(e);
-        }
     }
 
     protected static LuaValue parseResponseBody(HttpType responseType, Path responseBody) {
@@ -192,6 +177,34 @@ public abstract class BaseHttpObject extends VirtualObject {
         return URLDecoder.decode(key, StandardCharsets.UTF_8);
     }
 
+    protected static String urlEncode(Map<String, String> map) {
+        return Util.stringifyMap(
+                map,
+                "&", "=",
+                BaseHttpObject::urlEncodeComponent,
+                BaseHttpObject::urlEncodeComponent
+        );
+    }
+
+    protected static String urlEncodeComponent(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    protected String stringifyBody(HttpType requestType, LuaValue requestBodyValue) {
+        try {
+            return switch (requestType) {
+                case NONE -> null;
+                case JSON -> ObjectMapperFactory.JSON.writeValueAsString(LuaUtil.asObject(requestBodyValue));
+                case XML ->
+                        ObjectMapperFactory.XML.writer().withRootName(ROOT_NAME).writeValueAsString(LuaUtil.asObject(requestBodyValue));
+                case FORM_DATA -> urlEncode(LuaUtil.tableStringString(requestBodyValue));
+                default -> requestBodyValue.checkjstring();
+            };
+        } catch (JsonProcessingException e) {
+            throw new UnexpectedException(e);
+        }
+    }
+
     protected String getQueryParametersString(LuaValue queryParams) {
         if (LuaUtil.isNil(queryParams)) {
             return "";
@@ -212,19 +225,6 @@ public abstract class BaseHttpObject extends VirtualObject {
         return "?" + queryString;
     }
 
-    protected static String urlEncode(Map<String, String> map) {
-        return Util.stringifyMap(
-                map,
-                "&", "=",
-                BaseHttpObject::urlEncodeComponent,
-                BaseHttpObject::urlEncodeComponent
-        );
-    }
-
-    protected static String urlEncodeComponent(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8);
-    }
-
     protected enum HttpType {
         NONE(null),
         TEXT("text/plain"),
@@ -239,10 +239,6 @@ public abstract class BaseHttpObject extends VirtualObject {
 
         HttpType(String contentType) {
             this.contentType = contentType;
-        }
-
-        public String contentType() {
-            return contentType;
         }
 
         public static HttpType ofContentType(String contentType) {
@@ -262,6 +258,10 @@ public abstract class BaseHttpObject extends VirtualObject {
             }
 
             return OTHER;
+        }
+
+        public String contentType() {
+            return contentType;
         }
     }
 }

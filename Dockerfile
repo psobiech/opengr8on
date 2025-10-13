@@ -1,4 +1,4 @@
-FROM eclipse-temurin:24 AS app-builder
+FROM eclipse-temurin:25 AS app-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -19,14 +19,13 @@ COPY modules/lib/pom.xml modules/lib/
 COPY modules/parsers/pom.xml modules/parsers/
 COPY modules/tftp/pom.xml modules/tftp/
 COPY modules/client/pom.xml modules/client/
-COPY modules/mysensors/pom.xml modules/mysensors/
 COPY modules/vclu/pom.xml modules/vclu/
 
 COPY assembly/jar-with-dependencies.xml assembly/
 
 # https://issues.apache.org/jira/browse/MDEP-689
 #RUN mvn -B -T 4 dependency:go-offline
-RUN mvn -B -T 4 -pl '!modules/client,!modules/mysensors' compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
+RUN mvn -B -T 4 -pl '!modules/client' compile -Dorg.slf4j.simpleLogger.defaultLogLevel=ERROR -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
 FROM app-deps AS app-build
 
@@ -39,7 +38,7 @@ COPY .git .git
 
 RUN mvn -B -T 4 -pl '!modules/client' clean package -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN -Dmaven.test.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true -Dmaven.javadoc.skip=true
 
-FROM eclipse-temurin:24-alpine AS jre-build
+FROM eclipse-temurin:25 AS jre-build
 
 RUN mkdir -p /opt/build
 WORKDIR /opt/build
@@ -55,38 +54,29 @@ RUN $JAVA_HOME/bin/jlink \
          --compress=2 \
          --output /opt/build/jre
 
-FROM alpine:3 AS app-runtime
+FROM eclipse-temurin:25 AS app-runtime
 
-ARG USERNAME=vclu
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends --no-install-suggests libcap2-bin util-linux && \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf "$JAVA_HOME"
+
+ARG USERNAME=ubuntu
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
-
-ENV JAVA_HOME=/opt/java/openjdk
-ENV PATH "${JAVA_HOME}/bin:${PATH}"
-
-RUN addgroup --gid $USER_UID $USERNAME && \
-    adduser --disabled-password --gecos "" --home /opt/docker/ --ingroup $USERNAME --no-create-home \
-            --uid "$USER_UID" $USERNAME
 
 RUN mkdir -p /opt/docker/runtime
 WORKDIR /opt/docker
 
-COPY --from=jre-build /opt/build/jre $JAVA_HOME
+COPY entrypoint.sh .
+COPY --from=jre-build /opt/build/jre "$JAVA_HOME"
+
 COPY --from=app-build /opt/build/modules/vclu/target/vclu-jar-with-dependencies.jar /opt/docker/vclu.jar
 #COPY runtime .
 
-RUN chmod a+x /opt/docker/vclu.jar && \
-    chmod -R a+rwX /opt/docker/runtime
+RUN chown -R $USER_UID:$USER_GID /opt/docker/runtime && \
+    chmod -R a+rwX /opt/docker/runtime && \
+    chmod a=,u+rx /opt/docker/entrypoint.sh
 
-USER $USERNAME
-
-ENTRYPOINT [ \
-  "java", \
-  "-XX:+DisableAttachMechanism", \
-  "-server", "-Xshare:off", "-XX:+UseContainerSupport", "-XX:+UseZGC", "-XX:+UseDynamicNumberOfGCThreads", \
-  "-XX:+ExitOnOutOfMemoryError", \
-  "-Djava.net.preferIPv6Addresses=false", \
-  "-Djava.net.preferIPv4Stack=true", \
-  "-Djava.awt.headless=true", "-Dfile.encoding=UTF-8", \
-  "-jar", "vclu.jar" \
-]
+ENTRYPOINT [ "/opt/docker/entrypoint.sh" ]

@@ -18,11 +18,6 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.net.Inet4Address;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.client.Command;
@@ -32,6 +27,11 @@ import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.Util;
+
+import java.net.Inet4Address;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 
 public class DiscoverCLUsCommand {
     private static final int HASH_MOD_A = 0x0D;
@@ -168,7 +168,7 @@ public class DiscoverCLUsCommand {
 
         final byte[] randomBytesHash = hash(randomBytes);
         final byte[] randomEncrypted = CipherKey.getInitialCipherKey(iv, privateKey)
-                .encrypt(randomBytesHash);
+                                                .encrypt(randomBytesHash);
         if (Arrays.equals(randomEncrypted, encrypted)) {
             return CipherTypeEnum.PROJECT;
         }

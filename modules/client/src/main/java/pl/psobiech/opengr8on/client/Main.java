@@ -18,14 +18,6 @@
 
 package pl.psobiech.opengr8on.client;
 
-import java.io.IOException;
-import java.net.Inet4Address;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -44,6 +36,14 @@ import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.xml.interfaces.CLU;
 import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
 import pl.psobiech.opengr8on.xml.omp.OmpReader;
+
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 
 public class Main {
     private static final Duration DEFAULT_LONG_TIMEOUT = Duration.ofMillis(30_000);
@@ -79,16 +79,16 @@ public class Main {
         if (commandLine.hasOption(CLIParameters.DISCOVER_OPTION)) {
             final InterfaceRegistry interfaceRegistry = CLIParameters.getInterfaceRegistry(commandLine);
             final CipherKey projectCipherKey = CLIParameters.getProjectCipherKey(commandLine)
-                    .orElseGet(() -> {
-                        final CipherKey cipherKey = new CipherKey();
-                        LOGGER.debug("Generated random project key: {}", cipherKey);
+                                                            .orElseGet(() -> {
+                                                                final CipherKey cipherKey = new CipherKey();
+                                                                LOGGER.debug("Generated random project key: {}", cipherKey);
 
-                        return cipherKey;
-                    });
+                                                                return cipherKey;
+                                                            });
 
             final Integer cluLimit = Optional.ofNullable(commandLine.getOptionValue(CLIParameters.CLU_LIMIT_PATH_OPTION))
-                    .map(Integer::parseInt)
-                    .orElse(1);
+                                             .map(Integer::parseInt)
+                                             .orElse(1);
 
             discover(networkInterface, projectCipherKey, cluLimit, interfaceRegistry);
 
@@ -100,9 +100,9 @@ public class Main {
         if (commandLine.hasOption(CLIParameters.FETCH_OPTION)) {
             final InterfaceRegistry interfaceRegistry = CLIParameters.getInterfaceRegistry(commandLine);
             final CipherKey projectCipherKey = Optional.ofNullable(commandLine.getOptionValue(CLIParameters.PROJECT_PATH_OPTION))
-                    .map(Paths::get)
-                    .map(OmpReader::readProjectCipherKey)
-                    .orElseThrow(() -> new UnexpectedException("Provide a project location"));
+                                                       .map(Paths::get)
+                                                       .map(OmpReader::readProjectCipherKey)
+                                                       .orElseThrow(() -> new UnexpectedException("Provide a project location"));
 
             final CLUDevice device = fetchDevice(networkInterface, ipAddress, projectCipherKey, interfaceRegistry);
             try (CLUClient client = new CLUClient(networkInterface.getAddress(), device, projectCipherKey)) {
@@ -112,7 +112,7 @@ public class Main {
             final String command = commandLine.getOptionValue(CLIParameters.EXECUTE_OPTION);
 
             final CipherKey projectCipherKey = CLIParameters.getProjectCipherKey(commandLine)
-                    .orElseThrow(() -> new UnexpectedException("Provide a project location"));
+                                                            .orElseThrow(() -> new UnexpectedException("Provide a project location"));
 
             try (CLUClient client = new CLUClient(networkInterface.getAddress(), ipAddress, projectCipherKey)) {
                 LOGGER.info(client.execute(command).get());
@@ -150,40 +150,40 @@ public class Main {
     ) {
         try (Client broadcastClient = new Client(networkInterface.getAddress())) {
             broadcastClient.discover(
-                            projectCipherKey, PRIVATE_KEYS,
-                            DEFAULT_LONG_TIMEOUT, cluLimit
-                    )
-                    .map(cluDevice -> {
-                        LOGGER.debug("Discovered device: {}", cluDevice);
+                                   projectCipherKey, PRIVATE_KEYS,
+                                   DEFAULT_LONG_TIMEOUT, cluLimit
+                           )
+                           .map(cluDevice -> {
+                               LOGGER.debug("Discovered device: {}", cluDevice);
 
-                        return new CLUClient(networkInterface.getAddress(), cluDevice);
-                    })
-                    .forEach(client -> {
-                        try (client) {
-                            final CLUDevice device = client.getCluDevice();
+                               return new CLUClient(networkInterface.getAddress(), cluDevice);
+                           })
+                           .forEach(client -> {
+                               try (client) {
+                                   final CLUDevice device = client.getCluDevice();
 
-                            client.updateCipherKey(projectCipherKey)
-                                    .get();
+                                   client.updateCipherKey(projectCipherKey)
+                                         .get();
 
-                            client.reset(DEFAULT_LONG_TIMEOUT)
-                                    .get();
+                                   client.reset(DEFAULT_LONG_TIMEOUT)
+                                         .get();
 
-                            Util.repeatUntilTrueOrTimeout(
-                                            DEFAULT_LONG_TIMEOUT,
-                                            duration ->
-                                                    client.checkAlive()
-                                    )
-                                    .orElseThrow(() -> new UnexpectedException("CLU did not came up alive"));
+                                   Util.repeatUntilTrueOrTimeout(
+                                               DEFAULT_LONG_TIMEOUT,
+                                               duration ->
+                                                       client.checkAlive()
+                                       )
+                                       .orElseThrow(() -> new UnexpectedException("CLU did not came up alive"));
 
-                            detect(interfaceRegistry, client, device);
-                        }
-                    });
+                                   detect(interfaceRegistry, client, device);
+                               }
+                           });
         }
     }
 
     private static void detect(InterfaceRegistry interfaceRegistry, CLUClient client, CLUDevice device) {
         client.startTFTPdServer()
-                .get();
+              .get();
 
         final Path temporaryFile = FileUtil.temporaryFile();
         try {
@@ -191,16 +191,16 @@ public class Main {
             if (path.isPresent()) {
                 final Path configJsonFile = path.get();
                 final CLUDeviceConfig configJson = ObjectMapperFactory.JSON.readerFor(CLUDeviceConfig.class)
-                        .readValue(configJsonFile.toFile());
+                                                                           .readValue(configJsonFile.toFile());
 
                 LOGGER.info(device.toString());
                 LOGGER.info(configJson.toString());
 
                 final CLU cluDefinition = interfaceRegistry.getCLU(
-                                configJson.getHardwareType(), configJson.getHardwareVersion(),
-                                configJson.getFirmwareType(), configJson.getFirmwareVersion()
-                        )
-                        .get();
+                                                                   configJson.getHardwareType(), configJson.getHardwareVersion(),
+                                                                   configJson.getFirmwareType(), configJson.getFirmwareVersion()
+                                                           )
+                                                           .get();
 
                 LOGGER.info(cluDefinition.getTypeName());
             }
@@ -211,7 +211,7 @@ public class Main {
         }
 
         client.stopTFTPdServer()
-                .get();
+              .get();
     }
 
     private static CLUDevice fetchDevice(
@@ -221,7 +221,7 @@ public class Main {
         final CLUDevice device;
         try (CLUClient client = new CLUClient(networkInterface.getAddress(), ipAddress, projectCipherKey)) {
             client.startTFTPdServer()
-                    .get();
+                  .get();
 
             final Path temporaryFile = FileUtil.temporaryFile();
             try {
@@ -231,7 +231,7 @@ public class Main {
                 }
 
                 final CLUDeviceConfig configJson = ObjectMapperFactory.JSON.readerFor(CLUDeviceConfig.class)
-                        .readValue(path.get().toFile());
+                                                                           .readValue(path.get().toFile());
 
                 device = new CLUDevice(
                         configJson.getSerialNumber(),
@@ -244,17 +244,17 @@ public class Main {
                 LOGGER.debug(configJson.toString());
 
                 interfaceRegistry.getCLU(
-                                configJson.getHardwareType(), configJson.getHardwareVersion(),
-                                configJson.getFirmwareType(), configJson.getFirmwareVersion()
-                        )
-                        .ifPresent(cluDefinition -> LOGGER.debug(cluDefinition.getTypeName()));
+                                         configJson.getHardwareType(), configJson.getHardwareVersion(),
+                                         configJson.getFirmwareType(), configJson.getFirmwareVersion()
+                                 )
+                                 .ifPresent(cluDefinition -> LOGGER.debug(cluDefinition.getTypeName()));
 
             } finally {
                 FileUtil.deleteQuietly(temporaryFile);
             }
 
             client.stopTFTPdServer()
-                    .get();
+                  .get();
         }
 
         return device;

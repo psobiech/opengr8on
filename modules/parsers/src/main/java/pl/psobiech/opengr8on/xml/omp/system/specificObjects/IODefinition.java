@@ -1,10 +1,7 @@
 package pl.psobiech.opengr8on.xml.omp.system.specificObjects;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-
-import java.util.List;
 
 public class IODefinition {
     @JacksonXmlProperty(isAttribute = true)

@@ -18,21 +18,14 @@
 
 package pl.psobiech.opengr8on.util;
 
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
+
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
 public final class Util {
     private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
@@ -67,7 +60,7 @@ public final class Util {
             final long startedAt = System.nanoTime();
 
             fn.apply(timeout)
-                    .ifPresent(results::add);
+              .ifPresent(results::add);
 
             timeout = timeout.minusNanos(System.nanoTime() - startedAt);
         } while (timeout.isPositive() && results.size() < limit && !Thread.interrupted());
@@ -150,8 +143,8 @@ public final class Util {
         }
 
         return valueList.stream()
-                .map(valueAsString -> Enum.valueOf(enumClass, valueAsString))
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(enumClass)));
+                        .map(valueAsString -> Enum.valueOf(enumClass, valueAsString))
+                        .collect(Collectors.toCollection(() -> EnumSet.noneOf(enumClass)));
     }
 
     public static <T> String stringifyList(List<T> list, String delimiter, Function<T, String> toString) {
@@ -179,8 +172,8 @@ public final class Util {
             }
 
             sb.append(toStringKey.apply(entry.getKey()))
-                    .append(entryDelimiter)
-                    .append(toStringValue.apply(entry.getValue()));
+              .append(entryDelimiter)
+              .append(toStringValue.apply(entry.getValue()));
         }
 
         return sb.toString();

@@ -18,16 +18,18 @@
 
 package pl.psobiech.opengr8on.client.commands;
 
-import java.net.Inet4Address;
-import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.client.Command;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 
+import java.net.Inet4Address;
+import java.util.Optional;
+
 public class GenerateMeasurementsCommand {
+    public static final String RESPONSE_OK = "ok";
+
     private static final int IP_ADDRESS_PART = 1;
 
     private static final int SESSION_ID_PART = 2;
@@ -35,8 +37,6 @@ public class GenerateMeasurementsCommand {
     private static final int UNKNOWN_PART = 3;
 
     private static final int RETURN_VALUE_PART = 3;
-
-    public static final String RESPONSE_OK = "ok";
 
     private GenerateMeasurementsCommand() {
         // NOP

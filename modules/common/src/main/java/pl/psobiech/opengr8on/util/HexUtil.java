@@ -18,11 +18,11 @@
 
 package pl.psobiech.opengr8on.util;
 
-import java.math.BigInteger;
-
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+
+import java.math.BigInteger;
 
 import static org.apache.commons.lang3.StringUtils.upperCase;
 

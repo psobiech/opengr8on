@@ -1,11 +1,14 @@
 services:
   opengr8on:
-    image: ghcr.io/psobiech/opengr8on:edge
+    image: ghcr.io/psobiech/opengr8on:raw
     command: wlan0
     restart: unless-stopped
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
+    read_only: false
+    privileged: true
+    cap_add:
+      - NET_BIND_SERVICE
+      - NET_BROADCAST
+      - SETPCAP
     build:
       target: app-runtime
     network_mode: "host"

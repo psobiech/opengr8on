@@ -1,64 +1,64 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <object class="999" name="MqttTopic" version="1">
-  <features>
-    <feature default="\z" get="true" index="0" name="Topic" set="false" type="str" unit="string">
-      <hint lang="pl" value="Topic"/>
-      <hint lang="en" value="Topic"/>
-      <desc resKey="mqttsubscription_topic"/>
-    </feature>
-    <feature default="\z" get="true" index="1" name="Message" set="false" type="str" unit="string">
-      <hint lang="pl" value="Zawartość wiadomości MQTT"/>
-      <hint lang="en" value="The contents of the MQTT message"/>
-      <desc resKey="mqttsubscription_message"/>
-    </feature>
-  </features>
-  <methods>
-    <method call="set" index="0" name="SetTopic" return="void">
-      <param name="Topic" type="str" unit="string"/>
-      <hint lang="pl" value="Zmienia topic"/>
-      <hint lang="en" value="Changes topic"/>
-      <desc resKey="mqttsubscription_settopic"/>
-    </method>
-    <method call="set" index="1" name="SetMessage" return="void">
-      <param name="Message" type="str" unit="string"/>
-      <hint lang="pl" value="Zmienia zawartość wiadomości"/>
-      <hint lang="en" value="Changes contents of the message"/>
-      <desc resKey="mqttsubscription_setmessage"/>
-    </method>
+    <features>
+        <feature default="\z" get="true" index="0" name="Topic" set="false" type="str" unit="string">
+            <hint lang="pl" value="Topic"/>
+            <hint lang="en" value="Topic"/>
+            <desc resKey="mqttsubscription_topic"/>
+        </feature>
+        <feature default="\z" get="true" index="1" name="Message" set="false" type="str" unit="string">
+            <hint lang="pl" value="Zawartość wiadomości MQTT"/>
+            <hint lang="en" value="The contents of the MQTT message"/>
+            <desc resKey="mqttsubscription_message"/>
+        </feature>
+    </features>
+    <methods>
+        <method call="set" index="0" name="SetTopic" return="void">
+            <param name="Topic" type="str" unit="string"/>
+            <hint lang="pl" value="Zmienia topic"/>
+            <hint lang="en" value="Changes topic"/>
+            <desc resKey="mqttsubscription_settopic"/>
+        </method>
+        <method call="set" index="1" name="SetMessage" return="void">
+            <param name="Message" type="str" unit="string"/>
+            <hint lang="pl" value="Zmienia zawartość wiadomości"/>
+            <hint lang="en" value="Changes contents of the message"/>
+            <desc resKey="mqttsubscription_setmessage"/>
+        </method>
 
-    <method call="execute" index="0" name="Subscribe" return="void">
-      <param name="Topic" type="str" unit="string"/>
-      <hint lang="pl" value="Oznacza wiadomość jako otrzymaną"/>
-      <hint lang="en" value="Marks message as received"/>
-      <desc resKey="mqttsubscription_subscribe"/>
-    </method>
-    <method call="execute" index="1" name="Unsubscribe" return="void">
-      <param name="Topic" type="str" unit="string"/>
-      <hint lang="pl" value="Oznacza wiadomość jako otrzymaną"/>
-      <hint lang="en" value="Marks message as received"/>
-      <desc resKey="mqttsubscription_unsubscribe"/>
-    </method>
+        <method call="execute" index="0" name="Subscribe" return="void">
+            <param name="Topic" type="str" unit="string"/>
+            <hint lang="pl" value="Oznacza wiadomość jako otrzymaną"/>
+            <hint lang="en" value="Marks message as received"/>
+            <desc resKey="mqttsubscription_subscribe"/>
+        </method>
+        <method call="execute" index="1" name="Unsubscribe" return="void">
+            <param name="Topic" type="str" unit="string"/>
+            <hint lang="pl" value="Oznacza wiadomość jako otrzymaną"/>
+            <hint lang="en" value="Marks message as received"/>
+            <desc resKey="mqttsubscription_unsubscribe"/>
+        </method>
 
-    <method call="execute" index="10" name="Publish" return="void">
-      <param name="Topic" type="str" unit="string"/>
-      <param name="Message" type="str" unit="string"/>
-      <hint lang="pl" value="Publikuje wiadomość na zadany Topic"/>
-      <hint lang="en" value="Publishes the message on the given Topic"/>
-      <desc resKey="mqttsubscription_publish"/>
-    </method>
-  </methods>
-  <events>
-    <event address="0" name="OnInit">
-      <hint lang="pl"
-        value="Zdarzenie wywoływane w momencie inicjalizacji obiektu"/>
-      <hint lang="en" value="Event occurring when the object gets initialized"/>
-      <desc resKey="mqttsubscription_oninit"/>
-    </event>
-    <event address="1" name="OnMessage">
-      <hint lang="pl"
-        value="Zdarzenie wywoływane w momencie otrzymania wiadomości"/>
-      <hint lang="en" value="Event occurring when the message is received"/>
-      <desc resKey="mqttsubscription_onmessage"/>
-    </event>
-  </events>
+        <method call="execute" index="10" name="Publish" return="void">
+            <param name="Topic" type="str" unit="string"/>
+            <param name="Message" type="str" unit="string"/>
+            <hint lang="pl" value="Publikuje wiadomość na zadany Topic"/>
+            <hint lang="en" value="Publishes the message on the given Topic"/>
+            <desc resKey="mqttsubscription_publish"/>
+        </method>
+    </methods>
+    <events>
+        <event address="0" name="OnInit">
+            <hint lang="pl"
+                  value="Zdarzenie wywoływane w momencie inicjalizacji obiektu"/>
+            <hint lang="en" value="Event occurring when the object gets initialized"/>
+            <desc resKey="mqttsubscription_oninit"/>
+        </event>
+        <event address="1" name="OnMessage">
+            <hint lang="pl"
+                  value="Zdarzenie wywoływane w momencie otrzymania wiadomości"/>
+            <hint lang="en" value="Event occurring when the message is received"/>
+            <desc resKey="mqttsubscription_onmessage"/>
+        </event>
+    </events>
 </object>

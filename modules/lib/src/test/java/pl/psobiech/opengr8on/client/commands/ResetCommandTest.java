@@ -39,7 +39,7 @@ class ResetCommandTest {
         //
 
         final Request output = ResetCommand.requestFromByteArray(input.asByteArray())
-                .get();
+                                           .get();
 
         //
 
@@ -55,7 +55,7 @@ class ResetCommandTest {
         //
 
         final Response output = ResetCommand.responseFromByteArray(input.asByteArray())
-                .get();
+                                            .get();
 
         //
 
