@@ -285,9 +285,12 @@ public class SocketUtil {
         public void open() {
             socketLock.lock();
             try {
-                this.socket = new DatagramSocket(new InetSocketAddress(address, port));
+                this.socket = new DatagramSocket(null);
+                this.socket.setReuseAddress(true);
                 this.socket.setBroadcast(broadcast);
                 this.socket.setSoTimeout(DEFAULT_TIMEOUT_MILLISECONDS);
+
+                this.socket.bind(new InetSocketAddress(address, port));
             } catch (SocketException e) {
                 if (UncheckedInterruptedException.wasSocketInterrupted(e)) {
                     throw new UncheckedInterruptedException(e);

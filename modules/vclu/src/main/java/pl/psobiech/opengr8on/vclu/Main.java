@@ -66,7 +66,7 @@ public class Main {
                                                                     .or(() ->
                                                                                 IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
                                                                     )
-                                                                    .get();
+                                                                    .orElseThrow(() -> new UnexpectedException("Cannot find IP address of interface: " + networkInterfaceNameOrIpAddress));
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 

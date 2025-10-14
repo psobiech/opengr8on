@@ -86,8 +86,6 @@ public class Server implements Closeable {
 
     private final CLUDevice cluDevice;
 
-    private final UDPSocket fallbackBroadcastCommandSocket;
-
     private final UDPSocket responseSocket;
 
     private final ReentrantLock cipherKeyLock = new ReentrantLock();
@@ -129,7 +127,6 @@ public class Server implements Closeable {
         this.cluDevice = cluDevice;
 
         this.broadcastCommandSocket = broadcastCommandSocket;
-        this.fallbackBroadcastCommandSocket = fallbackBroadcastCommandSocket;
 
         this.commandSocket = commandSocket;
         this.responseSocket = responseSocket;
@@ -153,28 +150,7 @@ public class Server implements Closeable {
     public void start() {
         responseSocket.open();
         commandSocket.open();
-
-        boolean broadcastSocketBound;
-        try {
-            broadcastCommandSocket.open();
-
-            broadcastSocketBound = true;
-
-        } catch (UnexpectedException e) {
-            broadcastSocketBound = false;
-
-            LOGGER.warn("Failed to open broadcast socket on: {}, binding on {} instead", broadcastCommandSocket.getAddress(), fallbackBroadcastCommandSocket.getAddress(), e);
-
-            fallbackBroadcastCommandSocket.open();
-        }
-
-        final UDPSocket workingBroadcastSocket;
-        if (broadcastSocketBound) {
-            workingBroadcastSocket = broadcastCommandSocket;
-        } else {
-
-            workingBroadcastSocket = fallbackBroadcastCommandSocket;
-        }
+        broadcastCommandSocket.open();
 
         executor.execute(() ->
                                  handleCommands(
@@ -200,7 +176,7 @@ public class Server implements Closeable {
                                                  cipherKeyLock.unlock();
                                              }
                                          },
-                                         workingBroadcastSocket, this::onBroadcastCommand
+                                         broadcastCommandSocket, this::onBroadcastCommand
                                  )
         );
 
@@ -734,7 +710,7 @@ public class Server implements Closeable {
         ThreadUtil.closeQuietly(executor);
 
         IOUtil.closeQuietly(tftpServer, mqttClient, mainThread);
-        IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, fallbackBroadcastCommandSocket, responseSocket);
+        IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, responseSocket);
     }
 
     private record Request(CipherKey cipherKey, Payload payload) {

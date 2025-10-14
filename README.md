@@ -4,9 +4,19 @@
 ![jacoco.svg](badges%2Fjacoco.svg)
 [![AGPLv3 License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
-# In Progress - Home Assistant Integration via MQTT Discovery (working PoC)
+# Quickstart
 
-![Home Assistant PoC](docs/img/home_assistant.png)
+1. Zainstalowany docker i docker-compose
+1. W Grenton Object Manager (OM) w menu `Okno -> Ustawienia` i *odznaczamy* opcję `Automatycznie aktualizuj bazę interfejsów podczas otwierania projektu`
+1. Pobieramy to repozytorium: `git clone git@github.com:psobiech/opengr8on.git --depth=1 ./vclu`
+1. Kopiujemy zawartość katalogu interfesjów ./vclu/runtime/[device-interfaces](runtime/device-interfaces)/* do katalogu gdzie zainstalowany jest Grenton Object Manager (do podkatalogu `./configuration/com.grenton.om/device-interfaces/`). ![noupdate.png](docs/img/noupdate.png) Tę czynność musimy wykonać po każdej aktualiacji interfejsów. 
+1. Przechodzimy do katalogu ./vclu/[runtime](runtime) i edytujemy plik docker-compose.yml, zmieniając linijkę `command: wlan0` na nazwę interfejsu sieciowego lub lokalny adress IP, eg. `command: 192.168.0.111`
+1. (opcjonalnie) Kopiujemy nasz obecny projekt do lokalizacji ./vclu/[runtime](runtime)/project.omp
+1. Uruchamiamy VCLU poprzez polecenie: `docker-compose up`
+1. W OM otwieramy projekt i wykonujemy discovery, dla VCLU jako klucz wpisujemy `00000000` i nie zmieniamy adresu IP.
+1. Powinniśmy już widzieć VCLU w OM jak inny normalny CLU.
+1. Jeżeli dodaliśmy nasz plik z projektem .omp, to możemy teraz uzupełnić dane do serwera MQTT oraz uruchomić MQTT discovery. ![mqtt.png](docs/img/mqtt.png)
+![home_assistant.png](docs/img/home_assistant.png)
 
 # Virtual CLU
 

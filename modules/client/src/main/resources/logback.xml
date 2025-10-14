@@ -20,8 +20,8 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] [%thread] %logger{15} -
-                %message%n%xException{10}
+            <pattern>
+                %date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] [%thread] %logger{15} - %message%n%xException{10}
             </pattern>
         </encoder>
     </appender>

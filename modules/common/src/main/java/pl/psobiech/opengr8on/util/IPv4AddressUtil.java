@@ -37,7 +37,7 @@ public final class IPv4AddressUtil {
     /**
      * Wildcard broadcast address
      */
-    public static final Inet4Address BROADCAST_ADDRESS = parseIPv4("255.255.255.255");
+    public static final Inet4Address BROADCAST_ADDRESS = parseIPv4("0.0.0.0");
 
     /**
      * Interface mac address prefixes to ignore
@@ -167,6 +167,8 @@ public final class IPv4AddressUtil {
                         || networkInterface.isPointToPoint()
                         || isBlacklisted(networkInterface)
                 ) {
+                    LOGGER.info("Ignoring interface: {}", networkInterface.getName());
+
                     continue;
                 }
             } catch (SocketException e) {
