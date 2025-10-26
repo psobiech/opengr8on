@@ -72,7 +72,7 @@ public class RemoteCLUButton implements RemoteCLUDevice {
                       .publish(
                               discoveryTopic,
                               ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
-                              false
+                              true
                       );
         } catch (MqttException | JsonProcessingException | RuntimeException e) {
             LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
