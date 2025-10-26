@@ -110,7 +110,7 @@ public abstract class BaseRemoteCLUSensor implements RemoteCLUDevice {
     protected String pushState(String lastState) {
         final MqttDiscovery discoveryMessage = getDiscoveryMessage();
         final String stateTopic = discoveryMessage.getStateTopic();
-        if (stateTopic != null) {
+        if (stateTopic == null) {
             return lastState;
         }
 
