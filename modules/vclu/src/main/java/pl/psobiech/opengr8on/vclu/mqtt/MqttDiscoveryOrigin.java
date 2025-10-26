@@ -3,6 +3,7 @@ package pl.psobiech.opengr8on.vclu.mqtt;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import pl.psobiech.opengr8on.vclu.ServerVersion;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MqttDiscoveryOrigin {
@@ -13,6 +14,13 @@ public class MqttDiscoveryOrigin {
 
     @JsonProperty("url")
     private final String url;
+
+    public MqttDiscoveryOrigin() {
+        this(
+                "opengr8on", ServerVersion.get(),
+                "https://github.com/psobiech/opengr8on"
+        );
+    }
 
     @JsonCreator
     public MqttDiscoveryOrigin(String name, String softwareVersion, String url) {

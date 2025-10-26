@@ -32,10 +32,9 @@ import java.io.Closeable;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 public class MqttClient implements Closeable {
     public static final int MQTT_QOS_AT_LEAST_ONCE = 1;
@@ -52,6 +51,8 @@ public class MqttClient implements Closeable {
 
     // the mqtt client requires at least 4 threads (also it does not support virtual threads)
     private final ScheduledExecutorService executor = ThreadUtil.daemonScheduler(4, "MQTT");
+
+    private Map<String, List<Consumer<byte[]>>> mqttSubscribtions = new HashMap<>();
 
     private MqttAsyncClient mqttClient;
 
@@ -111,18 +112,34 @@ public class MqttClient implements Closeable {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
-                        mqttTopic.onMessage(
-                                topic, message.getPayload(),
-                                () ->
-                                        executor.submit(() -> {
-                                            try {
-                                                mqttClient.messageArrivedComplete(message.getId(), message.getQos());
-                                            } catch (MqttException e) {
-                                                LOGGER.error(e.getMessage(), e);
-                                            }
-                                        })
-                        );
+                    try {
+                        for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
+                            try {
+                                mqttTopic.onMessage(
+                                        topic, message.getPayload(), () -> {
+                                        }
+                                );
+                            } catch (Exception e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+                        }
+
+                        final List<Consumer<byte[]>> consumers = mqttSubscribtions.getOrDefault(topic, Collections.emptyList());
+                        for (Consumer<byte[]> consumer : consumers) {
+                            try {
+                                consumer.accept(message.getPayload());
+                            } catch (Exception e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+                        }
+                    } finally {
+                        executor.submit(() -> {
+                            try {
+                                mqttClient.messageArrivedComplete(message.getId(), message.getQos());
+                            } catch (MqttException e) {
+                                LOGGER.error(e.getMessage(), e);
+                            }
+                        });
                     }
                 }
 
@@ -177,6 +194,17 @@ public class MqttClient implements Closeable {
         mqttClient.subscribe(topicFilters, qos);
     }
 
+    public void subscribe(String topicFilter, Consumer<byte[]> consumer) {
+        mqttSubscribtions.computeIfAbsent(topicFilter, ignored -> new ArrayList<>())
+                         .add(consumer);
+
+        try {
+            subscribe(topicFilter);
+        } catch (MqttException e) {
+            throw new UnexpectedException(e);
+        }
+    }
+
     public void subscribe(String topicFilter) throws MqttException {
         LOGGER.trace("MQTT {} Subscribe: {} / MQTT_QOS_AT_LEAST_ONCE", mqttClient.getClientId(), topicFilter);
 
@@ -205,13 +233,45 @@ public class MqttClient implements Closeable {
     }
 
     public int publish(String topic, byte[] payload, boolean retained) throws MqttException {
-        LOGGER.trace("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
+        LOGGER.debug("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
 
-        return mqttClient.publish(
-                                 topic, payload,
-                                 MQTT_QOS_AT_LEAST_ONCE, retained
-                         )
-                         .getMessageId();
+        IMqttDeliveryToken publish = null;
+        MqttException exception = null;
+        for (int i = 0; i < 21; i++) {
+            try {
+                publish = mqttClient.publish(
+                        topic, payload,
+                        MQTT_QOS_AT_LEAST_ONCE, retained
+                );
+
+                if (publish == null) {
+                    throw new UnexpectedException("mqtt publish returned null");
+                }
+
+                break;
+            } catch (MqttException e) {
+                exception = e;
+                if (e.getReasonCode() == MqttException.REASON_CODE_MAX_INFLIGHT) {
+                    try {
+                        Thread.sleep(10L);
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+
+                        throw new UnexpectedException(ex);
+                    }
+
+                    continue;
+                } else {
+                    throw e;
+                }
+            }
+        }
+
+        if (publish == null) {
+            throw exception;
+        }
+
+        return publish.getMessageId();
     }
 
     @Override

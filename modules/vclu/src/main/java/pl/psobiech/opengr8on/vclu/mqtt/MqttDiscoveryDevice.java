@@ -3,6 +3,7 @@ package pl.psobiech.opengr8on.vclu.mqtt;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MqttDiscoveryDevice {
@@ -21,6 +22,15 @@ public class MqttDiscoveryDevice {
 
     @JsonProperty("hw_version")
     private final String hardwareVersion;
+
+    public MqttDiscoveryDevice(SpecificObject clu) {
+        this(
+                clu.getNameOnCLU(), clu.getName(), "Grenton",
+                clu.getSerialNumber(),
+                clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
+                clu.getHardwareType() + "_" + clu.getHardwareVersion()
+        );
+    }
 
     @JsonCreator
     public MqttDiscoveryDevice(String identifier, String name, String manufacturer, String serialNumber, String softwareVersion, String hardwareVersion) {

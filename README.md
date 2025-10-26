@@ -18,6 +18,17 @@
 1. Jeżeli dodaliśmy nasz plik z projektem .omp, to możemy teraz uzupełnić dane do serwera MQTT oraz uruchomić MQTT discovery. ![mqtt.png](docs/img/mqtt.png)
 ![home_assistant.png](docs/img/home_assistant.png)
 
+Automatycznie odczytane i dodane do HASS sa obecnie nastepujace urzadzenia (wszystkie nazwy są identycznie jak w projekcie .omp):
+- Rolety (ROLLER_SHUTTER) ![shutter.png](docs/img/shutter.png)
+- Dimmery (DIMM)
+- Włączniki (DOUT) ![dout.png](docs/img/dout.png)
+- Sterowniki RGBW (LEDRGB) ![ledrgb.png](docs/img/ledrgb.png)
+- Czujniki temperatury (PANELSENSTEMP)
+- Czujniki jasności (PANELSENSLIGHT)
+- Czujniki napięcia (PowerSupplyVoltage)
+
+TODO: Asynchroniczne wysylanie danych z CLU, np. przed podpiecie sie po onValueChange eventy, na razie stany sa jedynie pollowane
+
 # Virtual CLU
 
 As of now, the VCLU is complete enough to be able to check out how the Grenton system / Object Manager can be used,

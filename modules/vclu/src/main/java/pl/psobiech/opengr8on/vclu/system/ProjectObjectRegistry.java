@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.xml.omp.OmpReader;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,20 +37,28 @@ public class ProjectObjectRegistry implements Closeable {
 
     private final Map<Long, SpecificObject> referenceObjectMap;
 
+    private final Map<String, SpecificObject> cluMap;
+
     private final Map<String, Set<SpecificObject>> cluObjectsMap;
 
     public ProjectObjectRegistry(Path rootDirectory) {
         final Path projectOmpPath = rootDirectory.getParent().resolve(PROJECT_FILE);
         if (!Files.exists(projectOmpPath)) {
             this.referenceObjectMap = Collections.emptyMap();
+            this.cluMap = Collections.emptyMap();
             this.cluObjectsMap = Collections.emptyMap();
 
             return;
         }
 
         this.referenceObjectMap = Collections.unmodifiableMap(OmpReader.readAllObjects(projectOmpPath));
+        final var clus = new HashMap<String, SpecificObject>();
         final var cluObjects = new HashMap<String, Set<SpecificObject>>();
         for (SpecificObject object : referenceObjectMap.values()) {
+            if (object.getType() == SpecificObjectType.CLU) {
+                clus.put(object.getNameOnCLU(), object);
+            }
+
             SpecificObject clu = object.getClu();
             if (clu != null && clu.getReference() != null) {
                 clu = referenceObjectMap.get(clu.getReference());
@@ -70,6 +79,7 @@ public class ProjectObjectRegistry implements Closeable {
             cluObjectsUnmodifiable.put(entry.getKey(), Collections.unmodifiableSet(entry.getValue()));
         }
 
+        cluMap = Collections.unmodifiableMap(clus);
         cluObjectsMap = Collections.unmodifiableMap(cluObjectsUnmodifiable);
     }
 
@@ -81,6 +91,14 @@ public class ProjectObjectRegistry implements Closeable {
         return Optional.ofNullable(
                 referenceObjectMap.get(reference)
         );
+    }
+
+    public SpecificObject cluByName(String cluName) {
+        if (cluName == null) {
+            return null;
+        }
+
+        return cluMap.get(cluName);
     }
 
     public Set<SpecificObject> byCluName(String cluName) {

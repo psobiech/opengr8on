@@ -61,9 +61,9 @@ public class InterfaceRegistryTest {
 
         // TODO: more granular checks
         final CLUInterface anInterface = vclu.getInterface();
-        assertEquals(18, anInterface.getFeatures().size());
-        assertEquals(2, anInterface.getMethods().size());
-        assertEquals(2, anInterface.getEvents().size());
+        assertEquals(19, anInterface.getFeatures().size());
+        assertEquals(4, anInterface.getMethods().size());
+        assertEquals(3, anInterface.getEvents().size());
 
         final List<CLUObjectRestriction> objects = vclu.getObjects();
         assertEquals(4, objects.size());

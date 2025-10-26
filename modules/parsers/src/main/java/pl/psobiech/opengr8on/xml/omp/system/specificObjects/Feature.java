@@ -15,7 +15,7 @@ public class Feature {
 
     private final FeatureType type;
 
-    private final String accecssType;
+    private final String accessType;
 
     private final String initValue;
 
@@ -30,13 +30,13 @@ public class Feature {
     private final String constrainAsString;
 
     @JsonCreator
-    public Feature(Long id, String name, String hint, Boolean visible, FeatureType type, String accecssType, String initValue, String defaultInitValue, String unit, Float divisor, Long index, String constrainAsString) {
+    public Feature(Long id, String name, String hint, Boolean visible, FeatureType type, String accessType, String initValue, String defaultInitValue, String unit, Float divisor, Long index, String constrainAsString) {
         this.id = id;
         this.name = name;
         this.hint = hint;
         this.visible = visible;
         this.type = type;
-        this.accecssType = accecssType;
+        this.accessType = accessType;
         this.initValue = initValue;
         this.defaultInitValue = defaultInitValue;
         this.unit = unit;
@@ -65,8 +65,8 @@ public class Feature {
         return type;
     }
 
-    public String getAccecssType() {
-        return accecssType;
+    public String getAccessType() {
+        return accessType;
     }
 
     public String getInitValue() {

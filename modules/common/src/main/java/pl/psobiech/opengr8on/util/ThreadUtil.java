@@ -20,6 +20,7 @@ package pl.psobiech.opengr8on.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
 import java.util.concurrent.*;
 
@@ -59,6 +60,18 @@ public class ThreadUtil {
 
     private ThreadUtil() {
         // NOP
+    }
+
+    public static void sleepRandomized(long delayCenter, int delaySpread) {
+        sleep(delayCenter + (delaySpread / 2) - RandomUtil.integer(delaySpread));
+    }
+
+    public static void sleep(long delay) {
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
+        }
     }
 
     public static <T> T await(Future<T> future) {

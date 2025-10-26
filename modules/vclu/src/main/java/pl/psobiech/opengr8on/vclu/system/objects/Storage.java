@@ -25,6 +25,7 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import java.io.IOException;
@@ -61,7 +62,7 @@ public class Storage extends VirtualObject {
 
         register(Features.UNKNOWN, () -> LuaValue.ZERO);
 
-        register(Methods.STORE, arg1 -> {
+        register(Methods.STORE,  (LuaOneArgFunction)arg1 -> {
             final String variableName = arg1.checkjstring();
 
             variablesLock.lock();
@@ -74,7 +75,7 @@ public class Storage extends VirtualObject {
             return LuaValue.NIL;
         });
 
-        register(Methods.ERASE_ALL, arg1 -> {
+        register(Methods.ERASE_ALL,  (LuaOneArgFunction) arg1 -> {
             variablesLock.lock();
             try {
                 final Set<String> variableNames = new HashSet<>(variables.keySet());

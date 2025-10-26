@@ -25,16 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.BaseLuaFunction;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaSupplier;
-import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import java.io.Closeable;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
@@ -54,7 +49,7 @@ public class VirtualObject implements Closeable {
 
     private final Map<Integer, BaseLuaFunction> methodFunctions = new Hashtable<>();
 
-    private final Map<Integer, LuaFunction> eventFunctions = new Hashtable<>();
+    private final Map<Integer, List<LuaNoArgConsumer>> eventFunctions = new Hashtable<>();
 
     private final Class<? extends Enum<? extends IFeature>> featureClass;
 
@@ -228,6 +223,10 @@ public class VirtualObject implements Closeable {
         registerMethod(feature.index(), fn);
     }
 
+    public void register(IMethod feature, LuaVarArgFunction fn) {
+        registerMethod(feature.index(), fn);
+    }
+
     private void registerMethod(int index, BaseLuaFunction fn) {
         methodFunctions.put(index, fn);
     }
@@ -276,7 +275,7 @@ public class VirtualObject implements Closeable {
             return false;
         }
 
-        final LuaFunction luaFunction = eventFunctions.get(event.address());
+        final List<LuaNoArgConsumer> luaFunctions = eventFunctions.getOrDefault(event.address(), Collections.emptyList());
         try {
             LOGGER.debug("{}.triggerEvent({})", name, event.name());
 
@@ -285,7 +284,13 @@ public class VirtualObject implements Closeable {
                     event,
                     scheduler.submit(() -> {
                         try {
-                            luaFunction.call();
+                            for (LuaNoArgConsumer luaFunction : luaFunctions) {
+                                try {
+                                    luaFunction.call();
+                                } catch (Exception e) {
+                                    LOGGER.error(e.getMessage(), e);
+                                }
+                            }
                         } finally {
                             tryFireHandler(onCompleted);
                         }
@@ -308,21 +313,22 @@ public class VirtualObject implements Closeable {
 
     public boolean isEventRegistered(IEvent event) {
         final int address = event.address();
-        final LuaFunction luaFunction = eventFunctions.get(address);
 
-        return luaFunction != null;
+        return eventFunctions.containsKey(address);
     }
 
     public void awaitEventTrigger(IEvent event) {
         ThreadUtil.await(eventTriggerFuture.remove(event));
     }
 
-    public void addEventHandler(IEvent event, LuaFunction luaFunction) {
-        addEventHandler(event.address(), luaFunction);
+    public void addEventHandler(int address, LuaFunction luaFunction) {
+        eventFunctions.computeIfAbsent(address, ignored -> new ArrayList<>())
+                      .add(luaFunction::call);
     }
 
-    public void addEventHandler(int address, LuaFunction luaFunction) {
-        eventFunctions.put(address, luaFunction);
+    public void addEventHandler(IEvent event, LuaNoArgConsumer luaFunction) {
+        eventFunctions.computeIfAbsent(event.address(), ignored -> new ArrayList<>())
+                      .add(luaFunction);
     }
 
     public interface IFeature {

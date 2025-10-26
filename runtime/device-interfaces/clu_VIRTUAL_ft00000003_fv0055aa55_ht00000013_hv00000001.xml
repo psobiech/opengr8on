@@ -142,6 +142,11 @@
                 <hint lang="en" value="Prefix MQTT Discovery"/>
                 <desc resKey="clu_mqttdiscoveryprefix"/>
             </feature>
+            <feature get="true" index="25" name="MQTTMessage" set="false" type="str" default="\z">
+                <hint lang="pl" value="TBD"/>
+                <hint lang="en" value="TBD"/>
+                <desc resKey="clu_mqttmessage"/>
+            </feature>
         </features>
         <methods>
             <method call="execute" index="0" name="AddToLog" return="void">
@@ -156,6 +161,25 @@
                 <hint lang="en" value="Deletes the contents of the internal device log"/>
                 <hint lang="de" value="Löscht den Inhalt des inneren Gerätelogs"/>
                 <desc resKey="clu_clearlog"/>
+            </method>
+            <method call="execute" index="20" name="mqttSendDiscovery" return="void">
+                <param name="Name" type="str"/>
+                <param name="UniqueId" type="str"/>
+                <param name="DeviceClass" type="str"/>
+                <param name="UnitOfMeasurement" type="str"/>
+                <param name="ValueTemplate" type="str" default="{{ value | float }}"/>
+                <hint lang="pl" value="TBD"/>
+                <hint lang="en" value="TBD"/>
+                <hint lang="de" value="TBD"/>
+                <desc resKey="clu_mqttsenddiscovery"/>
+            </method>
+            <method call="execute" index="21" name="mqttSendValue" return="void">
+                <param name="UniqueId" type="str"/>
+                <param name="Value" type="str"/>
+                <hint lang="pl" value="TBD"/>
+                <hint lang="en" value="TBD"/>
+                <hint lang="de" value="TBD"/>
+                <desc resKey="clu_mqttsendvalue"/>
             </method>
         </methods>
         <events>
@@ -173,6 +197,15 @@
                 <hint lang="de"
                       value="Das Ereignis wird ausgelöst, nachdem sich die Zeit um mehr als ± 60 Sekunden geändert hat. Mögliche Fälle:&#13;- Aufruf der Methode SetDateTime&#13;- Aktualisierung der Uhrzeit vom NTP-Server&#13;- Änderung der Ortszeit Sommer / Winter"/>
                 <desc resKey="clu_ontimechange"/>
+            </event>
+            <event address="20" name="OnMqttReceiveValue">
+                <hint lang="pl"
+                      value="TBD"/>
+                <hint lang="en"
+                      value="TBD"/>
+                <hint lang="de"
+                      value="TBD"/>
+                <desc resKey="clu_onmqttreceivevalue"/>
             </event>
         </events>
     </interface>

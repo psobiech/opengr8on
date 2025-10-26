@@ -18,20 +18,34 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
-import org.luaj.vm2.LuaInteger;
-import org.luaj.vm2.LuaNumber;
-import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.luaj.vm2.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.MqttClient;
+import pl.psobiech.opengr8on.vclu.ServerVersion;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryOrigin;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
+import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
+import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgFunction;
 import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -58,13 +72,17 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
+    private final ProjectObjectRegistry objectRegistry;
+
     private MqttClient mqttClient;
 
-    public VirtualCLU(VirtualSystem virtualSystem, String name) {
+    public VirtualCLU(VirtualSystem virtualSystem, String name, ProjectObjectRegistry objectRegistry) {
         super(
                 virtualSystem, name,
                 Features.class, Methods.class, Events.class
         );
+
+        this.objectRegistry = objectRegistry;
 
         register(Features.UPTIME, this::getUptime);
         set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
@@ -85,9 +103,17 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
         set(Features.MQTT_DISCOVERY, LuaValue.valueOf(false));
         set(Features.MQTT_DISCOVERY_PREFIX, LuaValue.valueOf("homeassistant"));
+        set(Features.MQTT_MESSAGE, LuaValue.tableOf());
 
         register(Methods.ADD_TO_LOG, this::addToLog);
         register(Methods.CLEAR_LOG, this::clearLog);
+
+        register(Methods.MQTT_SEND_DISCOVERY, (LuaVarArgFunction) this::mqttSendDiscovery);
+        register(Methods.MQTT_SEND_VALUE, (LuaTwoArgFunction) this::mqttSendValue);
+
+        addEventHandler(Events.MQTT_RECEIVE_VALUE, () -> {
+            final LuaValue luaValue = get(Features.MQTT_MESSAGE);
+        });
 
         scheduler.scheduleAtFixedRate(() -> {
                                           final ZonedDateTime lastDateTime = currentDateTime;
@@ -221,6 +247,109 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return LuaValue.NIL;
     }
 
+    private LuaValue mqttSendDiscovery(Varargs args) {
+        final String name = args.checkjstring(1);
+        final String uniqueId = args.checkjstring(2);
+        final String deviceClass = args.optjstring(3, null);
+        final String unit = args.optjstring(4, null);
+        final String valueTemplate = args.optjstring(5, null);
+
+        final String cluName = getName();
+        final SpecificObject clu = objectRegistry.cluByName(cluName);
+
+        final String discoveryPrefix = get(Features.MQTT_DISCOVERY_PREFIX).checkjstring();
+        final String rootTopic = "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId);
+
+        final MqttDiscovery discoveryMessage = new MqttDiscovery(
+                name,
+                uniqueId,
+                rootTopic,
+                "~/set", "~/state",
+                deviceClass,
+                unit,
+                null,
+                valueTemplate,
+                new MqttDiscoveryDevice(
+                        clu.getNameOnCLU(), clu.getName(), "Grenton",
+                        clu.getSerialNumber(),
+                        clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
+                        clu.getHardwareType() + "_" + clu.getHardwareVersion()
+                ),
+                new MqttDiscoveryOrigin(
+                        "opengr8on", ServerVersion.get(),
+                        "https://github.com/psobiech/opengr8on"
+                )
+        );
+
+        try {
+            mqttClient
+                    .publish(
+                            rootTopic + "/config",
+                            ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
+                            true
+                    );
+        } catch (MqttException | JsonProcessingException e) {
+            throw new UnexpectedException("Could not publish discovery message for " + discoveryMessage.getUniqueId(), e);
+        }
+
+        mqttClient.subscribe(
+                rootTopic + "/set",
+                bytes -> {
+                    try {
+                        final JsonNode jsonNode = ObjectMapperFactory.JSON.readTree(bytes);
+                        final int redValue = jsonNode.get("r").asInt(0);
+                        final int greenValue = jsonNode.get("g").asInt(0);
+                        final int blueValue = jsonNode.get("b").asInt(0);
+                        final int whiteValue = jsonNode.get("w").asInt(0);
+
+                        final ObjectNode objectNode = ObjectMapperFactory.JSON.createObjectNode();
+                        objectNode.set("uniqueId", new TextNode(uniqueId));
+                        objectNode.set("payload", jsonNode);
+
+                        synchronized (Features.MQTT_MESSAGE) {
+                            set(Features.MQTT_MESSAGE, LuaUtil.fromJson(jsonNode));
+                            triggerEvent(Events.MQTT_RECEIVE_VALUE);
+                            awaitEventTrigger(Events.MQTT_RECEIVE_VALUE);
+                        }
+                    } catch (IOException e) {
+                        throw new UnexpectedException(e);
+                    }
+                }
+        );
+
+        return LuaValue.NIL;
+    }
+
+    private LuaValue mqttSendValue(LuaValue arg1, LuaValue arg2) {
+        LOGGER.info(arg1 + ":" + arg2);
+
+        final String uniqueId = arg1.checkjstring();
+        final String state = arg2.checkjstring();
+
+        final String discoveryPrefix = get(Features.MQTT_DISCOVERY_PREFIX).checkjstring();
+        final String rootTopic = "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId);
+
+        try {
+            mqttClient
+                      .publish(
+                              rootTopic + "/state",
+                              state.getBytes(StandardCharsets.UTF_8)
+                      );
+        } catch (MqttException e) {
+            LOGGER.error("Could not publish state update message for {}", uniqueId, e);
+        }
+
+        return LuaValue.NIL;
+    }
+
+    private LuaValue mqttReceiveValue(LuaValue arg1) {
+        if (!arg1.isnil()) {
+            LOGGER.info(name + ": " + arg1.checkjstring());
+        }
+
+        return LuaValue.NIL;
+    }
+
     public void addMqttSubscription(MqttTopic mqttTopic) {
         mqttTopics.add(mqttTopic);
     }
@@ -283,6 +412,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         //
         MQTT_DISCOVERY(23),
         MQTT_DISCOVERY_PREFIX(24),
+        MQTT_MESSAGE(25),
         //
         ;
 
@@ -302,6 +432,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         ADD_TO_LOG(0),
         CLEAR_LOG(1),
         //
+        MQTT_SEND_DISCOVERY(20),
+        MQTT_SEND_VALUE(21),
+        //
         ;
 
         private final int index;
@@ -319,6 +452,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     public enum Events implements IEvent {
         INIT(0),
         TIME_CHANGE(13),
+        //
+        MQTT_RECEIVE_VALUE(20),
         //
         ;
 

@@ -2,16 +2,17 @@ package pl.psobiech.opengr8on.vclu.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MqttDiscoverySensor {
-    @JsonProperty("~")
-    private final String rootTopic;
-
+public class MqttDiscovery {
     private final String name;
 
     @JsonProperty("unique_id")
     private final String uniqueId;
+
+    @JsonProperty("~")
+    private final String rootTopic;
 
     @JsonProperty("command_topic")
     private final String commandTopic;
@@ -25,6 +26,9 @@ public class MqttDiscoverySensor {
     @JsonProperty("unit_of_measurement")
     private final String unitOfMeasurement;
 
+    @JsonProperty("schema")
+    private final String schema;
+
     @JsonProperty("value_template")
     private final String valueTemplate;
 
@@ -34,23 +38,28 @@ public class MqttDiscoverySensor {
     @JsonProperty("origin")
     private final MqttDiscoveryOrigin origin;
 
-    public MqttDiscoverySensor(String name, String uniqueId, String rootTopic, String commandTopic, String stateTopic, String deviceClass, String unitOfMeasurement, String valueTemplate, MqttDiscoveryDevice device, MqttDiscoveryOrigin origin) {
+    public MqttDiscovery(
+            String name, String uniqueId,
+            String rootTopic, String commandTopic, String stateTopic,
+            String deviceClass, String unitOfMeasurement,
+            String schema, String valueTemplate,
+            MqttDiscoveryDevice device, MqttDiscoveryOrigin origin
+    ) {
         this.name = name;
         this.uniqueId = uniqueId;
-        this.deviceClass = deviceClass;
-        this.unitOfMeasurement = unitOfMeasurement;
-        this.valueTemplate = valueTemplate;
 
         this.rootTopic = rootTopic;
-        this.commandTopic = commandTopic;
-        this.stateTopic = stateTopic;
+        this.commandTopic = StringUtils.stripToNull(commandTopic);
+        this.stateTopic = StringUtils.stripToNull(stateTopic);
+
+        this.deviceClass = StringUtils.stripToNull(deviceClass);
+        this.unitOfMeasurement = StringUtils.stripToNull(unitOfMeasurement);
+
+        this.schema = schema;
+        this.valueTemplate = valueTemplate;
 
         this.device = device;
         this.origin = origin;
-    }
-
-    public String getRootTopic() {
-        return rootTopic;
     }
 
     public String getName() {
@@ -61,12 +70,28 @@ public class MqttDiscoverySensor {
         return uniqueId;
     }
 
+    public static String getAbsoluteTopic(String rootTopic, String topic) {
+        if (rootTopic != null && topic != null && topic.startsWith("~/")) {
+            return rootTopic + topic.substring(1);
+        }
+
+        return topic;
+    }
+
+    public String getRootTopic() {
+        return rootTopic;
+    }
+
+    public String getDiscoveryTopic() {
+        return getAbsoluteTopic(getRootTopic(), "/config");
+    }
+
     public String getCommandTopic() {
-        return commandTopic;
+        return getAbsoluteTopic(getRootTopic(), commandTopic);
     }
 
     public String getStateTopic() {
-        return stateTopic;
+        return getAbsoluteTopic(getRootTopic(), stateTopic);
     }
 
     public String getDeviceClass() {
@@ -75,6 +100,10 @@ public class MqttDiscoverySensor {
 
     public String getUnitOfMeasurement() {
         return unitOfMeasurement;
+    }
+
+    public String getSchema() {
+        return schema;
     }
 
     public String getValueTemplate() {

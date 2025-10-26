@@ -34,6 +34,7 @@ import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.*;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.Features;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.State;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import java.io.Closeable;
@@ -101,7 +102,7 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
-            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, name));
+            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, name, projectObjectRegistry));
             case RemoteCLU.INDEX ->
                     new RemoteCLU(this, projectObjectRegistry, name, ipAddress, localAddress, cipherKey, port);
             case Timer.INDEX -> new Timer(this, name);
