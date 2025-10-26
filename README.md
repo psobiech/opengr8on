@@ -15,8 +15,8 @@ projekcie .omp):
 - Czujniki jasności (PANELSENSLIGHT)
 - Czujniki napięcia (PowerSupplyVoltage)
 - Przyciski (BUTTON, PANEL_BUTTON) - na razie jedynie single press, nalezy jednak przypisac OnChange danego przycisku do metody na VCLU: VCLU->
-  mqttOnValueChange("CLU221010198->PAN2341"), gdzie parametr to identyfikator przycisku w CLU,
-  eg. ![button.png](docs/img/button.png) ![hass_button.png](docs/img/hass_button.png) aby powiazac asynchroniczna akcje
+  mqttOnValueChange("CLU221010198->PAN2341"), gdzie parametr to identyfikator przycisku (skopiowany z OM),
+  eg. ![button.png](docs/img/button.png) ![hass_button.png](docs/img/hass_button.png)
 
 TODO: Asynchroniczne wysylanie danych z CLU, np. przed podpiecie sie po onValueChange eventy, na razie stany sa jedynie
 pollowane
