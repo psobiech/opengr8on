@@ -47,12 +47,14 @@ public class MqttClient implements Closeable {
 
     private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
 
-    private static final int MAX_INFLIGHT = 64;
+    private static final int MAX_INFLIGHT = 128;
+
+    private static final int RETRIES = 16;
 
     // the mqtt client requires at least 4 threads (also it does not support virtual threads)
     private final ScheduledExecutorService executor = ThreadUtil.daemonScheduler(4, "MQTT");
 
-    private Map<String, List<Consumer<byte[]>>> mqttSubscribtions = new HashMap<>();
+    private final Map<String, List<Consumer<byte[]>>> mqttSubscriptions = new Hashtable<>();
 
     private MqttAsyncClient mqttClient;
 
@@ -124,7 +126,7 @@ public class MqttClient implements Closeable {
                             }
                         }
 
-                        final List<Consumer<byte[]>> consumers = mqttSubscribtions.getOrDefault(topic, Collections.emptyList());
+                        final List<Consumer<byte[]>> consumers = mqttSubscriptions.getOrDefault(topic, Collections.emptyList());
                         for (Consumer<byte[]> consumer : consumers) {
                             try {
                                 consumer.accept(message.getPayload());
@@ -195,7 +197,7 @@ public class MqttClient implements Closeable {
     }
 
     public void subscribe(String topicFilter, Consumer<byte[]> consumer) {
-        mqttSubscribtions.computeIfAbsent(topicFilter, ignored -> new ArrayList<>())
+        mqttSubscriptions.computeIfAbsent(topicFilter, ignored -> new ArrayList<>())
                          .add(consumer);
 
         try {
@@ -237,7 +239,7 @@ public class MqttClient implements Closeable {
 
         IMqttDeliveryToken publish = null;
         MqttException exception = null;
-        for (int i = 0; i < 21; i++) {
+        for (int i = 0; i < RETRIES; i++) {
             try {
                 publish = mqttClient.publish(
                         topic, payload,
@@ -259,8 +261,6 @@ public class MqttClient implements Closeable {
 
                         throw new UnexpectedException(ex);
                     }
-
-                    continue;
                 } else {
                     throw e;
                 }

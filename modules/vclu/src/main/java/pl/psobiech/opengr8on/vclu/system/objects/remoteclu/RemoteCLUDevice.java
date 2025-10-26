@@ -5,10 +5,12 @@ import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
 
 import java.util.Optional;
 
-public interface RemoteCLUSensor {
+public interface RemoteCLUDevice {
     Optional<JsonNode> writeValue(RemoteCLU remoteCLU, byte[] bytes);
 
     Optional<JsonNode> readValue(RemoteCLU remoteCLU);
 
     MqttDiscovery getDiscoveryMessage();
+
+    void register();
 }

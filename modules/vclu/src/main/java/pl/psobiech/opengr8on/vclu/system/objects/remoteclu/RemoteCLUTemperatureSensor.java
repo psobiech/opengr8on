@@ -6,21 +6,27 @@ import org.luaj.vm2.LuaValue;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryNumericFloat;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
-public class RemoteCLUTemperatureSensor implements RemoteCLUSensor {
-    private final SpecificObject clu;
-
+public class RemoteCLUTemperatureSensor extends BaseRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
 
     private final MqttDiscovery discoveryMessage;
 
-    public RemoteCLUTemperatureSensor(String discoveryPrefix, SpecificObject clu, SpecificObject object) {
-        this.clu = clu;
+    public RemoteCLUTemperatureSensor(
+            ExecutorService scheduler,
+            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            SpecificObject clu, SpecificObject object,
+            String discoveryPrefix
+    ) {
+        super(scheduler, currentClu, remoteCLU);
+
         this.object = object;
 
         final Optional<Feature> valueFeature = object.getFeatures().stream()
@@ -32,10 +38,9 @@ public class RemoteCLUTemperatureSensor implements RemoteCLUSensor {
             return;
         }
 
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-
         final Feature feature = valueFeature.get();
 
+        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
         this.discoveryMessage = new MqttDiscoveryNumericFloat(
                 object.getName(),
                 uniqueId,

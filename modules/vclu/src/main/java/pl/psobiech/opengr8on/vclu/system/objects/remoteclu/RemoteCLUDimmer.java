@@ -7,25 +7,33 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryLight;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class RemoteCLUDimmer implements RemoteCLUSensor {
+public class RemoteCLUDimmer extends BaseRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
 
     private final MqttDiscoveryLight discoveryMessage;
 
-    public RemoteCLUDimmer(String discoveryPrefix, SpecificObject clu, SpecificObject object) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
+    public RemoteCLUDimmer(
+            ExecutorService scheduler,
+            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            SpecificObject clu, SpecificObject object,
+            String discoveryPrefix
+    ) {
+        super(scheduler, currentClu, remoteCLU);
 
         this.object = object;
 
+        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
         this.discoveryMessage = new MqttDiscoveryLight(
                 object.getName(),
                 uniqueId,

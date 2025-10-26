@@ -181,6 +181,13 @@
                 <hint lang="de" value="TBD"/>
                 <desc resKey="clu_mqttsendvalue"/>
             </method>
+            <method call="execute" index="30" name="mqttOnValueChange" return="void">
+                <param name="ObjectId" type="str"/>
+                <hint lang="pl" value="TBD"/>
+                <hint lang="en" value="TBD"/>
+                <hint lang="de" value="TBD"/>
+                <desc resKey="clu_mqttonvaluechange"/>
+            </method>
         </methods>
         <events>
             <event address="0" name="OnInit">

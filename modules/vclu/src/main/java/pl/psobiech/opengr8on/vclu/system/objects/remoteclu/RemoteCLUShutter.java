@@ -8,27 +8,32 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryShutter;
+import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
-public class RemoteCLUShutter implements RemoteCLUSensor {
+public class RemoteCLUShutter extends BaseRemoteCLUSensor implements RemoteCLUDevice {
     private static final int SET_POSITION_METHOD = 10;
 
     private final MqttDiscoveryShutter discoveryMessage;
 
-    private final SpecificObject clu;
-
     private final SpecificObject object;
 
-    public RemoteCLUShutter(String discoveryPrefix, SpecificObject clu, SpecificObject object) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
+    public RemoteCLUShutter(
+            ExecutorService scheduler,
+            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            SpecificObject clu, SpecificObject object,
+            String discoveryPrefix
+    ) {
+        super(scheduler, currentClu, remoteCLU);
 
-        this.clu = clu;
         this.object = object;
 
+        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
         this.discoveryMessage = new MqttDiscoveryShutter(
                 object.getName(),
                 uniqueId,

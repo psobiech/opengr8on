@@ -60,9 +60,9 @@ public class Storage extends VirtualObject {
 
         this.storagePath = storageRootPath.resolve("storage.json");
 
-        register(Features.UNKNOWN, () -> LuaValue.ZERO);
+        set(Features.STORAGE_UTILIZATION, LuaValue.valueOf(2));
 
-        register(Methods.STORE,  (LuaOneArgFunction)arg1 -> {
+        register(Methods.STORE, (LuaOneArgFunction) arg1 -> {
             final String variableName = arg1.checkjstring();
 
             variablesLock.lock();
@@ -75,7 +75,7 @@ public class Storage extends VirtualObject {
             return LuaValue.NIL;
         });
 
-        register(Methods.ERASE_ALL,  (LuaOneArgFunction) arg1 -> {
+        register(Methods.ERASE_ALL, (LuaOneArgFunction) arg1 -> {
             variablesLock.lock();
             try {
                 final Set<String> variableNames = new HashSet<>(variables.keySet());
@@ -83,7 +83,7 @@ public class Storage extends VirtualObject {
                     variables.put(variableName, LuaValue.NIL);
                 }
 
-                FileUtil.deleteQuietly(storagePath);
+                FileUtil.truncate(storagePath);
             } finally {
                 variablesLock.unlock();
             }
@@ -166,7 +166,7 @@ public class Storage extends VirtualObject {
     }
 
     private enum Features implements IFeature {
-        UNKNOWN(1),
+        STORAGE_UTILIZATION(1),
         //
         ;
 

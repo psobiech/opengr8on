@@ -83,7 +83,7 @@ public class MqttDiscovery {
     }
 
     public String getDiscoveryTopic() {
-        return getAbsoluteTopic(getRootTopic(), "/config");
+        return getAbsoluteTopic(getRootTopic(), "~/config");
     }
 
     public String getCommandTopic() {

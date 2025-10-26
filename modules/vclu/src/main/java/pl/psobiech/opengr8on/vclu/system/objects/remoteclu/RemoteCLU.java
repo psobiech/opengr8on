@@ -33,7 +33,6 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
-import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
@@ -44,7 +43,8 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.net.Inet4Address;
-import java.nio.charset.StandardCharsets;
+import java.util.Hashtable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -60,6 +60,8 @@ public class RemoteCLU extends VirtualObject {
     private final Globals localLuaContext;
 
     private final VirtualCLU currentClu;
+
+    private final Map<String, RemoteCLUDevice> devices = new Hashtable<>();
 
     private boolean mqttInitialized = false;
 
@@ -95,7 +97,7 @@ public class RemoteCLU extends VirtualObject {
             if (LuaUtil.trueish(currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY))) {
                 final String discoveryPrefix = currentClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
                 if (discoveryPrefix != null) {
-                    scheduler.execute(() -> initMqttDiscovery(discoveryPrefix));
+                    initMqttDiscovery(discoveryPrefix);
                 }
             }
         }
@@ -104,7 +106,13 @@ public class RemoteCLU extends VirtualObject {
     private void initMqttDiscovery(String discoveryPrefix) {
         final Set<SpecificObject> specificObjects = objectRegistry.byCluName(name);
         for (SpecificObject object : specificObjects) {
-            final String objectName = object.getNameOnCLU();
+            if (Boolean.TRUE.equals(object.getRemoved())) {
+                continue;
+            }
+
+            if (Boolean.FALSE.equals(object.getVisible())) {
+                continue;
+            }
 
             SpecificObject clu = object.getClu();
             if (clu != null && clu.getReference() != null) {
@@ -112,143 +120,73 @@ public class RemoteCLU extends VirtualObject {
             }
 
             if (clu == null) {
-                LOGGER.warn("Could not find CLU for object {}", objectName);
+                LOGGER.warn("Could not find CLU for object {}", object.getNameOnCLU());
 
                 continue;
             }
 
-            final RemoteCLUSensor sensor;
+            final RemoteCLUDevice sensor;
             switch (object.getType()) {
                 case PANEL_TEMPERATURE -> sensor = new RemoteCLUTemperatureSensor(
-                        discoveryPrefix, clu, object
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
                 );
                 case PANEL_LUMINOSITY -> sensor = new RemoteCLULuminositySensor(
-                        discoveryPrefix, clu, object
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
                 );
-                case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
-                        discoveryPrefix, clu, object
-                );
+//                case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
+//                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+//                );
                 case ROLLER_SHUTTER -> sensor = new RemoteCLUShutter(
-                        discoveryPrefix, clu, object
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
                 );
                 case DOUT, DIMM -> sensor = new RemoteCLUDimmer(
-                        discoveryPrefix, clu, object
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
                 );
                 case LED_RGB -> sensor = new RemoteCLULedRgbLight(
-                        discoveryPrefix, clu, object
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                );
+                case BUTTON -> sensor = new RemoteCLUButton(
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                );
+                case PANEL_BUTTON -> sensor = new RemoteCLUButton(
+                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
                 );
                 case UNSUPPORTED -> {
-                    LOGGER.warn("Unsupported object {} on CLU {}", objectName, name);
+                    LOGGER.warn("Unsupported object {} on CLU {}", object.getNameOnCLU(), name);
 
                     continue;
                 }
                 case null, default -> {
-                    LOGGER.warn("Ignoring object {} on CLU {}", objectName, name);
+                    LOGGER.warn("Ignoring object {} on CLU {}", object.getNameOnCLU(), name);
 
                     continue;
                 }
             }
 
-            sendDiscoveryMessage(sensor);
-            subscribeCommandMessages(sensor);
-            scheduleStatePolling(sensor);
+            devices.put(object.getNameOnCLU(), sensor);
+
+            sensor.register();
         }
     }
 
-    private void sendDiscoveryMessage(RemoteCLUSensor sensor) {
-        final MqttDiscovery discoveryMessage = sensor.getDiscoveryMessage();
-        final String discoveryTopic = discoveryMessage.getDiscoveryTopic();
-        if (discoveryTopic == null) {
-            return;
-        }
+    public void mqttOnValueChange(String nameOnCLU, LuaValue arg2) {
+        final RemoteCLUDevice remoteCLUDevice = devices.get(nameOnCLU);
+        if (remoteCLUDevice != null) {
+            final MqttDiscovery discoveryMessage = remoteCLUDevice.getDiscoveryMessage();
 
-        try {
-            currentClu.getMqttClient()
-                      .publish(
-                              discoveryTopic,
-                              ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
-                              true
-                      );
-        } catch (MqttException | JsonProcessingException | RuntimeException e) {
-            LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
-        }
-    }
-
-    private void subscribeCommandMessages(RemoteCLUSensor sensor) {
-        final MqttDiscovery discoveryMessage = sensor.getDiscoveryMessage();
-        final String commandTopic = discoveryMessage.getCommandTopic();
-        if (commandTopic == null) {
-            return;
-        }
-
-        currentClu.getMqttClient()
-                  .subscribe(
-                          commandTopic,
-                          bytes -> {
-                              LOGGER.debug("MQTT Subscribe: {} / {}", commandTopic, ToStringUtil.toString(bytes));
-
-                              try {
-                                  Optional<JsonNode> stateNode = sensor.writeValue(this, bytes);
-                                  if (stateNode.isEmpty()) {
-                                      stateNode = sensor.readValue(this);
-                                  }
-
-                                  if (stateNode.isPresent()) {
-                                      currentClu.getMqttClient()
-                                                .publish(
-                                                        discoveryMessage.getStateTopic(),
-                                                        ObjectMapperFactory.JSON.writeValueAsBytes(stateNode.get())
-                                                );
-                                  }
-                              } catch (MqttException | JsonProcessingException | RuntimeException e) {
-                                  LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
-                              }
-                          }
-                  );
-    }
-
-    private void scheduleStatePolling(RemoteCLUSensor sensor) {
-        final MqttDiscovery discoveryMessage = sensor.getDiscoveryMessage();
-        final String stateTopic = discoveryMessage.getStateTopic();
-        if (stateTopic == null) {
-            return;
-        }
-
-        scheduler.execute(() -> {
-            String lastState = null;
-            while (!Thread.currentThread().isInterrupted()) {
-                ThreadUtil.sleepRandomized(60_000L, 45_000);
-
+            final Optional<JsonNode> stateNode = remoteCLUDevice.readValue(this);
+            if (stateNode.isPresent()) {
                 try {
-                    final Optional<JsonNode> stateNode = sensor.readValue(this);
-                    if (stateNode.isEmpty()) {
-                        continue;
-                    }
-
-                    final String stateAsString;
-                    try {
-                        stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode.get());
-                    } catch (JsonProcessingException e) {
-                        LOGGER.error("Could not serialize state for {}", discoveryMessage.getUniqueId(), e);
-
-                        continue;
-                    }
-
-                    if (stateAsString.equals(lastState)) {
-                        continue;
-                    }
-                    lastState = stateAsString;
-
                     currentClu.getMqttClient()
                               .publish(
-                                      stateTopic,
-                                      stateAsString.getBytes(StandardCharsets.UTF_8)
+                                      discoveryMessage.getStateTopic(),
+                                      ObjectMapperFactory.JSON.writeValueAsBytes(stateNode.get())
                               );
-                } catch (MqttException | RuntimeException e) {
+                } catch (MqttException | JsonProcessingException e) {
                     LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
                 }
             }
-        });
+        }
     }
 
     public LuaValue remoteExecute(String script) {

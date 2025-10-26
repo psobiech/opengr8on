@@ -29,15 +29,15 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.MqttClient;
-import pl.psobiech.opengr8on.vclu.ServerVersion;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryOrigin;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgFunction;
 import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
@@ -110,6 +110,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
         register(Methods.MQTT_SEND_DISCOVERY, (LuaVarArgFunction) this::mqttSendDiscovery);
         register(Methods.MQTT_SEND_VALUE, (LuaTwoArgFunction) this::mqttSendValue);
+        register(Methods.MQTT_ON_VALUE_CHANGE, (LuaTwoArgFunction) this::mqttOnValueChange);
 
         addEventHandler(Events.MQTT_RECEIVE_VALUE, () -> {
             final LuaValue luaValue = get(Features.MQTT_MESSAGE);
@@ -269,16 +270,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 unit,
                 null,
                 valueTemplate,
-                new MqttDiscoveryDevice(
-                        clu.getNameOnCLU(), clu.getName(), "Grenton",
-                        clu.getSerialNumber(),
-                        clu.getFirmwareType() + "_" + clu.getFirmwareVersion(),
-                        clu.getHardwareType() + "_" + clu.getHardwareVersion()
-                ),
-                new MqttDiscoveryOrigin(
-                        "opengr8on", ServerVersion.get(),
-                        "https://github.com/psobiech/opengr8on"
-                )
+                new MqttDiscoveryDevice(clu),
+                new MqttDiscoveryOrigin()
         );
 
         try {
@@ -297,10 +290,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 bytes -> {
                     try {
                         final JsonNode jsonNode = ObjectMapperFactory.JSON.readTree(bytes);
-                        final int redValue = jsonNode.get("r").asInt(0);
-                        final int greenValue = jsonNode.get("g").asInt(0);
-                        final int blueValue = jsonNode.get("b").asInt(0);
-                        final int whiteValue = jsonNode.get("w").asInt(0);
 
                         final ObjectNode objectNode = ObjectMapperFactory.JSON.createObjectNode();
                         objectNode.set("uniqueId", new TextNode(uniqueId));
@@ -331,10 +320,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
         try {
             mqttClient
-                      .publish(
-                              rootTopic + "/state",
-                              state.getBytes(StandardCharsets.UTF_8)
-                      );
+                    .publish(
+                            rootTopic + "/state",
+                            state.getBytes(StandardCharsets.UTF_8)
+                    );
         } catch (MqttException e) {
             LOGGER.error("Could not publish state update message for {}", uniqueId, e);
         }
@@ -342,9 +331,16 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return LuaValue.NIL;
     }
 
-    private LuaValue mqttReceiveValue(LuaValue arg1) {
-        if (!arg1.isnil()) {
-            LOGGER.info(name + ": " + arg1.checkjstring());
+    private LuaValue mqttOnValueChange(LuaValue arg1, LuaValue arg2) {
+        final String objectId = arg1.checkjstring();
+        final String[] objectParts = objectId.split("->", 2);
+        if (objectParts.length != 2) {
+            return LuaValue.NIL;
+        }
+
+        final VirtualObject remoteCluObject = virtualSystem.getObject(objectParts[0]);
+        if (remoteCluObject instanceof RemoteCLU remoteCLU) {
+            remoteCLU.mqttOnValueChange(objectParts[1], arg2);
         }
 
         return LuaValue.NIL;
@@ -413,7 +409,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         MQTT_DISCOVERY(23),
         MQTT_DISCOVERY_PREFIX(24),
         MQTT_MESSAGE(25),
-        //
         ;
 
         private final int index;
@@ -434,6 +429,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         //
         MQTT_SEND_DISCOVERY(20),
         MQTT_SEND_VALUE(21),
+        //
+        MQTT_ON_VALUE_CHANGE(30),
         //
         ;
 
