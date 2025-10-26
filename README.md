@@ -14,7 +14,7 @@ projekcie .omp):
 - Czujniki temperatury (PANELSENSTEMP)
 - Czujniki jasności (PANELSENSLIGHT)
 - Czujniki napięcia (PowerSupplyVoltage)
-- Przyciski (BUTTON, PANEL_BUTTON), nalezy jednak przypisac OnChange danego przycisku do metody na VCLU: VCLU->
+- Przyciski (BUTTON, PANEL_BUTTON) - na razie jedynie single press, nalezy jednak przypisac OnChange danego przycisku do metody na VCLU: VCLU->
   mqttOnValueChange("CLU221010198->PAN2341"), gdzie parametr to identyfikator przycisku w CLU,
   eg. ![button.png](docs/img/button.png) ![hass_button.png](docs/img/hass_button.png) aby powiazac asynchroniczna akcje
 
