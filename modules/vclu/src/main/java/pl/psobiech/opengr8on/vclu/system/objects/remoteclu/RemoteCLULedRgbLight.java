@@ -21,6 +21,9 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteCLUDevice {
+
+    public static final int SET_WHITE_VALUE_METHOD = 12;
+
     private final SpecificObject object;
 
     private final MqttDiscoveryLight discoveryMessage;
@@ -71,11 +74,19 @@ public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteC
 
             if (stateOn) {
                 final JsonNode color = stateNode.get("color");
+                final JsonNode brightness = stateNode.get("brightness");
                 if (color != null) {
                     redValue = color.get("r").asInt(0);
                     greenValue = color.get("g").asInt(0);
                     blueValue = color.get("b").asInt(0);
                     whiteValue = color.get("w").asInt(0);
+                } else if (brightness != null) {
+                    final int brightnessValue = brightness.asInt(0);
+
+                    redValue = brightnessValue;
+                    greenValue = brightnessValue;
+                    blueValue = brightnessValue;
+                    whiteValue = brightnessValue;
                 } else {
                     redValue = 255;
                     greenValue = 255;
@@ -89,10 +100,15 @@ public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteC
                 whiteValue = 0;
             }
 
+            // todo: PS remember not all features have the same id's as methods
             remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get("RedValue").getIndex(), redValue));
             remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get("GreenValue").getIndex(), greenValue));
             remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get("BlueValue").getIndex(), blueValue));
-            remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get("WhiteValue").getIndex(), whiteValue));
+            remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), SET_WHITE_VALUE_METHOD, whiteValue));
+
+            if (stateNode instanceof ObjectNode stateObjectNode) {
+                stateObjectNode.set("color_mode", new TextNode("rgbw"));
+            }
 
             return Optional.of(stateNode);
         } catch (IOException e) {
