@@ -15,8 +15,6 @@ import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -77,33 +75,6 @@ public class RemoteCLUButton implements RemoteCLUDevice {
         } catch (MqttException | JsonProcessingException | RuntimeException e) {
             LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
         }
-    }
-
-    private void pushState() {
-        final MqttDiscovery discoveryMessage = getDiscoveryMessage();
-        final String stateTopic = discoveryMessage.getStateTopic();
-        if (stateTopic == null) {
-            return;
-        }
-
-        scheduler.execute(() -> {
-            try {
-                final Optional<JsonNode> stateNode = readValue(remoteCLU);
-                if (stateNode.isEmpty()) {
-                    return;
-                }
-
-                final String stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode.get());
-
-                currentClu.getMqttClient()
-                          .publish(
-                                  stateTopic,
-                                  stateAsString.getBytes(StandardCharsets.UTF_8)
-                          );
-            } catch (MqttException | IOException | RuntimeException e) {
-                LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
-            }
-        });
     }
 
     @Override

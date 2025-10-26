@@ -57,10 +57,12 @@ public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteC
                                                          .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
         try {
-            final JsonNode jsonNode = ObjectMapperFactory.JSON.readTree(bytes);
+            final JsonNode stateNode = ObjectMapperFactory.JSON.readTree(bytes);
 
-            final boolean stateOn = jsonNode.get("state").asText("OFF")
-                                            .equalsIgnoreCase("ON");
+            final boolean stateOn = stateNode.optional("state")
+                                             .map(node -> node.asText("OFF"))
+                                             .filter(state -> state.equalsIgnoreCase("ON"))
+                                             .isPresent();
 
             final int redValue;
             final int greenValue;
@@ -68,7 +70,7 @@ public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteC
             final int whiteValue;
 
             if (stateOn) {
-                final JsonNode color = jsonNode.get("color");
+                final JsonNode color = stateNode.get("color");
                 if (color != null) {
                     redValue = color.get("r").asInt(0);
                     greenValue = color.get("g").asInt(0);
@@ -92,7 +94,7 @@ public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteC
             remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get("BlueValue").getIndex(), blueValue));
             remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get("WhiteValue").getIndex(), whiteValue));
 
-            return Optional.of(jsonNode);
+            return Optional.of(stateNode);
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }

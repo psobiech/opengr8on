@@ -1,7 +1,6 @@
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
@@ -15,17 +14,16 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class RemoteCLUDimmer extends BaseRemoteCLUSensor implements RemoteCLUDevice {
+public class RemoteCLULight extends BaseRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
 
     private final MqttDiscoveryLight discoveryMessage;
 
-    public RemoteCLUDimmer(
+    public RemoteCLULight(
             ExecutorService scheduler,
             VirtualCLU currentClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
@@ -44,7 +42,7 @@ public class RemoteCLUDimmer extends BaseRemoteCLUSensor implements RemoteCLUDev
                 null,
                 "json",
                 null,
-                Set.of("brightness"),
+                null,
                 new MqttDiscoveryDevice(clu)
         );
     }
@@ -71,20 +69,15 @@ public class RemoteCLUDimmer extends BaseRemoteCLUSensor implements RemoteCLUDev
                                          .map(node -> node.asText("OFF"))
                                          .filter(state -> state.equalsIgnoreCase("ON"))
                                          .isPresent();
+
         final int value;
         if (stateOn) {
-            value = stateNode.optional("brightness")
-                             .map(node -> node.asInt(0))
-                             .orElse(255);
-
-            if (stateNode instanceof ObjectNode stateObjectNode) {
-                stateObjectNode.set("brightness", new IntNode(value));
-            }
+            value = 1;
         } else {
             value = 0;
         }
 
-        remoteCLU.remoteExecute(String.format("%s:set(%d, %f)", object.getNameOnCLU(), valueFeatures.get("Value").getIndex(), asFloat(value)));
+        remoteCLU.remoteExecute(String.format("%s:set(%d, %d)", object.getNameOnCLU(), valueFeatures.get("Value").getIndex(), value));
 
         return Optional.of(stateNode);
     }
@@ -95,16 +88,11 @@ public class RemoteCLUDimmer extends BaseRemoteCLUSensor implements RemoteCLUDev
                                                          .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
                                                          .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
-        final double value = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get("Value").getIndex())).optdouble(0d);
+        final int value = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get("Value").getIndex())).optint(0);
 
         final ObjectNode stateNode = ObjectMapperFactory.JSON.createObjectNode();
         stateNode.set("state", new TextNode(value > 0 ? "ON" : "OFF"));
-        stateNode.set("brightness", new IntNode((int) (value * 255)));
 
         return Optional.of(stateNode);
-    }
-
-    private static float asFloat(int value) {
-        return value / 255f;
     }
 }

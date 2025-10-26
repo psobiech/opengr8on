@@ -104,6 +104,8 @@ public class RemoteCLU extends VirtualObject {
     }
 
     private void initMqttDiscovery(String discoveryPrefix) {
+        final VirtualCLU currentClu = virtualSystem.getCurrentClu();
+
         final Set<SpecificObject> specificObjects = objectRegistry.byCluName(name);
         for (SpecificObject object : specificObjects) {
             if (Boolean.TRUE.equals(object.getRemoved())) {
@@ -128,28 +130,31 @@ public class RemoteCLU extends VirtualObject {
             final RemoteCLUDevice sensor;
             switch (object.getType()) {
                 case PANEL_TEMPERATURE -> sensor = new RemoteCLUTemperatureSensor(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
                 case PANEL_LUMINOSITY -> sensor = new RemoteCLULuminositySensor(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
 //                case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
 //                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
 //                );
                 case ROLLER_SHUTTER -> sensor = new RemoteCLUShutter(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
-                case DOUT, DIMM -> sensor = new RemoteCLUDimmer(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                case DOUT -> sensor = new RemoteCLULight(
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
+                );
+                case DIMM -> sensor = new RemoteCLUDimmer(
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
                 case LED_RGB -> sensor = new RemoteCLULedRgbLight(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
                 case BUTTON -> sensor = new RemoteCLUButton(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
                 case PANEL_BUTTON -> sensor = new RemoteCLUButton(
-                        scheduler, virtualSystem.getCurrentClu(), this, clu, object, discoveryPrefix
+                        scheduler, currentClu, this, clu, object, discoveryPrefix
                 );
                 case UNSUPPORTED -> {
                     LOGGER.warn("Unsupported object {} on CLU {}", object.getNameOnCLU(), name);

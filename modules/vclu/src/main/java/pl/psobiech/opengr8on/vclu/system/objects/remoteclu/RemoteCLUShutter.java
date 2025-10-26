@@ -67,14 +67,16 @@ public class RemoteCLUShutter extends BaseRemoteCLUSensor implements RemoteCLUDe
             } else if (stateAsString.equalsIgnoreCase("CLOSE")) {
                 position = 0;
             } else {
-                final JsonNode jsonNode;
+                final JsonNode stateNode;
                 try {
-                    jsonNode = ObjectMapperFactory.JSON.readTree(stateAsString);
+                    stateNode = ObjectMapperFactory.JSON.readTree(stateAsString);
                 } catch (JsonProcessingException e) {
                     throw new UnexpectedException(e);
                 }
 
-                position = jsonNode.get("position").asInt(0);
+                position = stateNode.optional("position")
+                                    .map(node -> node.asInt(0))
+                                    .orElse(0);
             }
 
             remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), SET_POSITION_METHOD, position));
