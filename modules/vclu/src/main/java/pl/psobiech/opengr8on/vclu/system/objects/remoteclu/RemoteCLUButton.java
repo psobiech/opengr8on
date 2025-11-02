@@ -15,6 +15,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,14 +24,17 @@ public class RemoteCLUButton implements RemoteCLUDevice {
 
     private final VirtualCLU currentClu;
 
+    private final RemoteCLU remoteCLU;
+
     private final SpecificObject object;
 
     private final MqttDiscovery discoveryMessage;
 
-    public RemoteCLUButton(VirtualCLU currentClu, SpecificObject clu, SpecificObject object, String discoveryPrefix) {
+    public RemoteCLUButton(VirtualCLU currentClu, RemoteCLU remoteCLU, SpecificObject clu, SpecificObject object, String discoveryPrefix) {
         final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
 
         this.currentClu = currentClu;
+        this.remoteCLU = remoteCLU;
         this.object = object;
 
         this.discoveryMessage = new MqttDiscoveryButton(
@@ -58,7 +62,7 @@ public class RemoteCLUButton implements RemoteCLUDevice {
 
     @Override
     public void refresh() {
-        // NOP
+        pushState();
     }
 
     private void sendDiscoveryMessage() {
@@ -77,6 +81,33 @@ public class RemoteCLUButton implements RemoteCLUDevice {
         } catch (MqttException | JsonProcessingException | RuntimeException e) {
             LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
         }
+    }
+
+    private void pushState() {
+        final String stateTopic = discoveryMessage.getStateTopic();
+        if (stateTopic == null) {
+            return;
+        }
+
+        final Optional<JsonNode> stateNode = readValue(remoteCLU);
+        if (stateNode.isEmpty()) {
+            return;
+        }
+
+        final String stateAsString;
+        try {
+            stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode.get());
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Could not serialize state for {}", discoveryMessage.getUniqueId(), e);
+
+            return;
+        }
+
+        currentClu.getMqttClient()
+                  .tryPublish(
+                          stateTopic,
+                          stateAsString.getBytes(StandardCharsets.UTF_8)
+                  );
     }
 
     @Override

@@ -150,11 +150,8 @@ public class RemoteCLU extends VirtualObject {
                 case LED_RGB -> sensor = new RemoteCLULedRgbLight(
                         currentClu, this, clu, object, discoveryPrefix
                 );
-                case BUTTON -> sensor = new RemoteCLUButton(
-                        currentClu, clu, object, discoveryPrefix
-                );
-                case PANEL_BUTTON -> sensor = new RemoteCLUButton(
-                        currentClu, clu, object, discoveryPrefix
+                case BUTTON, PANEL_BUTTON -> sensor = new RemoteCLUButton(
+                        currentClu, this, clu, object, discoveryPrefix
                 );
                 case UNSUPPORTED -> {
                     LOGGER.warn("Unsupported object {} on CLU {}", object.getNameOnCLU(), name);

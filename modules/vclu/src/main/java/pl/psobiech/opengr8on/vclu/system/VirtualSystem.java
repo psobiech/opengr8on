@@ -244,7 +244,7 @@ public class VirtualSystem implements Closeable {
                 } finally {
                     final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
                     if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
-                        LOGGER.warn("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                        LOGGER.info("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
                     }
                 }
             }));
