@@ -92,8 +92,6 @@ public class Server implements Closeable {
 
     private final TFTPServer tftpServer;
 
-    private final MqttClient mqttClient = new MqttClient();
-
     private LuaThread mainThread;
 
     private List<CipherKey> unicastCipherKeys;
@@ -482,7 +480,6 @@ public class Server implements Closeable {
     private void restartClu() {
         unicastCipherKeys = List.of(projectCipherKey);
 
-        mqttClient.stop();
         tftpServer.stop();
 
         startClu();
@@ -543,19 +540,6 @@ public class Server implements Closeable {
         final VirtualCLU currentClu = mainThread.virtualSystem().getCurrentClu();
         if (currentClu == null) {
             LOGGER.warn("VCLU is not properly initialized...");
-
-            return;
-        }
-
-        if (currentClu.isMqttEnabled()) {
-            final Path mqttPath = parentDirectory.resolve("mqtt");
-
-            mqttClient.start(
-                    currentClu.getMqttUrl(), currentClu.getName(),
-                    mqttPath.resolve("ca.crt"),
-                    mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
-                    currentClu
-            );
         }
     }
 
@@ -709,7 +693,7 @@ public class Server implements Closeable {
     public void close() {
         ThreadUtil.closeQuietly(executor);
 
-        IOUtil.closeQuietly(tftpServer, mqttClient, mainThread);
+        IOUtil.closeQuietly(tftpServer, mainThread);
         IOUtil.closeQuietly(commandSocket, broadcastCommandSocket, responseSocket);
     }
 

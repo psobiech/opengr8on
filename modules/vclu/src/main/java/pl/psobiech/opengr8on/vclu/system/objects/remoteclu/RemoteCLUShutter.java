@@ -180,8 +180,6 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
 
             final int position = getPosition(stateNode.get());
             final StateEnum stateEnum = getStateEnum(position);
-            LOGGER.info("State update for {}: {} / {}", discoveryMessage.getUniqueId(), stateAsString, stateEnum);
-
             if (stateEnum == StateEnum.OPENING || stateEnum == StateEnum.CLOSING) {
                 scheduleNextRefreshIn(System.currentTimeMillis(), 1000);
             }

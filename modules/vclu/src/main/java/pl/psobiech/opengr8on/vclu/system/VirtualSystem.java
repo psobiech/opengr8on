@@ -83,6 +83,7 @@ public class VirtualSystem implements Closeable {
 
     public VirtualSystem(Path rootDirectory, Inet4Address localAddress, int port, CipherKey cipherKey) {
         this.rootDirectory = rootDirectory;
+
         this.localAddress = localAddress;
         this.port = port;
         this.cipherKey = cipherKey;
@@ -102,7 +103,7 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
-            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, name, projectObjectRegistry));
+            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, rootDirectory, name, projectObjectRegistry));
             case RemoteCLU.INDEX ->
                     new RemoteCLU(this, projectObjectRegistry, name, ipAddress, localAddress, cipherKey, port);
             case Timer.INDEX -> new Timer(this, name);

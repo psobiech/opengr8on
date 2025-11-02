@@ -88,6 +88,10 @@ public class MqttClient implements Closeable {
         return options;
     }
 
+    public boolean isStarted() {
+        return mqttClient != null;
+    }
+
     public void start(
             String mqttUrl, String name,
             Path caCertificatePath, Path certificatePath, Path keyPath,
@@ -102,7 +106,6 @@ public class MqttClient implements Closeable {
                     new ScheduledExecutorPingSender(executor),
                     executor
             );
-            currentClu.setMqttClient(this);
 
             mqttClient.setManualAcks(true);
             mqttClient.setCallback(new MqttCallback() {

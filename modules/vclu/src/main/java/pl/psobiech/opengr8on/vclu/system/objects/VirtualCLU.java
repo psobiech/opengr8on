@@ -27,6 +27,7 @@ import org.luaj.vm2.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -70,17 +72,21 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
+    private final Path rootDirectory;
+
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
     private final ProjectObjectRegistry objectRegistry;
 
-    private MqttClient mqttClient;
+    private final MqttClient mqttClient = new MqttClient();
 
-    public VirtualCLU(VirtualSystem virtualSystem, String name, ProjectObjectRegistry objectRegistry) {
+    public VirtualCLU(VirtualSystem virtualSystem, Path rootDirectory, String name, ProjectObjectRegistry objectRegistry) {
         super(
                 virtualSystem, name,
                 Features.class, Methods.class, Events.class
         );
+
+        this.rootDirectory = rootDirectory;
 
         this.objectRegistry = objectRegistry;
 
@@ -127,6 +133,24 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                                       },
                                       1, 1, TimeUnit.SECONDS
         );
+    }
+
+    @Override
+    public void loop() {
+        if (!isMqttEnabled() && mqttClient.isStarted()) {
+            mqttClient.stop();
+        }
+
+        if (isMqttEnabled() && !mqttClient.isStarted()) {
+            final Path mqttPath = rootDirectory.getParent().resolve("mqtt");
+
+            mqttClient.start(
+                    getMqttUrl(), getName(),
+                    mqttPath.resolve("ca.crt"),
+                    mqttPath.resolve("certificate.crt"), mqttPath.resolve("key.pem"),
+                    this
+            );
+        }
     }
 
     public boolean isMqttEnabled() {
@@ -348,6 +372,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     public void addMqttSubscription(MqttTopic mqttTopic) {
         mqttTopics.add(mqttTopic);
+        mqttTopic.setMqttClient(mqttClient);
     }
 
     public List<MqttTopic> getMqttTopics() {
@@ -358,12 +383,9 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return mqttClient;
     }
 
-    public void setMqttClient(MqttClient mqttClient) {
-        this.mqttClient = mqttClient;
-
-        for (MqttTopic mqttTopic : getMqttTopics()) {
-            mqttTopic.setMqttClient(mqttClient);
-        }
+    @Override
+    public void close() {
+        IOUtil.closeQuietly(mqttClient);
     }
 
     public enum State {
