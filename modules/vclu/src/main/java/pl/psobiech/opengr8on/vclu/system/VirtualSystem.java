@@ -55,7 +55,7 @@ public class VirtualSystem implements Closeable {
 
     private static final long LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(960);
 
-    private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(8);
+    private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(128);
 
     private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
 
