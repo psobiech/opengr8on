@@ -16,40 +16,37 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteCLUDevice {
-
+public class RemoteCLULedRgbLight extends BasicRemoteCLUSensor implements RemoteCLUDevice {
     public static final int SET_WHITE_VALUE_METHOD = 12;
 
     private final SpecificObject object;
 
-    private final MqttDiscoveryLight discoveryMessage;
-
     public RemoteCLULedRgbLight(
-            ExecutorService scheduler,
             VirtualCLU currentClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
             String discoveryPrefix
     ) {
-        super(scheduler, currentClu, remoteCLU);
+        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
+
+        super(
+                currentClu, remoteCLU,
+                new MqttDiscoveryLight(
+                        object.getName(),
+                        uniqueId,
+                        "%s/%s/%s".formatted(discoveryPrefix, "light", uniqueId), "~/set", "~/state",
+                        null,
+                        null,
+                        "json",
+                        null,
+                        Set.of("rgbw"),
+                        new MqttDiscoveryDevice(clu)
+                )
+        );
 
         this.object = object;
-
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-        this.discoveryMessage = new MqttDiscoveryLight(
-                object.getName(),
-                uniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "light", uniqueId), "~/set", "~/state",
-                null,
-                null,
-                "json",
-                null,
-                Set.of("rgbw"),
-                new MqttDiscoveryDevice(clu)
-        );
     }
 
     @Override
@@ -139,10 +136,5 @@ public class RemoteCLULedRgbLight extends BaseRemoteCLUSensor implements RemoteC
         stateNode.set("color", colorNode);
 
         return Optional.of(stateNode);
-    }
-
-    @Override
-    public MqttDiscoveryLight getDiscoveryMessage() {
-        return discoveryMessage;
     }
 }

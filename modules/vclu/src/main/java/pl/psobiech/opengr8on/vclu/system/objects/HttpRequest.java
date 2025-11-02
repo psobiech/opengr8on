@@ -65,7 +65,7 @@ public class HttpRequest extends BaseHttpObject {
                                     .proxy(ProxySelector.getDefault())
                                     .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_NONE))
                                     .connectTimeout(Duration.ofMillis(CONNECT_TIMEOUT_MILLIS))
-                                    .executor(scheduler)
+                                    .executor(executor)
                                     .version(Version.HTTP_2)
                                     .build();
 
@@ -100,7 +100,7 @@ public class HttpRequest extends BaseHttpObject {
 
         final java.net.http.HttpRequest request = createRequest(requestType, requestBodyAsString);
 
-        this.responseFuture = scheduler.submit(
+        this.responseFuture = executor.submit(
                 () -> {
                     final Path temporaryFile = FileUtil.temporaryFile();
                     try {

@@ -17,28 +17,21 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 public class RemoteCLUButton implements RemoteCLUDevice {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
-    private final ExecutorService scheduler;
-
     private final VirtualCLU currentClu;
-
-    private final RemoteCLU remoteCLU;
 
     private final SpecificObject object;
 
     private final MqttDiscovery discoveryMessage;
 
-    public RemoteCLUButton(ExecutorService scheduler, VirtualCLU currentClu, RemoteCLU remoteCLU, SpecificObject clu, SpecificObject object, String discoveryPrefix) {
-        this.scheduler = scheduler;
-        this.currentClu = currentClu;
-        this.remoteCLU = remoteCLU;
-        this.object = object;
-
+    public RemoteCLUButton(VirtualCLU currentClu, SpecificObject clu, SpecificObject object, String discoveryPrefix) {
         final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
+
+        this.currentClu = currentClu;
+        this.object = object;
 
         this.discoveryMessage = new MqttDiscoveryButton(
                 object.getName(),
@@ -54,12 +47,21 @@ public class RemoteCLUButton implements RemoteCLUDevice {
     }
 
     @Override
-    public void register() {
+    public void setup() {
         sendDiscoveryMessage();
     }
 
+    @Override
+    public void loop() {
+        // NOP
+    }
+
+    @Override
+    public void refresh() {
+        // NOP
+    }
+
     private void sendDiscoveryMessage() {
-        final MqttDiscovery discoveryMessage = getDiscoveryMessage();
         final String discoveryTopic = discoveryMessage.getDiscoveryTopic();
         if (discoveryTopic == null) {
             return;
@@ -75,11 +77,6 @@ public class RemoteCLUButton implements RemoteCLUDevice {
         } catch (MqttException | JsonProcessingException | RuntimeException e) {
             LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
         }
-    }
-
-    @Override
-    public MqttDiscovery getDiscoveryMessage() {
-        return discoveryMessage;
     }
 
     @Override

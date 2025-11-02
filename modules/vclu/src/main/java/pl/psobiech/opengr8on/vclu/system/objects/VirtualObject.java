@@ -28,18 +28,19 @@ import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
-import java.io.Closeable;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
 
-public class VirtualObject implements Closeable {
+public class VirtualObject implements VirtualDevice {
     protected final VirtualSystem virtualSystem;
 
     protected final String name;
 
     protected final ScheduledExecutorService scheduler;
+
+    protected final ExecutorService executor;
 
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
@@ -74,25 +75,11 @@ public class VirtualObject implements Closeable {
             Class<? extends Enum<? extends IMethod>> methodClass,
             Class<? extends Enum<? extends IEvent>> eventClass
     ) {
-        this(
-                virtualSystem,
-                name,
-                featureClass, methodClass, eventClass,
-                ThreadUtil::virtualScheduler
-        );
-    }
-
-    public VirtualObject(
-            VirtualSystem virtualSystem,
-            String name,
-            Class<? extends Enum<? extends IFeature>> featureClass,
-            Class<? extends Enum<? extends IMethod>> methodClass,
-            Class<? extends Enum<? extends IEvent>> eventClass,
-            Function<String, ScheduledExecutorService> schedulerSupplier
-    ) {
         this.virtualSystem = virtualSystem;
         this.name = name;
-        this.scheduler = schedulerSupplier.apply(name);
+
+        this.scheduler = ThreadUtil.virtualScheduler(name);
+        this.executor = ThreadUtil.virtualExecutor(name);
 
         this.featureClass = featureClass;
         this.methodClass = methodClass;
@@ -120,6 +107,7 @@ public class VirtualObject implements Closeable {
     @Override
     public void close() {
         ThreadUtil.closeQuietly(scheduler);
+        ThreadUtil.closeQuietly(executor);
     }
 
     public void register(IFeature feature, LuaSupplier fn) {
@@ -282,7 +270,7 @@ public class VirtualObject implements Closeable {
             awaitEventTrigger(event);
             eventTriggerFuture.put(
                     event,
-                    scheduler.submit(() -> {
+                    executor.submit(() -> {
                         try {
                             for (LuaNoArgConsumer luaFunction : luaFunctions) {
                                 try {
@@ -307,7 +295,7 @@ public class VirtualObject implements Closeable {
 
     private void tryFireHandler(Runnable onCompleted) {
         if (onCompleted != null) {
-            scheduler.submit(onCompleted);
+            executor.submit(onCompleted);
         }
     }
 

@@ -14,42 +14,35 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class RemoteCLULight extends BaseRemoteCLUSensor implements RemoteCLUDevice {
+public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
 
-    private final MqttDiscoveryLight discoveryMessage;
-
     public RemoteCLULight(
-            ExecutorService scheduler,
             VirtualCLU currentClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
             String discoveryPrefix
     ) {
-        super(scheduler, currentClu, remoteCLU);
+        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
+
+        super(
+                currentClu, remoteCLU,
+                new MqttDiscoveryLight(
+                        object.getName(),
+                        uniqueId,
+                        "%s/%s/%s".formatted(discoveryPrefix, "light", uniqueId), "~/set", "~/state",
+                        null,
+                        null,
+                        "json",
+                        null,
+                        null,
+                        new MqttDiscoveryDevice(clu)
+                )
+        );
 
         this.object = object;
-
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-        this.discoveryMessage = new MqttDiscoveryLight(
-                object.getName(),
-                uniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "light", uniqueId), "~/set", "~/state",
-                null,
-                null,
-                "json",
-                null,
-                null,
-                new MqttDiscoveryDevice(clu)
-        );
-    }
-
-    @Override
-    public MqttDiscoveryLight getDiscoveryMessage() {
-        return discoveryMessage;
     }
 
     @Override

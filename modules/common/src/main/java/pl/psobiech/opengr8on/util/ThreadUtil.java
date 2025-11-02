@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
+import java.time.Duration;
 import java.util.concurrent.*;
 
 public class ThreadUtil {
@@ -31,17 +32,17 @@ public class ThreadUtil {
 
     static {
         final int availableProcessors = Runtime.getRuntime().availableProcessors();
-        final int parallelism = Math.max(4, availableProcessors);
-        final int maxPoolSize = Math.round(parallelism * 1.2f);
-        MIN_RUNNABLE = Math.min(4, availableProcessors);
+        MIN_RUNNABLE = Math.min(4, availableProcessors + 1);
 
-        System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(parallelism));
-        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(maxPoolSize));
+        final int maxPoolSize = Math.max(256, MIN_RUNNABLE * 64);
+
         System.setProperty("jdk.virtualThreadScheduler.minRunnable", String.valueOf(MIN_RUNNABLE));
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(maxPoolSize));
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(MIN_RUNNABLE));
 
         System.setProperty("jdk.tracePinnedThreads", "full");
 
-        LOGGER.debug("Virtual Threads: {}-{}/{}", MIN_RUNNABLE, parallelism, maxPoolSize);
+        LOGGER.debug("Virtual Threads: {}-{}", MIN_RUNNABLE, maxPoolSize);
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             LOGGER.error("UncaughtException: [{}] {}", t.getName(), e.getMessage(), e);
@@ -62,8 +63,11 @@ public class ThreadUtil {
         // NOP
     }
 
-    public static void sleepRandomized(long delayCenter, int delaySpread) {
-        sleep(delayCenter + (delaySpread / 2) - RandomUtil.integer(delaySpread));
+    public static Duration sleepRandomized(long minimumMillis, int spreadMillis) {
+        final long delay = minimumMillis + RandomUtil.integer(spreadMillis);
+        sleep(delay);
+
+        return Duration.ofMillis(delay);
     }
 
     public static void sleep(long delay) {
@@ -165,13 +169,8 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Virtual Threads
      */
     public static ScheduledExecutorService virtualScheduler(String name) {
-        final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(Integer.MAX_VALUE, virtualThreadFactory(name));
-        scheduler.setKeepAliveTime(1, TimeUnit.MINUTES);
+        final ScheduledThreadPoolExecutor scheduler = createScheduler(Integer.MAX_VALUE, virtualThreadFactory(name));
         scheduler.allowCoreThreadTimeOut(true);
-
-        scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-        scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-        scheduler.setRemoveOnCancelPolicy(true);
 
         return scheduler;
     }
@@ -194,10 +193,11 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Daemon Platform Threads
      */
     public static ScheduledExecutorService daemonScheduler(int poolSize, String name) {
-        final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(poolSize, ThreadUtil.platformThreadFactory(name, true));
-        scheduler.setKeepAliveTime(1, TimeUnit.MINUTES);
-        scheduler.allowCoreThreadTimeOut(true);
+        return createScheduler(poolSize, ThreadUtil.platformThreadFactory(name, true));
+    }
 
+    private static ScheduledThreadPoolExecutor createScheduler(int poolSize, ThreadFactory threadFactory) {
+        final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(poolSize, threadFactory);
         scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
         scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
         scheduler.setRemoveOnCancelPolicy(true);

@@ -100,7 +100,7 @@ public class HttpListener extends BaseHttpObject {
                     }
             );
 
-            this.httpServer.setExecutor(scheduler);
+            this.httpServer.setExecutor(executor);
             this.httpServer.start();
         } catch (IOException e) {
             throw new UnexpectedException(e);

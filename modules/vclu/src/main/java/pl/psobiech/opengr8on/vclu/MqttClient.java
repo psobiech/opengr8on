@@ -30,6 +30,7 @@ import pl.psobiech.opengr8on.vclu.util.TlsUtil;
 
 import java.io.Closeable;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -47,12 +48,10 @@ public class MqttClient implements Closeable {
 
     private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
 
-    private static final int MAX_INFLIGHT = 128;
+    private static final int MAX_INFLIGHT = 256;
 
-    private static final int RETRIES = 16;
-
-    // the mqtt client requires at least 4 threads (also it does not support virtual threads)
-    private final ScheduledExecutorService executor = ThreadUtil.daemonScheduler(4, "MQTT");
+    // the mqtt client requires at least 4 threads (also, it does not support virtual threads)
+    private final ScheduledExecutorService executor = ThreadUtil.daemonScheduler(5, "MQTT");
 
     private final Map<String, List<Consumer<byte[]>>> mqttSubscriptions = new Hashtable<>();
 
@@ -63,7 +62,7 @@ public class MqttClient implements Closeable {
         options.setConnectionTimeout(CONNECTION_TIMEOUT_SECONDS);
         options.setKeepAliveInterval(KEEP_ALIVE_INTERVAL_SECONDS);
         options.setAutomaticReconnect(true);
-        options.setCleanSession(true);
+        options.setCleanSession(false);
         options.setMaxInflight(MAX_INFLIGHT);
 
         final String userInfo = mqttUri.getUserInfo();
@@ -174,15 +173,6 @@ public class MqttClient implements Closeable {
         LOGGER.debug("MQTT {} Connected: {}", mqttClient.getClientId(), connected, exception);
 
         currentClu.setMqttConnected(connected);
-        if (connected) {
-            for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
-                try {
-                    subscribe(mqttTopic.getTopicFilters());
-                } catch (MqttException e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-            }
-        }
     }
 
     public void subscribe(Set<String> topicFilterSet) throws MqttException {
@@ -191,7 +181,7 @@ public class MqttClient implements Closeable {
         final int[] qos = new int[topicFilters.length];
         Arrays.fill(qos, MQTT_QOS_AT_LEAST_ONCE);
 
-        LOGGER.debug("MQTT {} Subscribe: {} / MQTT_QOS_AT_LEAST_ONCE", mqttClient.getClientId(), Arrays.toString(topicFilters));
+        LOGGER.trace("MQTT {} Subscribe: {} / MQTT_QOS_AT_LEAST_ONCE", mqttClient.getClientId(), Arrays.toString(topicFilters));
 
         mqttClient.subscribe(topicFilters, qos);
     }
@@ -219,15 +209,41 @@ public class MqttClient implements Closeable {
         mqttClient.unsubscribe(topicFilter);
     }
 
-    public int publishJson(String topic, Object payloadObject) throws MqttException {
+    public void tryPublish(String topic, Object payloadObject) {
+        tryPublish(topic, payloadObject, false);
+    }
+
+    public void tryPublish(String topic, Object payloadObject, boolean retain) {
         final byte[] payload;
         try {
-            payload = ObjectMapperFactory.JSON.writeValueAsBytes(payloadObject);
+            payload = parsePayload(payloadObject);
+        } catch (RuntimeException e) {
+            LOGGER.error("Could not publish message to topic {}", topic, e);
+
+            return;
+        }
+
+        try {
+            publish(topic, payload, retain);
+        } catch (MqttException | RuntimeException e) {
+            LOGGER.error("Could not publish message ({}) to topic {}", HexUtil.asString(payload), topic, e);
+        }
+    }
+
+    public static byte[] parsePayload(Object payloadObject) {
+        try {
+            if (payloadObject instanceof String objectAsString) {
+                return objectAsString.getBytes(StandardCharsets.UTF_8);
+            }
+
+            if (payloadObject instanceof byte[] payloadAsBytes) {
+                return payloadAsBytes;
+            }
+
+            return ObjectMapperFactory.JSON.writeValueAsBytes(payloadObject);
         } catch (JsonProcessingException e) {
             throw new UnexpectedException(e);
         }
-
-        return publish(topic, payload);
     }
 
     public int publish(String topic, byte[] payload) throws MqttException {
@@ -235,40 +251,15 @@ public class MqttClient implements Closeable {
     }
 
     public int publish(String topic, byte[] payload, boolean retained) throws MqttException {
-        LOGGER.debug("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
+        LOGGER.trace("MQTT {} Publish: {} / {}", mqttClient.getClientId(), topic, ToStringUtil.toString(payload));
 
-        IMqttDeliveryToken publish = null;
-        MqttException exception = null;
-        for (int i = 0; i < RETRIES; i++) {
-            try {
-                publish = mqttClient.publish(
-                        topic, payload,
-                        MQTT_QOS_AT_LEAST_ONCE, retained
-                );
-
-                if (publish == null) {
-                    throw new UnexpectedException("mqtt publish returned null");
-                }
-
-                break;
-            } catch (MqttException e) {
-                exception = e;
-                if (e.getReasonCode() == MqttException.REASON_CODE_MAX_INFLIGHT) {
-                    try {
-                        Thread.sleep(10L);
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-
-                        throw new UnexpectedException(ex);
-                    }
-                } else {
-                    throw e;
-                }
-            }
-        }
+        final IMqttDeliveryToken publish = mqttClient.publish(
+                topic, payload,
+                MQTT_QOS_AT_LEAST_ONCE, retained
+        );
 
         if (publish == null) {
-            throw exception;
+            throw new UnexpectedException("mqtt publish returned null");
         }
 
         return publish.getMessageId();
