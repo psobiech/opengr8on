@@ -4,9 +4,8 @@
 ![jacoco.svg](badges%2Fjacoco.svg)
 [![AGPLv3 License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
-Automatycznie odczytane i dodane do HASS sa obecnie nastepujace urzadzenia (wszystkie nazwy są identycznie jak w
+Automatycznie odczytane i dodane do HASS (z projektu .omp) sa obecnie nastepujace urzadzenia (wszystkie nazwy są identycznie jak w
 projekcie .omp):
-
 - Rolety (ROLLER_SHUTTER) ![shutter.png](docs/img/shutter.png)
 - Dimmery (DIMM)
 - Włączniki (DOUT) ![dout.png](docs/img/dout.png)
@@ -18,8 +17,7 @@ projekcie .omp):
   mqttOnValueChange("CLU221010198->PAN2341"), gdzie parametr to identyfikator przycisku (skopiowany z OM),
   eg. ![button.png](docs/img/button.png) ![hass_button.png](docs/img/hass_button.png)
 
-TODO: Asynchroniczne wysylanie danych z CLU, np. przed podpiecie sie po onValueChange eventy, na razie stany sa jedynie
-pollowane
+W przypadku automatycznego wykrycia, że dodany został odpowieni handler na On*Change, manualny polling zostaje wyłączony dla danego urządzenia i VCLU przechodzi w tryb pełni asynchroniczny.
 
 # Quickstart
 
