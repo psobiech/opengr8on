@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.mqtt;
+package pl.psobiech.opengr8on.vclu.mqtt.discovery;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -3,8 +3,8 @@ package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.DoubleNode;
 import org.luaj.vm2.LuaValue;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryNumericFloat;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumericFloat;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
@@ -54,7 +54,7 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
             return Optional.empty();
         }
 
-        final LuaValue luaValue = remoteCLU.remoteExecute("%s:get(%d)".formatted(object.getNameOnCLU(), valueFeature.get().getIndex()));
+        final LuaValue luaValue = remoteCLU.remoteGet(object, valueFeature.get().getIndex());
         if (LuaUtil.isNil(luaValue)) {
             return Optional.empty();
         }

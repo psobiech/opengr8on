@@ -1,6 +1,5 @@
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,13 +7,18 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
+import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryLight;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttColorState.ColorMode;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttRgbwState;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttState.StateEnum;
+import pl.psobiech.opengr8on.vclu.mqtt.state.RgbwColor;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
@@ -30,33 +34,7 @@ import java.util.stream.Collectors;
 public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     protected static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
 
-    private static final long SET_WHITE_VALUE_METHOD = 12L;
-
-    private static final String RED_VALUE = "RedValue";
-
-    private static final String GREEN_VALUE = "GreenValue";
-
-    private static final String BLUE_VALUE = "BlueValue";
-
-    private static final String WHITE_VALUE = "WhiteValue";
-
-    private static final String RED_KEY = "r";
-
-    private static final String GREEN_KEY = "g";
-
-    private static final String BLUE_KEY = "b";
-
-    private static final String WHITE_KEY = "w";
-
-    private static final int ON_VALUE = 255;
-
-    private static final int OFF_VALUE = 0;
-
-    private static final int DEFAULT_VALUE = OFF_VALUE;
-
-    private static final String STATE_OFF = "OFF";
-
-    private static final String STATE_ON = "ON";
+    private static final long SET_WHITE_VALUE_METHOD_ID = 12L;
 
     protected final VirtualCLU virtualClu;
 
@@ -66,9 +44,9 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     protected final MqttDiscoveryLight discoveryMessage;
 
-    private final Map<String, String> keyFeatureMap = new Hashtable<>();
+//    private final Map<String, String> keyFeatureMap = new Hashtable<>();
 
-    private final Map<String, MqttDiscoveryLight> keyChildDiscoveryMessages = new Hashtable<>();
+    private final Map<Color, MqttDiscoveryLight> keyChildDiscoveryMessages = new Hashtable<>();
 
     private final Map<String, Feature> valueFeatures;
 
@@ -97,7 +75,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 null,
                 "json",
                 null,
-                Set.of("rgbw"),
+                Set.of(ColorMode.RGBW.key()),
                 mqttDiscoveryDevice
         );
 
@@ -106,34 +84,14 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         valueFeatures = object.getFeatures().stream()
                               .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
-        if (valueFeatures.containsKey(RED_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, RED_VALUE);
+        for (Color color : Color.values()) {
+            if (valueFeatures.containsKey(color.featureName())) {
+                final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.featureName());
 
-            keyChildDiscoveryMessages.put(RED_KEY, discoveryMessage);
-            keyFeatureMap.put(RED_KEY, RED_VALUE);
+                keyChildDiscoveryMessages.put(color, discoveryMessage);
+//                keyFeatureMap.put(color.key(), color.featureName());
+            }
         }
-
-        if (valueFeatures.containsKey(GREEN_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, GREEN_VALUE);
-
-            keyChildDiscoveryMessages.put(GREEN_KEY, discoveryMessage);
-            keyFeatureMap.put(GREEN_KEY, GREEN_VALUE);
-        }
-
-        if (valueFeatures.containsKey(BLUE_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, BLUE_VALUE);
-
-            keyChildDiscoveryMessages.put(BLUE_KEY, discoveryMessage);
-            keyFeatureMap.put(BLUE_KEY, BLUE_VALUE);
-        }
-
-        if (valueFeatures.containsKey(WHITE_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, WHITE_VALUE);
-
-            keyChildDiscoveryMessages.put(WHITE_KEY, discoveryMessage);
-            keyFeatureMap.put(WHITE_KEY, WHITE_VALUE);
-        }
-
     }
 
     private static MqttDiscoveryLight childLightDeviceDiscoveryMessage(SpecificObject clu, SpecificObject object, String discoveryPrefix, MqttDiscoveryDevice cluDevice, String valueName) {
@@ -147,18 +105,18 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 null,
                 "json",
                 null,
-                Set.of("brightness"),
+                Set.of(ColorMode.BRIGHTNESS.key()),
                 cluDevice
         );
     }
 
     @Override
     public void setup() {
-        for (Map.Entry<String, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
-            final String colorKey = entry.getKey();
+        for (Map.Entry<Color, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
+            final Color color = entry.getKey();
             final MqttDiscoveryLight childLight = entry.getValue();
 
-            subscribeSetStateMessages(colorKey, childLight);
+            subscribeSetStateMessages(color, childLight);
 
             sendDiscoveryMessage(childLight);
         }
@@ -186,7 +144,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = now + duration;
+        nextRefreshAt = Math.min(now + duration, nextRefreshAt);
     }
 
     @Override
@@ -208,7 +166,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                   );
     }
 
-    private void subscribeSetStateMessages(String colorKey, MqttDiscoveryLight discoveryMessage) {
+    private void subscribeSetStateMessages(Color color, MqttDiscoveryLight discoveryMessage) {
         final String setStateTopic = discoveryMessage.getSetStateTopic();
         if (setStateTopic == null) {
             return;
@@ -220,7 +178,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                           bytes -> {
                               LOGGER.info("MQTT Subscribe: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
 
-                              if (colorKey == null) {
+                              if (color == null) {
                                   lastState = pushState(
                                           lastState,
                                           writeValue(remoteCLU, bytes)
@@ -229,7 +187,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                               } else {
                                   lastState = pushState(
                                           lastState,
-                                          writeValueColor(colorKey, remoteCLU, bytes)
+                                          writePartialColorValue(color, remoteCLU, bytes)
                                                   .orElse(null)
                                   );
                               }
@@ -255,15 +213,6 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             }
 
             final JsonNode stateNode = stateNodeOptional.get();
-            final String stateAsString;
-            try {
-                stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode);
-            } catch (JsonProcessingException e) {
-                LOGGER.error("Could not serialize state {} for {}", stateNode, discoveryMessage.getUniqueId(), e);
-
-                return lastState;
-            }
-
             if (stateNode.equals(lastState)) {
                 return lastState;
             }
@@ -271,26 +220,24 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
-                              MqttClient.parsePayload(stateAsString)
+                              MqttClient.parsePayload(stateNode)
                       );
 
-            for (Map.Entry<String, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
+            for (Map.Entry<Color, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
                 final MqttDiscoveryLight discoveryMessage = entry.getValue();
                 if (discoveryMessage.getStateTopic() == null) {
                     continue;
                 }
 
-                final String colorKey = entry.getKey();
-                final int value = stateNode.optional("color")
+                final String colorKey = entry.getKey().key();
+                final int value = stateNode.optional(MqttRgbwState.COLOR_KEY)
                                            .flatMap(jsonNode -> jsonNode.optional(colorKey))
-                                           .or(() -> stateNode.optional("brightness"))
-                                           .map(jsonNode -> jsonNode.asInt(DEFAULT_VALUE))
-                                           .orElse(DEFAULT_VALUE);
+                                           .or(() -> stateNode.optional(MqttRgbwState.BRIGHTNESS_KEY))
+                                           .map(valueNode -> valueNode.asInt(MqttRgbwState.OFF_VALUE))
+                                           .orElse(MqttRgbwState.OFF_VALUE);
 
-                final ObjectNode childStateNode = ObjectMapperFactory.JSON.createObjectNode();
-                childStateNode.set("state", new TextNode(value == OFF_VALUE ? "OFF" : "ON"));
-                childStateNode.set("brightness", new IntNode(value));
-                childStateNode.set("color_mode", new TextNode("brightness"));
+                final ObjectNode childStateNode = new MqttBrightnessState(value)
+                        .asJson();
 
                 virtualClu.getMqttClient()
                           .publish(
@@ -302,163 +249,191 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             return stateNode;
         } catch (MqttException | RuntimeException e) {
             LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
-        }
 
-        return lastState;
+            return lastState;
+        }
     }
 
     @Override
     public Optional<JsonNode> writeValue(RemoteCLU remoteCLU, byte[] bytes) {
-        final JsonNode stateNode;
+        final JsonNode newState;
         try {
-            stateNode = ObjectMapperFactory.JSON.readTree(bytes);
-
+            newState = ObjectMapperFactory.JSON.readTree(bytes);
         } catch (IOException e) {
-            throw new UnexpectedException(e);
+            LOGGER.warn("Could not parse state update message for {} ({})", discoveryMessage.getUniqueId(), HexUtil.asString(bytes), e);
+
+            return Optional.empty();
         }
 
-        return writeValue(remoteCLU, stateNode);
+        return writeValue(remoteCLU, newState);
     }
 
-    private Optional<JsonNode> writeValueColor(String colorKey, RemoteCLU remoteCLU, byte[] bytes) {
-        final JsonNode partialStateNode;
+    private Optional<JsonNode> writePartialColorValue(Color color, RemoteCLU remoteCLU, byte[] bytes) {
+        final MqttRgbwState newState;
         try {
-            partialStateNode = ObjectMapperFactory.JSON.readTree(bytes);
-
+            newState = ObjectMapperFactory.JSON.readValue(bytes, MqttRgbwState.class);
         } catch (IOException e) {
-            throw new UnexpectedException(e);
-        }
+            LOGGER.warn("Could not parse partial state update message for {} ({})", discoveryMessage.getUniqueId(), HexUtil.asString(bytes), e);
 
-        final boolean stateOn = partialStateNode.optional("state")
-                                                .map(node -> node.asText(STATE_OFF))
-                                                .filter(state -> state.equalsIgnoreCase(STATE_ON))
-                                                .isPresent();
+            return Optional.empty();
+        }
 
         final int colorValue;
-        if (stateOn) {
-            final Optional<JsonNode> brightnessOptional = partialStateNode.optional("brightness");
-            if (brightnessOptional.isPresent()) {
-                colorValue = brightnessOptional.map(JsonNode::asInt)
-                                               .orElse(DEFAULT_VALUE);
-            } else {
-                colorValue = ON_VALUE;
-            }
+        if (newState.isOn()) {
+            colorValue = newState.getBrightness()
+                                 .orElse(MqttRgbwState.MAX_VALUE);
         } else {
-            colorValue = OFF_VALUE;
+            colorValue = MqttRgbwState.OFF_VALUE;
         }
 
-        final String featureName = keyFeatureMap.get(colorKey);
-
-        final long methodIndex;
-        if (featureName.equalsIgnoreCase(WHITE_VALUE)) {
-            methodIndex = SET_WHITE_VALUE_METHOD;
-        } else {
-            methodIndex = valueFeatures.get(featureName).getIndex();
-        }
-
-        remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), methodIndex, colorValue));
+        writeCluColorValue(color, remoteCLU, colorValue);
 
         if (lastState == null) {
             return Optional.empty();
         }
 
         final ObjectNode lastStateCopy = lastState.deepCopy();
-        final Optional<JsonNode> colorOptional = lastStateCopy.optional("color");
+        final Optional<JsonNode> colorOptional = lastStateCopy.optional(MqttRgbwState.COLOR_KEY);
         if (colorOptional.isEmpty() || !(colorOptional.get() instanceof ObjectNode colourObjectNode)) {
             return Optional.empty();
         }
 
-        colourObjectNode.set(colorKey, new IntNode(colorValue));
+        colourObjectNode.set(color.key(), new IntNode(colorValue));
 
         int colorSum = 0;
-        for (String otherColorKey : keyFeatureMap.keySet()) {
-            colorSum += colourObjectNode.optional(otherColorKey)
-                                        .map(jsonNode -> jsonNode.asInt(DEFAULT_VALUE))
-                                        .orElse(DEFAULT_VALUE);
+        for (Color otherColor : Color.values()) {
+            colorSum += colourObjectNode.optional(otherColor.key())
+                                        .map(jsonNode -> jsonNode.asInt(MqttRgbwState.OFF_VALUE))
+                                        .orElse(MqttRgbwState.OFF_VALUE);
         }
 
-        lastStateCopy.set("state", new TextNode(colorSum == OFF_VALUE ? STATE_OFF : STATE_ON));
+        lastStateCopy.set(MqttRgbwState.STATE_KEY, createStateValueNode(colorSum != MqttRgbwState.OFF_VALUE));
 
         return Optional.of(lastStateCopy);
     }
 
     private Optional<JsonNode> writeValue(RemoteCLU remoteCLU, JsonNode stateNode) {
-        final boolean stateOn = stateNode.optional("state")
-                                         .map(node -> node.asText(STATE_OFF))
-                                         .filter(state -> state.equalsIgnoreCase(STATE_ON))
-                                         .isPresent();
-
         final int redValue;
         final int greenValue;
         final int blueValue;
         final int whiteValue;
-        if (stateOn) {
-            final Optional<JsonNode> colorOptional = stateNode.optional("color");
-            final Optional<JsonNode> brightnessOptional = stateNode.optional("brightness");
+        if (isStateOn(stateNode)) {
+            final Optional<JsonNode> colorOptional = stateNode.optional(MqttRgbwState.COLOR_KEY);
+            final Optional<JsonNode> brightnessOptional = stateNode.optional(MqttRgbwState.BRIGHTNESS_KEY);
             if (colorOptional.isPresent()) {
                 final JsonNode color = colorOptional.get();
 
-                redValue = color.get(RED_KEY).asInt(DEFAULT_VALUE);
-                greenValue = color.get(GREEN_KEY).asInt(DEFAULT_VALUE);
-                blueValue = color.get(BLUE_KEY).asInt(DEFAULT_VALUE);
-                whiteValue = color.get(WHITE_KEY).asInt(DEFAULT_VALUE);
+                redValue = color.get(Color.RED.key()).asInt(MqttRgbwState.OFF_VALUE);
+                greenValue = color.get(Color.GREEN.key()).asInt(MqttRgbwState.OFF_VALUE);
+                blueValue = color.get(Color.BLUE.key()).asInt(MqttRgbwState.OFF_VALUE);
+                whiteValue = color.get(Color.WHITE.key()).asInt(MqttRgbwState.OFF_VALUE);
             } else if (brightnessOptional.isPresent()) {
                 final int brightnessValue = brightnessOptional.map(JsonNode::asInt)
-                                                              .orElse(DEFAULT_VALUE);
+                                                              .orElse(MqttRgbwState.OFF_VALUE);
 
                 redValue = brightnessValue;
                 greenValue = brightnessValue;
                 blueValue = brightnessValue;
                 whiteValue = brightnessValue;
             } else {
-                redValue = ON_VALUE;
-                greenValue = ON_VALUE;
-                blueValue = ON_VALUE;
-                whiteValue = ON_VALUE;
+                redValue = MqttRgbwState.MAX_VALUE;
+                greenValue = MqttRgbwState.MAX_VALUE;
+                blueValue = MqttRgbwState.MAX_VALUE;
+                whiteValue = MqttRgbwState.MAX_VALUE;
             }
         } else {
-            redValue = OFF_VALUE;
-            greenValue = OFF_VALUE;
-            blueValue = OFF_VALUE;
-            whiteValue = OFF_VALUE;
+            redValue = MqttRgbwState.OFF_VALUE;
+            greenValue = MqttRgbwState.OFF_VALUE;
+            blueValue = MqttRgbwState.OFF_VALUE;
+            whiteValue = MqttRgbwState.OFF_VALUE;
         }
 
-        remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get(RED_VALUE).getIndex(), redValue));
-        remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get(GREEN_VALUE).getIndex(), greenValue));
-        remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), valueFeatures.get(BLUE_VALUE).getIndex(), blueValue));
+        writeCluColorValue(Color.RED, remoteCLU, redValue);
+        writeCluColorValue(Color.GREEN, remoteCLU, greenValue);
+        writeCluColorValue(Color.BLUE, remoteCLU, blueValue);
+        writeCluColorValue(Color.WHITE, remoteCLU, whiteValue);
 
-        // todo: PS remember not all features have the same id's as methods
-        remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), SET_WHITE_VALUE_METHOD, whiteValue));
+        return Optional.of(
+                new MqttRgbwState(redValue, greenValue, blueValue, whiteValue)
+                        .asJson()
+        );
+    }
 
-        if (stateNode instanceof ObjectNode stateObjectNode) {
-            stateObjectNode.set("color_mode", new TextNode("rgbw"));
+    private static boolean isStateOn(JsonNode stateNode) {
+        return stateNode.optional(MqttRgbwState.STATE_KEY)
+                        .map(node -> node.asText(StateEnum.OFF.name()))
+                        .filter(state -> state.equalsIgnoreCase(StateEnum.ON.name()))
+                        .isPresent();
+    }
 
-            final boolean isOff = redValue == OFF_VALUE && greenValue == OFF_VALUE && blueValue == OFF_VALUE && whiteValue == OFF_VALUE;
-            stateObjectNode.set("state", new TextNode(isOff ? STATE_OFF : STATE_ON));
+    private void writeCluColorValue(Color color, RemoteCLU remoteCLU, int colorValue) {
+        final String featureName = color.featureName();
+
+        final long methodIndex;
+        if (featureName.equalsIgnoreCase(Color.WHITE.featureName())) {
+            methodIndex = SET_WHITE_VALUE_METHOD_ID;
+        } else {
+            methodIndex = valueFeatures.get(featureName).getIndex();
         }
 
-        return Optional.of(stateNode);
+        remoteCLU.remoteMethod(object, methodIndex, colorValue);
     }
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final int redValue = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get(RED_VALUE).getIndex())).optint(0);
-        final int greenValue = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get(GREEN_VALUE).getIndex())).optint(0);
-        final int blueValue = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get(BLUE_VALUE).getIndex())).optint(0);
-        final int whiteValue = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get(WHITE_VALUE).getIndex())).optint(0);
+        final int redValue = readCluColorValue(remoteCLU, Color.RED.featureName());
+        final int greenValue = readCluColorValue(remoteCLU, Color.GREEN.featureName());
+        final int blueValue = readCluColorValue(remoteCLU, Color.BLUE.featureName());
+        final int whiteValue = readCluColorValue(remoteCLU, Color.WHITE.featureName());
 
+        return Optional.of(
+                new MqttRgbwState(redValue, greenValue, blueValue, whiteValue)
+                        .asJson()
+        );
+    }
+
+    private int readCluColorValue(RemoteCLU remoteCLU, String colorKey) {
+        return remoteCLU.remoteGet(object, valueFeatures.get(colorKey).getIndex())
+                        .optint(MqttRgbwState.OFF_VALUE);
+    }
+
+    private static TextNode createStateValueNode(boolean isOn) {
+        return new TextNode(isOn ? StateEnum.ON.name() : StateEnum.OFF.name());
+    }
+
+    private static ObjectNode createColorValueNode(int redValue, int greenValue, int blueValue, int whiteValue) {
         final ObjectNode colorNode = ObjectMapperFactory.JSON.createObjectNode();
-        colorNode.set(RED_KEY, new IntNode(redValue));
-        colorNode.set(GREEN_KEY, new IntNode(greenValue));
-        colorNode.set(BLUE_KEY, new IntNode(blueValue));
-        colorNode.set(WHITE_KEY, new IntNode(whiteValue));
+        colorNode.set(Color.RED.key(), new IntNode(redValue));
+        colorNode.set(Color.GREEN.key(), new IntNode(greenValue));
+        colorNode.set(Color.BLUE.key(), new IntNode(blueValue));
+        colorNode.set(Color.WHITE.key(), new IntNode(whiteValue));
 
-        final ObjectNode stateNode = ObjectMapperFactory.JSON.createObjectNode();
-        stateNode.set("color", colorNode);
+        return colorNode;
+    }
 
-        final boolean isOff = redValue == OFF_VALUE && greenValue == OFF_VALUE && blueValue == OFF_VALUE && whiteValue == OFF_VALUE;
-        stateNode.set("state", new TextNode(isOff ? STATE_OFF : STATE_ON));
+    private enum Color {
+        RED(RgbwColor.RED_KEY, "RedValue"),
+        GREEN(RgbwColor.GREEN_KEY, "GreenValue"),
+        BLUE(RgbwColor.BLUE_KEY, "BlueValue"),
+        WHITE(RgbwColor.WHITE_KEY, "WhiteValue"),
+        //
+        ;
 
-        return Optional.of(stateNode);
+        private final String featureName;
+
+        private final String key;
+
+        Color(String key, String featureName) {
+            this.key = key;
+            this.featureName = featureName;
+        }
+
+        public String featureName() {
+            return featureName;
+        }
+
+        public String key() {
+            return key;
+        }
     }
 }

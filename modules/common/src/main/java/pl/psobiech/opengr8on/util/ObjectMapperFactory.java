@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
@@ -65,11 +66,18 @@ public final class ObjectMapperFactory {
     private static <M extends ObjectMapper> M configureJacksonObjectMapper(M mapper) {
         mapper.registerModule(new JavaTimeModule())
               .registerModule(new ParameterNamesModule())
-              .registerModule(new JacksonXmlModule());
+              .registerModule(new JacksonXmlModule())
+              .registerModule(new Jdk8Module());
 
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
               .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
               .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                                   .withFieldVisibility(Visibility.ANY)
+                                   .withGetterVisibility(Visibility.NONE)
+                                   .withSetterVisibility(Visibility.NONE)
+                                   .withCreatorVisibility(Visibility.DEFAULT));
 
         mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(false));
 

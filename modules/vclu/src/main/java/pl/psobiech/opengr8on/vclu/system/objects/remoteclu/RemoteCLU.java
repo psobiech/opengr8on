@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
@@ -203,12 +203,36 @@ public class RemoteCLU extends VirtualObject {
         final RemoteCLUDevice remoteCLUDevice = devices.get(nameOnCLU);
 
         if (remoteCLUDevice != null) {
-            LOGGER.debug("Received event: mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
+            LOGGER.trace("Received event: mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
 
             remoteCLUDevice.refresh();
         } else {
             LOGGER.warn("Unhandled mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
         }
+    }
+
+    public LuaValue remoteSet(SpecificObject object, long index, float value) {
+        return remoteSet(object, index, String.valueOf(value));
+    }
+
+    public LuaValue remoteSet(SpecificObject object, long index, String value) {
+        return remoteExecute(String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, value));
+    }
+
+    public LuaValue remoteMethod(SpecificObject object, long index, long value) {
+        return remoteMethod(object, index, String.valueOf(value));
+    }
+
+    public LuaValue remoteMethod(SpecificObject object, long index, String value) {
+        return remoteExecute(String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, value));
+    }
+
+    public LuaValue remoteMethod(SpecificObject object, long index) {
+        return remoteExecute(String.format("%s:execute(%d)", object.getNameOnCLU(), index));
+    }
+
+    public LuaValue remoteGet(SpecificObject object, long index) {
+        return remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), index));
     }
 
     public LuaValue remoteExecute(String script) {

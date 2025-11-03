@@ -1,11 +1,12 @@
-package pl.psobiech.opengr8on.vclu.mqtt;
+package pl.psobiech.opengr8on.vclu.mqtt.discovery;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MqttDiscovery {
+public class MqttDiscovery extends MqttJson {
     private final String name;
 
     @JsonProperty("unique_id")

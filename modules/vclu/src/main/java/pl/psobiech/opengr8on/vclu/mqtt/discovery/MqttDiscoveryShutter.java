@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.mqtt;
+package pl.psobiech.opengr8on.vclu.mqtt.discovery;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -15,19 +15,19 @@ public class MqttDiscoveryShutter extends MqttDiscovery {
     private final String setPositionTemplate;
 
     @JsonProperty("state_open")
-    private final String stateOpen = StateEnum.OPEN.name();
+    private final String stateOpen = ShutterStateEnum.OPEN.name();
 
     @JsonProperty("state_opening")
-    private final String stateOpening = StateEnum.OPENING.name();
+    private final String stateOpening = ShutterStateEnum.OPENING.name();
 
     @JsonProperty("state_closing")
-    private final String stateClosing = StateEnum.CLOSING.name();
+    private final String stateClosing = ShutterStateEnum.CLOSING.name();
 
     @JsonProperty("state_closed")
-    private final String stateClosed = StateEnum.CLOSE.name();
+    private final String stateClosed = ShutterStateEnum.CLOSE.name();
 
     @JsonProperty("state_stopped")
-    private final String stateStopped = StateEnum.STOP.name();
+    private final String stateStopped = ShutterStateEnum.STOP.name();
 
     public MqttDiscoveryShutter(
             String name, String uniqueId,
@@ -82,7 +82,7 @@ public class MqttDiscoveryShutter extends MqttDiscovery {
         return stateStopped;
     }
 
-    public enum StateEnum {
+    public enum ShutterStateEnum {
         OPEN, OPENING,
         CLOSE, CLOSING,
         STOP,
@@ -91,7 +91,7 @@ public class MqttDiscoveryShutter extends MqttDiscovery {
         //
         ;
 
-        public static StateEnum parse(String stateAsString) {
+        public static ShutterStateEnum parse(String stateAsString) {
             if (stateAsString == null) {
                 return UNKNOWN;
             }

@@ -18,6 +18,7 @@ projekcie .omp):
   eg. ![button.png](docs/img/button.png) ![hass_button.png](docs/img/hass_button.png)
 
 W przypadku automatycznego wykrycia, że dodany został odpowieni handler na On*Change, manualny polling zostaje wyłączony dla danego urządzenia i VCLU przechodzi w tryb pełni asynchroniczny.
+PS: Dla czujników temperatury, jasności etc. lepiej pozostawić polling, bo potrafią one raportować zmiany niepotrzebnie często.
 
 # Quickstart
 

@@ -2,19 +2,17 @@ package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryShutter;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryShutter.StateEnum;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter.ShutterStateEnum;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttPosition;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
@@ -22,7 +20,7 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-public class RemoteCLUShutter implements RemoteCLUDevice {
+public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLUShutter.class);
 
     //
@@ -45,7 +43,9 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
 
     private final MqttDiscoveryShutter discoveryMessage;
 
-    private String lastState = null;
+    private final boolean hasAsyncHandlers;
+
+    private JsonNode lastState = null;
 
     private Integer expectedPosition = null;
 
@@ -74,6 +74,8 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
                 "{ \"position\": {{ position }} }",
                 mqttDiscoveryDevice
         );
+
+        this.hasAsyncHandlers = hasAsyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
     }
 
     @Override
@@ -88,7 +90,11 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
     public void loop() {
         final long now = System.currentTimeMillis();
         if (now >= nextRefreshAt) {
-            scheduleNextRefresh(now);
+            if (hasAsyncHandlers) {
+                nextRefreshAt = Long.MAX_VALUE;
+            } else {
+                scheduleNextRefresh(now);
+            }
 
             refresh();
         }
@@ -147,11 +153,11 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
                   );
     }
 
-    protected String pushState(String lastState) {
+    protected JsonNode pushState(JsonNode lastState) {
         return pushState(lastState, null);
     }
 
-    protected String pushState(String lastState, JsonNode newState) {
+    protected JsonNode pushState(JsonNode lastState, JsonNode newState) {
         final String stateTopic = discoveryMessage.getStateTopic();
         if (stateTopic == null) {
             return lastState;
@@ -162,111 +168,122 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
             return lastState;
         }
 
+        final Optional<JsonNode> stateNodeOptional = newState != null ? Optional.of(newState) : readValue(remoteCLU);
+        if (stateNodeOptional.isEmpty()) {
+            return lastState;
+        }
+
+        final JsonNode stateNode = stateNodeOptional.get();
+
+        final Optional<Integer> positionOptional = getPosition(stateNode);
+        if (positionOptional.isEmpty()) {
+            return lastState;
+        }
+
+        final int position = positionOptional.get();
+        final ShutterStateEnum shutterState = getShutterState(position);
+        if (shutterState == ShutterStateEnum.OPENING || shutterState == ShutterStateEnum.CLOSING) {
+            scheduleNextRefreshIn(System.currentTimeMillis(), 1000);
+        } else {
+            expectedPosition = null;
+        }
+
+        LOGGER.info("State {} {} = {} / {}", object.getName(), shutterState, expectedPosition, position);
+
         try {
-            final Optional<JsonNode> stateNode = newState != null ? Optional.of(newState) : readValue(remoteCLU);
-            if (stateNode.isEmpty()) {
-                return lastState;
-            }
-
-            final String stateAsString;
-            try {
-                stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode.get());
-            } catch (JsonProcessingException e) {
-                LOGGER.error("Could not serialize state for {}", discoveryMessage.getUniqueId(), e);
-
-                return lastState;
-            }
-
-            final int position = getPosition(stateNode.get());
-            final StateEnum stateEnum = getStateEnum(position);
-            if (stateEnum == StateEnum.OPENING || stateEnum == StateEnum.CLOSING) {
-                scheduleNextRefreshIn(System.currentTimeMillis(), 1000);
-            }
-
-            if (stateAsString.equals(lastState)) {
-                return lastState;
-            }
-
             virtualClu.getMqttClient()
                       .publish(
                               positionStateTopic,
-                              MqttClient.parsePayload(stateAsString)
+                              MqttClient.parsePayload(
+                                      new MqttPosition(
+                                              position
+                                      )
+                                              .asJson()
+                              )
                       );
 
             virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
-                              MqttClient.parsePayload(stateEnum.name())
+                              MqttClient.parsePayload(shutterState.name())
                       );
 
-            return stateAsString;
+            return stateNode;
         } catch (MqttException | RuntimeException e) {
             LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
-        }
 
-        return lastState;
+            return lastState;
+        }
     }
 
-    private StateEnum getStateEnum(int currentPosition) {
-        if (expectedPosition == null) {
-            expectedPosition = currentPosition;
-        }
+    private static Optional<Integer> getPosition(JsonNode stateNode) {
+        return stateNode.optional(MqttPosition.POSITION_KEY)
+                        .map(node -> node.asInt(OPEN_POSITION));
+    }
 
-        if (currentPosition < expectedPosition) {
-            return StateEnum.OPENING;
-        }
-
-        if (currentPosition > expectedPosition) {
-            return StateEnum.CLOSING;
-        }
-
+    private ShutterStateEnum getShutterState(int currentPosition) {
         if (currentPosition == OPEN_POSITION) {
-            return StateEnum.OPEN;
+            return ShutterStateEnum.OPEN;
         }
 
         if (currentPosition == CLOSE_POSITION) {
-            return StateEnum.CLOSE;
+            return ShutterStateEnum.CLOSE;
         }
 
-        return StateEnum.STOP;
+        if (expectedPosition != null) {
+            if (currentPosition < expectedPosition) {
+                return ShutterStateEnum.OPENING;
+            }
+
+            if (currentPosition > expectedPosition) {
+                return ShutterStateEnum.CLOSING;
+            }
+        }
+
+        return ShutterStateEnum.STOP;
+    }
+
+    private void scheduleNextRefresh(long now) {
+        scheduleNextRefreshIn(now, (45_000 + RandomUtil.integer(30_000))); // 45 - 75s
+    }
+
+    private void scheduleNextRefreshIn(long now, long duration) {
+        nextRefreshAt = Math.min(now + duration, nextRefreshAt);
     }
 
     @Override
     public Optional<JsonNode> writeValue(RemoteCLU remoteCLU, byte[] bytes) {
         final String stateAsString = new String(bytes, StandardCharsets.UTF_8);
-        final StateEnum stateAsEnum = StateEnum.parse(stateAsString);
-        if (stateAsEnum == StateEnum.STOP) {
-            remoteCLU.remoteExecute(String.format("%s:execute(%d)", object.getNameOnCLU(), STOP_METHOD));
+        final ShutterStateEnum stateAsEnum = ShutterStateEnum.parse(stateAsString);
+        if (stateAsEnum == ShutterStateEnum.STOP) {
+            remoteCLU.remoteMethod(object, STOP_METHOD);
 
             expectedPosition = null;
 
             return Optional.empty();
         }
 
-        if (stateAsEnum == StateEnum.UNKNOWN) {
-            final JsonNode stateNode;
+        if (stateAsEnum == ShutterStateEnum.UNKNOWN) {
+            final MqttPosition positionState;
             try {
-                stateNode = ObjectMapperFactory.JSON.readTree(stateAsString);
+                positionState = ObjectMapperFactory.JSON.readValue(stateAsString, MqttPosition.class);
             } catch (JsonProcessingException e) {
-                throw new UnexpectedException(e);
+                LOGGER.error("Could not read state from {}", stateAsString, e);
+
+                return Optional.empty();
             }
 
-            expectedPosition = getPosition(stateNode);
-        } else if (stateAsEnum == StateEnum.OPEN) {
+            expectedPosition = positionState.getPosition()
+                                            .orElse(OPEN_POSITION);
+        } else if (stateAsEnum == ShutterStateEnum.OPEN) {
             expectedPosition = OPEN_POSITION;
-        } else if (stateAsEnum == StateEnum.CLOSE) {
+        } else if (stateAsEnum == ShutterStateEnum.CLOSE) {
             expectedPosition = CLOSE_POSITION;
         }
 
-        remoteCLU.remoteExecute(String.format("%s:execute(%d, %d)", object.getNameOnCLU(), SET_POSITION_METHOD, expectedPosition));
+        remoteCLU.remoteMethod(object, SET_POSITION_METHOD, expectedPosition);
 
         return Optional.empty();
-    }
-
-    private static int getPosition(JsonNode stateNode) {
-        return stateNode.optional("position")
-                        .map(node -> node.asInt(OPEN_POSITION))
-                        .orElse(OPEN_POSITION);
     }
 
     @Override
@@ -278,19 +295,13 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
             return Optional.empty();
         }
 
-        final int position = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), positionFeature.get().getIndex())).optint(0);
+        final int position = remoteCLU.remoteGet(object, positionFeature.get().getIndex())
+                                      .optint(OPEN_POSITION);
 
-        final ObjectNode stateNode = ObjectMapperFactory.JSON.createObjectNode();
-        stateNode.set("position", new IntNode(position));
-
-        return Optional.of(stateNode);
+        return Optional.of(
+                new MqttPosition(position)
+                        .asJson()
+        );
     }
 
-    private void scheduleNextRefresh(long now) {
-        scheduleNextRefreshIn(now, (45_000 + RandomUtil.integer(30_000))); // 45 - 75s
-    }
-
-    private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = now + duration;
-    }
 }

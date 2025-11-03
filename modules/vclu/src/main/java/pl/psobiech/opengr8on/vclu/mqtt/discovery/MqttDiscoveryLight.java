@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.mqtt;
+package pl.psobiech.opengr8on.vclu.mqtt.discovery;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -6,15 +6,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Set;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MqttDiscoveryButton extends MqttDiscovery {
-    @JsonProperty("event_types")
-    private final Set<String> eventTypes;
+public class MqttDiscoveryLight extends MqttDiscovery {
+    @JsonProperty("supported_color_modes")
+    private final Set<String> supportedColorModes;
 
-    public MqttDiscoveryButton(
+    public MqttDiscoveryLight(
             String name, String uniqueId,
             String rootTopic, String commandTopic, String stateTopic,
             String deviceClass, String unitOfMeasurement,
-            String schema, String valueTemplate, Set<String> eventTypes,
+            String schema, String valueTemplate, Set<String> supportedColorModes,
             MqttDiscoveryDevice device
     ) {
         super(
@@ -25,10 +25,10 @@ public class MqttDiscoveryButton extends MqttDiscovery {
                 device, new MqttDiscoveryOrigin()
         );
 
-        this.eventTypes = eventTypes;
+        this.supportedColorModes = supportedColorModes;
     }
 
-    public Set<String> getEventTypes() {
-        return eventTypes;
+    public Set<String> getSupportedColorModes() {
+        return supportedColorModes;
     }
 }

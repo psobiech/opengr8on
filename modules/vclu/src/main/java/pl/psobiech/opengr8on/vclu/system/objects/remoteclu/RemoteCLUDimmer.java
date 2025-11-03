@@ -1,13 +1,10 @@
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryLight;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
@@ -53,33 +50,35 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
                                                          .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
                                                          .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
-        final JsonNode stateNode;
+        final MqttBrightnessState state;
         try {
-            stateNode = ObjectMapperFactory.JSON.readTree(bytes);
+            state = ObjectMapperFactory.JSON.readValue(bytes, MqttBrightnessState.class);
         } catch (IOException e) {
-            throw new UnexpectedException(e);
+            LOGGER.error("Could not read MQTT brightness state", e);
+
+            return Optional.empty();
         }
 
-        final boolean stateOn = stateNode.optional("state")
-                                         .map(node -> node.asText("OFF"))
-                                         .filter(state -> state.equalsIgnoreCase("ON"))
-                                         .isPresent();
         final int value;
-        if (stateOn) {
-            value = stateNode.optional("brightness")
-                             .map(node -> node.asInt(0))
-                             .orElse(255);
-
-            if (stateNode instanceof ObjectNode stateObjectNode) {
-                stateObjectNode.set("brightness", new IntNode(value));
-            }
+        if (state.isOn()) {
+            value = state.getBrightness()
+                         .orElse(MqttBrightnessState.MAX_VALUE);
         } else {
-            value = 0;
+            value = MqttBrightnessState.OFF_VALUE;
         }
 
-        remoteCLU.remoteExecute(String.format("%s:set(%d, %f)", object.getNameOnCLU(), valueFeatures.get("Value").getIndex(), asFloat(value)));
+        remoteCLU.remoteSet(object, valueFeatures.get("Value").getIndex(), asFloat(value));
 
-        return Optional.of(stateNode);
+        return Optional.of(
+                new MqttBrightnessState(
+                        value
+                )
+                        .asJson()
+        );
+    }
+
+    private static float asFloat(int value) {
+        return value / (float) MqttBrightnessState.MAX_VALUE;
     }
 
     @Override
@@ -88,16 +87,9 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
                                                          .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
                                                          .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
-        final double value = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), valueFeatures.get("Value").getIndex())).optdouble(0d);
+        final double value = remoteCLU.remoteGet(object, valueFeatures.get("Value").getIndex()).optdouble(0d);
+        final MqttBrightnessState state = new MqttBrightnessState((int) (value * MqttBrightnessState.MAX_VALUE));
 
-        final ObjectNode stateNode = ObjectMapperFactory.JSON.createObjectNode();
-        stateNode.set("state", new TextNode(value > 0 ? "ON" : "OFF"));
-        stateNode.set("brightness", new IntNode((int) (value * 255)));
-
-        return Optional.of(stateNode);
-    }
-
-    private static float asFloat(int value) {
-        return value / 255f;
+        return Optional.of(state.asJson());
     }
 }

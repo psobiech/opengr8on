@@ -1,15 +1,13 @@
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
@@ -26,7 +24,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
     private final boolean hasAsyncHandlers;
 
-    protected String lastState = null;
+    protected JsonNode lastState = null;
 
     private long nextRefreshAt = System.currentTimeMillis();
 
@@ -71,7 +69,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     }
 
     private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = now + duration;
+        nextRefreshAt = Math.min(now + duration, nextRefreshAt);
     }
 
     @Override
@@ -110,11 +108,11 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
                   );
     }
 
-    protected String pushState(String lastState) {
+    protected JsonNode pushState(JsonNode lastState) {
         return pushState(lastState, null);
     }
 
-    protected String pushState(String lastState, JsonNode newState) {
+    protected JsonNode pushState(JsonNode lastState, JsonNode newState) {
         final String stateTopic = discoveryMessage.getStateTopic();
         if (stateTopic == null) {
             return lastState;
@@ -127,30 +125,22 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
             }
 
             final JsonNode stateNode = stateNodeOptional.get();
-            final String stateAsString;
-            try {
-                stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode);
-            } catch (JsonProcessingException e) {
-                LOGGER.error("Could not serialize state {} for {}", stateNode, discoveryMessage.getUniqueId(), e);
 
-                return lastState;
-            }
-
-            if (stateAsString.equals(lastState)) {
+            if (stateNode.equals(lastState)) {
                 return lastState;
             }
 
             virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
-                              MqttClient.parsePayload(stateAsString)
+                              MqttClient.parsePayload(stateNode)
                       );
 
-            return stateAsString;
+            return stateNode;
         } catch (MqttException | RuntimeException e) {
             LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
-        }
 
-        return lastState;
+            return lastState;
+        }
     }
 }

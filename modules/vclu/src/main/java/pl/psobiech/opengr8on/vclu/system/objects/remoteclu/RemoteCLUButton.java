@@ -2,20 +2,17 @@ package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryButton;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryButton;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttEvent;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 
@@ -102,19 +99,10 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
             return;
         }
 
-        final String stateAsString;
-        try {
-            stateAsString = ObjectMapperFactory.JSON.writeValueAsString(stateNode.get());
-        } catch (JsonProcessingException e) {
-            LOGGER.error("Could not serialize state for {}", discoveryMessage.getUniqueId(), e);
-
-            return;
-        }
-
         virtualClu.getMqttClient()
                   .tryPublish(
                           stateTopic,
-                          stateAsString.getBytes(StandardCharsets.UTF_8)
+                          stateNode
                   );
     }
 
@@ -125,11 +113,15 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final int value = remoteCLU.remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), 0)).optint(0);
+        final int value = remoteCLU.remoteGet(object, 0).optint(0);
+        final boolean isPressed = value > 0;
 
-        final ObjectNode stateNode = ObjectMapperFactory.JSON.createObjectNode();
-        stateNode.set("event_type", value > 0 ? new TextNode("press") : NullNode.getInstance());
+        if (isPressed) {
+            final MqttEvent pressEvent = new MqttEvent("press");
 
-        return Optional.of(stateNode);
+            return Optional.of(pressEvent.asJson());
+        }
+
+        return Optional.empty();
     }
 }
