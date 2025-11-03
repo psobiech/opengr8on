@@ -21,14 +21,14 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
     private final SpecificObject object;
 
     public RemoteCLULight(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-
         super(
-                currentClu, remoteCLU,
+                virtualClu, remoteCLU,
+                clu, object,
                 new MqttDiscoveryLight(
                         object.getName(),
                         uniqueId,
@@ -38,7 +38,7 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
                         "json",
                         null,
                         null,
-                        new MqttDiscoveryDevice(clu)
+                        mqttDiscoveryDevice
                 )
         );
 

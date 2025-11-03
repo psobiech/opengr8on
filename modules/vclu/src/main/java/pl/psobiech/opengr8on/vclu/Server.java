@@ -537,8 +537,8 @@ public class Server implements Closeable {
     }
 
     private void initialize() {
-        final VirtualCLU currentClu = mainThread.virtualSystem().getCurrentClu();
-        if (currentClu == null) {
+        final VirtualCLU virtualClu = mainThread.virtualSystem().getVirtualClu();
+        if (virtualClu == null) {
             LOGGER.warn("VCLU is not properly initialized...");
         }
     }

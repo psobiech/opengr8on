@@ -79,7 +79,7 @@ public class VirtualSystem implements Closeable {
 
     private LuaThread luaThread;
 
-    private VirtualCLU currentClu = null;
+    private VirtualCLU virtualClu = null;
 
     public VirtualSystem(Path rootDirectory, Inet4Address localAddress, int port, CipherKey cipherKey) {
         this.rootDirectory = rootDirectory;
@@ -96,14 +96,14 @@ public class VirtualSystem implements Closeable {
         return objectsByName.get(name);
     }
 
-    public VirtualCLU getCurrentClu() {
-        return currentClu;
+    public VirtualCLU getVirtualClu() {
+        return virtualClu;
     }
 
     @SuppressWarnings("resource")
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
-            case VirtualCLU.INDEX -> (currentClu = new VirtualCLU(this, rootDirectory, name, projectObjectRegistry));
+            case VirtualCLU.INDEX -> (virtualClu = new VirtualCLU(this, rootDirectory, name, projectObjectRegistry));
             case RemoteCLU.INDEX ->
                     new RemoteCLU(this, projectObjectRegistry, name, ipAddress, localAddress, cipherKey, port);
             case Timer.INDEX -> new Timer(this, name);
@@ -130,7 +130,7 @@ public class VirtualSystem implements Closeable {
     public void setup() {
         forAllObjects(VirtualObject::setup);
 
-        if (currentClu != null) {
+        if (virtualClu != null) {
             final State state;
             if (luaThread.isEmergency()) {
                 state = State.EMERGENCY;
@@ -138,8 +138,8 @@ public class VirtualSystem implements Closeable {
                 state = State.OK;
             }
 
-            currentClu.set(Features.STATE, LuaValue.valueOf(state.value()));
-            currentClu.triggerEvent(VirtualCLU.Events.INIT);
+            virtualClu.set(Features.STATE, LuaValue.valueOf(state.value()));
+            virtualClu.triggerEvent(VirtualCLU.Events.INIT);
         }
     }
 

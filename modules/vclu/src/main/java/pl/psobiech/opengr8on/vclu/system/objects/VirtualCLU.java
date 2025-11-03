@@ -74,6 +74,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final Path rootDirectory;
 
+    private final SpecificObject cluObject;
+
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
     private final ProjectObjectRegistry objectRegistry;
@@ -89,6 +91,8 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         this.rootDirectory = rootDirectory;
 
         this.objectRegistry = objectRegistry;
+
+        this.cluObject = objectRegistry.cluByName(getName());
 
         register(Features.UPTIME, this::getUptime);
         set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
@@ -151,6 +155,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                     this
             );
         }
+    }
+
+    public SpecificObject getCluObject() {
+        return cluObject;
     }
 
     public boolean isMqttEnabled() {

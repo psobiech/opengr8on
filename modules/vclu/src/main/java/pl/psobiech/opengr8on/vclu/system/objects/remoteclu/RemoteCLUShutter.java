@@ -37,7 +37,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
 
     private static final int CLOSE_POSITION = 0;
 
-    private final VirtualCLU currentClu;
+    private final VirtualCLU virtualClu;
 
     private final RemoteCLU remoteCLU;
 
@@ -52,15 +52,14 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
     private long nextRefreshAt = System.currentTimeMillis();
 
     public RemoteCLUShutter(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        this.currentClu = currentClu;
+        this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
         this.object = object;
-
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
 
         discoveryMessage = new MqttDiscoveryShutter(
                 object.getName(),
@@ -73,7 +72,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
                 null,
                 null,
                 "{ \"position\": {{ position }} }",
-                new MqttDiscoveryDevice(clu)
+                mqttDiscoveryDevice
         );
     }
 
@@ -106,7 +105,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .tryPublish(
                           discoveryTopic,
                           discoveryMessage,
@@ -120,7 +119,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .subscribe(
                           setStateTopic,
                           bytes -> {
@@ -137,7 +136,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .subscribe(
                           setPositionTopic,
                           bytes -> {
@@ -188,13 +187,13 @@ public class RemoteCLUShutter implements RemoteCLUDevice {
                 return lastState;
             }
 
-            currentClu.getMqttClient()
+            virtualClu.getMqttClient()
                       .publish(
                               positionStateTopic,
                               MqttClient.parsePayload(stateAsString)
                       );
 
-            currentClu.getMqttClient()
+            virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
                               MqttClient.parsePayload(stateEnum.name())

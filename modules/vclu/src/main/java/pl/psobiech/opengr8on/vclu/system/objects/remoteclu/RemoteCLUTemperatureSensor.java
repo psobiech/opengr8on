@@ -16,14 +16,15 @@ public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements 
     private final SpecificObject object;
 
     public RemoteCLUTemperatureSensor(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
 
         super(
-                currentClu, remoteCLU,
+                virtualClu, remoteCLU,
+                clu, object,
                 new MqttDiscoveryNumericFloat(
                         object.getName(),
                         uniqueId,
@@ -36,7 +37,7 @@ public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements 
                               .orElse("°C"),
                         null,
                         null, null,
-                        new MqttDiscoveryDevice(clu)
+                        mqttDiscoveryDevice
                 )
         );
 

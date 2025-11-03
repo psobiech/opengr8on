@@ -19,10 +19,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 
-public class RemoteCLUButton implements RemoteCLUDevice {
+public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
-    private final VirtualCLU currentClu;
+    private final VirtualCLU virtualClu;
 
     private final RemoteCLU remoteCLU;
 
@@ -30,10 +30,13 @@ public class RemoteCLUButton implements RemoteCLUDevice {
 
     private final MqttDiscovery discoveryMessage;
 
-    public RemoteCLUButton(VirtualCLU currentClu, RemoteCLU remoteCLU, SpecificObject clu, SpecificObject object, String discoveryPrefix) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-
-        this.currentClu = currentClu;
+    public RemoteCLUButton(
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
+            SpecificObject clu, SpecificObject object,
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
+    ) {
+        this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
         this.object = object;
 
@@ -46,8 +49,13 @@ public class RemoteCLUButton implements RemoteCLUDevice {
                 "json",
                 null,
                 Set.of("press"),
-                new MqttDiscoveryDevice(clu)
+                mqttDiscoveryDevice
         );
+
+        final boolean hasAsyncHandlers = hasAsyncHandlersInstalled(discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
+        if (!hasAsyncHandlers) {
+            LOGGER.warn("No async handlers are installed for {} ({}), button events WILL NOT WORK", discoveryMessage.getUniqueId(), object.getName());
+        }
     }
 
     @Override
@@ -72,7 +80,7 @@ public class RemoteCLUButton implements RemoteCLUDevice {
         }
 
         try {
-            currentClu.getMqttClient()
+            virtualClu.getMqttClient()
                       .publish(
                               discoveryTopic,
                               ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
@@ -103,7 +111,7 @@ public class RemoteCLUButton implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .tryPublish(
                           stateTopic,
                           stateAsString.getBytes(StandardCharsets.UTF_8)

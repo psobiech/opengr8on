@@ -16,14 +16,14 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
     private final SpecificObject object;
 
     public RemoteCLUVoltageSensor(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-
         super(
-                currentClu, remoteCLU,
+                virtualClu, remoteCLU,
+                clu, object,
                 new MqttDiscoveryNumericFloat(
                         object.getName(),
                         uniqueId,
@@ -36,7 +36,7 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
                               .orElse("V"),
                         null,
                         null, null,
-                        new MqttDiscoveryDevice(clu)
+                        mqttDiscoveryDevice
                 )
         );
 

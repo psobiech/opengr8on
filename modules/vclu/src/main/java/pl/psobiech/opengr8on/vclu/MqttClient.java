@@ -95,7 +95,7 @@ public class MqttClient implements Closeable {
     public void start(
             String mqttUrl, String name,
             Path caCertificatePath, Path certificatePath, Path keyPath,
-            VirtualCLU currentClu
+            VirtualCLU virtualClu
     ) {
         final URI mqttUri = URI.create(mqttUrl);
 
@@ -111,13 +111,13 @@ public class MqttClient implements Closeable {
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable throwable) {
-                    onMqttConnectionChange(currentClu, null);
+                    onMqttConnectionChange(virtualClu, null);
                 }
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
                     try {
-                        for (MqttTopic mqttTopic : currentClu.getMqttTopics()) {
+                        for (MqttTopic mqttTopic : virtualClu.getMqttTopics()) {
                             try {
                                 mqttTopic.onMessage(
                                         topic, message.getPayload(), () -> {
@@ -158,12 +158,12 @@ public class MqttClient implements Closeable {
             mqttClient.connect(options, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    onMqttConnectionChange(currentClu, null);
+                    onMqttConnectionChange(virtualClu, null);
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    onMqttConnectionChange(currentClu, exception);
+                    onMqttConnectionChange(virtualClu, exception);
                 }
             });
         } catch (MqttException e) {
@@ -171,11 +171,11 @@ public class MqttClient implements Closeable {
         }
     }
 
-    private void onMqttConnectionChange(VirtualCLU currentClu, Throwable exception) {
+    private void onMqttConnectionChange(VirtualCLU virtualClu, Throwable exception) {
         final boolean connected = mqttClient.isConnected();
         LOGGER.debug("MQTT {} Connected: {}", mqttClient.getClientId(), connected, exception);
 
-        currentClu.setMqttConnected(connected);
+        virtualClu.setMqttConnected(connected);
     }
 
     public void subscribe(Set<String> topicFilterSet) throws MqttException {

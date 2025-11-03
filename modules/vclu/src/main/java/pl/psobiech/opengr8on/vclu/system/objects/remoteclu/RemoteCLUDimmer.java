@@ -23,14 +23,14 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
     private final SpecificObject object;
 
     public RemoteCLUDimmer(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-
         super(
-                currentClu, remoteCLU,
+                virtualClu, remoteCLU,
+                clu, object,
                 new MqttDiscoveryLight(
                         object.getName(),
                         uniqueId,
@@ -40,7 +40,7 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
                         "json",
                         null,
                         Set.of("brightness"),
-                        new MqttDiscoveryDevice(clu)
+                        mqttDiscoveryDevice
                 )
         );
 

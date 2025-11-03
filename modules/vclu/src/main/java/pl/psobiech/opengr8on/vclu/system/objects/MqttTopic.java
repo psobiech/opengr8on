@@ -92,12 +92,12 @@ public class MqttTopic extends VirtualObject {
 
     @Override
     public void setup() {
-        final VirtualCLU currentClu = virtualSystem.getCurrentClu();
-        if (currentClu == null) {
+        final VirtualCLU virtualClu = virtualSystem.getVirtualClu();
+        if (virtualClu == null) {
             return;
         }
 
-        currentClu.addMqttSubscription(this);
+        virtualClu.addMqttSubscription(this);
 
         triggerEvent(Events.INIT);
     }

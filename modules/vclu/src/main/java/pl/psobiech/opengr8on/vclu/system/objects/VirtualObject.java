@@ -238,7 +238,7 @@ public class VirtualObject implements VirtualDevice {
             return LuaValue.NIL;
         }
 
-        LOGGER.debug(
+        LOGGER.trace(
                 "{}.execute({}, {})",
                 name,
                 IMethod.byIndex(index, methodClass)

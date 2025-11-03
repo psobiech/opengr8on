@@ -16,14 +16,14 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
     private final SpecificObject object;
 
     public RemoteCLULuminositySensor(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-
         super(
-                currentClu, remoteCLU,
+                virtualClu, remoteCLU,
+                clu, object,
                 new MqttDiscoveryNumericFloat(
                         object.getName(),
                         uniqueId,
@@ -32,7 +32,7 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
                         "%",
                         null,
                         null, null,
-                        new MqttDiscoveryDevice(clu)
+                        mqttDiscoveryDevice
                 )
         );
 

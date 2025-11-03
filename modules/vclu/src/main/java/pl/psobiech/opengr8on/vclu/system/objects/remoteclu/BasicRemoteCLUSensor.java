@@ -11,27 +11,38 @@ import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
 
-public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice {
+public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     protected final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
-    protected final VirtualCLU currentClu;
+    protected final VirtualCLU virtualClu;
 
     protected final RemoteCLU remoteCLU;
 
     protected final MqttDiscovery discoveryMessage;
 
+    private final boolean hasAsyncHandlers;
+
     protected String lastState = null;
 
     private long nextRefreshAt = System.currentTimeMillis();
 
-    public BasicRemoteCLUSensor(VirtualCLU currentClu, RemoteCLU remoteCLU, MqttDiscovery discoveryMessage) {
-        this.currentClu = currentClu;
+    public BasicRemoteCLUSensor(
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
+            SpecificObject clu, SpecificObject object,
+            MqttDiscovery discoveryMessage
+    ) {
+        this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
 
         this.discoveryMessage = discoveryMessage;
+
+        final SpecificObject virtualCluObject = virtualClu.getCluObject();
+
+        this.hasAsyncHandlers = hasAsyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualCluObject, clu, object);
     }
 
     @Override
@@ -43,6 +54,10 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice {
 
     @Override
     public void loop() {
+        if (hasAsyncHandlers) {
+            return;
+        }
+
         final long now = System.currentTimeMillis();
         if (now >= nextRefreshAt) {
             scheduleNextRefresh(now);
@@ -70,7 +85,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .tryPublish(
                           discoveryTopic,
                           discoveryMessage,
@@ -84,7 +99,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .subscribe(
                           setStateTopic,
                           bytes -> {
@@ -125,7 +140,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice {
                 return lastState;
             }
 
-            currentClu.getMqttClient()
+            virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
                               MqttClient.parsePayload(stateAsString)

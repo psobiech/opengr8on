@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public class RemoteCLULedRgbLight implements RemoteCLUDevice {
+public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     protected static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
 
     private static final long SET_WHITE_VALUE_METHOD = 12L;
@@ -58,7 +58,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
 
     private static final String STATE_ON = "ON";
 
-    protected final VirtualCLU currentClu;
+    protected final VirtualCLU virtualClu;
 
     protected final RemoteCLU remoteCLU;
 
@@ -72,19 +72,19 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
 
     private final Map<String, Feature> valueFeatures;
 
+    private final boolean hasAsyncHandlers;
+
     protected JsonNode lastState = null;
 
     private long nextRefreshAt = System.currentTimeMillis();
 
     public RemoteCLULedRgbLight(
-            VirtualCLU currentClu, RemoteCLU remoteCLU,
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryPrefix
+            String discoveryPrefix,
+            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-        final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
-        final MqttDiscoveryDevice cluDevice = new MqttDiscoveryDevice(clu);
-
-        this.currentClu = currentClu;
+        this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
         this.object = object;
 
@@ -98,35 +98,37 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
                 "json",
                 null,
                 Set.of("rgbw"),
-                cluDevice
+                mqttDiscoveryDevice
         );
+
+        this.hasAsyncHandlers = hasAsyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
 
         valueFeatures = object.getFeatures().stream()
                               .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
         if (valueFeatures.containsKey(RED_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, cluDevice, RED_VALUE);
+            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, RED_VALUE);
 
             keyChildDiscoveryMessages.put(RED_KEY, discoveryMessage);
             keyFeatureMap.put(RED_KEY, RED_VALUE);
         }
 
         if (valueFeatures.containsKey(GREEN_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, cluDevice, GREEN_VALUE);
+            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, GREEN_VALUE);
 
             keyChildDiscoveryMessages.put(GREEN_KEY, discoveryMessage);
             keyFeatureMap.put(GREEN_KEY, GREEN_VALUE);
         }
 
         if (valueFeatures.containsKey(BLUE_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, cluDevice, BLUE_VALUE);
+            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, BLUE_VALUE);
 
             keyChildDiscoveryMessages.put(BLUE_KEY, discoveryMessage);
             keyFeatureMap.put(BLUE_KEY, BLUE_VALUE);
         }
 
         if (valueFeatures.containsKey(WHITE_VALUE)) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, cluDevice, WHITE_VALUE);
+            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, WHITE_VALUE);
 
             keyChildDiscoveryMessages.put(WHITE_KEY, discoveryMessage);
             keyFeatureMap.put(WHITE_KEY, WHITE_VALUE);
@@ -167,6 +169,10 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
 
     @Override
     public void loop() {
+        if (hasAsyncHandlers) {
+            return;
+        }
+
         final long now = System.currentTimeMillis();
         if (now >= nextRefreshAt) {
             scheduleNextRefresh(now);
@@ -194,7 +200,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .tryPublish(
                           discoveryTopic,
                           discoveryMessage,
@@ -208,7 +214,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
             return;
         }
 
-        currentClu.getMqttClient()
+        virtualClu.getMqttClient()
                   .subscribe(
                           setStateTopic,
                           bytes -> {
@@ -262,7 +268,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
                 return lastState;
             }
 
-            currentClu.getMqttClient()
+            virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
                               MqttClient.parsePayload(stateAsString)
@@ -286,7 +292,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice {
                 childStateNode.set("brightness", new IntNode(value));
                 childStateNode.set("color_mode", new TextNode("brightness"));
 
-                currentClu.getMqttClient()
+                virtualClu.getMqttClient()
                           .publish(
                                   discoveryMessage.getStateTopic(),
                                   MqttClient.parsePayload(childStateNode)
