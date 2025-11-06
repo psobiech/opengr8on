@@ -146,6 +146,8 @@ public class Server implements Closeable {
     }
 
     public void start() {
+        startClu();
+
         responseSocket.open();
         commandSocket.open();
         broadcastCommandSocket.open();
@@ -178,7 +180,7 @@ public class Server implements Closeable {
                                  )
         );
 
-        startClu();
+        LOGGER.info("OpenGr8ton VCLU (Version: {}) using {}, listening on {}", ServerVersion.get(), Runtime.version(), commandSocket.getLocalAddress());
     }
 
     private void handleCommands(
@@ -487,8 +489,6 @@ public class Server implements Closeable {
 
     protected void startClu() {
         IOUtil.closeQuietly(this.mainThread);
-
-        LOGGER.info("OpenGr8ton VCLU (Version: {}) using {}, listening on {}", ServerVersion.get(), Runtime.version(), commandSocket.getLocalAddress());
 
         try {
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
