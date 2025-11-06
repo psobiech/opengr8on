@@ -6,7 +6,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
@@ -89,7 +88,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     @Override
     public void loop() {
         final long now = System.currentTimeMillis();
-        if (now >= nextRefreshAt) {
+        if (nextRefreshAt < now) {
             if (hasAsyncHandlers) {
                 nextRefreshAt = Long.MAX_VALUE;
             } else {
@@ -244,11 +243,11 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     }
 
     private void scheduleNextRefresh(long now) {
-        scheduleNextRefreshIn(now, (45_000 + RandomUtil.integer(30_000))); // 45 - 75s
+        nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
     }
 
     private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = Math.min(now + duration, nextRefreshAt);
+        nextRefreshAt = getNextRefreshAt(nextRefreshAt, now, duration);
     }
 
     @Override

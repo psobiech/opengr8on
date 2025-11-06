@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
@@ -57,7 +56,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
         }
 
         final long now = System.currentTimeMillis();
-        if (now >= nextRefreshAt) {
+        if (nextRefreshAt < now) {
             scheduleNextRefresh(now);
 
             refresh();
@@ -65,11 +64,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     }
 
     private void scheduleNextRefresh(long now) {
-        scheduleNextRefreshIn(now, (45_000 + RandomUtil.integer(30_000))); // 45 - 75s
-    }
-
-    private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = Math.min(now + duration, nextRefreshAt);
+        nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
     }
 
     @Override

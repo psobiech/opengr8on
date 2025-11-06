@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
-import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
@@ -132,7 +131,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         }
 
         final long now = System.currentTimeMillis();
-        if (now >= nextRefreshAt) {
+        if (nextRefreshAt < now) {
             scheduleNextRefresh(now);
 
             refresh();
@@ -140,11 +139,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private void scheduleNextRefresh(long now) {
-        scheduleNextRefreshIn(now, (45_000 + RandomUtil.integer(30_000))); // 45 - 75s
-    }
-
-    private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = Math.min(now + duration, nextRefreshAt);
+        nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
     }
 
     @Override
