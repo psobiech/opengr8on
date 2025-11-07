@@ -34,6 +34,8 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private static final int CLOSE_POSITION = 0;
 
+    private static final int SHUTTER_REFRESH_INTERVAL = 960;
+
     private final VirtualCLU virtualClu;
 
     private final RemoteCLU remoteCLU;
@@ -173,7 +175,6 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         }
 
         final JsonNode stateNode = stateNodeOptional.get();
-
         final Optional<Integer> positionOptional = getPosition(stateNode);
         if (positionOptional.isEmpty()) {
             return lastState;
@@ -182,12 +183,10 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         final int position = positionOptional.get();
         final ShutterStateEnum shutterState = getShutterState(position);
         if (shutterState == ShutterStateEnum.OPENING || shutterState == ShutterStateEnum.CLOSING) {
-            scheduleNextRefreshIn(System.currentTimeMillis(), 1000);
+            scheduleNextRefreshIn(SHUTTER_REFRESH_INTERVAL);
         } else {
             expectedPosition = null;
         }
-
-        LOGGER.info("State {} {} = {} / {}", object.getName(), shutterState, expectedPosition, position);
 
         try {
             virtualClu.getMqttClient()
@@ -221,14 +220,6 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     }
 
     private ShutterStateEnum getShutterState(int currentPosition) {
-        if (currentPosition == OPEN_POSITION) {
-            return ShutterStateEnum.OPEN;
-        }
-
-        if (currentPosition == CLOSE_POSITION) {
-            return ShutterStateEnum.CLOSE;
-        }
-
         if (expectedPosition != null) {
             if (currentPosition < expectedPosition) {
                 return ShutterStateEnum.OPENING;
@@ -239,6 +230,14 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
             }
         }
 
+        if (currentPosition == OPEN_POSITION) {
+            return ShutterStateEnum.OPEN;
+        }
+
+        if (currentPosition == CLOSE_POSITION) {
+            return ShutterStateEnum.CLOSE;
+        }
+
         return ShutterStateEnum.STOP;
     }
 
@@ -246,8 +245,8 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
     }
 
-    private void scheduleNextRefreshIn(long now, long duration) {
-        nextRefreshAt = getNextRefreshAt(nextRefreshAt, now, duration);
+    private void scheduleNextRefreshIn(long duration) {
+        nextRefreshAt = getNextRefreshAt(nextRefreshAt, System.currentTimeMillis(), duration);
     }
 
     @Override

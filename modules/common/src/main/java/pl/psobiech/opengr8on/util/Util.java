@@ -18,13 +18,16 @@
 
 package pl.psobiech.opengr8on.util;
 
+import org.slf4j.Logger;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public final class Util {
@@ -177,6 +180,26 @@ public final class Util {
         }
 
         return sb.toString();
+    }
+
+    public static void timed(Logger logger, String opertion, long expectedTimeMs, Runnable fn) {
+        timed(logger, opertion, expectedTimeMs, () -> {
+            fn.run();
+
+            return null;
+        });
+    }
+
+    public static <T> T timed(Logger logger, String opertion, long expectedTimeMs, Supplier<T> fn) {
+        final long startedAt = System.nanoTime();
+        try {
+            return fn.get();
+        } finally {
+            final long millis = Duration.of(System.nanoTime() - startedAt, ChronoUnit.NANOS).toMillis();
+            if (millis > expectedTimeMs) {
+                logger.warn("Operation {} took over {}ms: {}ms", opertion, expectedTimeMs, millis);
+            }
+        }
     }
 
     public static void sleepNanos(long nanoSeconds) {

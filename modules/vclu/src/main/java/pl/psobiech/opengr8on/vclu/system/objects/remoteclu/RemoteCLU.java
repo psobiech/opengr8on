@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
@@ -205,7 +206,7 @@ public class RemoteCLU extends VirtualObject {
         if (remoteCLUDevice != null) {
             LOGGER.trace("Received event: mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
 
-            remoteCLUDevice.refresh();
+            executor.execute(remoteCLUDevice::refresh);
         } else {
             LOGGER.warn("Unhandled mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
         }
@@ -215,11 +216,15 @@ public class RemoteCLU extends VirtualObject {
         return remoteSet(object, index, String.valueOf(value));
     }
 
+    public LuaValue remoteSet(SpecificObject object, long index, int value) {
+        return remoteSet(object, index, String.valueOf(value));
+    }
+
     public LuaValue remoteSet(SpecificObject object, long index, String value) {
         return remoteExecute(String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, value));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, long value) {
+    public LuaValue remoteMethod(SpecificObject object, long index, int value) {
         return remoteMethod(object, index, String.valueOf(value));
     }
 
@@ -236,34 +241,38 @@ public class RemoteCLU extends VirtualObject {
     }
 
     public LuaValue remoteExecute(String script) {
-        return client.execute(script)
-                     .map(returnValue -> {
-                              returnValue = StringUtils.stripToNull(returnValue);
-                              if (returnValue == null) {
-                                  return null;
-                              }
+        return Util.timed(
+                LOGGER, script, 60,
+                () ->
+                        client.execute(script)
+                              .map(returnValue -> {
+                                       returnValue = StringUtils.stripToNull(returnValue);
+                                       if (returnValue == null) {
+                                           return null;
+                                       }
 
-                              if (returnValue.startsWith("{")) {
-                                  try {
-                                      return localLuaContext.load("return %s".formatted(returnValue))
-                                                            .call();
-                                  } catch (Exception e) {
-                                      // Might not have been a proper LUA table
-                                      // TODO: implement a more robust check
+                                       if (returnValue.startsWith("{")) {
+                                           try {
+                                               return localLuaContext.load("return %s".formatted(returnValue))
+                                                                     .call();
+                                           } catch (Exception e) {
+                                               // Might not have been a proper LUA table
+                                               // TODO: implement a more robust check
 
-                                      LOGGER.error(e.getMessage(), e);
-                                  }
-                              }
+                                               LOGGER.error(e.getMessage(), e);
+                                           }
+                                       }
 
-                              final LuaString luaString = LuaValue.valueOf(returnValue);
-                              if (luaString.isnumber()) {
-                                  return luaString.checknumber();
-                              }
+                                       final LuaString luaString = LuaValue.valueOf(returnValue);
+                                       if (luaString.isnumber()) {
+                                           return luaString.checknumber();
+                                       }
 
-                              return luaString;
-                          }
-                     )
-                     .orElse(LuaValue.NIL);
+                                       return luaString;
+                                   }
+                              )
+                              .orElse(LuaValue.NIL)
+        );
     }
 
     @Override
