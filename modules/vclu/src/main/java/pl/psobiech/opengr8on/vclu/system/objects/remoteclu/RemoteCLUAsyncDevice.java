@@ -5,26 +5,23 @@ import org.slf4j.Logger;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Event;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public interface RemoteCLUAsyncDevice {
-    default boolean hasAsyncHandlersInstalled(String uniqueId, SpecificObject virtualCluObject, SpecificObject clu, SpecificObject object) {
-        return hasAsyncHandlersInstalled(null, uniqueId, virtualCluObject, clu, object);
+    default Set<String> asyncHandlersInstalled(String uniqueId, SpecificObject virtualCluObject, SpecificObject clu, SpecificObject object) {
+        return asyncHandlersInstalled(null, uniqueId, virtualCluObject, clu, object);
     }
 
-    default boolean hasAsyncHandlersInstalled(Logger logger, String uniqueId, SpecificObject virtualCluObject, SpecificObject clu, SpecificObject object) {
+    default Set<String> asyncHandlersInstalled(Logger logger, String uniqueId, SpecificObject virtualCluObject, SpecificObject clu, SpecificObject object) {
         if (virtualCluObject == null) {
             logger.warn("Current CLU is missing from the project file, please perform device discovery..");
 
-            return false;
+            return Collections.emptySet();
         }
 
         final Map<String, Set<String>> changeEventCommands = object.getEvents().stream()
-                                                                   .filter(event -> StringUtils.lowerCase(event.getName()).endsWith("change"))
+                                                                   .filter(RemoteCLUAsyncDevice::isChangeEvent)
                                                                    .collect(Collectors.toMap(
                                                                            Event::getName,
                                                                            event ->
@@ -50,8 +47,8 @@ public interface RemoteCLUAsyncDevice {
         }
 
         if (configuredAsyncHandlers.isEmpty()) {
-            if (logger != null && logger.isWarnEnabled()) {
-                logger.warn("Async handler is missing for object: {} ({}) - Scheduled polling will still be used for this object. \n" +
+            if (logger != null && logger.isInfoEnabled()) {
+                logger.info("Async handler is missing for object: {} ({}) - Scheduled polling will still be used for this object. " +
                                     "Possible events to configure are: {}",
                             uniqueId, object.getName(),
                             changeEventCommands.keySet().stream()
@@ -60,16 +57,15 @@ public interface RemoteCLUAsyncDevice {
                 );
             }
 
-            return false;
+            return Collections.emptySet();
         }
 
-        if (logger != null && logger.isInfoEnabled()) {
-            logger.info("Detected proper async handlers installed for object: {} ({}) (handlers: {}) - Disabling automated polling in favor of async communication",
-                        uniqueId, object.getName(),
-                        configuredAsyncHandlers
-            );
-        }
+        return configuredAsyncHandlers;
+    }
 
-        return true;
+    private static boolean isChangeEvent(Event event) {
+        final String eventNameLowercase = StringUtils.lowerCase(event.getName());
+
+        return eventNameLowercase.endsWith("change") || eventNameLowercase.endsWith("click");
     }
 }

@@ -22,6 +22,7 @@ import org.luaj.vm2.*;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.slf4j.Logger;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgConsumer;
@@ -95,7 +96,7 @@ public class InitLuaLib extends TwoArgFunction {
         system.set("Wait", LuaFunctionWrapper.wrap(logger, args -> {
             final long milliseconds = args.checklong(2);
 
-            virtualSystem.sleep(milliseconds);
+            Util.sleep(milliseconds);
         }));
 
         system.set("clientRegister", LuaFunctionWrapper.wrap(logger, this::clientRegister));

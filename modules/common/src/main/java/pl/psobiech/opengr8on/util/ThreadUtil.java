@@ -20,9 +20,7 @@ package pl.psobiech.opengr8on.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 
-import java.time.Duration;
 import java.util.concurrent.*;
 
 public class ThreadUtil {
@@ -40,7 +38,7 @@ public class ThreadUtil {
         System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(maxPoolSize));
         System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(MIN_RUNNABLE));
 
-        System.setProperty("jdk.tracePinnedThreads", "full");
+        System.setProperty("jdk.tracePinnedThreads", "short");
 
         LOGGER.debug("Virtual Threads: {}-{}", MIN_RUNNABLE, maxPoolSize);
 
@@ -61,21 +59,6 @@ public class ThreadUtil {
 
     private ThreadUtil() {
         // NOP
-    }
-
-    public static Duration sleepRandomized(long minimumMillis, int spreadMillis) {
-        final long delay = minimumMillis + RandomUtil.integer(spreadMillis);
-        sleep(delay);
-
-        return Duration.ofMillis(delay);
-    }
-
-    public static void sleep(long delay) {
-        try {
-            Thread.sleep(delay);
-        } catch (InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
-        }
     }
 
     public static <T> T await(Future<T> future) {
@@ -193,7 +176,11 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Daemon Platform Threads
      */
     public static ScheduledExecutorService daemonScheduler(int poolSize, String name) {
-        return createScheduler(poolSize, ThreadUtil.platformThreadFactory(name, true));
+        final ScheduledThreadPoolExecutor scheduler = createScheduler(poolSize, ThreadUtil.platformThreadFactory(name, true));
+        scheduler.allowCoreThreadTimeOut(false);
+        scheduler.prestartAllCoreThreads();
+
+        return scheduler;
     }
 
     private static ScheduledThreadPoolExecutor createScheduler(int poolSize, ThreadFactory threadFactory) {
@@ -201,6 +188,8 @@ public class ThreadUtil {
         scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
         scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
         scheduler.setRemoveOnCancelPolicy(true);
+
+        scheduler.prestartCoreThread();
 
         return scheduler;
     }

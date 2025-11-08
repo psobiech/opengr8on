@@ -88,20 +88,26 @@ public class RemoteCLU extends VirtualObject {
         final boolean mqttConnected = LuaUtil.trueish(virtualClu.get(VirtualCLU.Features.MQTT_CONNECTION));
         if (virtualClu.isMqttEnabled() && virtualClu.getMqttClient() != null && mqttConnected) {
             final boolean mqttDiscoveryEnabled = LuaUtil.trueish(virtualClu.get(VirtualCLU.Features.MQTT_DISCOVERY));
-            if (mqttDiscoveryEnabled) {
-                if (mqttInitialized) {
-                    for (RemoteCLUDevice remoteCLUDevice : devices.values()) {
-                        remoteCLUDevice.loop();
-                    }
-                } else {
-                    final String discoveryPrefix = virtualClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
-                    if (discoveryPrefix != null) {
-                        initMqttDiscovery(discoveryPrefix);
+            if (mqttDiscoveryEnabled && !mqttInitialized) {
+                final String discoveryPrefix = virtualClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
+                if (discoveryPrefix != null) {
+                    initMqttDiscovery(discoveryPrefix);
 
-                        mqttInitialized = true;
-                    }
+                    mqttInitialized = true;
                 }
             }
+        }
+
+        for (Map.Entry<String, RemoteCLUDevice> entry : devices.entrySet()) {
+            final String uniqueId = entry.getKey();
+            final RemoteCLUDevice remoteCLUDevice = entry.getValue();
+            try {
+                remoteCLUDevice.loop();
+            } catch (Exception e) {
+                LOGGER.error("Error while looping on remote object: {} ({})", uniqueId, e.getMessage(), e);
+            }
+
+            Util.yield();
         }
     }
 
@@ -188,7 +194,7 @@ public class RemoteCLU extends VirtualObject {
                     continue;
                 }
                 case null, default -> {
-                    LOGGER.warn("Ignoring not yet supported object {} on CLU {}", object.getNameOnCLU(), name);
+                    LOGGER.trace("Ignoring not yet supported object {} on CLU {}", object.getNameOnCLU(), name);
 
                     continue;
                 }
@@ -206,7 +212,7 @@ public class RemoteCLU extends VirtualObject {
         if (remoteCLUDevice != null) {
             LOGGER.trace("Received event: mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
 
-            executor.execute(remoteCLUDevice::refresh);
+            remoteCLUDevice.scheduleRefreshNow();
         } else {
             LOGGER.warn("Unhandled mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
         }
@@ -242,7 +248,7 @@ public class RemoteCLU extends VirtualObject {
 
     public LuaValue remoteExecute(String script) {
         return Util.timed(
-                LOGGER, script, 60,
+                LOGGER, script, 64,
                 () ->
                         client.execute(script)
                               .map(returnValue -> {

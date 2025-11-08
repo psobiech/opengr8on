@@ -12,6 +12,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter.ShutterStateEnum;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttPosition;
+import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
@@ -44,13 +45,11 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private final MqttDiscoveryShutter discoveryMessage;
 
-    private final boolean hasAsyncHandlers;
+    private final RefreshContext refreshContext;
 
     private JsonNode lastState = null;
 
     private Integer expectedPosition = null;
-
-    private long nextRefreshAt = System.currentTimeMillis();
 
     public RemoteCLUShutter(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
@@ -76,7 +75,9 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 mqttDiscoveryDevice
         );
 
-        this.hasAsyncHandlers = hasAsyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
+        final boolean hasAsyncHandlers = !asyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
+
+        this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
     }
 
     @Override
@@ -89,19 +90,14 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     @Override
     public void loop() {
-        final long now = System.currentTimeMillis();
-        if (nextRefreshAt < now) {
-            if (hasAsyncHandlers) {
-                nextRefreshAt = Long.MAX_VALUE;
-            } else {
-                scheduleNextRefresh(now);
-            }
-
-            refresh();
-        }
+        refreshContext.runIfScheduled();
     }
 
     @Override
+    public void scheduleRefreshNow() {
+        refreshContext.scheduleNextRefreshNow();
+    }
+
     public void refresh() {
         lastState = pushState(lastState);
     }
@@ -130,7 +126,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                   .subscribe(
                           setStateTopic,
                           bytes -> {
-                              LOGGER.trace("MQTT Subscribe: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
+                              LOGGER.trace("MQTT: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
 
                               lastState = pushState(lastState, writeValue(remoteCLU, bytes).orElse(null));
                           }
@@ -147,7 +143,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                   .subscribe(
                           setPositionTopic,
                           bytes -> {
-                              LOGGER.trace("MQTT Subscribe: {} / {}", setPositionTopic, ToStringUtil.toString(bytes));
+                              LOGGER.trace("MQTT: {} / {}", setPositionTopic, ToStringUtil.toString(bytes));
 
                               lastState = pushState(lastState, writeValue(remoteCLU, bytes).orElse(null));
                           }
@@ -183,7 +179,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         final int position = positionOptional.get();
         final ShutterStateEnum shutterState = getShutterState(position);
         if (shutterState == ShutterStateEnum.OPENING || shutterState == ShutterStateEnum.CLOSING) {
-            scheduleNextRefreshIn(SHUTTER_REFRESH_INTERVAL);
+            refreshContext.scheduleNextRefreshIn(SHUTTER_REFRESH_INTERVAL);
         } else {
             expectedPosition = null;
         }
@@ -239,14 +235,6 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         }
 
         return ShutterStateEnum.STOP;
-    }
-
-    private void scheduleNextRefresh(long now) {
-        nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
-    }
-
-    private void scheduleNextRefreshIn(long duration) {
-        nextRefreshAt = getNextRefreshAt(nextRefreshAt, System.currentTimeMillis(), duration);
     }
 
     @Override

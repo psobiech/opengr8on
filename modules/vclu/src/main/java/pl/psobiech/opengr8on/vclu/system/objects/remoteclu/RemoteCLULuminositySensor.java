@@ -33,7 +33,8 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
                         null,
                         null, null,
                         mqttDiscoveryDevice
-                )
+                ),
+                false
         );
 
         this.object = object;

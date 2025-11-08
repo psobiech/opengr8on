@@ -37,7 +37,8 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
                         null,
                         null, null,
                         mqttDiscoveryDevice
-                )
+                ),
+                false
         );
 
         this.object = object;

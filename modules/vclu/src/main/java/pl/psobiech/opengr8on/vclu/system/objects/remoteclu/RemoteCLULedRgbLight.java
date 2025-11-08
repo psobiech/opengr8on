@@ -18,6 +18,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.state.MqttColorState.ColorMode;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttRgbwState;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttState.StateEnum;
 import pl.psobiech.opengr8on.vclu.mqtt.state.RgbwColor;
+import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
@@ -43,17 +44,13 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     protected final MqttDiscoveryLight discoveryMessage;
 
-//    private final Map<String, String> keyFeatureMap = new Hashtable<>();
-
     private final Map<Color, MqttDiscoveryLight> keyChildDiscoveryMessages = new Hashtable<>();
 
     private final Map<String, Feature> valueFeatures;
 
-    private final boolean hasAsyncHandlers;
+    private final RefreshContext refreshContext;
 
     protected JsonNode lastState = null;
-
-    private long nextRefreshAt = System.currentTimeMillis();
 
     public RemoteCLULedRgbLight(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
@@ -78,7 +75,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 mqttDiscoveryDevice
         );
 
-        this.hasAsyncHandlers = hasAsyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
+        final boolean hasAsyncHandlers = !asyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
+        this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
 
         valueFeatures = object.getFeatures().stream()
                               .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
@@ -88,7 +86,6 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.featureName());
 
                 keyChildDiscoveryMessages.put(color, discoveryMessage);
-//                keyFeatureMap.put(color.key(), color.featureName());
             }
         }
     }
@@ -126,23 +123,14 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     @Override
     public void loop() {
-        if (hasAsyncHandlers) {
-            return;
-        }
-
-        final long now = System.currentTimeMillis();
-        if (nextRefreshAt < now) {
-            scheduleNextRefresh(now);
-
-            refresh();
-        }
-    }
-
-    private void scheduleNextRefresh(long now) {
-        nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
+        refreshContext.runIfScheduled();
     }
 
     @Override
+    public void scheduleRefreshNow() {
+        refreshContext.scheduleNextRefreshNow();
+    }
+
     public void refresh() {
         lastState = pushState(lastState);
     }
@@ -171,22 +159,21 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                   .subscribe(
                           setStateTopic,
                           bytes -> {
-                              LOGGER.info("MQTT Subscribe: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
+                              LOGGER.trace("MQTT: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
 
+                              final Optional<JsonNode> stateNode;
                               if (color == null) {
-                                  lastState = pushState(
-                                          lastState,
-                                          writeValue(remoteCLU, bytes)
-                                                  .orElse(null)
-                                  );
+                                  stateNode = writeValue(remoteCLU, bytes);
+
                               } else {
-                                  lastState = pushState(
-                                          lastState,
-                                          writePartialColorValue(color, remoteCLU, bytes)
-                                                  .orElse(null)
-                                  );
+                                  stateNode = writePartialColorValue(color, remoteCLU, bytes);
                               }
 
+                              lastState = pushState(
+                                      lastState,
+                                      stateNode
+                                              .orElse(null)
+                              );
                           }
                   );
     }
@@ -394,16 +381,6 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     private static TextNode createStateValueNode(boolean isOn) {
         return new TextNode(isOn ? StateEnum.ON.name() : StateEnum.OFF.name());
-    }
-
-    private static ObjectNode createColorValueNode(int redValue, int greenValue, int blueValue, int whiteValue) {
-        final ObjectNode colorNode = ObjectMapperFactory.JSON.createObjectNode();
-        colorNode.set(Color.RED.key(), new IntNode(redValue));
-        colorNode.set(Color.GREEN.key(), new IntNode(greenValue));
-        colorNode.set(Color.BLUE.key(), new IntNode(blueValue));
-        colorNode.set(Color.WHITE.key(), new IntNode(whiteValue));
-
-        return colorNode;
     }
 
     private enum Color {

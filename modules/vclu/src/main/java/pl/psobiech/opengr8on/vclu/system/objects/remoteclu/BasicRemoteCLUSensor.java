@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
+import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
@@ -21,25 +22,35 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
     protected final MqttDiscovery discoveryMessage;
 
-    private final boolean hasAsyncHandlers;
+    private final RefreshContext refreshContext;
 
     protected JsonNode lastState = null;
-
-    private long nextRefreshAt = System.currentTimeMillis();
 
     public BasicRemoteCLUSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
             MqttDiscovery discoveryMessage
     ) {
+        this(virtualClu, remoteCLU,
+             clu, object,
+             discoveryMessage,
+             true
+        );
+    }
+
+    public BasicRemoteCLUSensor(
+            VirtualCLU virtualClu, RemoteCLU remoteCLU,
+            SpecificObject clu, SpecificObject object,
+            MqttDiscovery discoveryMessage,
+            boolean displayAsyncMissingWarning
+    ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
 
         this.discoveryMessage = discoveryMessage;
 
-        final SpecificObject virtualCluObject = virtualClu.getCluObject();
-
-        this.hasAsyncHandlers = hasAsyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualCluObject, clu, object);
+        final boolean hasAsyncHandlers = !asyncHandlersInstalled(displayAsyncMissingWarning ? LOGGER : null, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
+        this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
     }
 
     @Override
@@ -51,23 +62,14 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
     @Override
     public void loop() {
-        if (hasAsyncHandlers) {
-            return;
-        }
-
-        final long now = System.currentTimeMillis();
-        if (nextRefreshAt < now) {
-            scheduleNextRefresh(now);
-
-            refresh();
-        }
-    }
-
-    private void scheduleNextRefresh(long now) {
-        nextRefreshAt = getNextRefreshAtRandomized(nextRefreshAt, now);
+        refreshContext.runIfScheduled();
     }
 
     @Override
+    public void scheduleRefreshNow() {
+        refreshContext.scheduleNextRefreshNow();
+    }
+
     public void refresh() {
         lastState = pushState(lastState);
     }
@@ -96,7 +98,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
                   .subscribe(
                           setStateTopic,
                           bytes -> {
-                              LOGGER.trace("MQTT Subscribe: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
+                              LOGGER.trace("MQTT: {} / {}", setStateTopic, ToStringUtil.toString(bytes));
 
                               lastState = pushState(lastState, writeValue(remoteCLU, bytes).orElse(null));
                           }
@@ -120,7 +122,6 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
             }
 
             final JsonNode stateNode = stateNodeOptional.get();
-
             if (stateNode.equals(lastState)) {
                 return lastState;
             }

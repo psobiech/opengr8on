@@ -29,6 +29,7 @@ import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.*;
@@ -53,9 +54,9 @@ import java.util.function.Consumer;
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
-    private static final long LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(960);
+    private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(512);
 
-    private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(128);
+    private static final long LOG_OBJECT_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(128);
 
     private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
 
@@ -153,27 +154,12 @@ public class VirtualSystem implements Closeable {
         forAllObjects(VirtualObject::loop);
 
         // best effort to run loop with fixed rate
-        final long timeLeft = LOOP_TIME_NANOS - (System.nanoTime() - startTime);
+        final long timeLeft = LOG_LOOP_TIME_NANOS - (System.nanoTime() - startTime);
         if (timeLeft < 0) {
             LOGGER.warn("Exceeded loop time by {}ms", -TimeUnit.NANOSECONDS.toMillis(timeLeft));
         }
 
-        sleepNanos(Math.max(0, timeLeft));
-    }
-
-    public void sleep(long millis) {
-        sleepNanos(TimeUnit.MILLISECONDS.toNanos(millis));
-    }
-
-    public void sleepNanos(long nanoSeconds) {
-        final long millis = nanoSeconds / NANOS_IN_MILLISECOND;
-        final int nanos = (int) (nanoSeconds % NANOS_IN_MILLISECOND);
-
-        try {
-            Thread.sleep(millis, nanos);
-        } catch (InterruptedException e) {
-            throw new UncheckedInterruptedException(e);
-        }
+        Util.yield();
     }
 
     public String clientRegister(Inet4Address remoteIpAddress, Inet4Address ipAddress, int port, int sessionId, List<Subscription> subscription) {
@@ -243,14 +229,14 @@ public class VirtualSystem implements Closeable {
                     LOGGER.error(e.getMessage(), e);
                 } finally {
                     final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
-                    if (objectDeltaNanos > LOG_LOOP_TIME_NANOS) {
+                    if (objectDeltaNanos > LOG_OBJECT_LOOP_TIME_NANOS) {
                         LOGGER.info("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
                     }
                 }
             }));
         }
 
-        Thread.yield();
+        Util.yield();
 
         for (Future<?> future : futures) {
             try {

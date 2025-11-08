@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
@@ -171,7 +172,7 @@ public class MqttTopic extends VirtualObject {
 
         while (!messageQueue.offer(Map.entry(topic, new Message(payload, acknowledged)))) {
             // TODO: retry/fail logic
-            Thread.yield();
+            Util.yield();
         }
     }
 
@@ -206,7 +207,7 @@ public class MqttTopic extends VirtualObject {
                            .run();
                 }
 
-                Thread.yield();
+                Util.yield();
             }
         }
     }

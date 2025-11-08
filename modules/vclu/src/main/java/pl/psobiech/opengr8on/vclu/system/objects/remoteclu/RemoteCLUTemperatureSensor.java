@@ -38,7 +38,8 @@ public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements 
                         null,
                         null, null,
                         mqttDiscoveryDevice
-                )
+                ),
+                false
         );
 
         this.object = object;

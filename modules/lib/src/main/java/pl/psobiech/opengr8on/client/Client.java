@@ -169,7 +169,7 @@ public class Client implements Closeable {
                         results.add(payload);
 
                         while (!queue.offer(payload) && !Thread.interrupted()) {
-                            Thread.yield();
+                            Util.yield();
                         }
                     }
 

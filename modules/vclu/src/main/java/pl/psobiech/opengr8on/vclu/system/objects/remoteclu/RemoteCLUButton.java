@@ -27,6 +27,8 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private final MqttDiscovery discoveryMessage;
 
+    private final boolean hasOnClickAsyncEventInstalled;
+
     public RemoteCLUButton(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
@@ -49,7 +51,13 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 mqttDiscoveryDevice
         );
 
-        final boolean hasAsyncHandlers = hasAsyncHandlersInstalled(discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
+        final Set<String> asyncHandlersInstalled = asyncHandlersInstalled(discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
+        this.hasOnClickAsyncEventInstalled = asyncHandlersInstalled.contains("OnClick");
+        if (hasOnClickAsyncEventInstalled && LOGGER.isTraceEnabled()) {
+            LOGGER.trace("OnClick handler is installed for {} ({}), button events will skip reading CLU value", discoveryMessage.getUniqueId(), object.getName());
+        }
+
+        final boolean hasAsyncHandlers = !asyncHandlersInstalled.isEmpty();
         if (!hasAsyncHandlers) {
             LOGGER.warn("No async handlers are installed for {} ({}), button events WILL NOT WORK", discoveryMessage.getUniqueId(), object.getName());
         }
@@ -58,16 +66,6 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     @Override
     public void setup() {
         sendDiscoveryMessage();
-    }
-
-    @Override
-    public void loop() {
-        // NOP
-    }
-
-    @Override
-    public void refresh() {
-        pushState();
     }
 
     private void sendDiscoveryMessage() {
@@ -88,13 +86,33 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         }
     }
 
+    @Override
+    public void loop() {
+        // NOP
+    }
+
+    @Override
+    public void scheduleRefreshNow() {
+        refresh();
+    }
+
+    public void refresh() {
+        pushState();
+    }
+
     private void pushState() {
         final String stateTopic = discoveryMessage.getStateTopic();
         if (stateTopic == null) {
             return;
         }
 
-        final Optional<JsonNode> stateNode = readValue(remoteCLU);
+        final Optional<JsonNode> stateNode;
+        if (hasOnClickAsyncEventInstalled) {
+            stateNode = pressEventState();
+        } else {
+            stateNode = readValue(remoteCLU);
+        }
+
         if (stateNode.isEmpty()) {
             return;
         }
@@ -117,11 +135,13 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         final boolean isPressed = value > 0;
 
         if (isPressed) {
-            final MqttEvent pressEvent = new MqttEvent("press");
-
-            return Optional.of(pressEvent.asJson());
+            return pressEventState();
         }
 
         return Optional.empty();
+    }
+
+    private static Optional<JsonNode> pressEventState() {
+        return Optional.of(MqttEvent.PRESS_AS_JSON);
     }
 }

@@ -202,6 +202,18 @@ public final class Util {
         }
     }
 
+    public static void yield() {
+        sleep(0);
+    }
+
+    public static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
+        }
+    }
+
     public static void sleepNanos(long nanoSeconds) {
         final long millis = nanoSeconds / NANOS_IN_MILLISECOND;
         final int nanos = (int) (nanoSeconds % NANOS_IN_MILLISECOND);

@@ -525,11 +525,7 @@ public class Server implements Closeable {
             } catch (LuaError e) {
                 lastException = e;
 
-                try {
-                    Thread.sleep(RETRY_DELAY);
-                } catch (InterruptedException e2) {
-                    throw new UncheckedInterruptedException(e2);
-                }
+                Util.sleep(RETRY_DELAY);
             }
         } while (retries-- > 0);
 
