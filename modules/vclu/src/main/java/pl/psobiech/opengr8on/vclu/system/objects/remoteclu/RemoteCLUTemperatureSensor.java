@@ -60,7 +60,7 @@ public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements 
             return Optional.empty();
         }
 
-        final LuaValue luaValue = remoteCLU.remoteExecute("%s:get(%d)".formatted(object.getNameOnCLU(), valueFeature.get().getIndex()));
+        final LuaValue luaValue = remoteCLU.remoteGet(object, valueFeature.get().getIndex());
         if (LuaUtil.isNil(luaValue)) {
             return Optional.empty();
         }

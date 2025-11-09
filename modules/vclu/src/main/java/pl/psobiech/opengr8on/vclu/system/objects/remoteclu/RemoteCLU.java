@@ -227,7 +227,7 @@ public class RemoteCLU extends VirtualObject {
     }
 
     public LuaValue remoteSet(SpecificObject object, long index, String value) {
-        return remoteExecute(String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, value));
+        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, value));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, int value) {
@@ -235,50 +235,61 @@ public class RemoteCLU extends VirtualObject {
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, String value) {
-        return remoteExecute(String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, value));
+        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, value));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index) {
-        return remoteExecute(String.format("%s:execute(%d)", object.getNameOnCLU(), index));
+        return remoteExecute(object, String.format("%s:execute(%d)", object.getNameOnCLU(), index));
     }
 
     public LuaValue remoteGet(SpecificObject object, long index) {
-        return remoteExecute(String.format("%s:get(%d)", object.getNameOnCLU(), index));
+        return remoteExecute(object, String.format("%s:get(%d)", object.getNameOnCLU(), index));
     }
 
-    public LuaValue remoteExecute(String script) {
+    private LuaValue remoteExecute(SpecificObject object, String script) {
+        return Util.timed(
+                LOGGER, "(%s) %s".formatted(object.getName(), script), 64,
+                () ->
+                        client.execute(script)
+                              .map(this::asLuaValue)
+                              .orElse(LuaValue.NIL)
+        );
+    }
+
+    private LuaValue remoteExecute(String script) {
         return Util.timed(
                 LOGGER, script, 64,
                 () ->
                         client.execute(script)
-                              .map(returnValue -> {
-                                       returnValue = StringUtils.stripToNull(returnValue);
-                                       if (returnValue == null) {
-                                           return null;
-                                       }
-
-                                       if (returnValue.startsWith("{")) {
-                                           try {
-                                               return localLuaContext.load("return %s".formatted(returnValue))
-                                                                     .call();
-                                           } catch (Exception e) {
-                                               // Might not have been a proper LUA table
-                                               // TODO: implement a more robust check
-
-                                               LOGGER.error(e.getMessage(), e);
-                                           }
-                                       }
-
-                                       final LuaString luaString = LuaValue.valueOf(returnValue);
-                                       if (luaString.isnumber()) {
-                                           return luaString.checknumber();
-                                       }
-
-                                       return luaString;
-                                   }
-                              )
+                              .map(this::asLuaValue)
                               .orElse(LuaValue.NIL)
         );
+    }
+
+    private LuaValue asLuaValue(String returnValue) {
+        returnValue = StringUtils.stripToNull(returnValue);
+        if (returnValue == null) {
+            return null;
+        }
+
+        if (returnValue.startsWith("{")) {
+            try {
+                return localLuaContext.load("return %s".formatted(returnValue))
+                                      .call();
+            } catch (Exception e) {
+                // Might not have been a proper LUA table
+                // TODO: implement a more robust check
+
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+
+        final LuaString luaString = LuaValue.valueOf(returnValue);
+        if (luaString.isnumber()) {
+            return luaString.checknumber();
+        }
+
+        return luaString;
     }
 
     @Override

@@ -29,6 +29,7 @@ import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
 import java.io.Closeable;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LuaThread implements Closeable {
@@ -53,8 +54,12 @@ public class LuaThread implements Closeable {
 
                                         try {
                                             mainLuaClosure.call();
+                                        } catch (UncheckedInterruptedException | RejectedExecutionException e) {
+                                            LOGGER.trace(e.getMessage(), e);
                                         } catch (LuaError e) {
-                                            if (e.getCause() instanceof UncheckedInterruptedException) {
+                                            if (e.getCause() instanceof UncheckedInterruptedException
+                                                    || e.getCause() instanceof InterruptedException
+                                                    || e.getCause() instanceof RejectedExecutionException) {
                                                 LOGGER.trace(e.getMessage(), e);
 
                                                 return;

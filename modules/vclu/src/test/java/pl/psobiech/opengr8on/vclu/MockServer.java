@@ -83,9 +83,6 @@ public class MockServer implements Closeable {
         this.responseSocket = new UDPSocket(LOCALHOST, 0, false);
         this.tftpServer = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
 
-        this.tftpServer.start();
-        this.tftpServer.stop();
-
         FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
         FileUtil.linkOrCopy(
                 ResourceUtil.classPath(CLUFiles.OM_LUA.getFileName()),
@@ -102,7 +99,7 @@ public class MockServer implements Closeable {
                 rootDirectory,
                 projectCipherKey,
                 cluDevice,
-                broadcastSocket, broadcastSocket,
+                broadcastSocket,
                 commandSocket, responseSocket,
                 tftpServer
         );

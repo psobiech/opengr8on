@@ -70,7 +70,7 @@ public class Main {
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 
-        try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), networkInterface, cluDevice)) {
+        try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), cluDevice)) {
             server.start();
 
             // sleep until interrupted

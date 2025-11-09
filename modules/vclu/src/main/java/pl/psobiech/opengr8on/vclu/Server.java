@@ -34,7 +34,6 @@ import pl.psobiech.opengr8on.tftp.TFTP;
 import pl.psobiech.opengr8on.tftp.TFTPServer;
 import pl.psobiech.opengr8on.tftp.TFTPServer.ServerMode;
 import pl.psobiech.opengr8on.util.*;
-import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.SocketUtil.Payload;
 import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.vclu.Main.CluKeys;
@@ -102,11 +101,10 @@ public class Server implements Closeable {
 
     private CipherKey projectCipherKey;
 
-    public Server(Path rootDirectory, CipherKey projectCipherKey, NetworkInterfaceDto networkInterface, CLUDevice cluDevice) {
+    public Server(Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice) {
         this(
                 rootDirectory, projectCipherKey, cluDevice,
                 SocketUtil.udpListener(IPv4AddressUtil.BROADCAST_ADDRESS, Client.COMMAND_PORT),
-                SocketUtil.udpListener(networkInterface.getBroadcastAddress(), Client.COMMAND_PORT),
                 SocketUtil.udpListener(cluDevice.getAddress(), Client.COMMAND_PORT),
                 SocketUtil.udpRandomPort(cluDevice.getAddress()),
                 new TFTPServer(cluDevice.getAddress(), TFTP.DEFAULT_PORT, ServerMode.GET_AND_REPLACE, rootDirectory)
@@ -115,7 +113,7 @@ public class Server implements Closeable {
 
     protected Server(
             Path rootDirectory, CipherKey projectCipherKey, CLUDevice cluDevice,
-            UDPSocket broadcastCommandSocket, UDPSocket fallbackBroadcastCommandSocket,
+            UDPSocket broadcastCommandSocket,
             UDPSocket commandSocket, UDPSocket responseSocket,
             TFTPServer tftpServer
     ) {

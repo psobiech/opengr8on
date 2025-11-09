@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.*;
 
+import java.util.concurrent.RejectedExecutionException;
+
 /**
  * Function wrapper that logs any exceptions that otherwise would be swallowed in the LUA thread
  */
@@ -97,7 +99,7 @@ public class LuaFunctionWrapper extends LibFunction {
     public LuaValue invoke(Varargs args) {
         try {
             return fn.invoke(args);
-        } catch (UncheckedInterruptedException e) {
+        } catch (UncheckedInterruptedException | RejectedExecutionException e) {
             logger.trace(e.getMessage(), e);
 
             throw e;

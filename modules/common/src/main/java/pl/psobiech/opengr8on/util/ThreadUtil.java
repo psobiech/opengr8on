@@ -43,6 +43,12 @@ public class ThreadUtil {
         LOGGER.debug("Virtual Threads: {}-{}", MIN_RUNNABLE, maxPoolSize);
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            if (e instanceof RejectedExecutionException) {
+                LOGGER.warn("Rejected task: {}", e.getMessage());
+
+                return;
+            }
+
             LOGGER.error("UncaughtException: [{}] {}", t.getName(), e.getMessage(), e);
         });
     }
