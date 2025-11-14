@@ -5,6 +5,8 @@ import pl.psobiech.opengr8on.util.RandomUtil;
 public class RefreshContext {
     private final static long REFRESH_NEVER = Long.MAX_VALUE;
 
+    private static final int RANDOMIZATION_MILLIS = 30_000;
+
     private final boolean polling;
 
     private final Runnable scheduledFunction;
@@ -44,13 +46,17 @@ public class RefreshContext {
     }
 
     public void scheduleNextRefreshRandomized() {
-        final long now = System.currentTimeMillis();
-
-        nextRefreshAfter = getNextRefreshAtRandomized(nextRefreshAfter, now);
+        scheduleNextRefreshRandomized(45_000);
     }
 
-    private long getNextRefreshAtRandomized(long previousRefreshAt, long now) {
-        return getNextRefreshAt(previousRefreshAt, now, (45_000 + RandomUtil.integer(30_000))); // 45 - 75s
+    public void scheduleNextRefreshRandomized(int minimumDelay) {
+        final long now = System.currentTimeMillis();
+
+        nextRefreshAfter = getNextRefreshAtRandomized(nextRefreshAfter, now, minimumDelay, RANDOMIZATION_MILLIS);
+    }
+
+    private long getNextRefreshAtRandomized(long previousRefreshAt, long now, int minimum, int delta) {
+        return getNextRefreshAt(previousRefreshAt, now, (minimum + RandomUtil.integer(delta)));
     }
 
     public void scheduleNextRefreshIn(long duration) {

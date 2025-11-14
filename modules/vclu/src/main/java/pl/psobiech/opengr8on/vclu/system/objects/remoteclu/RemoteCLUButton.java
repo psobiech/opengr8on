@@ -10,6 +10,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryButton;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttEvent;
+import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
@@ -89,6 +90,11 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     @Override
     public void loop() {
         // NOP
+    }
+
+    @Override
+    public Optional<RefreshContext> refreshContext() {
+        return Optional.empty();
     }
 
     @Override

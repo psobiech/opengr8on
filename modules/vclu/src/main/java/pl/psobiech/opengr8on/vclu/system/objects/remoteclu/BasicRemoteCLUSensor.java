@@ -66,8 +66,8 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     }
 
     @Override
-    public void scheduleRefreshNow() {
-        refreshContext.scheduleNextRefreshNow();
+    public Optional<RefreshContext> refreshContext() {
+        return Optional.of(refreshContext);
     }
 
     public void refresh() {

@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
@@ -39,6 +40,7 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.net.Inet4Address;
+import java.nio.charset.StandardCharsets;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
@@ -113,6 +115,23 @@ public class RemoteCLU extends VirtualObject {
 
     private void initMqttDiscovery(String discoveryPrefix) {
         final VirtualCLU virtualClu = virtualSystem.getVirtualClu();
+
+        virtualClu.getMqttClient()
+                  .subscribe(discoveryPrefix + "/status", bytes -> {
+                      LOGGER.info("DISCOVERY RESTART: {}", ToStringUtil.toString(bytes));
+
+                      final String stateAsString = new String(bytes, StandardCharsets.UTF_8);
+                      if (!stateAsString.equals("online")) {
+                          return;
+                      }
+
+                      for (RemoteCLUDevice remoteCLUDevice : devices.values()) {
+                          remoteCLUDevice.refreshContext()
+                                         .ifPresent(refreshContext ->
+                                                            refreshContext.scheduleNextRefreshRandomized(1)
+                                         );
+                      }
+                  });
 
         final Set<SpecificObject> specificObjects = objectRegistry.byCluName(name);
         for (SpecificObject object : specificObjects) {

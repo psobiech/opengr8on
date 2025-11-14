@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -238,7 +239,7 @@ public class CipherKey {
             return false;
         }
 
-        return Arrays.equals(keySpecification.getEncoded(), cipherKey.keySpecification.getEncoded())
+        return MessageDigest.isEqual(keySpecification.getEncoded(), cipherKey.keySpecification.getEncoded())
                 && Arrays.equals(ivParameterSpecification.getIV(), cipherKey.ivParameterSpecification.getIV());
     }
 

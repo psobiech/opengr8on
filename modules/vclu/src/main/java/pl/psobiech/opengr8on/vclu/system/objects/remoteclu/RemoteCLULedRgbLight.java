@@ -127,8 +127,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     @Override
-    public void scheduleRefreshNow() {
-        refreshContext.scheduleNextRefreshNow();
+    public Optional<RefreshContext> refreshContext() {
+        return Optional.of(refreshContext);
     }
 
     public void refresh() {
