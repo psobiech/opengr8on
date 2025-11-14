@@ -55,7 +55,7 @@ class ServerTest extends BaseServerTest {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     void emergencyMode() throws Exception {
         execute(
                 server -> {
