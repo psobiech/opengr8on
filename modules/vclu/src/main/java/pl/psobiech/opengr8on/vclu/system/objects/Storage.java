@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -48,7 +49,7 @@ public class Storage extends VirtualObject {
 
     private final ReentrantLock variablesLock = new ReentrantLock();
 
-    private final Map<String, LuaValue> variables = new HashMap<>();
+    private final Map<String, LuaValue> variables = new ConcurrentHashMap<>();
 
     public Storage(VirtualSystem virtualSystem, String name, Path storageRootPath) {
         super(
@@ -60,7 +61,7 @@ public class Storage extends VirtualObject {
 
         this.storagePath = storageRootPath.resolve("storage.json");
 
-        set(Features.STORAGE_UTILIZATION, LuaValue.valueOf(2));
+        set(Features.STORAGE_UTILIZATION, LuaValue.valueOf(0));
 
         register(Methods.STORE, (LuaOneArgFunction) arg1 -> {
             final String variableName = arg1.checkjstring();

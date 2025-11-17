@@ -33,4 +33,12 @@ public class UnexpectedException extends RuntimeException {
     public UnexpectedException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    public static UnexpectedException wrap(Throwable throwable) {
+        if (throwable instanceof UnexpectedException unexpectedException) {
+            return unexpectedException;
+        }
+
+        return new UnexpectedException(throwable);
+    }
 }

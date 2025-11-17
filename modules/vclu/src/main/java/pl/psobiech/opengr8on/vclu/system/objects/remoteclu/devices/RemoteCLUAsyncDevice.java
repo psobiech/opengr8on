@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

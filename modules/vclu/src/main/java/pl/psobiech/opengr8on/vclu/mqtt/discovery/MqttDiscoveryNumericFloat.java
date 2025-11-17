@@ -13,18 +13,18 @@ public class MqttDiscoveryNumericFloat extends MqttDiscovery {
 
     public MqttDiscoveryNumericFloat(
             String name, String uniqueId,
-            String rootTopic, String commandTopic, String stateTopic,
+            String rootTopic, String availabilityTopic, String commandTopic, String stateTopic,
             String deviceClass, String unitOfMeasurement,
             String schema, Float max, Float min,
             MqttDiscoveryDevice device
     ) {
         super(
                 name, uniqueId,
-                rootTopic, commandTopic, stateTopic,
+                rootTopic, availabilityTopic, commandTopic, stateTopic,
                 deviceClass, unitOfMeasurement,
                 schema, "{{ value | float }}",
                 device,
-                new MqttDiscoveryOrigin()
+                MqttDiscoveryOrigin.INSTANCE
         );
 
         this.max = max;

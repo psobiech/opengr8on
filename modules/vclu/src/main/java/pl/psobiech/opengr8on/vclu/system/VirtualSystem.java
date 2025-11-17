@@ -42,13 +42,9 @@ import java.io.Closeable;
 import java.net.Inet4Address;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class VirtualSystem implements Closeable {
@@ -57,8 +53,6 @@ public class VirtualSystem implements Closeable {
     private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(512);
 
     private static final long LOG_OBJECT_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(128);
-
-    private static final long NANOS_IN_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
 
     private static final String CLIENT_REPORT_PREFIX = "clientReport:";
 
@@ -70,7 +64,7 @@ public class VirtualSystem implements Closeable {
 
     private final CipherKey cipherKey;
 
-    private final Map<String, VirtualObject> objectsByName = new HashMap<>();
+    private final Map<String, VirtualObject> objectsByName = new ConcurrentHashMap<>();
 
     private final Path rootDirectory;
 
@@ -145,7 +139,11 @@ public class VirtualSystem implements Closeable {
     }
 
     public LuaValue luaCall(String script) {
-        return luaThread.luaCall(script);
+        return Util.timed(
+                LOGGER, "luaCall(%s)".formatted(script), 8,
+                () ->
+                        luaThread.luaCall(script)
+        );
     }
 
     public void loop() {

@@ -1,8 +1,7 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
@@ -14,11 +13,15 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter.ShutterSta
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttPosition;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.discoveryTopic;
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLUShutter.class);
@@ -43,6 +46,8 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private final SpecificObject object;
 
+    private final String discoveryTopic;
+
     private final MqttDiscoveryShutter discoveryMessage;
 
     private final RefreshContext refreshContext;
@@ -61,11 +66,12 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         this.remoteCLU = remoteCLU;
         this.object = object;
 
-        discoveryMessage = new MqttDiscoveryShutter(
+        this.discoveryTopic = discoveryTopic(discoveryPrefix, "cover", uniqueId);
+        this.discoveryMessage = new MqttDiscoveryShutter(
                 object.getName(),
                 uniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "cover", uniqueId),
-                "~/set", "~/state",
+                rootTopic(clu, object),
+                null, "~/set", "~/state",
                 "~/position/state", "~/position/set",
                 "shutter",
                 "%",
@@ -103,11 +109,6 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     }
 
     private void sendDiscoveryMessage() {
-        final String discoveryTopic = discoveryMessage.getDiscoveryTopic();
-        if (discoveryTopic == null) {
-            return;
-        }
-
         virtualClu.getMqttClient()
                   .tryPublish(
                           discoveryTopic,
@@ -203,7 +204,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                       );
 
             return stateNode;
-        } catch (MqttException | RuntimeException e) {
+        } catch (RuntimeException e) {
             LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
 
             return lastState;

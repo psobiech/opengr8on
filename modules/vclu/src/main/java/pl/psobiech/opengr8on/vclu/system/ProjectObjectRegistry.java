@@ -109,8 +109,21 @@ public class ProjectObjectRegistry implements Closeable {
         return cluObjectsMap.getOrDefault(cluName, Collections.emptySet());
     }
 
+    public Optional<ObjectId> getObjectIdParts(String objectId) {
+        final String[] parts = objectId.split("->", 3);
+        if (parts.length == 2) {
+            return Optional.of(new ObjectId(parts[0], parts[1]));
+        }
+
+        return Optional.empty();
+    }
+
     @Override
     public void close() throws IOException {
+        // NOP
+    }
+
+    public record ObjectId(String cluName, String objectName) {
         // NOP
     }
 }

@@ -19,12 +19,15 @@
 package pl.psobiech.opengr8on.vclu.system.lua;
 
 import org.apache.commons.lang3.StringUtils;
-import org.luaj.vm2.*;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LoadState;
+import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
 import org.luaj.vm2.lib.jse.JseBaseLib;
+import org.luaj.vm2.luajc.LuaJC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -64,8 +67,9 @@ public class LuaThreadFactory {
         );
 
         final Globals globals = new Globals();
-        LoadState.install(globals);
-        LuaC.install(globals);
+        globals.compiler = LuaC.instance;
+        globals.loader = LuaJC.instance;
+        globals.undumper = LoadState.instance;
 
 //        globals.load(new DebugLib());
         globals.load(new JseBaseLib());
@@ -96,29 +100,25 @@ public class LuaThreadFactory {
         globals.STDOUT = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_LUA_OUT, Level.INFO));
         globals.STDERR = new PrintStream(new Slf4jLoggingOutputStream(LOGGER_LUA_OUT, Level.ERROR));
 
-        return new LuaThread(
+        final LuaThread luaThread = new LuaThread(
                 virtualSystem, globals,
                 cluFile == CLUFiles.EMERGNCY_LUA,
                 loadScript(aDriveDirectory, cluFile, globals)
         );
+        virtualSystem.setLuaThread(luaThread);
+
+        return luaThread;
     }
 
-    private static LuaValue executeScript(Path aDriveDirectory, CLUFiles cluFile, Globals globals) {
-        return loadScript(aDriveDirectory, cluFile, globals).call();
-    }
-
-    private static LuaClosure loadScript(Path aDriveDirectory, CLUFiles cluFile, Globals globals) {
+    private static LuaValue loadScript(Path aDriveDirectory, CLUFiles cluFile, Globals globals) {
         final String scriptFileName = cluFile.getFileName();
 
-        return new LuaClosure(
-                readScript(aDriveDirectory.resolve(scriptFileName), scriptFileName, globals),
-                globals
-        );
+        return readScript(aDriveDirectory.resolve(scriptFileName), scriptFileName, globals);
     }
 
-    private static Prototype readScript(Path path, String fileName, Globals globals) {
+    private static LuaValue readScript(Path path, String fileName, Globals globals) {
         try (InputStream inputStream = Files.newInputStream(path)) {
-            return globals.compilePrototype(inputStream, fileName);
+            return globals.load(inputStream, fileName, "t", globals);
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }

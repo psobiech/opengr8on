@@ -30,10 +30,7 @@ import java.io.Closeable;
 import java.net.Inet4Address;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class ClientRegistry implements Closeable {
@@ -45,9 +42,9 @@ public class ClientRegistry implements Closeable {
 
     private final CipherKey cipherKey;
 
-    private final Map<String, ScheduledFuture<?>> registrations = new HashMap<>();
+    private final Map<String, ScheduledFuture<?>> registrations = new ConcurrentHashMap<>();
 
-    private final Map<String, CLUClient> clients = new HashMap<>();
+    private final Map<String, CLUClient> clients = new ConcurrentHashMap<>();
 
     public ClientRegistry(Inet4Address localAddress, CipherKey cipherKey) {
         this.localAddress = localAddress;

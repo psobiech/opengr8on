@@ -31,17 +31,17 @@ public class MqttDiscoveryShutter extends MqttDiscovery {
 
     public MqttDiscoveryShutter(
             String name, String uniqueId,
-            String rootTopic, String commandTopic, String stateTopic, String positionStateTopic, String setPositionTopic,
+            String rootTopic, String availabilityTopic, String commandTopic, String stateTopic, String positionStateTopic, String setPositionTopic,
             String deviceClass, String unitOfMeasurement,
             String schema, String valueTemplate, String setPositionTemplate,
             MqttDiscoveryDevice device
     ) {
         super(
                 name, uniqueId,
-                rootTopic, commandTopic, stateTopic,
+                rootTopic, availabilityTopic, commandTopic, stateTopic,
                 deviceClass, unitOfMeasurement,
                 schema, valueTemplate,
-                device, new MqttDiscoveryOrigin()
+                device, MqttDiscoveryOrigin.INSTANCE
         );
 
         this.positionStateTopic = positionStateTopic;

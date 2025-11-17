@@ -20,6 +20,8 @@ package pl.psobiech.opengr8on.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 
 import java.util.concurrent.*;
 
@@ -38,7 +40,7 @@ public class ThreadUtil {
         System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(maxPoolSize));
         System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(MIN_RUNNABLE));
 
-        System.setProperty("jdk.tracePinnedThreads", "short");
+        //System.setProperty("jdk.tracePinnedThreads", "short");
 
         LOGGER.debug("Virtual Threads: {}-{}", MIN_RUNNABLE, maxPoolSize);
 
@@ -67,20 +69,30 @@ public class ThreadUtil {
         // NOP
     }
 
-    public static <T> T await(Future<T> future) {
-        if (future != null && !future.isDone()) {
-            try {
-                return future.get();
-            } catch (ExecutionException e) {
-                final Throwable cause = e.getCause();
-
-                LOGGER.error(cause.getMessage(), cause);
-            } catch (Exception e) {
-                LOGGER.error(e.getMessage(), e);
-            }
+    public static <T> T awaitQuietly(Future<T> future) {
+        try {
+            return await(future);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
         }
 
         return null;
+    }
+
+    public static <T> T await(Future<T> future) {
+        if (future == null) {
+            return null;
+        }
+
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
+        } catch (ExecutionException e) {
+            throw UnexpectedException.wrap(e.getCause());
+        } catch (Exception e) {
+            throw UnexpectedException.wrap(e);
+        }
     }
 
     /**

@@ -542,11 +542,8 @@ public class Server implements Closeable {
             throw new UnexpectedException("LUA is not initialized");
         }
 
-        return Util.timed(
-                LOGGER, script, 8,
-                () ->
-                        this.mainThread.luaCall(script)
-        );
+        return mainThread.virtualSystem()
+                         .luaCall(script);
     }
 
     private Optional<Response> onLuaScriptCommand(UUID uuid, Request request, LuaScriptCommand.Request command) {
