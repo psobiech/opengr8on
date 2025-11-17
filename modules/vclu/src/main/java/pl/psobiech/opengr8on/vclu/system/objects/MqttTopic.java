@@ -20,7 +20,7 @@ package pl.psobiech.opengr8on.vclu.system.objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import com.hivemq.client.mqtt.datatypes.MqttTopicFilter;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +33,9 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class MqttTopic extends VirtualObject {
@@ -44,17 +43,20 @@ public class MqttTopic extends VirtualObject {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttTopic.class);
 
-    private final Set<String> topicFilters = new HashSet<>();
+    private final Map<String, MqttTopicFilter> topicFilters = new ConcurrentHashMap<>();
 
     private final LinkedBlockingDeque<Map.Entry<String, Message>> messageQueue = new LinkedBlockingDeque<>();
 
-    private MqttClient mqttClient;
+    private final MqttClient mqttClient;
 
     public MqttTopic(VirtualSystem virtualSystem, String name) {
         super(
                 virtualSystem, name,
                 Features.class, Methods.class, Events.class
         );
+
+        this.mqttClient = virtualSystem.getVirtualClu()
+                                       .getMqttClient();
 
         register(Methods.SUBSCRIBE, this::subscribe);
         register(Methods.UNSUBSCRIBE, this::unsubscribe);
@@ -87,10 +89,6 @@ public class MqttTopic extends VirtualObject {
         }
     }
 
-    public void setMqttClient(MqttClient mqttClient) {
-        this.mqttClient = mqttClient;
-    }
-
     @Override
     public void setup() {
         final VirtualCLU virtualClu = virtualSystem.getVirtualClu();
@@ -98,22 +96,22 @@ public class MqttTopic extends VirtualObject {
             return;
         }
 
-        virtualClu.addMqttSubscription(this);
-
         triggerEvent(Events.INIT);
     }
 
     private LuaValue subscribe(LuaValue arg1) {
+        if (!isMqttInitialized()) {
+            return LuaValue.FALSE;
+        }
+
         try {
             final String topic = arg1.checkjstring();
 
-            topicFilters.add(topic);
-            if (mqttClient != null) {
-                mqttClient.subscribe(topic);
-            }
+            topicFilters.put(topic, MqttTopicFilter.of(topic));
+            mqttClient.subscribeWithManualAck(topic, (bytes, ack) -> onMessage(topic, bytes, ack));
 
             return LuaValue.TRUE;
-        } catch (MqttException e) {
+        } catch (RuntimeException e) {
             LOGGER.error(e.getMessage(), e);
         }
 
@@ -121,16 +119,18 @@ public class MqttTopic extends VirtualObject {
     }
 
     private LuaValue unsubscribe(LuaValue arg1) {
+        if (!isMqttInitialized()) {
+            return LuaValue.FALSE;
+        }
+
         try {
             final String topic = arg1.checkjstring();
 
             topicFilters.remove(topic);
-            if (mqttClient != null) {
-                mqttClient.unsubscribe(topic);
-            }
+            mqttClient.unsubscribe(topic);
 
             return LuaValue.TRUE;
-        } catch (MqttException e) {
+        } catch (RuntimeException e) {
             LOGGER.error(e.getMessage(), e);
         }
 
@@ -138,10 +138,7 @@ public class MqttTopic extends VirtualObject {
     }
 
     private LuaValue publish(LuaValue topicArg, LuaValue messageArg) {
-        if (mqttClient == null) {
-            final UnexpectedException exception = new UnexpectedException("Attempt to publish a message, when MQTT is not initialized");
-            LOGGER.warn(exception.getMessage(), exception);
-
+        if (!isMqttInitialized()) {
             return LuaValue.FALSE;
         }
 
@@ -158,11 +155,22 @@ public class MqttTopic extends VirtualObject {
             mqttClient.publish(topic, payload);
 
             return LuaValue.TRUE;
-        } catch (IOException | MqttException e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.error(e.getMessage(), e);
         }
 
         return LuaValue.FALSE;
+    }
+
+    private boolean isMqttInitialized() {
+        if (mqttClient.isInitialized()) {
+            return true;
+        }
+
+        final UnexpectedException exception = new UnexpectedException("MQTT is not yet initialized..");
+        LOGGER.warn(exception.getMessage(), exception);
+
+        return false;
     }
 
     public void onMessage(String topic, byte[] payload, Runnable acknowledged) {
@@ -177,17 +185,13 @@ public class MqttTopic extends VirtualObject {
     }
 
     private boolean isSubscribedTo(String topic) {
-        for (String topicFilter : topicFilters) {
-            if (org.eclipse.paho.client.mqttv3.MqttTopic.isMatched(topicFilter, topic)) {
+        for (MqttTopicFilter topicFilter : topicFilters.values()) {
+            if (topicFilter.matches(com.hivemq.client.mqtt.datatypes.MqttTopic.of(topic))) {
                 return true;
             }
         }
 
         return false;
-    }
-
-    public Set<String> getTopicFilters() {
-        return topicFilters;
     }
 
     @Override

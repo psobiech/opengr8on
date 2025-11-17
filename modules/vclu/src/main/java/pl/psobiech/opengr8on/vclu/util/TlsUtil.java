@@ -96,7 +96,7 @@ public class TlsUtil {
         }
     }
 
-    private static X509Certificate readCertificate(Path path) {
+    public static X509Certificate readCertificate(Path path) {
         try (InputStream inputStream = new ByteArrayInputStream(readPem(path))) {
             return (X509Certificate) CERTIFICATE_FACTORY.generateCertificate(inputStream);
         } catch (IOException | CertificateException e) {
@@ -104,7 +104,7 @@ public class TlsUtil {
         }
     }
 
-    private static PrivateKey readPrivateKey(Path path) {
+    public static PrivateKey readPrivateKey(Path path) {
         final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(
                 readPem(path)
         );

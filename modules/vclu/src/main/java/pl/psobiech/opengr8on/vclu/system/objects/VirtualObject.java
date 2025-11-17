@@ -29,6 +29,7 @@ import pl.psobiech.opengr8on.vclu.system.lua.fn.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,13 +45,13 @@ public class VirtualObject implements VirtualDevice {
 
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
-    private final Map<Integer, LuaValue> featureValues = new Hashtable<>();
+    private final Map<Integer, LuaValue> featureValues = new ConcurrentHashMap<>();
 
-    private final Map<Integer, BaseLuaFunction> featureFunctions = new Hashtable<>();
+    private final Map<Integer, BaseLuaFunction> featureFunctions = new ConcurrentHashMap<>();
 
-    private final Map<Integer, BaseLuaFunction> methodFunctions = new Hashtable<>();
+    private final Map<Integer, BaseLuaFunction> methodFunctions = new ConcurrentHashMap<>();
 
-    private final Map<Integer, List<LuaNoArgConsumer>> eventFunctions = new Hashtable<>();
+    private final Map<Integer, List<LuaNoArgConsumer>> eventFunctions = new ConcurrentHashMap<>();
 
     private final Class<? extends Enum<? extends IFeature>> featureClass;
 
@@ -58,7 +59,7 @@ public class VirtualObject implements VirtualDevice {
 
     private final Class<? extends Enum<? extends IEvent>> eventClass;
 
-    private final Map<IEvent, Future<?>> eventTriggerFuture = new Hashtable<>();
+    private final Map<IEvent, Future<?>> eventTriggerFuture = new ConcurrentHashMap<>();
 
     public VirtualObject(VirtualSystem virtualSystem, String name) {
         this(
@@ -306,7 +307,7 @@ public class VirtualObject implements VirtualDevice {
     }
 
     public void awaitEventTrigger(IEvent event) {
-        ThreadUtil.await(eventTriggerFuture.remove(event));
+        ThreadUtil.awaitQuietly(eventTriggerFuture.remove(event));
     }
 
     public void addEventHandler(int address, LuaFunction luaFunction) {

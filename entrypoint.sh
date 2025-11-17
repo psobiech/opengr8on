@@ -4,6 +4,8 @@ exec "setpriv" "--reuid" "ubuntu" "--regid" "ubuntu" "--clear-groups" "--ambient
    "$JAVA_HOME/bin/java" \
    "-XX:+DisableAttachMechanism" \
    "-server" "-Xshare:off" "-XX:+UseContainerSupport" "-XX:+UseZGC" "-XX:+UseDynamicNumberOfGCThreads" \
+   "--enable-native-access=ALL-UNNAMED" \
+   "--sun-misc-unsafe-memory-access=allow" \
    "-XX:+ExitOnOutOfMemoryError" \
    "-Djava.net.preferIPv6Addresses=false" \
    "-Djava.net.preferIPv4Stack=true" \

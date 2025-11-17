@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.DoubleNode;
@@ -6,35 +6,37 @@ import org.luaj.vm2.LuaValue;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumericFloat;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
 
-public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements RemoteCLUDevice {
+public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
 
-    public RemoteCLUTemperatureSensor(
+    public RemoteCLUVoltageSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
             String discoveryPrefix,
             String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
-
         super(
                 virtualClu, remoteCLU,
                 clu, object,
+                RemoteCLUDevice.discoveryTopic(discoveryPrefix, "sensor", uniqueId),
                 new MqttDiscoveryNumericFloat(
                         object.getName(),
                         uniqueId,
-                        "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId), null, "~/state",
-                        "temperature",
+                        RemoteCLUDevice.rootTopic(clu, object),
+                        null, null, "~/state",
+                        "voltage",
                         object.getFeatures().stream()
-                              .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
+                              .filter(feature1 -> feature1.getName().equalsIgnoreCase("value"))
                               .findAny()
                               .map(Feature::getUnit)
-                              .orElse("°C"),
+                              .orElse("V"),
                         null,
                         null, null,
                         mqttDiscoveryDevice

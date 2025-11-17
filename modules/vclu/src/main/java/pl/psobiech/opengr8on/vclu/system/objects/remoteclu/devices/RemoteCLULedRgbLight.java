@@ -1,10 +1,9 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.HexUtil;
@@ -20,37 +19,43 @@ import pl.psobiech.opengr8on.vclu.mqtt.state.MqttState.StateEnum;
 import pl.psobiech.opengr8on.vclu.mqtt.state.RgbwColor;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.io.IOException;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.discoveryTopic;
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
+
 public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevice {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
 
     private static final long SET_WHITE_VALUE_METHOD_ID = 12L;
 
-    protected final VirtualCLU virtualClu;
+    private final VirtualCLU virtualClu;
 
-    protected final RemoteCLU remoteCLU;
+    private final RemoteCLU remoteCLU;
 
     private final SpecificObject object;
 
-    protected final MqttDiscoveryLight discoveryMessage;
+    private final String discoveryTopic;
 
-    private final Map<Color, MqttDiscoveryLight> keyChildDiscoveryMessages = new Hashtable<>();
+    private final MqttDiscoveryLight discoveryMessage;
+
+    private final Map<Color, MqttDiscoveryLight> keyChildDiscoveryMessages = new ConcurrentHashMap<>();
 
     private final Map<String, Feature> valueFeatures;
 
     private final RefreshContext refreshContext;
 
-    protected JsonNode lastState = null;
+    private JsonNode lastState = null;
 
     public RemoteCLULedRgbLight(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
@@ -62,11 +67,12 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         this.remoteCLU = remoteCLU;
         this.object = object;
 
+        this.discoveryTopic = discoveryTopic(discoveryPrefix, "light", uniqueId);
         this.discoveryMessage = new MqttDiscoveryLight(
                 object.getName(),
                 uniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "light", uniqueId),
-                "~/set", "~/state",
+                rootTopic(clu, object),
+                null, "~/set", "~/state",
                 null,
                 null,
                 "json",
@@ -96,7 +102,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         return new MqttDiscoveryLight(
                 "%s_%s".formatted(object.getName(), valueName),
                 colourUniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "light", colourUniqueId), "~/set", "~/state",
+                "%s/%s/%s".formatted(discoveryPrefix, "light", colourUniqueId),
+                null, "~/set", "~/state",
                 null,
                 null,
                 "json",
@@ -136,11 +143,6 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private void sendDiscoveryMessage(MqttDiscoveryLight discoveryMessage) {
-        final String discoveryTopic = discoveryMessage.getDiscoveryTopic();
-        if (discoveryTopic == null) {
-            return;
-        }
-
         virtualClu.getMqttClient()
                   .tryPublish(
                           discoveryTopic,
@@ -229,7 +231,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             }
 
             return stateNode;
-        } catch (MqttException | RuntimeException e) {
+        } catch (RuntimeException e) {
             LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
 
             return lastState;

@@ -1,8 +1,7 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
@@ -12,10 +11,14 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttEvent;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
 import java.util.Set;
+
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.discoveryTopic;
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
@@ -25,6 +28,8 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     private final RemoteCLU remoteCLU;
 
     private final SpecificObject object;
+
+    private final String discoveryTopic;
 
     private final MqttDiscovery discoveryMessage;
 
@@ -40,10 +45,12 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         this.remoteCLU = remoteCLU;
         this.object = object;
 
+        this.discoveryTopic = discoveryTopic(discoveryPrefix, "event", uniqueId);
         this.discoveryMessage = new MqttDiscoveryButton(
                 object.getName(),
                 uniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "event", uniqueId), null, "~/state",
+                rootTopic(clu, object),
+                null, null, "~/state",
                 "button",
                 null,
                 "json",
@@ -70,11 +77,6 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     }
 
     private void sendDiscoveryMessage() {
-        final String discoveryTopic = discoveryMessage.getDiscoveryTopic();
-        if (discoveryTopic == null) {
-            return;
-        }
-
         try {
             virtualClu.getMqttClient()
                       .publish(
@@ -82,7 +84,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                               ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
                               true
                       );
-        } catch (MqttException | JsonProcessingException | RuntimeException e) {
+        } catch (JsonProcessingException | RuntimeException e) {
             LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
         }
     }

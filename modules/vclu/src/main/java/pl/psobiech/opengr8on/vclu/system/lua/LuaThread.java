@@ -19,7 +19,6 @@
 package pl.psobiech.opengr8on.vclu.system.lua;
 
 import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -45,13 +44,11 @@ public class LuaThread implements Closeable {
 
     private final boolean emergency;
 
-    public LuaThread(VirtualSystem virtualSystem, Globals globals, boolean emergency, LuaClosure mainLuaClosure) {
+    public LuaThread(VirtualSystem virtualSystem, Globals globals, boolean emergency, LuaValue mainLuaClosure) {
         this.thread = Thread.ofVirtual()
                             .name(getClass().getSimpleName())
                             .unstarted(
                                     () -> {
-                                        virtualSystem.setLuaThread(LuaThread.this);
-
                                         try {
                                             mainLuaClosure.call();
                                         } catch (UncheckedInterruptedException | RejectedExecutionException e) {

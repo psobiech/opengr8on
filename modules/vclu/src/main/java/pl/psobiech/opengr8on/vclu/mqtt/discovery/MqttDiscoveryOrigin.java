@@ -7,6 +7,8 @@ import pl.psobiech.opengr8on.vclu.ServerVersion;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MqttDiscoveryOrigin {
+    public static MqttDiscoveryOrigin INSTANCE = new MqttDiscoveryOrigin();
+
     private final String name;
 
     @JsonProperty("sw_version")
@@ -15,7 +17,7 @@ public class MqttDiscoveryOrigin {
     @JsonProperty("url")
     private final String url;
 
-    public MqttDiscoveryOrigin() {
+    private MqttDiscoveryOrigin() {
         this(
                 "opengr8on", ServerVersion.get(),
                 "https://github.com/psobiech/opengr8on"

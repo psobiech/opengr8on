@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.luaj.vm2.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +33,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryOrigin;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
+import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry.ObjectId;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgFunction;
@@ -53,8 +53,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class VirtualCLU extends VirtualObject implements Closeable {
@@ -69,8 +68,6 @@ public class VirtualCLU extends VirtualObject implements Closeable {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
-
-    private final List<MqttTopic> mqttTopics = new LinkedList<>();
 
     private final Path rootDirectory;
 
@@ -141,11 +138,11 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     @Override
     public void loop() {
-        if (!isMqttEnabled() && mqttClient.isStarted()) {
+        if (!isMqttEnabled() && mqttClient.isInitialized()) {
             mqttClient.stop();
         }
 
-        if (isMqttEnabled() && !mqttClient.isStarted()) {
+        if (isMqttEnabled() && !mqttClient.isInitialized()) {
             final Path mqttPath = rootDirectory.getParent().resolve("mqtt");
 
             mqttClient.start(
@@ -297,13 +294,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 name,
                 uniqueId,
                 rootTopic,
-                "~/set", "~/state",
+                null, "~/set", "~/state",
                 deviceClass,
                 unit,
                 null,
                 valueTemplate,
                 new MqttDiscoveryDevice(clu),
-                new MqttDiscoveryOrigin()
+                MqttDiscoveryOrigin.INSTANCE
         );
 
         try {
@@ -313,7 +310,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                             ObjectMapperFactory.JSON.writeValueAsBytes(discoveryMessage),
                             true
                     );
-        } catch (MqttException | JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new UnexpectedException("Could not publish discovery message for " + discoveryMessage.getUniqueId(), e);
         }
 
@@ -350,41 +347,29 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         final String discoveryPrefix = get(Features.MQTT_DISCOVERY_PREFIX).checkjstring();
         final String rootTopic = "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId);
 
-        try {
-            mqttClient
-                    .publish(
-                            rootTopic + "/state",
-                            state.getBytes(StandardCharsets.UTF_8)
-                    );
-        } catch (MqttException e) {
-            LOGGER.error("Could not publish state update message for {}", uniqueId, e);
-        }
+        mqttClient
+                .publish(
+                        rootTopic + "/state",
+                        state.getBytes(StandardCharsets.UTF_8)
+                );
 
         return LuaValue.NIL;
     }
 
     private LuaValue mqttOnValueChange(LuaValue arg1, LuaValue arg2) {
-        final String objectId = arg1.checkjstring();
-        final String[] objectParts = objectId.split("->", 2);
-        if (objectParts.length != 2) {
+        final String objectIdAsString = arg1.checkjstring();
+        final Optional<ObjectId> objectIdPartsOptional = objectRegistry.getObjectIdParts(objectIdAsString);
+        if (objectIdPartsOptional.isEmpty()) {
             return LuaValue.NIL;
         }
 
-        final VirtualObject remoteCluObject = virtualSystem.getObject(objectParts[0]);
+        final ObjectId objectId = objectIdPartsOptional.get();
+        final VirtualObject remoteCluObject = virtualSystem.getObject(objectId.cluName());
         if (remoteCluObject instanceof RemoteCLU remoteCLU) {
-            remoteCLU.mqttOnValueChange(objectParts[1], arg2);
+            remoteCLU.mqttOnValueChange(objectId.objectName(), arg2);
         }
 
         return LuaValue.NIL;
-    }
-
-    public void addMqttSubscription(MqttTopic mqttTopic) {
-        mqttTopics.add(mqttTopic);
-        mqttTopic.setMqttClient(mqttClient);
-    }
-
-    public List<MqttTopic> getMqttTopics() {
-        return mqttTopics;
     }
 
     public MqttClient getMqttClient() {

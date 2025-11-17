@@ -34,6 +34,7 @@ import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -46,11 +47,7 @@ public class Main {
         // NOP
     }
 
-    public static void main(String[] args) throws Exception {
-        if (args.length < 1) {
-            throw new UnexpectedException("Missing argument: Network Interface Name or local IP Address");
-        }
-
+    static void main(String[] args) throws Exception {
         final Path runtimeDirectory = Paths.get("./runtime").toAbsolutePath();
         final Path rootDirectory = runtimeDirectory.resolve("root");
 
@@ -61,12 +58,22 @@ public class Main {
 
         LOGGER.info("Current VCLU PIN: {}", new String(cluKeys.pin(), StandardCharsets.US_ASCII));
 
-        final String networkInterfaceNameOrIpAddress = args[args.length - 1];
-        final NetworkInterfaceDto networkInterface = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(networkInterfaceNameOrIpAddress)
-                                                                    .or(() ->
-                                                                                IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
-                                                                    )
-                                                                    .orElseThrow(() -> new UnexpectedException("Cannot find IP address of interface: " + networkInterfaceNameOrIpAddress));
+        final NetworkInterfaceDto networkInterface;
+        if (args.length > 0) {
+            final String networkInterfaceNameOrIpAddress = args[args.length - 1];
+            networkInterface = IPv4AddressUtil.getLocalIPv4NetworkInterfaceByName(networkInterfaceNameOrIpAddress)
+                                              .or(() ->
+                                                          IPv4AddressUtil.getLocalIPv4NetworkInterfaceByIpAddress(networkInterfaceNameOrIpAddress)
+                                              )
+                                              .orElseThrow(() -> new UnexpectedException("Cannot find IP address of interface: " + networkInterfaceNameOrIpAddress));
+        } else {
+            final List<NetworkInterfaceDto> networkInterfaces = IPv4AddressUtil.getLocalIPv4NetworkInterfaces();
+            if (networkInterfaces.isEmpty()) {
+                throw new UnexpectedException("No network interfaces found");
+            }
+
+            networkInterface = networkInterfaces.getFirst();
+        }
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 

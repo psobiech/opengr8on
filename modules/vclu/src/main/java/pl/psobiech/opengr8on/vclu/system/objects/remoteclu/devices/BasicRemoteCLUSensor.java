@@ -1,7 +1,6 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ToStringUtil;
@@ -9,6 +8,7 @@ import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
@@ -20,6 +20,8 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
     protected final RemoteCLU remoteCLU;
 
+    protected final String discoveryTopic;
+
     protected final MqttDiscovery discoveryMessage;
 
     private final RefreshContext refreshContext;
@@ -29,11 +31,11 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     public BasicRemoteCLUSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            MqttDiscovery discoveryMessage
+            String discoveryTopic, MqttDiscovery discoveryMessage
     ) {
         this(virtualClu, remoteCLU,
              clu, object,
-             discoveryMessage,
+             discoveryTopic, discoveryMessage,
              true
         );
     }
@@ -41,12 +43,13 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     public BasicRemoteCLUSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            MqttDiscovery discoveryMessage,
+            String discoveryTopic, MqttDiscovery discoveryMessage,
             boolean displayAsyncMissingWarning
     ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
 
+        this.discoveryTopic = discoveryTopic;
         this.discoveryMessage = discoveryMessage;
 
         final boolean hasAsyncHandlers = !asyncHandlersInstalled(displayAsyncMissingWarning ? LOGGER : null, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
@@ -75,11 +78,6 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     }
 
     private void sendDiscoveryMessage() {
-        final String discoveryTopic = discoveryMessage.getDiscoveryTopic();
-        if (discoveryTopic == null) {
-            return;
-        }
-
         virtualClu.getMqttClient()
                   .tryPublish(
                           discoveryTopic,
@@ -133,7 +131,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
                       );
 
             return stateNode;
-        } catch (MqttException | RuntimeException e) {
+        } catch (RuntimeException e) {
             LOGGER.error("Could not publish state update message for {}", discoveryMessage.getUniqueId(), e);
 
             return lastState;

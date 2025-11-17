@@ -15,6 +15,12 @@ public class MqttDiscovery extends MqttJson {
     @JsonProperty("~")
     private final String rootTopic;
 
+    @JsonProperty("availability_topic")
+    private final String availabilityTopic;
+
+    @JsonProperty("availability_mode")
+    private final String availabilityMode = "latest";
+
     @JsonProperty("command_topic")
     private final String setStateTopic;
 
@@ -41,7 +47,7 @@ public class MqttDiscovery extends MqttJson {
 
     public MqttDiscovery(
             String name, String uniqueId,
-            String rootTopic, String setStateTopic, String stateTopic,
+            String rootTopic, String availabilityTopic, String setStateTopic, String stateTopic,
             String deviceClass, String unitOfMeasurement,
             String schema, String valueTemplate,
             MqttDiscoveryDevice device, MqttDiscoveryOrigin origin
@@ -50,6 +56,7 @@ public class MqttDiscovery extends MqttJson {
         this.uniqueId = uniqueId;
 
         this.rootTopic = rootTopic;
+        this.availabilityTopic = StringUtils.stripToNull(availabilityTopic);
         this.setStateTopic = StringUtils.stripToNull(setStateTopic);
         this.stateTopic = StringUtils.stripToNull(stateTopic);
 
@@ -83,8 +90,8 @@ public class MqttDiscovery extends MqttJson {
         return rootTopic;
     }
 
-    public String getDiscoveryTopic() {
-        return getAbsoluteTopic(getRootTopic(), "~/config");
+    public String getAvailabilityTopic() {
+        return getAbsoluteTopic(getRootTopic(), availabilityTopic);
     }
 
     public String getSetStateTopic() {

@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
@@ -6,6 +6,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttState;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
@@ -14,6 +15,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.discoveryTopic;
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
@@ -27,10 +31,12 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
         super(
                 virtualClu, remoteCLU,
                 clu, object,
+                discoveryTopic(discoveryPrefix, "light", uniqueId),
                 new MqttDiscoveryLight(
                         object.getName(),
                         uniqueId,
-                        "%s/%s/%s".formatted(discoveryPrefix, "light", uniqueId), "~/set", "~/state",
+                        rootTopic(clu, object),
+                        null, "~/set", "~/state",
                         null,
                         null,
                         "json",

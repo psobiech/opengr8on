@@ -36,19 +36,33 @@ import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
 import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
 
     public static final int INDEX = 1;
+
+    private static final Set<SpecificObjectType> ENABLED_OBJECT_TYPES = Set.of(
+            SpecificObjectType.PANEL_TEMPERATURE,
+            SpecificObjectType.PANEL_LUMINOSITY,
+//                    SpecificObjectType.POWER_SUPPLY_VOLTAGE,
+            SpecificObjectType.ROLLER_SHUTTER,
+            SpecificObjectType.DOUT,
+            SpecificObjectType.DIMM,
+            SpecificObjectType.LED_RGB,
+            SpecificObjectType.BUTTON,
+            SpecificObjectType.PANEL_BUTTON
+    );
 
     private final ProjectObjectRegistry objectRegistry;
 
@@ -58,7 +72,7 @@ public class RemoteCLU extends VirtualObject {
 
     private final VirtualCLU virtualClu;
 
-    private final Map<String, RemoteCLUDevice> devices = new Hashtable<>();
+    private final Map<String, RemoteCLUDevice> devices = new ConcurrentHashMap<>();
 
     private boolean mqttInitialized = false;
 
@@ -158,7 +172,14 @@ public class RemoteCLU extends VirtualObject {
             final MqttDiscoveryDevice mqttDiscoveryDevice = new MqttDiscoveryDevice(clu);
 
             final RemoteCLUDevice sensor;
-            switch (object.getType()) {
+            final SpecificObjectType objectType = object.getType();
+            if (!ENABLED_OBJECT_TYPES.contains(objectType)) {
+                LOGGER.info("Ignoring object {} of type {} on CLU {}", object.getNameOnCLU(), objectType, name);
+
+                continue;
+            }
+
+            switch (objectType) {
                 case PANEL_TEMPERATURE -> sensor = new RemoteCLUTemperatureSensor(
                         virtualClu, this,
                         clu, object,
@@ -227,7 +248,6 @@ public class RemoteCLU extends VirtualObject {
 
     public void mqttOnValueChange(String nameOnCLU, LuaValue arg2) {
         final RemoteCLUDevice remoteCLUDevice = devices.get(nameOnCLU);
-
         if (remoteCLUDevice != null) {
             LOGGER.trace("Received event: mqttOnValueChange(\"{}->{}\")", name, nameOnCLU);
 
@@ -267,7 +287,7 @@ public class RemoteCLU extends VirtualObject {
 
     private LuaValue remoteExecute(SpecificObject object, String script) {
         return Util.timed(
-                LOGGER, "(%s) %s".formatted(object.getName(), script), 64,
+                LOGGER, "%s:execute(%s) // %s".formatted(getName(), script, object.getName()), 64,
                 () ->
                         client.execute(script)
                               .map(this::asLuaValue)
@@ -277,7 +297,7 @@ public class RemoteCLU extends VirtualObject {
 
     private LuaValue remoteExecute(String script) {
         return Util.timed(
-                LOGGER, script, 64,
+                LOGGER, "%s:execute(%s)".formatted(getName(), script), 64,
                 () ->
                         client.execute(script)
                               .map(this::asLuaValue)

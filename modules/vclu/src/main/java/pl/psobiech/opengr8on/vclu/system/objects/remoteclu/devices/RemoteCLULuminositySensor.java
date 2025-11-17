@@ -1,4 +1,4 @@
-package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
+package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.DoubleNode;
@@ -6,11 +6,15 @@ import org.luaj.vm2.LuaValue;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumericFloat;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
+
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.discoveryTopic;
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
@@ -24,10 +28,12 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
         super(
                 virtualClu, remoteCLU,
                 clu, object,
+                discoveryTopic(discoveryPrefix, "sensor", uniqueId),
                 new MqttDiscoveryNumericFloat(
                         object.getName(),
                         uniqueId,
-                        "%s/%s/%s".formatted(discoveryPrefix, "sensor", uniqueId), null, "~/state",
+                        rootTopic(clu, object),
+                        null, null, "~/state",
                         null,
                         "%",
                         null,

@@ -12,17 +12,17 @@ public class MqttDiscoveryButton extends MqttDiscovery {
 
     public MqttDiscoveryButton(
             String name, String uniqueId,
-            String rootTopic, String commandTopic, String stateTopic,
+            String rootTopic, String availabilityTopic, String commandTopic, String stateTopic,
             String deviceClass, String unitOfMeasurement,
             String schema, String valueTemplate, Set<String> eventTypes,
             MqttDiscoveryDevice device
     ) {
         super(
                 name, uniqueId,
-                rootTopic, commandTopic, stateTopic,
+                rootTopic, availabilityTopic, commandTopic, stateTopic,
                 deviceClass, unitOfMeasurement,
                 schema, valueTemplate,
-                device, new MqttDiscoveryOrigin()
+                device, MqttDiscoveryOrigin.INSTANCE
         );
 
         this.eventTypes = eventTypes;
