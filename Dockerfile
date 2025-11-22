@@ -80,3 +80,7 @@ RUN chown -R $USER_UID:$USER_GID /opt/docker/runtime && \
     chmod a=,u+rx /opt/docker/entrypoint.sh
 
 ENTRYPOINT [ "/opt/docker/entrypoint.sh" ]
+
+FROM app-runtime AS app-runtime-cached
+
+RUN java --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -server -XX:+UseContainerSupport -XX:+UseZGC -XX:+UseDynamicNumberOfGCThreads -XX:+UseCompactObjectHeaders -XX:AOTCacheOutput=/opt/docker/app.aot -Dexit=4 -jar /opt/docker/vclu.jar

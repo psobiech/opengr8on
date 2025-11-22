@@ -28,6 +28,7 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -35,7 +36,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * VCLU Entry Point
@@ -77,11 +80,19 @@ public class Main {
 
         final CLUDevice cluDevice = readCluDevice(aDriveDirectory, networkInterface, cluKeys);
 
+        final CountDownLatch stopLatch = new CountDownLatch(1);
+        final int exitAfterSeconds = Optional.ofNullable(System.getProperty("exit"))
+                                             .map(Integer::parseInt)
+                                             .orElse(0);
+        if (exitAfterSeconds > 0) {
+            ThreadUtil.getInstance().schedule(stopLatch::countDown, exitAfterSeconds, TimeUnit.SECONDS);
+        }
+
         try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), cluDevice)) {
             server.start();
 
             // sleep until interrupted
-            new CountDownLatch(1).await();
+            stopLatch.await();
         }
     }
 
