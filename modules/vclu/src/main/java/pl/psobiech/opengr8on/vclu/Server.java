@@ -18,7 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +58,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public class Server implements Closeable {
+
     protected static final int BUFFER_SIZE = 2048;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
@@ -492,7 +492,7 @@ public class Server implements Closeable {
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
             this.mainThread.start();
 
-            checkAlive();
+            validateCheckAlive();
         } catch (Exception e) {
             LOGGER.error("Could not start VCLU... Entering VCLU emergency mode!", e);
 
@@ -506,28 +506,28 @@ public class Server implements Closeable {
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
             this.mainThread.start();
 
-            checkAlive();
+            try {
+                validateCheckAlive();
+            } catch (Exception ignored) {
+                // NOP
+            }
         }
 
         initialize();
     }
 
-    private void checkAlive() {
-        LuaError lastException;
+    private void validateCheckAlive() {
         int retries = RESTART_RETRIES;
         do {
-            try {
-                luaCall(LuaScriptCommand.CHECK_ALIVE);
-
+            final LuaValue response = luaCall(LuaScriptCommand.CHECK_ALIVE);
+            if (!response.isnil() && !response.optjstring(LuaThread.EMERGENCY_VALUE).equals(LuaThread.EMERGENCY_VALUE)) {
                 return;
-            } catch (LuaError e) {
-                lastException = e;
-
-                Util.sleep(RETRY_DELAY);
             }
+
+            Util.sleep(RETRY_DELAY);
         } while (retries-- > 0);
 
-        throw lastException;
+        throw new UnexpectedException("VCLU was not responding in time...");
     }
 
     private void initialize() {
@@ -538,8 +538,17 @@ public class Server implements Closeable {
     }
 
     protected LuaValue luaCall(String script) {
+        if (script.equals(LuaScriptCommand.CHECK_ALIVE)) {
+            if (this.mainThread == null) {
+                return LuaValue.valueOf(LuaThread.EMERGENCY_VALUE);
+            }
+
+            return mainThread.virtualSystem()
+                             .luaCall(LuaScriptCommand.CHECK_ALIVE);
+        }
+
         if (this.mainThread == null) {
-            throw new UnexpectedException("LUA is not initialized");
+            return LuaValue.NIL;
         }
 
         return mainThread.virtualSystem()
@@ -566,14 +575,7 @@ public class Server implements Closeable {
             script = CLIENT_REGISTER_METHOD_PREFIX + "\"" + remoteAddress + "\", " + script.substring(CLIENT_REGISTER_METHOD_PREFIX.length());
         }
 
-        LuaValue luaValue;
-        try {
-            luaValue = luaCall(script);
-        } catch (LuaError e) {
-            LOGGER.error(e.getMessage(), e);
-
-            luaValue = LuaValue.NIL;
-        }
+        LuaValue luaValue = luaCall(script);
 
         return Optional.of(
                 new Response(
