@@ -19,14 +19,22 @@
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.luaj.vm2.Globals;
+import org.luaj.vm2.LoadState;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.compiler.LuaC;
+import org.luaj.vm2.luajc.LuaJC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
+import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.util.Util;
@@ -46,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
@@ -55,7 +64,7 @@ public class RemoteCLU extends VirtualObject {
     private static final Set<SpecificObjectType> ENABLED_OBJECT_TYPES = Set.of(
             SpecificObjectType.PANEL_TEMPERATURE,
             SpecificObjectType.PANEL_LUMINOSITY,
-//                    SpecificObjectType.POWER_SUPPLY_VOLTAGE,
+            SpecificObjectType.POWER_SUPPLY_VOLTAGE,
             SpecificObjectType.ROLLER_SHUTTER,
             SpecificObjectType.DOUT,
             SpecificObjectType.DIMM,
@@ -66,11 +75,13 @@ public class RemoteCLU extends VirtualObject {
 
     private final ProjectObjectRegistry objectRegistry;
 
-    private final CLUClient client;
+//    private final CLUClient client;
 
     private final Globals localLuaContext;
 
     private final VirtualCLU virtualClu;
+
+    private final GenericObjectPool<CLUClient> clientPool;
 
     private final Map<String, RemoteCLUDevice> devices = new ConcurrentHashMap<>();
 
@@ -85,10 +96,40 @@ public class RemoteCLU extends VirtualObject {
         this.objectRegistry = projectObjectRegistry;
 
         this.localLuaContext = new Globals();
-        // LoadState.install(globals);
-        LuaC.install(localLuaContext);
+        localLuaContext.compiler = LuaC.instance;
+        localLuaContext.loader = LuaJC.instance;
+        localLuaContext.undumper = LoadState.instance;
 
-        this.client = new CLUClient(localAddress, address, cipherKey, port);
+        final GenericObjectPoolConfig<CLUClient> clientPoolConfiguration = new GenericObjectPoolConfig<>();
+        clientPoolConfiguration.setMinIdle(1);
+        clientPoolConfiguration.setMaxTotal(4);
+        clientPoolConfiguration.setBlockWhenExhausted(true);
+
+        this.clientPool = new GenericObjectPool<>(
+                new BasePooledObjectFactory<>() {
+                    @Override
+                    public CLUClient create() throws Exception {
+                        return new CLUClient(localAddress, address, cipherKey, port);
+                    }
+
+                    @Override
+                    public PooledObject<CLUClient> wrap(CLUClient cluClient) {
+                        return new DefaultPooledObject<>(cluClient);
+                    }
+
+                    @Override
+                    public void destroyObject(PooledObject<CLUClient> pooledObject) {
+                        IOUtil.closeQuietly(pooledObject.getObject());
+                    }
+                },
+                clientPoolConfiguration
+        );
+
+        try {
+            clientPool.preparePool();
+        } catch (Exception e) {
+            throw new UnexpectedException(e);
+        }
 
         register(Methods.EXECUTE, (LuaOneArgFunction) arg1 -> {
             final String script = arg1.checkjstring();
@@ -192,12 +233,12 @@ public class RemoteCLU extends VirtualObject {
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
-//                case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
-//                        virtualClu, this,
-//                        clu, object,
-//                        discoveryPrefix,
-//                        uniqueId, mqttDiscoveryDevice
-//                );
+                case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
+                        virtualClu, this,
+                        clu, object,
+                        discoveryPrefix,
+                        uniqueId, mqttDiscoveryDevice
+                );
                 case ROLLER_SHUTTER -> sensor = new RemoteCLUShutter(
                         virtualClu, this,
                         clu, object,
@@ -286,23 +327,43 @@ public class RemoteCLU extends VirtualObject {
     }
 
     private LuaValue remoteExecute(SpecificObject object, String script) {
-        return Util.timed(
-                LOGGER, "%s:execute(%s) // %s".formatted(getName(), script, object.getName()), 64,
-                () ->
-                        client.execute(script)
-                              .map(this::asLuaValue)
-                              .orElse(LuaValue.NIL)
+        return borrowClient(
+                client ->
+                        Util.timed(
+                                LOGGER, "%s:execute(%s) // %s".formatted(getName(), script, object.getName()), 64,
+                                () ->
+                                        client.execute(script)
+                                              .map(this::asLuaValue)
+                                              .orElse(LuaValue.NIL)
+                        )
         );
     }
 
     private LuaValue remoteExecute(String script) {
-        return Util.timed(
-                LOGGER, "%s:execute(%s)".formatted(getName(), script), 64,
-                () ->
-                        client.execute(script)
-                              .map(this::asLuaValue)
-                              .orElse(LuaValue.NIL)
+        return borrowClient(
+                client ->
+                        Util.timed(
+                                LOGGER, "%s:execute(%s)".formatted(getName(), script), 64,
+                                () ->
+                                        client.execute(script)
+                                              .map(this::asLuaValue)
+                                              .orElse(LuaValue.NIL)
+                        )
         );
+    }
+
+    private <T> T borrowClient(Function<CLUClient, T> function) {
+        try {
+            final CLUClient client = clientPool.borrowObject();
+
+            try {
+                return function.apply(client);
+            } finally {
+                clientPool.returnObject(client);
+            }
+        } catch (Exception e) {
+            throw new UnexpectedException(e);
+        }
     }
 
     private LuaValue asLuaValue(String returnValue) {
@@ -335,7 +396,7 @@ public class RemoteCLU extends VirtualObject {
     public void close() {
         super.close();
 
-        IOUtil.closeQuietly(client);
+        IOUtil.closeQuietly(clientPool);
     }
 
     private enum Methods implements IMethod {

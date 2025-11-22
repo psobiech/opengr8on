@@ -97,7 +97,7 @@ public class LuaThread implements Closeable {
             return globals.load("return %s".formatted(script))
                           .call();
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.error("{} (script: {})", e.getMessage(), script, e);
 
             return LuaValue.NIL;
         } finally {

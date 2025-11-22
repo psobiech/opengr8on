@@ -120,9 +120,6 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
             }
 
             final JsonNode stateNode = stateNodeOptional.get();
-            if (stateNode.equals(lastState)) {
-                return lastState;
-            }
 
             virtualClu.getMqttClient()
                       .publish(

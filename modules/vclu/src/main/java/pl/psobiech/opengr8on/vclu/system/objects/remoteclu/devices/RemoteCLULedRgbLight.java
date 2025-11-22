@@ -197,9 +197,6 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             }
 
             final JsonNode stateNode = stateNodeOptional.get();
-            if (stateNode.equals(lastState)) {
-                return lastState;
-            }
 
             virtualClu.getMqttClient()
                       .publish(
