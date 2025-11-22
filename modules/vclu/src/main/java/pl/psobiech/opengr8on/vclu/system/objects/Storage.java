@@ -21,6 +21,7 @@ package pl.psobiech.opengr8on.vclu.system.objects;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
@@ -31,12 +32,8 @@ import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -49,7 +46,7 @@ public class Storage extends VirtualObject {
 
     private final ReentrantLock variablesLock = new ReentrantLock();
 
-    private final Map<String, LuaValue> variables = new ConcurrentHashMap<>();
+    private final Map<String, LuaValue> variables = new HashMap<>();
 
     public Storage(VirtualSystem virtualSystem, String name, Path storageRootPath) {
         super(
@@ -64,14 +61,9 @@ public class Storage extends VirtualObject {
         set(Features.STORAGE_UTILIZATION, LuaValue.valueOf(0));
 
         register(Methods.STORE, (LuaOneArgFunction) arg1 -> {
-            final String variableName = arg1.checkjstring();
+            // final String variableName = arg1.checkjstring();
 
-            variablesLock.lock();
-            try {
-                variables.put(variableName, LuaValue.NIL);
-            } finally {
-                variablesLock.unlock();
-            }
+            updateAndStore();
 
             return LuaValue.NIL;
         });
@@ -79,15 +71,12 @@ public class Storage extends VirtualObject {
         register(Methods.ERASE_ALL, (LuaOneArgFunction) arg1 -> {
             variablesLock.lock();
             try {
-                final Set<String> variableNames = new HashSet<>(variables.keySet());
-                for (String variableName : variableNames) {
-                    variables.put(variableName, LuaValue.NIL);
-                }
-
-                FileUtil.truncate(storagePath);
+                variables.clear();
             } finally {
                 variablesLock.unlock();
             }
+
+            FileUtil.truncate(storagePath);
 
             return LuaValue.NIL;
         });
@@ -97,6 +86,7 @@ public class Storage extends VirtualObject {
     public void setup() {
         restore();
 
+        updateAndStore();
         scheduler.scheduleAtFixedRate(this::updateAndStore, 1, 1, TimeUnit.SECONDS);
     }
 
@@ -106,34 +96,52 @@ public class Storage extends VirtualObject {
             return;
         }
 
+        final Map<String, Object> storedVariables;
+        try {
+            storedVariables = ObjectMapperFactory.JSON.readValue(storagePath.toFile(), HashMap.class);
+        } catch (IOException e) {
+            throw new UnexpectedException(e);
+        }
+
         variablesLock.lock();
         try {
-            final Map<String, Object> storedVariables = ObjectMapperFactory.JSON.readValue(storagePath.toFile(), HashMap.class);
             for (Entry<String, Object> entry : storedVariables.entrySet()) {
                 variables.put(entry.getKey(), LuaUtil.fromObject(entry.getValue()));
             }
-        } catch (IOException e) {
-            throw new UnexpectedException(e);
         } finally {
             variablesLock.unlock();
         }
     }
 
     private void updateAndStore() {
-        boolean changed = false;
-        final Map<String, Object> storedVariables = new HashMap<>();
-
+        final Set<String> variableNames;
         variablesLock.lock();
         try {
-            final Set<String> variableNames = new HashSet<>(variables.keySet());
-            for (String variableName : variableNames) {
-                final LuaValue value = virtualSystem.luaCall(variableName);
-                if (!value.equals(variables.put(variableName, value))) {
+            variableNames = new HashSet<>(variables.keySet());
+        } finally {
+            variablesLock.unlock();
+        }
+
+        final Map<String, LuaValue> currentLuaValues = new HashMap<>();
+        final Map<String, Object> newValues = new HashMap<>();
+        for (String variableName : variableNames) {
+            final LuaValue value = getValue(variableName);
+
+            currentLuaValues.put(variableName, value);
+            newValues.put(variableName, LuaUtil.asObject(value));
+        }
+
+        boolean changed = false;
+        variablesLock.lock();
+        try {
+            for (Entry<String, LuaValue> entry : currentLuaValues.entrySet()) {
+                final String variableName = entry.getKey();
+                final LuaValue currentValue = entry.getValue();
+
+                final LuaValue previousValue = variables.put(variableName, currentValue);
+                if (!Objects.equals(previousValue, currentValue)) {
                     changed = true;
                 }
-
-                variables.put(variableName, value);
-                storedVariables.put(variableName, LuaUtil.asObject(value));
             }
         } finally {
             variablesLock.unlock();
@@ -141,29 +149,17 @@ public class Storage extends VirtualObject {
 
         if (changed) {
             try {
-                ObjectMapperFactory.JSON.writeValue(storagePath.toFile(), storedVariables);
+                ObjectMapperFactory.JSON.writeValue(storagePath.toFile(), newValues);
             } catch (IOException e) {
                 throw new UnexpectedException(e);
             }
         }
     }
 
-    private void store() {
-        variablesLock.lock();
-        try {
-            final Map<String, Object> storedVariables = new HashMap<>();
-            for (Entry<String, LuaValue> entry : variables.entrySet()) {
-                final String variableName = entry.getKey();
-
-                storedVariables.put(variableName, LuaUtil.asObject(entry.getValue()));
-            }
-
-            ObjectMapperFactory.JSON.writeValue(storagePath.toFile(), storedVariables);
-        } catch (IOException e) {
-            throw new UnexpectedException(e);
-        } finally {
-            variablesLock.unlock();
-        }
+    private LuaValue getValue(String variableName) {
+        return virtualSystem.luaCall(
+                LuaScriptCommand.GET_VAR + "(\"%s\")".formatted(variableName)
+        );
     }
 
     private enum Features implements IFeature {

@@ -31,9 +31,9 @@ import java.util.Optional;
 public class LuaScriptCommand {
     public static final String CHECK_ALIVE = "checkAlive()";
 
-    public static final String GET_VARS = "getVar";
+    public static final String GET_VAR = "getVar";
 
-    public static final String SET_VARS = "setVar";
+    public static final String SET_VAR = "setVar";
 
     private static final int IP_ADDRESS_PART = 1;
 

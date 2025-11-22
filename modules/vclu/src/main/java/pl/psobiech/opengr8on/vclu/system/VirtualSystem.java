@@ -140,7 +140,7 @@ public class VirtualSystem implements Closeable {
 
     public LuaValue luaCall(String script) {
         return Util.timed(
-                LOGGER, "luaCall(%s)".formatted(script), 8,
+                LOGGER, "luaCall(%s)".formatted(script), 24,
                 () ->
                         luaThread.luaCall(script)
         );
