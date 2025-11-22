@@ -5,6 +5,7 @@ import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttColorState;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
@@ -42,7 +43,7 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
                         null,
                         "json",
                         null,
-                        Set.of("brightness"),
+                        Set.of(MqttColorState.ColorMode.BRIGHTNESS.key()),
                         mqttDiscoveryDevice
                 )
         );

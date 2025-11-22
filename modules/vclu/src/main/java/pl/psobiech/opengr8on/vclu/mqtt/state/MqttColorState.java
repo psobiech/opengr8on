@@ -35,6 +35,7 @@ public class MqttColorState extends MqttState {
     public enum ColorMode {
         RGBW("rgbw"),
         BRIGHTNESS("brightness"),
+        ON_OFF("onoff"),
         //
         ;
 
