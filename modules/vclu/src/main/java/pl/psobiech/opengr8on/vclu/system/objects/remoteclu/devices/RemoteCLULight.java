@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
+import pl.psobiech.opengr8on.vclu.mqtt.state.MqttColorState;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttState;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
@@ -13,6 +14,7 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -41,7 +43,7 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
                         null,
                         "json",
                         null,
-                        null,
+                        Set.of(MqttColorState.ColorMode.ON_OFF.key()),
                         mqttDiscoveryDevice
                 )
         );
