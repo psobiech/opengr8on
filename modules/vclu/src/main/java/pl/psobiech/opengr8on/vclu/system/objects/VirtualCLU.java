@@ -123,16 +123,17 @@ public class VirtualCLU extends VirtualObject implements Closeable {
             final LuaValue luaValue = get(Features.MQTT_MESSAGE);
         });
 
-        scheduler.scheduleAtFixedRate(() -> {
-                                          final ZonedDateTime lastDateTime = currentDateTime;
-                                          currentDateTime = getCurrentDateTime();
+        scheduler.scheduleAtFixedRate(
+                () -> {
+                    final ZonedDateTime lastDateTime = currentDateTime;
+                    currentDateTime = getCurrentDateTime();
 
-                                          if (!currentDateTime.getZone().equals(lastDateTime.getZone())
-                                                  || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
-                                              triggerEvent(Events.TIME_CHANGE);
-                                          }
-                                      },
-                                      1, 1, TimeUnit.SECONDS
+                    if (!currentDateTime.getZone().equals(lastDateTime.getZone())
+                            || Duration.between(lastDateTime, currentDateTime).abs().getSeconds() >= TIME_CHANGE_EVENT_TRIGGER_DELTA_SECONDS) {
+                        triggerEvent(Events.TIME_CHANGE);
+                    }
+                },
+                1, 1, TimeUnit.SECONDS
         );
     }
 

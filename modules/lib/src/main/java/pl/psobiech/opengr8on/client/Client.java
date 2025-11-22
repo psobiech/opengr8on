@@ -162,7 +162,8 @@ public class Client implements Closeable {
                 do {
                     final long startedAt = System.nanoTime();
 
-                    final Optional<Payload> payloadOptional = awaitResponsePayload(uuid, responseCipherKey, threadTimeout);
+                    final Optional<Payload> payloadOptional = awaitResponseEncryptedPayload(uuid, responseCipherKey, threadTimeout)
+                            .flatMap(encryptedPayload -> Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload));
                     if (payloadOptional.isPresent()) {
                         final Payload payload = payloadOptional.get();
 
@@ -230,14 +231,13 @@ public class Client implements Closeable {
         //                .formatted(uuid, Payload.of(ipAddress, port, encryptedRequest), cipherKey)
         //        );
 
+        final DatagramPacket requestPacket = new DatagramPacket(encryptedRequest, encryptedRequest.length);
+        requestPacket.setAddress(requestPayload.address());
+        requestPacket.setPort(requestPayload.port());
+
         socketLock.lock();
         try {
             socket.discard(responsePacket);
-
-            final DatagramPacket requestPacket = new DatagramPacket(encryptedRequest, encryptedRequest.length);
-            requestPacket.setAddress(requestPayload.address());
-            requestPacket.setPort(requestPayload.port());
-
             socket.send(requestPacket);
         } finally {
             socketLock.unlock();
@@ -247,7 +247,7 @@ public class Client implements Closeable {
     /**
      * @return decrypted response, or empty() if waiting exceed the timeout or decryption key cannot decipher the response
      */
-    protected Optional<Payload> awaitResponsePayload(String uuid, CipherKey responseCipherKey, Duration timeout) {
+    protected Optional<Payload> awaitResponseEncryptedPayload(String uuid, CipherKey responseCipherKey, Duration timeout) {
         final Optional<Payload> encryptedPayload = socket.tryReceive(responsePacket, timeout);
         if (encryptedPayload.isEmpty()) {
             LOGGER.trace(
@@ -258,7 +258,7 @@ public class Client implements Closeable {
             return Optional.empty();
         }
 
-        return Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload.get());
+        return encryptedPayload;
     }
 
     @Override

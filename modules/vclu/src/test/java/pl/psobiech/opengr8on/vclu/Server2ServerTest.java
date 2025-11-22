@@ -18,8 +18,8 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.luaj.vm2.LuaValue;
@@ -31,26 +31,23 @@ import pl.psobiech.opengr8on.client.device.CipherTypeEnum;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ResourceUtil;
-import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class Server2ServerTest {
-    private static CipherKey projectCipherKey;
+    private static final CipherKey projectCipherKey = Mocks.cipherKey();
 
-    private static MockServer server1;
+    private MockServer mockServer0;
 
-    private static MockServer server2;
+    private MockServer mockServer1;
 
-    @BeforeAll
-    static void setUp() throws Exception {
-        projectCipherKey = Mocks.cipherKey();
+    @BeforeEach
+    void setUp() throws Exception {
 
-        final long serialNumber2 = Mocks.serialNumber();
-        server2 = new MockServer(
+        mockServer1 = new MockServer(
                 projectCipherKey,
                 new CLUDevice(
-                        serialNumber2,
+                        Mocks.serialNumber(),
                         Mocks.macAddress(),
                         MockServer.LOCALHOST,
                         CipherTypeEnum.PROJECT,
@@ -61,18 +58,17 @@ class Server2ServerTest {
 
         FileUtil.linkOrCopy(
                 ResourceUtil.classPath("remote/OM2.LUA"),
-                server2.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
+                mockServer1.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
         );
 
-        server2.start();
+        mockServer1.start();
 
-        final long serialNumber1 = Mocks.serialNumber();
-        server1 = new MockServer(
+        mockServer0 = new MockServer(
                 projectCipherKey,
                 new CLUDevice(
-                        serialNumber1,
+                        Mocks.serialNumber(),
                         Mocks.macAddress(),
-                        MockServer.LOCALHOST, server2.getPort(),
+                        MockServer.LOCALHOST, mockServer1.getPort(),
                         CipherTypeEnum.PROJECT,
                         Mocks.iv(),
                         Mocks.pin()
@@ -81,36 +77,36 @@ class Server2ServerTest {
 
         FileUtil.linkOrCopy(
                 ResourceUtil.classPath("remote/OM1.LUA"),
-                server1.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
+                mockServer0.getADriveDirectory().resolve(CLUFiles.OM_LUA.getFileName())
         );
 
-        server1.start();
+        mockServer0.start();
     }
 
-    @AfterAll
-    static void tearDown() throws Exception {
-        IOUtil.closeQuietly(server1, server2);
+    @AfterEach
+    void tearDown() throws Exception {
+        IOUtil.closeQuietly(mockServer0, mockServer1);
     }
 
     @Test
     @Timeout(30)
     void remoteCommunication() throws Exception {
-        assertEquals(LuaValue.NIL, server1.getServer().luaCall("testVariable"));
+        final Server server0 = mockServer0.getServer();
+        final Server server1 = mockServer1.getServer();
 
-        final LuaValue initialValue2 = server2.getServer().luaCall("testVariable");
-        assertEquals(333, LuaUtil.asObject(initialValue2));
+        assertEquals(LuaValue.NIL, server0.luaCall("testVariable"));
+        assertEquals(333, server1.luaCall("testVariable").checkint());
 
-        server1.getServer().luaCall("CLU1:execute(0, \"setVar(\\\"testVariable\\\", getVar(\\\"testVariable\\\")+ 1)\")");
+        server0.luaCall("CLU1:execute(0, \"setVar(\\\"testVariable\\\", getVar(\\\"testVariable\\\") + 1)\")");
+        assertEquals(334, server1.luaCall("testVariable").checkint());
 
-        LuaValue server2value;
-        do {
-            server2value = server2.getServer().luaCall("testVariable");
-        } while (server2value.checkint() != 334);
+        server0.luaCall("CLU1:execute(0, \"setVar(\\\"testVariable\\\", getVar(\\\"testVariable\\\") + 1)\")");
+        assertEquals(335, server1.luaCall("testVariable").checkint());
 
-        final LuaValue resultValueRemote = server1.getServer().luaCall("CLU1:execute(0, \"getVar(\\\"testVariable\\\")\")");
-        assertEquals(334, LuaUtil.asObject(resultValueRemote));
+        final LuaValue resultValueRemote = server0.luaCall("CLU1:execute(0, \"getVar(\\\"testVariable\\\")\")");
+        assertEquals(335, resultValueRemote.checkint());
 
-        final LuaValue resultValueLocal = server2.getServer().luaCall("testVariable");
-        assertEquals(334, LuaUtil.asObject(resultValueLocal));
+        final LuaValue resultValueLocal = server1.luaCall("testVariable");
+        assertEquals(335, resultValueLocal.checkint());
     }
 }

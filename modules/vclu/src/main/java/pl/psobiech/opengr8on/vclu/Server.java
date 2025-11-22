@@ -67,7 +67,7 @@ public class Server implements Closeable {
 
     private static final int TIMEOUT_MILLIS = 1000;
 
-    private static final int RESTART_RETRIES = 8;
+    private static final int RESTART_RETRIES = 12;
 
     private static final long RETRY_DELAY = 100L;
 
@@ -517,17 +517,29 @@ public class Server implements Closeable {
     }
 
     private void validateCheckAlive() {
+        Exception lastException = null;
         int retries = RESTART_RETRIES;
         do {
-            final LuaValue response = luaCall(LuaScriptCommand.CHECK_ALIVE);
-            if (!response.isnil() && !response.optjstring(LuaThread.EMERGENCY_VALUE).equals(LuaThread.EMERGENCY_VALUE)) {
-                return;
+            try {
+                final LuaValue response = luaCall(LuaScriptCommand.CHECK_ALIVE);
+                if (!response.isnil()) {
+                    final String healthy = response.optjstring(LuaThread.EMERGENCY_VALUE);
+                    if (healthy.equals(LuaThread.EMERGENCY_VALUE)) {
+                        throw new UnexpectedException("VCLU started in emergency mode...");
+                    }
+
+                    return;
+                }
+            } catch (Exception e) {
+                LOGGER.trace(e.getMessage(), e);
+
+                lastException = e;
             }
 
             Util.sleep(RETRY_DELAY);
         } while (retries-- > 0);
 
-        throw new UnexpectedException("VCLU was not responding in time...");
+        throw new UnexpectedException("VCLU was not responding in time...", lastException);
     }
 
     private void initialize() {
@@ -575,7 +587,7 @@ public class Server implements Closeable {
             script = CLIENT_REGISTER_METHOD_PREFIX + "\"" + remoteAddress + "\", " + script.substring(CLIENT_REGISTER_METHOD_PREFIX.length());
         }
 
-        LuaValue luaValue = luaCall(script);
+        final LuaValue luaValue = luaCall(script);
 
         return Optional.of(
                 new Response(

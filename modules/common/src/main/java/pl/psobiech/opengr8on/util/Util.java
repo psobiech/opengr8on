@@ -192,12 +192,18 @@ public final class Util {
 
     public static <T> T timed(Logger logger, String opertion, long expectedTimeMs, Supplier<T> fn) {
         final long startedAt = System.nanoTime();
+
+        T response = null;
         try {
-            return fn.get();
+            response = fn.get();
+
+            return response;
         } finally {
             final long millis = Duration.of(System.nanoTime() - startedAt, ChronoUnit.NANOS).toMillis();
             if (millis > expectedTimeMs) {
-                logger.warn("Operation {} took over {}ms: {}ms", opertion, expectedTimeMs, millis);
+                logger.warn("Operation {} = '{}' took {}ms (over {}ms)", opertion, response, millis, expectedTimeMs);
+            } else if (logger.isTraceEnabled()) {
+                logger.trace("Operation {} = '{}' took {}ms", opertion, response, millis);
             }
         }
     }

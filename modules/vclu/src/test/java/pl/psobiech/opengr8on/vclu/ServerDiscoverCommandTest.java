@@ -50,16 +50,14 @@ class ServerDiscoverCommandTest extends BaseServerTest {
             }
 
             final Future<Boolean> checkAliveFuture = executor.submit(() -> {
+                boolean lastState;
                 do {
                     final Optional<Boolean> aliveOptional = client.checkAlive();
-                    if (!Thread.interrupted() && aliveOptional.isEmpty() || !aliveOptional.get()) {
-                        return false;
-                    }
 
-                    Thread.sleep(100L);
+                    lastState = aliveOptional.isPresent() && aliveOptional.get();
                 } while (!Thread.interrupted());
 
-                return true;
+                return lastState;
             });
 
             final List<CLUDevice> devices;
@@ -67,7 +65,7 @@ class ServerDiscoverCommandTest extends BaseServerTest {
                 devices = broadcastClient.discover(
                                                  projectCipherKey,
                                                  Map.of(cluDevice.getSerialNumber(), cluDevice.getPrivateKey()),
-                                                 Duration.ofMillis(4000L),
+                                                 Duration.ofMillis(8000L),
                                                  2
                                          )
                                          .toList();

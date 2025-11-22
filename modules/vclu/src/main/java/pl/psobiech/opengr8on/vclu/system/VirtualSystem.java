@@ -223,6 +223,8 @@ public class VirtualSystem implements Closeable {
                 final long objectStartTime = System.nanoTime();
                 try {
                     runnable.accept(object);
+                } catch (RejectedExecutionException e) {
+                    LOGGER.trace(e.getMessage(), e);
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage(), e);
                 } finally {

@@ -47,7 +47,7 @@ public class CLUClient extends Client implements Closeable {
 
     private final CLUDevice cluDevice;
 
-    private final TFTPClient tftpClient;
+    private TFTPClient tftpClient = null;
 
     private CipherKey cipherKey;
 
@@ -79,8 +79,6 @@ public class CLUClient extends Client implements Closeable {
         this.cluDevice = cluDevice;
 
         this.cipherKey = cipherKey;
-
-        this.tftpClient = new TFTPClient(SocketUtil.udpRandomPort(localAddress));
     }
 
     /**
@@ -233,6 +231,10 @@ public class CLUClient extends Client implements Closeable {
      * @param location remote location, eg. a:\MAIN.LUA
      */
     public void uploadFile(Path path, String location) {
+        if (tftpClient == null) {
+            this.tftpClient = new TFTPClient(SocketUtil.udpRandomPort(localAddress));
+        }
+
         try {
             tftpClient.upload(
                     cluDevice.getAddress(),
@@ -252,6 +254,10 @@ public class CLUClient extends Client implements Closeable {
      * @param path     target path for the file contents
      */
     public Optional<Path> downloadFile(String location, Path path) {
+        if (tftpClient == null) {
+            this.tftpClient = new TFTPClient(SocketUtil.udpRandomPort(localAddress));
+        }
+
         try {
             tftpClient.download(
                     cluDevice.getAddress(),
@@ -291,17 +297,21 @@ public class CLUClient extends Client implements Closeable {
         final String uuid = uuid(command);
 
         socketLock.lock();
+        final Optional<Payload> payloadOptional;
         try {
             send(uuid, cipherKey, cluDevice.getAddress(), command.asByteArray());
 
-            return Util.repeatUntilTimeout(
+            payloadOptional = Util.repeatUntilTimeout(
                     timeout,
                     duration ->
-                            awaitResponsePayload(uuid, responseCipherKey, duration)
+                            awaitResponseEncryptedPayload(uuid, responseCipherKey, duration)
             );
         } finally {
             socketLock.unlock();
         }
+
+        return payloadOptional
+                .flatMap(encryptedPayload -> Client.tryDecrypt(uuid, responseCipherKey, encryptedPayload));
     }
 
     /**
@@ -311,5 +321,12 @@ public class CLUClient extends Client implements Closeable {
         final String uuid = uuid(command);
 
         send(uuid, cipherKey, cluDevice.getAddress(), command.asByteArray());
+    }
+
+    @Override
+    public void close() {
+        super.close();
+
+        IOUtil.closeQuietly(tftpClient);
     }
 }
