@@ -297,36 +297,36 @@ public class RemoteCLU extends VirtualObject {
         }
     }
 
-    public LuaValue remoteSet(SpecificObject object, long index, float value) {
-        return remoteSet(object, index, String.valueOf(value));
+    public LuaValue remoteSet(SpecificObject object, long index, float param1) {
+        return remoteExecute(object, String.format("%s:set(%d, %f)", object.getNameOnCLU(), index, param1));
     }
 
     public LuaValue remoteSet(SpecificObject object, long index, int param1) {
-        return remoteSet(object, index, String.valueOf(param1));
+        return remoteExecute(object, String.format("%s:set(%d, %d)", object.getNameOnCLU(), index, param1));
     }
 
     public LuaValue remoteSet(SpecificObject object, long index, String param1) {
-        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, param1));
+        return remoteExecute(object, String.format("%s:set(%d, '%s')", object.getNameOnCLU(), index, param1));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, int param1) {
-        return remoteMethod(object, index, String.valueOf(param1));
+        return remoteExecute(object, String.format("%s:execute(%d, %d)", object.getNameOnCLU(), index, param1));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, int param1, int param2) {
-        return remoteMethod(object, index, String.valueOf(param1), String.valueOf(param2));
+        return remoteExecute(object, String.format("%s:execute(%d, %d, %d)", object.getNameOnCLU(), index, param1, param2));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, String param1, int param2) {
-        return remoteMethod(object, index, param1, String.valueOf(param2));
+        return remoteExecute(object, String.format("%s:execute(%d, '%s', %d)", object.getNameOnCLU(), index, param1, param2));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, String param1) {
-        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, param1));
+        return remoteExecute(object, String.format("%s:execute(%d, '%s')", object.getNameOnCLU(), index, param1));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index, String param1, String param2) {
-        return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, param1, param2));
+        return remoteExecute(object, String.format("%s:execute(%d, '%s', '%s')", object.getNameOnCLU(), index, param1, param2));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index) {
