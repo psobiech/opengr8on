@@ -92,7 +92,7 @@ public class MqttTopic extends VirtualObject {
     @Override
     public void setup() {
         final VirtualCLU virtualClu = virtualSystem.getVirtualClu();
-        if (virtualClu == null) {
+        if (virtualClu.getState() != VirtualCLU.State.OK) {
             return;
         }
 

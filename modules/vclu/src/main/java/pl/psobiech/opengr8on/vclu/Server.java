@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,18 +59,13 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public class Server implements Closeable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     protected static final int BUFFER_SIZE = 2048;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     private static final String CLIENT_REGISTER_METHOD_PREFIX = "SYSTEM:clientRegister(";
 
     private static final int TIMEOUT_MILLIS = 1000;
-
-    private static final int RESTART_RETRIES = 12;
-
-    private static final long RETRY_DELAY = 100L;
 
     protected final UDPSocket broadcastCommandSocket;
 
@@ -489,7 +485,7 @@ public class Server implements Closeable {
         IOUtil.closeQuietly(this.mainThread);
 
         try {
-            this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA);
+            this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.MAIN_LUA, false);
             this.mainThread.start();
 
             validateCheckAlive();
@@ -503,62 +499,33 @@ public class Server implements Closeable {
                     aDriveDirectory.resolve(CLUFiles.EMERGNCY_LUA.getFileName())
             );
 
-            this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA);
+            this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA, true);
             this.mainThread.start();
-
-            try {
-                validateCheckAlive();
-            } catch (Exception ignored) {
-                // NOP
-            }
-        }
+       }
 
         initialize();
     }
 
-    private void validateCheckAlive() {
-        Exception lastException = null;
-        int retries = RESTART_RETRIES;
-        do {
-            try {
-                final LuaValue response = luaCall(LuaScriptCommand.CHECK_ALIVE);
-                if (!response.isnil()) {
-                    final String healthy = response.optjstring(LuaThread.EMERGENCY_VALUE);
-                    if (healthy.equals(LuaThread.EMERGENCY_VALUE)) {
-                        throw new UnexpectedException("VCLU started in emergency mode...");
-                    }
-
-                    return;
-                }
-            } catch (Exception e) {
-                LOGGER.trace(e.getMessage(), e);
-
-                lastException = e;
-            }
-
-            Util.sleep(RETRY_DELAY);
-        } while (retries-- > 0);
-
-        throw new UnexpectedException("VCLU was not responding in time...", lastException);
-    }
-
     private void initialize() {
+        mainThread.awaitStarted();
+
         final VirtualCLU virtualClu = mainThread.virtualSystem().getVirtualClu();
-        if (virtualClu == null) {
-            LOGGER.warn("VCLU is not properly initialized...");
+        final VirtualCLU.State state = virtualClu.getState();
+        if (state != VirtualCLU.State.OK) {
+            LOGGER.warn("VCLU is not properly initialized... {}", state);
         }
     }
 
-    protected LuaValue luaCall(String script) {
-        if (script.equals(LuaScriptCommand.CHECK_ALIVE)) {
-            if (this.mainThread == null) {
-                return LuaValue.valueOf(LuaThread.EMERGENCY_VALUE);
-            }
+    private void validateCheckAlive() {
+        mainThread.awaitStarted();
 
-            return mainThread.virtualSystem()
-                             .luaCall(LuaScriptCommand.CHECK_ALIVE);
+        final LuaValue response = luaCall(LuaScriptCommand.CHECK_ALIVE);
+        if (!response.isstring()) {
+            throw new UnexpectedException("VCLU not started properly (health check failed)");
         }
+    }
 
+    protected LuaValue luaCall(String script) throws LuaError {
         if (this.mainThread == null) {
             return LuaValue.NIL;
         }

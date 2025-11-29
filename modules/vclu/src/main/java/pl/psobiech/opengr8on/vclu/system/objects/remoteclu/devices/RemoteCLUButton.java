@@ -72,6 +72,11 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     }
 
     @Override
+    public String getName() {
+        return discoveryMessage.getName();
+    }
+
+    @Override
     public void setup() {
         sendDiscoveryMessage();
     }

@@ -35,9 +35,14 @@ import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.Remote
 import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevice {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
 
     private static final long SET_WHITE_VALUE_METHOD_ID = 12L;
+
+    public static final String DEFAULT_RGB_VALUE = "#000000";
+
+    private static final int RAMP_TIME = 420;
 
     private final VirtualCLU virtualClu;
 
@@ -49,7 +54,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     private final MqttDiscoveryLight discoveryMessage;
 
-    private final Map<Color, MqttDiscoveryLight> keyChildDiscoveryMessages = new ConcurrentHashMap<>();
+    private final Map<ColorEnum, MqttDiscoveryLight> keyChildDiscoveryMessages = new ConcurrentHashMap<>();
 
     private final Map<String, Feature> valueFeatures;
 
@@ -83,11 +88,12 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
         final boolean hasAsyncHandlers = !asyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
         this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
+        refreshContext.scheduleNextRefreshNow();
 
         valueFeatures = object.getFeatures().stream()
                               .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
-        for (Color color : Color.values()) {
+        for (ColorEnum color : ColorEnum.values()) {
             if (valueFeatures.containsKey(color.featureName())) {
                 final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.featureName());
 
@@ -114,9 +120,14 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     @Override
+    public String getName() {
+        return discoveryMessage.getName();
+    }
+
+    @Override
     public void setup() {
-        for (Map.Entry<Color, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
-            final Color color = entry.getKey();
+        for (Map.Entry<ColorEnum, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
+            final ColorEnum color = entry.getKey();
             final MqttDiscoveryLight childLight = entry.getValue();
 
             subscribeSetStateMessages(color, childLight);
@@ -151,7 +162,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                   );
     }
 
-    private void subscribeSetStateMessages(Color color, MqttDiscoveryLight discoveryMessage) {
+    private void subscribeSetStateMessages(ColorEnum color, MqttDiscoveryLight discoveryMessage) {
         final String setStateTopic = discoveryMessage.getSetStateTopic();
         if (setStateTopic == null) {
             return;
@@ -204,7 +215,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                               MqttClient.parsePayload(stateNode)
                       );
 
-            for (Map.Entry<Color, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
+            for (Map.Entry<ColorEnum, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
                 final MqttDiscoveryLight discoveryMessage = entry.getValue();
                 if (discoveryMessage.getStateTopic() == null) {
                     continue;
@@ -249,7 +260,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         return writeValue(remoteCLU, newState);
     }
 
-    private Optional<JsonNode> writePartialColorValue(Color color, RemoteCLU remoteCLU, byte[] bytes) {
+    private Optional<JsonNode> writePartialColorValue(ColorEnum color, RemoteCLU remoteCLU, byte[] bytes) {
         final MqttRgbwState newState;
         try {
             newState = ObjectMapperFactory.JSON.readValue(bytes, MqttRgbwState.class);
@@ -282,7 +293,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         colourObjectNode.set(color.key(), new IntNode(colorValue));
 
         int colorSum = 0;
-        for (Color otherColor : Color.values()) {
+        for (ColorEnum otherColor : ColorEnum.values()) {
             colorSum += colourObjectNode.optional(otherColor.key())
                                         .map(jsonNode -> jsonNode.asInt(MqttRgbwState.OFF_VALUE))
                                         .orElse(MqttRgbwState.OFF_VALUE);
@@ -304,10 +315,10 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             if (colorOptional.isPresent()) {
                 final JsonNode color = colorOptional.get();
 
-                redValue = color.get(Color.RED.key()).asInt(MqttRgbwState.OFF_VALUE);
-                greenValue = color.get(Color.GREEN.key()).asInt(MqttRgbwState.OFF_VALUE);
-                blueValue = color.get(Color.BLUE.key()).asInt(MqttRgbwState.OFF_VALUE);
-                whiteValue = color.get(Color.WHITE.key()).asInt(MqttRgbwState.OFF_VALUE);
+                redValue = color.get(ColorEnum.RED.key()).asInt(MqttRgbwState.OFF_VALUE);
+                greenValue = color.get(ColorEnum.GREEN.key()).asInt(MqttRgbwState.OFF_VALUE);
+                blueValue = color.get(ColorEnum.BLUE.key()).asInt(MqttRgbwState.OFF_VALUE);
+                whiteValue = color.get(ColorEnum.WHITE.key()).asInt(MqttRgbwState.OFF_VALUE);
             } else if (brightnessOptional.isPresent()) {
                 final int brightnessValue = brightnessOptional.map(JsonNode::asInt)
                                                               .orElse(MqttRgbwState.OFF_VALUE);
@@ -329,10 +340,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             whiteValue = MqttRgbwState.OFF_VALUE;
         }
 
-        writeCluColorValue(Color.RED, remoteCLU, redValue);
-        writeCluColorValue(Color.GREEN, remoteCLU, greenValue);
-        writeCluColorValue(Color.BLUE, remoteCLU, blueValue);
-        writeCluColorValue(Color.WHITE, remoteCLU, whiteValue);
+        writeCluRGBValue(remoteCLU, new RGBColor(redValue, greenValue, blueValue));
+        writeCluColorValue(ColorEnum.WHITE, remoteCLU, whiteValue);
 
         return Optional.of(
                 new MqttRgbwState(redValue, greenValue, blueValue, whiteValue)
@@ -347,28 +356,33 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                         .isPresent();
     }
 
-    private void writeCluColorValue(Color color, RemoteCLU remoteCLU, int colorValue) {
+    private void writeCluColorValue(ColorEnum color, RemoteCLU remoteCLU, int colorValue) {
         final String featureName = color.featureName();
 
         final long methodIndex;
-        if (featureName.equalsIgnoreCase(Color.WHITE.featureName())) {
+        if (featureName.equalsIgnoreCase(ColorEnum.WHITE.featureName())) {
             methodIndex = SET_WHITE_VALUE_METHOD_ID;
         } else {
             methodIndex = valueFeatures.get(featureName).getIndex();
         }
 
-        remoteCLU.remoteMethod(object, methodIndex, colorValue);
+        remoteCLU.remoteMethod(object, methodIndex, colorValue, RAMP_TIME);
+    }
+
+    private void writeCluRGBValue(RemoteCLU remoteCLU, RGBColor color) {
+        final String featureName = ColorEnum.RGB.featureName();
+        final long methodIndex = valueFeatures.get(featureName).getIndex();
+
+        remoteCLU.remoteMethod(object, methodIndex, color.getRGBAsHex(), RAMP_TIME);
     }
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final int redValue = readCluColorValue(remoteCLU, Color.RED.featureName());
-        final int greenValue = readCluColorValue(remoteCLU, Color.GREEN.featureName());
-        final int blueValue = readCluColorValue(remoteCLU, Color.BLUE.featureName());
-        final int whiteValue = readCluColorValue(remoteCLU, Color.WHITE.featureName());
+        final RGBColor color = readCluRGBValue(remoteCLU);
+        final int whiteValue = readCluColorValue(remoteCLU, ColorEnum.WHITE.featureName());
 
         return Optional.of(
-                new MqttRgbwState(redValue, greenValue, blueValue, whiteValue)
+                new MqttRgbwState(color.red(), color.green(), color.blue(), whiteValue)
                         .asJson()
         );
     }
@@ -378,15 +392,58 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                         .optint(MqttRgbwState.OFF_VALUE);
     }
 
+    private RGBColor readCluRGBValue(RemoteCLU remoteCLU) {
+        final String colorAsString = remoteCLU.remoteGet(object, valueFeatures.get(ColorEnum.RGB.featureName()).getIndex())
+                                              .optjstring(DEFAULT_RGB_VALUE);
+
+        try {
+            return new RGBColor(colorAsString);
+        } catch (NumberFormatException e) {
+            return RGBColor.BLACK;
+        }
+    }
+
     private static TextNode createStateValueNode(boolean isOn) {
         return new TextNode(isOn ? StateEnum.ON.name() : StateEnum.OFF.name());
     }
 
-    private enum Color {
+    private record RGBColor(int value) {
+        public static RGBColor BLACK = new RGBColor(0);
+
+        private RGBColor(int r, int g, int b) {
+            this(((r & 255) << 16 | (g & 255) << 8 | (b & 255)));
+        }
+
+        public RGBColor(String hexColor) {
+            final int value = Integer.decode(hexColor);
+
+            this(value);
+        }
+
+        public int red() {
+            return value >> 16 & 255;
+        }
+
+        public int green() {
+            return value >> 8 & 255;
+        }
+
+        public int blue() {
+            return value & 255;
+        }
+
+        public String getRGBAsHex() {
+            return "#" + Integer.toHexString(value);
+        }
+    }
+
+    private enum ColorEnum {
         RED(RgbwColor.RED_KEY, "RedValue"),
         GREEN(RgbwColor.GREEN_KEY, "GreenValue"),
         BLUE(RgbwColor.BLUE_KEY, "BlueValue"),
         WHITE(RgbwColor.WHITE_KEY, "WhiteValue"),
+        //
+        RGB(null, "RGB"),
         //
         ;
 
@@ -394,7 +451,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
         private final String key;
 
-        Color(String key, String featureName) {
+        ColorEnum(String key, String featureName) {
             this.key = key;
             this.featureName = featureName;
         }

@@ -71,13 +71,15 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private final Path rootDirectory;
 
-    private final SpecificObject cluObject;
+    private SpecificObject cluObject;
 
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
     private final ProjectObjectRegistry objectRegistry;
 
     private final MqttClient mqttClient = new MqttClient();
+
+    private State state = State.STARTING;
 
     public VirtualCLU(VirtualSystem virtualSystem, Path rootDirectory, String name, ProjectObjectRegistry objectRegistry) {
         super(
@@ -92,7 +94,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         this.cluObject = objectRegistry.cluByName(getName());
 
         register(Features.UPTIME, this::getUptime);
-        set(Features.STATE, LuaValue.valueOf(State.STARTING.value));
+        set(Features.STATE, LuaValue.valueOf(state.value));
         register(Features.DATE, this::getCurrentDateAsString);
         register(Features.TIME, this::getCurrentTimeAsString);
         register(Features.DAY_OF_MONTH, this::getCurrentDayOfMonth);
@@ -135,6 +137,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 },
                 1, 1, TimeUnit.SECONDS
         );
+    }
+
+    @Override
+    public void setName(String name) {
+        super.setName(name);
+
+        this.cluObject = objectRegistry.cluByName(getName());
     }
 
     @Override
@@ -377,6 +386,16 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         return mqttClient;
     }
 
+    public State getState() {
+        return state;
+    }
+
+    public void setState(State state) {
+        this.state = state;
+
+        set(Features.STATE, LuaValue.valueOf(state.value()));
+    }
+
     @Override
     public void close() {
         IOUtil.closeQuietly(mqttClient);
@@ -392,6 +411,10 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         ;
 
         private final int value;
+
+        public boolean isStarted() {
+            return this != STARTING;
+        }
 
         State(int value) {
             this.value = value;

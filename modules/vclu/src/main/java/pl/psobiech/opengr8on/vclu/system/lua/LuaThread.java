@@ -18,15 +18,14 @@
 
 package pl.psobiech.opengr8on.vclu.system.lua;
 
-import org.apache.commons.lang3.StringUtils;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.psobiech.opengr8on.client.commands.LuaScriptCommand;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.IOUtil;
+import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 
 import java.io.Closeable;
@@ -36,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LuaThread implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(LuaThread.class);
 
-    public static final String EMERGENCY_VALUE = "emergency";
+    private final boolean emergency;
 
     private final VirtualSystem virtualSystem;
 
@@ -46,9 +45,12 @@ public class LuaThread implements Closeable {
 
     private final Thread thread;
 
-    private final boolean emergency;
-
     public LuaThread(VirtualSystem virtualSystem, Globals globals, boolean emergency, LuaValue mainLuaClosure) {
+        this.emergency = emergency;
+
+        this.virtualSystem = virtualSystem;
+        this.globals = globals;
+
         this.thread = Thread.ofVirtual()
                             .name(getClass().getSimpleName())
                             .unstarted(
@@ -72,34 +74,13 @@ public class LuaThread implements Closeable {
                                         }
                                     }
                             );
-
-        this.virtualSystem = virtualSystem;
-        this.globals = globals;
-        this.emergency = emergency;
     }
 
-    public LuaValue luaCall(String script) {
-        script = StringUtils.stripToNull(script);
-        if (script == null) {
-            return LuaValue.NIL;
-        }
-
-        if (script.equals(LuaScriptCommand.CHECK_ALIVE) && emergency) {
-            return LuaValue.valueOf(EMERGENCY_VALUE);
-        }
-
-        if (emergency) {
-            return LuaValue.NIL;
-        }
-
+    public LuaValue luaCall(String script) throws LuaError {
         globalsLock.lock();
         try {
             return globals.load("return %s".formatted(script))
                           .call();
-        } catch (Exception e) {
-            LOGGER.error("{} (script: {})", e.getMessage(), script, e);
-
-            return LuaValue.NIL;
         } finally {
             globalsLock.unlock();
         }
@@ -111,6 +92,12 @@ public class LuaThread implements Closeable {
 
     public void start() {
         thread.start();
+    }
+
+    public void awaitStarted() {
+        do {
+            Util.yield();
+        } while (!virtualSystem.getVirtualClu().getState().isStarted());
     }
 
     public boolean isEmergency() {

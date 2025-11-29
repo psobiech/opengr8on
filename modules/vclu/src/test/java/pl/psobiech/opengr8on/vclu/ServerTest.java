@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import pl.psobiech.opengr8on.client.CLUFiles;
@@ -55,7 +56,7 @@ class ServerTest extends BaseServerTest {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(30)
     void emergencyMode() throws Exception {
         execute(
                 server -> {

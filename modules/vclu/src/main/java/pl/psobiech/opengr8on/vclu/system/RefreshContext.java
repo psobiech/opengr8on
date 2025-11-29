@@ -11,11 +11,13 @@ public class RefreshContext {
 
     private final Runnable scheduledFunction;
 
-    private long nextRefreshAfter = System.currentTimeMillis();
+    private long nextRefreshAfter;
 
     public RefreshContext(boolean polling, Runnable scheduledFunction) {
         this.polling = polling;
         this.scheduledFunction = scheduledFunction;
+
+        scheduleNextRefreshRandomized();
     }
 
     public void runIfScheduled() {

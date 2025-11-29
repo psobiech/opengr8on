@@ -21,6 +21,8 @@ package pl.psobiech.opengr8on.vclu.system.objects;
 import java.io.Closeable;
 
 public interface VirtualDevice extends Closeable {
+    String getName();
+
     /**
      * Method executed once
      */

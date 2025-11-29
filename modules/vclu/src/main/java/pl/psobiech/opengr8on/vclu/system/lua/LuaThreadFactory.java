@@ -55,9 +55,9 @@ public class LuaThreadFactory {
     }
 
     public static LuaThread create(
-            Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile
+            Path rootDirectory, CLUDevice cluDevice, CipherKey cipherKey, CLUFiles cluFile,
+            boolean emergency
     ) {
-
         final Path aDriveDirectory = rootDirectory.resolve("a");
 
         final VirtualSystem virtualSystem = new VirtualSystem(
@@ -102,7 +102,7 @@ public class LuaThreadFactory {
 
         final LuaThread luaThread = new LuaThread(
                 virtualSystem, globals,
-                cluFile == CLUFiles.EMERGNCY_LUA,
+                emergency,
                 loadScript(aDriveDirectory, cluFile, globals)
         );
         virtualSystem.setLuaThread(luaThread);

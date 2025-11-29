@@ -155,17 +155,16 @@ public class RemoteCLU extends VirtualObject {
             }
         }
 
-        for (Map.Entry<String, RemoteCLUDevice> entry : devices.entrySet()) {
-            final String uniqueId = entry.getKey();
-            final RemoteCLUDevice remoteCLUDevice = entry.getValue();
-            try {
-                remoteCLUDevice.loop();
-            } catch (Exception e) {
-                LOGGER.error("Error while looping on remote object: {} ({})", uniqueId, e.getMessage(), e);
-            }
-
-            Util.yield();
-        }
+        virtualSystem.forAllDevices(
+                devices.values(),
+                remoteCLUDevice -> {
+                    try {
+                        remoteCLUDevice.loop();
+                    } catch (Exception e) {
+                        LOGGER.error("Error while looping on remote object: {} ({})", remoteCLUDevice.getName(), e.getMessage(), e);
+                    }
+                }
+        );
     }
 
     private void initMqttDiscovery(String discoveryPrefix) {
@@ -215,7 +214,7 @@ public class RemoteCLU extends VirtualObject {
             final RemoteCLUDevice sensor;
             final SpecificObjectType objectType = object.getType();
             if (!ENABLED_OBJECT_TYPES.contains(objectType)) {
-                LOGGER.info("Ignoring object {} of type {} on CLU {}", object.getNameOnCLU(), objectType, name);
+                LOGGER.info("Ignoring object {} of type {} on {}", object.getNameOnCLU(), objectType, name);
 
                 continue;
             }
@@ -270,12 +269,12 @@ public class RemoteCLU extends VirtualObject {
                         uniqueId, mqttDiscoveryDevice
                 );
                 case UNSUPPORTED -> {
-                    LOGGER.warn("Unsupported object {} on CLU {}", object.getNameOnCLU(), name);
+                    LOGGER.warn("Unsupported object {} on {}", object.getNameOnCLU(), name);
 
                     continue;
                 }
                 case null, default -> {
-                    LOGGER.trace("Ignoring not yet supported object {} on CLU {}", object.getNameOnCLU(), name);
+                    LOGGER.trace("Ignoring not yet supported object {} on {}", object.getNameOnCLU(), name);
 
                     continue;
                 }
@@ -302,20 +301,32 @@ public class RemoteCLU extends VirtualObject {
         return remoteSet(object, index, String.valueOf(value));
     }
 
-    public LuaValue remoteSet(SpecificObject object, long index, int value) {
-        return remoteSet(object, index, String.valueOf(value));
+    public LuaValue remoteSet(SpecificObject object, long index, int param1) {
+        return remoteSet(object, index, String.valueOf(param1));
     }
 
-    public LuaValue remoteSet(SpecificObject object, long index, String value) {
-        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, value));
+    public LuaValue remoteSet(SpecificObject object, long index, String param1) {
+        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, param1));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, int value) {
-        return remoteMethod(object, index, String.valueOf(value));
+    public LuaValue remoteMethod(SpecificObject object, long index, int param1) {
+        return remoteMethod(object, index, String.valueOf(param1));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, String value) {
-        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, value));
+    public LuaValue remoteMethod(SpecificObject object, long index, int param1, int param2) {
+        return remoteMethod(object, index, String.valueOf(param1), String.valueOf(param2));
+    }
+
+    public LuaValue remoteMethod(SpecificObject object, long index, String param1, int param2) {
+        return remoteMethod(object, index, param1, String.valueOf(param2));
+    }
+
+    public LuaValue remoteMethod(SpecificObject object, long index, String param1) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, param1));
+    }
+
+    public LuaValue remoteMethod(SpecificObject object, long index, String param1, String param2) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, param1, param2));
     }
 
     public LuaValue remoteMethod(SpecificObject object, long index) {

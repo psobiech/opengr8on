@@ -37,7 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class VirtualObject implements VirtualDevice {
     protected final VirtualSystem virtualSystem;
 
-    protected final String name;
+    protected String name;
 
     protected final ScheduledExecutorService scheduler;
 
@@ -87,8 +87,13 @@ public class VirtualObject implements VirtualDevice {
         this.eventClass = eventClass;
     }
 
+    @Override
     public String getName() {
         return name;
+    }
+
+    protected void setName(String name) {
+        this.name = name;
     }
 
     /**
@@ -125,7 +130,7 @@ public class VirtualObject implements VirtualDevice {
 
             LOGGER.debug(
                     "{}.get({}) = {}",
-                    name,
+                    getName(),
                     IFeature.byIndex(index, featureClass)
                             .map(Enum::name)
                             .orElseGet(() -> String.valueOf(index)),
@@ -190,7 +195,7 @@ public class VirtualObject implements VirtualDevice {
     public void setValue(int index, LuaValue luaValue) {
         LOGGER.debug(
                 "{}.set({}, {})",
-                name,
+                getName(),
                 IFeature.byIndex(index, featureClass)
                         .map(Enum::name)
                         .orElseGet(() -> String.valueOf(index)),
@@ -229,7 +234,7 @@ public class VirtualObject implements VirtualDevice {
         if (luaFunction == null) {
             LOGGER.warn(
                     "{}.execute({}, {}) -- NOT IMPLEMENTED",
-                    name,
+                    getName(),
                     IMethod.byIndex(index, methodClass)
                            .map(Enum::name)
                            .orElseGet(() -> String.valueOf(index)),
@@ -241,7 +246,7 @@ public class VirtualObject implements VirtualDevice {
 
         LOGGER.trace(
                 "{}.execute({}, {})",
-                name,
+                getName(),
                 IMethod.byIndex(index, methodClass)
                        .map(Enum::name)
                        .orElseGet(() -> String.valueOf(index)),
@@ -257,7 +262,7 @@ public class VirtualObject implements VirtualDevice {
 
     public boolean triggerEvent(IEvent event, Runnable onCompleted) {
         if (!isEventRegistered(event)) {
-            LOGGER.trace("{}.triggerEvent({}) -- NOT REGISTERED", name, event.name());
+            LOGGER.trace("{}.triggerEvent({}) -- NOT REGISTERED", getName(), event.name());
 
             tryFireHandler(onCompleted);
 
@@ -266,7 +271,7 @@ public class VirtualObject implements VirtualDevice {
 
         final List<LuaNoArgConsumer> luaFunctions = eventFunctions.getOrDefault(event.address(), Collections.emptyList());
         try {
-            LOGGER.debug("{}.triggerEvent({})", name, event.name());
+            LOGGER.debug("{}.triggerEvent({})", getName(), event.name());
 
             awaitEventTrigger(event);
             eventTriggerFuture.put(

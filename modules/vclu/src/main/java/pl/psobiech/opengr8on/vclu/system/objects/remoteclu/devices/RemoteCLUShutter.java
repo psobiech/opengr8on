@@ -87,6 +87,11 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
     }
 
     @Override
+    public String getName() {
+        return discoveryMessage.getName();
+    }
+
+    @Override
     public void setup() {
         subscribeSetStateMessages();
         subscribeSetPositionMessages();

@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.system;
 
+import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,6 @@ import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.*;
-import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.Features;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.State;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
@@ -42,6 +42,7 @@ import java.io.Closeable;
 import java.net.Inet4Address;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -72,9 +73,9 @@ public class VirtualSystem implements Closeable {
 
     private final ProjectObjectRegistry projectObjectRegistry;
 
-    private LuaThread luaThread;
+    private final VirtualCLU virtualClu;
 
-    private VirtualCLU virtualClu = null;
+    private LuaThread luaThread;
 
     public VirtualSystem(Path rootDirectory, Inet4Address localAddress, int port, CipherKey cipherKey) {
         this.rootDirectory = rootDirectory;
@@ -85,6 +86,8 @@ public class VirtualSystem implements Closeable {
 
         this.clientRegistry = new ClientRegistry(localAddress, cipherKey);
         this.projectObjectRegistry = new ProjectObjectRegistry(rootDirectory);
+
+        this.virtualClu = new VirtualCLU(this, rootDirectory, "VIRTUAL_CLU", projectObjectRegistry);
     }
 
     public VirtualObject getObject(String name) {
@@ -98,7 +101,11 @@ public class VirtualSystem implements Closeable {
     @SuppressWarnings("resource")
     public void newObject(int index, String name, Inet4Address ipAddress) {
         final VirtualObject virtualObject = switch (index) {
-            case VirtualCLU.INDEX -> (virtualClu = new VirtualCLU(this, rootDirectory, name, projectObjectRegistry));
+            case VirtualCLU.INDEX -> {
+                virtualClu.setName(name);
+
+                yield virtualClu;
+            }
             case RemoteCLU.INDEX ->
                     new RemoteCLU(this, projectObjectRegistry, name, ipAddress, localAddress, cipherKey, port);
             case Timer.INDEX -> new Timer(this, name);
@@ -123,22 +130,20 @@ public class VirtualSystem implements Closeable {
     }
 
     public void setup() {
-        forAllObjects(VirtualObject::setup);
+        forAllDevices(objectsByName.values(), VirtualObject::setup);
 
-        if (virtualClu != null) {
-            final State state;
-            if (luaThread.isEmergency()) {
-                state = State.EMERGENCY;
-            } else {
-                state = State.OK;
-            }
-
-            virtualClu.set(Features.STATE, LuaValue.valueOf(state.value()));
-            virtualClu.triggerEvent(VirtualCLU.Events.INIT);
+        final State state;
+        if (luaThread.isEmergency()) {
+            state = State.EMERGENCY;
+        } else {
+            state = State.OK;
         }
+
+        virtualClu.setState(state);
+        virtualClu.triggerEvent(VirtualCLU.Events.INIT);
     }
 
-    public LuaValue luaCall(String script) {
+    public LuaValue luaCall(String script) throws LuaError {
         return Util.timed(
                 LOGGER, "luaCall(%s)".formatted(script), 24,
                 () ->
@@ -149,7 +154,7 @@ public class VirtualSystem implements Closeable {
     public void loop() {
         final long startTime = System.nanoTime();
 
-        forAllObjects(VirtualObject::loop);
+        forAllDevices(objectsByName.values(), VirtualObject::loop);
 
         // best effort to run loop with fixed rate
         final long timeLeft = LOG_LOOP_TIME_NANOS - (System.nanoTime() - startTime);
@@ -215,10 +220,9 @@ public class VirtualSystem implements Closeable {
         ThreadUtil.closeQuietly(executor);
     }
 
-    public void forAllObjects(Consumer<VirtualObject> runnable) {
-        final ArrayList<Future<?>> futures = new ArrayList<>(objectsByName.size());
-
-        for (VirtualObject object : objectsByName.values()) {
+    public <VD extends VirtualDevice> void forAllDevices(Collection<VD> virtualObjects, Consumer<VD> runnable) {
+        final List<Future<?>> futures = new ArrayList<>(virtualObjects.size());
+        for (VD object : virtualObjects) {
             futures.add(executor.submit(() -> {
                 final long objectStartTime = System.nanoTime();
                 try {

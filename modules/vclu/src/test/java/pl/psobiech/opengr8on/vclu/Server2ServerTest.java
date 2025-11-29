@@ -96,6 +96,9 @@ class Server2ServerTest {
 
         assertEquals(LuaValue.NIL, server0.luaCall("testVariable"));
         assertEquals(333, server1.luaCall("testVariable").checkint());
+        assertEquals(333, server1.luaCall("getVar(\"testVariable\")").checkint());
+        assertEquals(333, server0.luaCall("CLU1:execute(0, \"testVariable\")").checkint());
+        assertEquals(333, server0.luaCall("CLU1:execute(0, \"getVar(\\\"testVariable\\\")\")").checkint());
 
         server0.luaCall("CLU1:execute(0, \"setVar(\\\"testVariable\\\", getVar(\\\"testVariable\\\") + 1)\")");
         assertEquals(334, server1.luaCall("testVariable").checkint());
