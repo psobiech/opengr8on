@@ -8,7 +8,6 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumericFloat;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
-import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
@@ -53,21 +52,12 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final Optional<Feature> valueFeature = object.getFeatures().stream()
-                                                     .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
-                                                     .findAny();
-
-        if (valueFeature.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final LuaValue luaValue = remoteCLU.remoteGet(object, valueFeature.get().getIndex());
-        if (LuaUtil.isNil(luaValue)) {
-            return Optional.empty();
-        }
-
-        return Optional.of(
-                new DoubleNode(luaValue.todouble())
-        );
+        return object.getFeatures().stream()
+                     .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
+                     .findAny()
+                     .flatMap(feature -> remoteCLU.remoteGet(object, feature.getIndex()))
+                     .filter(LuaUtil::nonNull)
+                     .map(LuaValue::todouble)
+                     .map(DoubleNode::new);
     }
 }

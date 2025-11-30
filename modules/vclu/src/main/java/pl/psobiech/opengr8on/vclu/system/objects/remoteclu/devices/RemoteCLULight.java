@@ -2,6 +2,7 @@ package pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttColorState;
@@ -23,6 +24,8 @@ import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.Remote
 
 public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDevice {
     private final SpecificObject object;
+
+    private final Map<String, Feature> valueFeatures;
 
     public RemoteCLULight(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
@@ -49,14 +52,14 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
         );
 
         this.object = object;
+
+        this.valueFeatures = object.getFeatures().stream()
+                                   .filter(feature -> feature.getName().equalsIgnoreCase("Value"))
+                                   .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
     }
 
     @Override
     public Optional<JsonNode> writeValue(RemoteCLU remoteCLU, byte[] bytes) {
-        final Map<String, Feature> valueFeatures = object.getFeatures().stream()
-                                                         .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))
-                                                         .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
-
         final MqttState state;
         try {
             state = ObjectMapperFactory.JSON.readValue(bytes, MqttState.class);
@@ -66,25 +69,19 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
             return Optional.empty();
         }
 
-        remoteCLU.remoteSet(object, valueFeatures.get("Value").getIndex(), state.isOn() ? 1 : MqttState.OFF_VALUE);
-
-        return Optional.of(
-                state.asJson()
-        );
+        return Optional.ofNullable(valueFeatures.get("Value"))
+                       .map(Feature::getIndex)
+                       .flatMap(index -> remoteCLU.remoteSet(object, index, state.isOn() ? 1 : MqttState.OFF_VALUE))
+                       .map(ignored -> state.asJson());
     }
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final Map<String, Feature> valueFeatures = object.getFeatures().stream()
-                                                         .filter(feature -> feature.getName().equalsIgnoreCase("Value"))
-                                                         .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
-
-        final int value = remoteCLU.remoteGet(object, valueFeatures.get("Value").getIndex())
-                                   .optint(MqttState.OFF_VALUE);
-
-        return Optional.of(
-                new MqttState(value)
-                        .asJson()
-        );
+        return Optional.ofNullable(valueFeatures.get("Value"))
+                       .map(Feature::getIndex)
+                       .flatMap(index -> remoteCLU.remoteGet(object, index))
+                       .map(luaValue -> luaValue.optint(MqttState.OFF_VALUE))
+                       .map(MqttState::new)
+                       .map(MqttJson::asJson);
     }
 }

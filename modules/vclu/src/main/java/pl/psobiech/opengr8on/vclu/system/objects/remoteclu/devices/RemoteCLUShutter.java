@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter.ShutterStateEnum;
@@ -14,7 +15,6 @@ import pl.psobiech.opengr8on.vclu.mqtt.state.MqttPosition;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
-import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.nio.charset.StandardCharsets;
@@ -280,20 +280,12 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final Optional<Feature> positionFeature = object.getFeatures().stream()
-                                                        .filter(feature1 -> feature1.getName().equalsIgnoreCase("Position"))
-                                                        .findAny();
-        if (positionFeature.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final int position = remoteCLU.remoteGet(object, positionFeature.get().getIndex())
-                                      .optint(OPEN_POSITION);
-
-        return Optional.of(
-                new MqttPosition(position)
-                        .asJson()
-        );
+        return object.getFeatures().stream()
+                     .filter(feature -> feature.getName().equalsIgnoreCase("Position"))
+                     .findAny()
+                     .flatMap(feature -> remoteCLU.remoteGet(object, feature.getIndex()))
+                     .map(luaValue -> luaValue.optint(OPEN_POSITION))
+                     .map(MqttPosition::new)
+                     .map(MqttJson::asJson);
     }
-
 }

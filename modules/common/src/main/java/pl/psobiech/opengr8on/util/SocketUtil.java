@@ -41,7 +41,7 @@ public class SocketUtil {
     /**
      * Default timeout value
      */
-    public static final int DEFAULT_TIMEOUT_MILLISECONDS = 9_000;
+    public static final int DEFAULT_TIMEOUT_MILLISECONDS = 4_000;
 
     private static final ExecutorService PLATFORM_EXECUTOR;
 

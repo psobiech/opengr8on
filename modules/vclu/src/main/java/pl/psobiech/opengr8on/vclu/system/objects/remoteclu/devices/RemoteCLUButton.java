@@ -121,7 +121,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
         final Optional<JsonNode> stateNode;
         if (hasOnClickAsyncEventInstalled) {
-            stateNode = pressEventState();
+            stateNode = Optional.of(MqttEvent.PRESS_AS_JSON);
         } else {
             stateNode = readValue(remoteCLU);
         }
@@ -144,17 +144,9 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final int value = remoteCLU.remoteGet(object, 0).optint(0);
-        final boolean isPressed = value > 0;
-
-        if (isPressed) {
-            return pressEventState();
-        }
-
-        return Optional.empty();
-    }
-
-    private static Optional<JsonNode> pressEventState() {
-        return Optional.of(MqttEvent.PRESS_AS_JSON);
+        return remoteCLU.remoteGet(object, 0)
+                        .map(luaValue -> luaValue.optint(0))
+                        .filter(value -> value > 0)
+                        .map(value -> MqttEvent.PRESS_AS_JSON);
     }
 }

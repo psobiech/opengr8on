@@ -11,6 +11,7 @@ import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
+import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
@@ -32,14 +33,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static pl.psobiech.opengr8on.vclu.system.objects.VirtualObject.IFeature;
+import static pl.psobiech.opengr8on.vclu.system.objects.VirtualObject.IMethod;
 import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.discoveryTopic;
 import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
-
-    private static final long SET_WHITE_VALUE_METHOD_ID = 12L;
 
     public static final String DEFAULT_RGB_VALUE = "#000000";
 
@@ -95,8 +96,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                               .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
 
         for (ColorEnum color : ColorEnum.values()) {
-            if (valueFeatures.containsKey(color.featureName())) {
-                final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.featureName());
+            if (valueFeatures.containsKey(color.feature().featureName())) {
+                final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.feature().featureName());
 
                 keyChildDiscoveryMessages.put(color, discoveryMessage);
             }
@@ -358,50 +359,40 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private void writeCluColorValue(ColorEnum color, RemoteCLU remoteCLU, int colorValue) {
-        final String featureName = color.featureName();
-
-        final long methodIndex;
-        if (featureName.equalsIgnoreCase(ColorEnum.WHITE.featureName())) {
-            methodIndex = SET_WHITE_VALUE_METHOD_ID;
-        } else {
-            methodIndex = valueFeatures.get(featureName).getIndex();
-        }
+        final long methodIndex = color.method().index();
 
         remoteCLU.remoteMethod(object, methodIndex, colorValue, RAMP_TIME);
     }
 
     private void writeCluRGBValue(RemoteCLU remoteCLU, RGBColor color) {
-        final String featureName = ColorEnum.RGB.featureName();
-        final long methodIndex = valueFeatures.get(featureName).getIndex();
+        final long methodIndex = ColorEnum.RGB.method().index();
 
         remoteCLU.remoteMethod(object, methodIndex, color.getRGBAsHex(), RAMP_TIME);
     }
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        final RGBColor color = readCluRGBValue(remoteCLU);
-        final int whiteValue = readCluColorValue(remoteCLU, ColorEnum.WHITE.featureName());
+        return readCluRGBValue(remoteCLU)
+                .map(color -> {
+                    final int white = readCluColorValue(remoteCLU, ColorEnum.WHITE)
+                            .orElse(MqttRgbwState.OFF_VALUE);
 
-        return Optional.of(
-                new MqttRgbwState(color.red(), color.green(), color.blue(), whiteValue)
-                        .asJson()
-        );
+                    return new MqttRgbwState(color.red(), color.green(), color.blue(), white);
+                })
+                .map(MqttJson::asJson);
     }
 
-    private int readCluColorValue(RemoteCLU remoteCLU, String colorKey) {
-        return remoteCLU.remoteGet(object, valueFeatures.get(colorKey).getIndex())
-                        .optint(MqttRgbwState.OFF_VALUE);
+    private Optional<Integer> readCluColorValue(RemoteCLU remoteCLU, ColorEnum color) {
+        return Optional.of(color.featureIndex(valueFeatures))
+                       .flatMap(index -> remoteCLU.remoteGet(object, index))
+                       .map(luaValue -> luaValue.optint(MqttRgbwState.OFF_VALUE));
     }
 
-    private RGBColor readCluRGBValue(RemoteCLU remoteCLU) {
-        final String colorAsString = remoteCLU.remoteGet(object, valueFeatures.get(ColorEnum.RGB.featureName()).getIndex())
-                                              .optjstring(DEFAULT_RGB_VALUE);
-
-        try {
-            return new RGBColor(colorAsString);
-        } catch (NumberFormatException e) {
-            return RGBColor.BLACK;
-        }
+    private Optional<RGBColor> readCluRGBValue(RemoteCLU remoteCLU) {
+        return Optional.of(ColorEnum.RGB.featureIndex(valueFeatures))
+                       .flatMap(index -> remoteCLU.remoteGet(object, index))
+                       .map(luaValue -> luaValue.optjstring(DEFAULT_RGB_VALUE))
+                       .flatMap(RGBColor::parse);
     }
 
     private static TextNode createStateValueNode(boolean isOn) {
@@ -409,16 +400,19 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private record RGBColor(int value) {
-        public static RGBColor BLACK = new RGBColor(0);
-
         private RGBColor(int r, int g, int b) {
             this(((r & 255) << 16 | (g & 255) << 8 | (b & 255)));
         }
 
-        public RGBColor(String hexColor) {
-            final int value = Integer.decode(hexColor);
+        public static Optional<RGBColor> parse(String hexColor) {
+            final int value;
+            try {
+                value = Integer.decode(hexColor);
+            } catch (NumberFormatException e) {
+                return Optional.empty();
+            }
 
-            this(value);
+            return Optional.of(new RGBColor(value));
         }
 
         public int red() {
@@ -439,30 +433,99 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private enum ColorEnum {
-        RED(RgbwColor.RED_KEY, "RedValue"),
-        GREEN(RgbwColor.GREEN_KEY, "GreenValue"),
-        BLUE(RgbwColor.BLUE_KEY, "BlueValue"),
-        WHITE(RgbwColor.WHITE_KEY, "WhiteValue"),
+        RED(RgbwColor.RED_KEY, Features.RED_VALUE, Methods.RED_VALUE),
+        GREEN(RgbwColor.GREEN_KEY, Features.GREEN_VALUE, Methods.GREEN_VALUE),
+        BLUE(RgbwColor.BLUE_KEY, Features.BLUE_VALUE, Methods.BLUE_VALUE),
+        WHITE(RgbwColor.WHITE_KEY, Features.WHITE_VALUE, Methods.WHITE_VALUE),
         //
-        RGB(null, "RGB"),
+        RGB(null, Features.RGB, Methods.RGB),
+        //
+        ;
+
+        private final String key;
+
+        private final Features feature;
+
+        private final Methods method;
+
+        ColorEnum(String key, Features feature, Methods method) {
+            this.feature = feature;
+            this.method = method;
+            this.key = key;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public int featureIndex(Map<String, Feature> features) {
+            return Optional.ofNullable(features.get(feature().featureName()))
+                           .map(Feature::getIndex)
+                           .orElseGet(feature::index);
+        }
+
+        public Features feature() {
+            return feature;
+        }
+
+        public Methods method() {
+            return method;
+        }
+    }
+
+    private enum Features implements IFeature {
+        RED_VALUE("RedValue", 3),
+        GREEN_VALUE("GreenValue", 4),
+        BLUE_VALUE("BlueValue", 5),
+        WHITE_VALUE("WhiteValue", 15),
+        RGB("RGB", 6),
         //
         ;
 
         private final String featureName;
 
-        private final String key;
+        private final int defaultIndex;
 
-        ColorEnum(String key, String featureName) {
-            this.key = key;
+        Features(String featureName, int defaultIndex) {
             this.featureName = featureName;
+            this.defaultIndex = defaultIndex;
         }
 
         public String featureName() {
             return featureName;
         }
 
-        public String key() {
-            return key;
+        @Override
+        public int index() {
+            return defaultIndex;
+        }
+    }
+
+    private enum Methods implements IMethod {
+        RED_VALUE("RedValue", 3),
+        GREEN_VALUE("GreenValue", 4),
+        BLUE_VALUE("BlueValue", 5),
+        WHITE_VALUE("WhiteValue", 12),
+        RGB("RGB", 6),
+        //
+        ;
+
+        private final String methodName;
+
+        private final int index;
+
+        Methods(String methodName, int index) {
+            this.methodName = methodName;
+            this.index = index;
+        }
+
+        public String methodName() {
+            return methodName;
+        }
+
+        @Override
+        public int index() {
+            return index;
         }
     }
 }

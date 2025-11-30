@@ -53,6 +53,7 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -137,7 +138,8 @@ public class RemoteCLU extends VirtualObject {
         register(Methods.EXECUTE, (LuaOneArgFunction) arg1 -> {
             final String script = arg1.checkjstring();
 
-            return remoteExecute(script);
+            return remoteExecute(script)
+                    .orElse(LuaValue.NIL);
         });
 
         this.virtualClu = virtualSystem.getVirtualClu();
@@ -301,69 +303,67 @@ public class RemoteCLU extends VirtualObject {
         }
     }
 
-    public LuaValue remoteSet(SpecificObject object, long index, float param1) {
+    public Optional<LuaValue> remoteSet(SpecificObject object, long index, float param1) {
         return remoteExecute(object, String.format("%s:set(%d, %f)", object.getNameOnCLU(), index, param1));
     }
 
-    public LuaValue remoteSet(SpecificObject object, long index, int param1) {
-        return remoteExecute(object, String.format("%s:set(%d, %d)", object.getNameOnCLU(), index, param1));
+    public Optional<LuaValue> remoteSet(SpecificObject object, long index, int param1) {
+        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
     }
 
-    public LuaValue remoteSet(SpecificObject object, long index, String param1) {
-        return remoteExecute(object, String.format("%s:set(%d, '%s')", object.getNameOnCLU(), index, param1));
+    public Optional<LuaValue> remoteSet(SpecificObject object, long index, String param1) {
+        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, int param1) {
-        return remoteExecute(object, String.format("%s:execute(%d, %d)", object.getNameOnCLU(), index, param1));
+    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, int param1) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, int param1, int param2) {
-        return remoteExecute(object, String.format("%s:execute(%d, %d, %d)", object.getNameOnCLU(), index, param1, param2));
+    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, int param1, int param2) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1), LuaUtil.stringify(param2)));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, String param1, int param2) {
-        return remoteExecute(object, String.format("%s:execute(%d, '%s', %d)", object.getNameOnCLU(), index, param1, param2));
+    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, String param1, int param2) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1), LuaUtil.stringify(param2)));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, String param1) {
-        return remoteExecute(object, String.format("%s:execute(%d, '%s')", object.getNameOnCLU(), index, param1));
+    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, String param1) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index, String param1, String param2) {
-        return remoteExecute(object, String.format("%s:execute(%d, '%s', '%s')", object.getNameOnCLU(), index, param1, param2));
+    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, String param1, String param2) {
+        return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1), LuaUtil.stringify(param2)));
     }
 
-    public LuaValue remoteMethod(SpecificObject object, long index) {
+    public Optional<LuaValue> remoteMethod(SpecificObject object, long index) {
         return remoteExecute(object, String.format("%s:execute(%d)", object.getNameOnCLU(), index));
     }
 
-    public LuaValue remoteGet(SpecificObject object, long index) {
+    public Optional<LuaValue> remoteGet(SpecificObject object, long index) {
         return remoteExecute(object, String.format("%s:get(%d)", object.getNameOnCLU(), index));
     }
 
-    private LuaValue remoteExecute(SpecificObject object, String script) {
+    private Optional<LuaValue> remoteExecute(SpecificObject object, String script) {
         return borrowClient(
                 client ->
                         TraceUtil.span(
                                 TRACER,
                                 () ->
                                         client.execute(script)
-                                              .map(this::asLuaValue)
-                                              .orElse(LuaValue.NIL),
+                                              .map(this::asLuaValue),
                                 virtualClu.getName(), getName(), object.getName(), "remoteExecute", script
                         )
         );
     }
 
-    private LuaValue remoteExecute(String script) {
+    private Optional<LuaValue> remoteExecute(String script) {
         return borrowClient(
                 client ->
                         TraceUtil.span(
                                 TRACER,
                                 () ->
                                         client.execute(script)
-                                              .map(this::asLuaValue)
-                                              .orElse(LuaValue.NIL),
+                                              .map(this::asLuaValue),
                                 virtualClu.getName(), getName(), "remoteExecute", script
                         )
         );
