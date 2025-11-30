@@ -18,7 +18,6 @@
 
 package pl.psobiech.opengr8on.vclu;
 
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import pl.psobiech.opengr8on.client.CLUFiles;
@@ -88,6 +87,9 @@ class ServerTest extends BaseServerTest {
                     assertTrue(response1Optional.isPresent());
                     assertTrue(response1Optional.get());
 
+                    assertNotEquals(-1, server.getTFTPdPort());
+                    assertNotEquals(0, server.getTFTPdPort());
+
                     try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
                         tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
                     }
@@ -122,6 +124,9 @@ class ServerTest extends BaseServerTest {
                     assertTrue(response1Optional.isPresent());
                     assertEquals(sessionId, response1Optional.get().getSessionId());
                     assertEquals(GenerateMeasurementsCommand.RESPONSE_OK, response1Optional.get().getReturnValue());
+
+                    assertNotEquals(-1, server.getTFTPdPort());
+                    assertNotEquals(0, server.getTFTPdPort());
 
                     try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
                         tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);

@@ -81,7 +81,7 @@ public class MockServer implements Closeable {
         this.broadcastSocket = new UDPSocket(LOCALHOST, 0, false);
         this.commandSocket = new UDPSocket(LOCALHOST, 0, false);
         this.responseSocket = new UDPSocket(LOCALHOST, 0, false);
-        this.tftpServer = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory);
+        this.tftpServer = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_REPLACE, rootDirectory, (address, port) -> new UDPSocket(address, port, false));
 
         FileUtil.touch(aDriveDirectory.resolve(CLUFiles.USER_LUA.getFileName()));
         FileUtil.linkOrCopy(
