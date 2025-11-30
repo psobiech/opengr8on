@@ -25,12 +25,12 @@ public class Feature {
 
     private final Float divisor;
 
-    private final Long index;
+    private final Integer index;
 
     private final String constrainAsString;
 
     @JsonCreator
-    public Feature(Long id, String name, String hint, Boolean visible, FeatureType type, String accessType, String initValue, String defaultInitValue, String unit, Float divisor, Long index, String constrainAsString) {
+    public Feature(Long id, String name, String hint, Boolean visible, FeatureType type, String accessType, String initValue, String defaultInitValue, String unit, Float divisor, Integer index, String constrainAsString) {
         this.id = id;
         this.name = name;
         this.hint = hint;
@@ -85,7 +85,7 @@ public class Feature {
         return divisor;
     }
 
-    public Long getIndex() {
+    public Integer getIndex() {
         return index;
     }
 

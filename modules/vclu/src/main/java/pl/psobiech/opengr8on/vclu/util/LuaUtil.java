@@ -164,7 +164,7 @@ public class LuaUtil {
      * @return luaValue converted to String, with String quoted or nil
      */
     public static String stringify(LuaValue luaValue) {
-        if (isNil(luaValue)) {
+        if (luaValue == null || isNil(luaValue)) {
             return NIL_AS_STRING;
         }
 
@@ -185,6 +185,13 @@ public class LuaUtil {
         }
 
         return String.valueOf(luaValue);
+    }
+
+    /**
+     * @return value converted to Lua-String, with String quoted or nil
+     */
+    public static String stringify(Object value) {
+        return stringify(fromObject(value));
     }
 
     /**
@@ -259,6 +266,10 @@ public class LuaUtil {
         return String.valueOf(luaValue);
     }
 
+    public static boolean nonNull(LuaValue luaValue) {
+        return !isNil(luaValue);
+    }
+
     public static boolean isNil(LuaValue luaValue) {
         return luaValue == null || luaValue.isnil() || luaValue.narg() == 0;
     }
@@ -266,47 +277,51 @@ public class LuaUtil {
     /**
      * @return String value of object (if supported, otherwise reverts to String)
      */
-    public static LuaValue fromObject(Object object) {
-        if (object == null) {
+    public static LuaValue fromObject(Object value) {
+        if (value == null) {
             return LuaValue.NIL;
         }
 
-        if (object instanceof String string) {
+        if (value instanceof LuaValue luaValue) {
+            return luaValue;
+        }
+
+        if (value instanceof String string) {
             return LuaValue.valueOf(string);
         }
 
-        if (object instanceof Integer number) {
+        if (value instanceof Integer number) {
             return LuaValue.valueOf(number);
         }
 
-        if (object instanceof Long number) {
+        if (value instanceof Long number) {
             return LuaValue.valueOf(number);
         }
 
-        if (object instanceof Double number) {
+        if (value instanceof Double number) {
             return LuaValue.valueOf(number);
         }
 
-        if (object instanceof Float number) {
+        if (value instanceof Float number) {
             return LuaValue.valueOf(number);
         }
 
-        if (object instanceof Boolean bool) {
+        if (value instanceof Boolean bool) {
             return LuaValue.valueOf(bool);
         }
 
-        if (object instanceof List<?> list) {
+        if (value instanceof List<?> list) {
             final LuaTable table = LuaValue.tableOf();
             for (int i = 0; i < list.size(); i++) {
-                final Object value = list.get(i);
+                final Object element = list.get(i);
 
-                table.set(i, fromObject(value));
+                table.set(i, fromObject(element));
             }
 
             return table;
         }
 
-        if (object instanceof Map<?, ?> map) {
+        if (value instanceof Map<?, ?> map) {
             final LuaTable table = LuaValue.tableOf();
             for (Entry<?, ?> entry : map.entrySet()) {
                 final Object key = entry.getKey();
@@ -320,7 +335,7 @@ public class LuaUtil {
             return table;
         }
 
-        return LuaValue.valueOf(String.valueOf(object));
+        return LuaValue.valueOf(String.valueOf(value));
     }
 
     public static <T> String stringifyList(List<T> list, Function<T, String> toString) {
