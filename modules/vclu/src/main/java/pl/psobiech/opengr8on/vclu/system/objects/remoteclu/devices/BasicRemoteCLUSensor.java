@@ -9,6 +9,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU.SpecificObjectInterface;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.util.Optional;
@@ -19,6 +20,10 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     protected final VirtualCLU virtualClu;
 
     protected final RemoteCLU remoteCLU;
+
+    protected SpecificObject object;
+
+    protected SpecificObjectInterface objectInterface;
 
     protected final String discoveryTopic;
 
@@ -31,10 +36,10 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
     public BasicRemoteCLUSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object,
-            String discoveryTopic, MqttDiscovery discoveryMessage
+            SpecificObjectInterface objectInterface, String discoveryTopic, MqttDiscovery discoveryMessage
     ) {
         this(virtualClu, remoteCLU,
-             clu, object,
+             clu, object, objectInterface,
              discoveryTopic, discoveryMessage,
              true
         );
@@ -42,12 +47,14 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
     public BasicRemoteCLUSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
-            SpecificObject clu, SpecificObject object,
+            SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryTopic, MqttDiscovery discoveryMessage,
             boolean displayAsyncMissingWarning
     ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
+        this.object = object;
+        this.objectInterface = objectInterface;
 
         this.discoveryTopic = discoveryTopic;
         this.discoveryMessage = discoveryMessage;

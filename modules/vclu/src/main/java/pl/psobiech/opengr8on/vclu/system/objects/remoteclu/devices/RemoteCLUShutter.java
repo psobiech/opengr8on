@@ -15,6 +15,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.state.MqttPosition;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU.SpecificObjectInterface;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.nio.charset.StandardCharsets;
@@ -46,6 +47,8 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private final SpecificObject object;
 
+    private final SpecificObjectInterface objectInterface;
+
     private final String discoveryTopic;
 
     private final MqttDiscoveryShutter discoveryMessage;
@@ -58,13 +61,14 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     public RemoteCLUShutter(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
-            SpecificObject clu, SpecificObject object,
+            SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
             String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
         this.object = object;
+        this.objectInterface = objectInterface;
 
         this.discoveryTopic = discoveryTopic(discoveryPrefix, "cover", uniqueId);
         this.discoveryMessage = new MqttDiscoveryShutter(

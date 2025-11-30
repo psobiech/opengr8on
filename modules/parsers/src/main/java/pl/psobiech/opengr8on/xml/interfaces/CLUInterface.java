@@ -18,14 +18,23 @@
 
 package pl.psobiech.opengr8on.xml.interfaces;
 
+import java.util.Collections;
 import java.util.List;
 
 public class CLUInterface {
-    private List<CLUInterfaceFeature> features;
+    public static final CLUInterface EMPTY = new CLUInterface(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
-    private List<CLUInterfaceMethod> methods;
+    private final List<CLUInterfaceFeature> features;
 
-    private List<CLUInterfaceEvent> events;
+    private final List<CLUInterfaceMethod> methods;
+
+    private final List<CLUInterfaceEvent> events;
+
+    public CLUInterface(List<CLUInterfaceFeature> features, List<CLUInterfaceMethod> methods, List<CLUInterfaceEvent> events) {
+        this.features = features;
+        this.methods = methods;
+        this.events = events;
+    }
 
     public List<CLUInterfaceFeature> getFeatures() {
         return features;

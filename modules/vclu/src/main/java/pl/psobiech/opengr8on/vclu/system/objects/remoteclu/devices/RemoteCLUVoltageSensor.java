@@ -7,6 +7,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumericFloat;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU.SpecificObjectInterface;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
@@ -14,18 +15,16 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import java.util.Optional;
 
 public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements RemoteCLUDevice {
-    private final SpecificObject object;
-
     public RemoteCLUVoltageSensor(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
-            SpecificObject clu, SpecificObject object,
+            SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
             String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
         super(
                 virtualClu, remoteCLU,
                 clu, object,
-                RemoteCLUDevice.discoveryTopic(discoveryPrefix, "sensor", uniqueId),
+                objectInterface, RemoteCLUDevice.discoveryTopic(discoveryPrefix, "sensor", uniqueId),
                 new MqttDiscoveryNumericFloat(
                         object.getName(),
                         uniqueId,
@@ -43,8 +42,6 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
                 ),
                 false
         );
-
-        this.object = object;
     }
 
     @Override

@@ -37,7 +37,6 @@ import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.ProjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
@@ -47,17 +46,19 @@ import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.vclu.util.TraceUtil;
-import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
+import pl.psobiech.opengr8on.xml.interfaces.*;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Module;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
 import java.net.Inet4Address;
-import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
@@ -189,23 +190,6 @@ public class RemoteCLU extends VirtualObject {
     private void initMqttDiscovery(String discoveryPrefix) {
         final VirtualCLU virtualClu = virtualSystem.getVirtualClu();
 
-        virtualClu.getMqttClient()
-                  .subscribe(discoveryPrefix + "/status", bytes -> {
-                      LOGGER.info("DISCOVERY RESTART: {}", ToStringUtil.toString(bytes));
-
-                      final String stateAsString = new String(bytes, StandardCharsets.UTF_8);
-                      if (!stateAsString.equals("online")) {
-                          return;
-                      }
-
-                      for (RemoteCLUDevice remoteCLUDevice : devices.values()) {
-                          remoteCLUDevice.refreshContext()
-                                         .ifPresent(refreshContext ->
-                                                            refreshContext.scheduleNextRefreshRandomized(1)
-                                         );
-                      }
-                  });
-
         final Set<SpecificObject> specificObjects = objectRegistry.byCluName(name);
         for (SpecificObject object : specificObjects) {
             if (Boolean.TRUE.equals(object.getRemoved())) {
@@ -238,52 +222,71 @@ public class RemoteCLU extends VirtualObject {
                 continue;
             }
 
+            Module module = object.getModule();
+            if (module != null && module.getReference() != null) {
+                module = objectRegistry.moduleByReference(module.getReference())
+                                       .orElse(null);
+            }
+
+            final SpecificObjectInterface objectInterface = Optional.ofNullable(module)
+                                                                    .flatMap(module1 -> interfaceRegistry.getModule(module1.getModuleClass(), module1.getModuleTypeFirmware(), module1.getModuleVersion()))
+                                                                    .map(CLUModule::getFirmware)
+                                                                    .map(ModuleFirmware::getObject)
+                                                                    .stream()
+                                                                    .flatMap(Collection::stream)
+                                                                    .filter(moduleObject -> moduleObject.get_class().equals(object.getClassTypeId()))
+                                                                    .filter(moduleObject -> moduleObject.getName().equals(object.getTypeAsString()))
+                                                                    .map(ModuleObject::getInterface)
+                                                                    .findAny()
+                                                                    .map(SpecificObjectInterface::new)
+                                                                    .orElse(SpecificObjectInterface.EMPTY);
+
             switch (objectType) {
                 case PANEL_TEMPERATURE -> sensor = new RemoteCLUTemperatureSensor(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case PANEL_LUMINOSITY -> sensor = new RemoteCLULuminositySensor(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case ROLLER_SHUTTER -> sensor = new RemoteCLUShutter(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case DOUT -> sensor = new RemoteCLULight(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case DIMM -> sensor = new RemoteCLUDimmer(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case LED_RGB -> sensor = new RemoteCLULedRgbLight(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
                 case BUTTON, PANEL_BUTTON -> sensor = new RemoteCLUButton(
                         virtualClu, this,
-                        clu, object,
+                        clu, object, objectInterface,
                         discoveryPrefix,
                         uniqueId, mqttDiscoveryDevice
                 );
@@ -425,6 +428,34 @@ public class RemoteCLU extends VirtualObject {
         super.close();
 
         IOUtil.closeQuietly(clientPool);
+    }
+
+    public static class SpecificObjectInterface {
+        public static final SpecificObjectInterface EMPTY = new SpecificObjectInterface(CLUInterface.EMPTY);
+
+        private final Map<String, CLUInterfaceFeature> features;
+
+        private final Map<String, CLUInterfaceMethod> methods;
+
+        private final Map<String, CLUInterfaceEvent> events;
+
+        public SpecificObjectInterface(CLUInterface cluInterface) {
+            this.features = cluInterface.getFeatures().stream().collect(Collectors.toMap(CLUInterfaceFeature::getName, Function.identity()));
+            this.methods = cluInterface.getMethods().stream().collect(Collectors.toMap(CLUInterfaceMethod::getName, Function.identity()));
+            this.events = cluInterface.getEvents().stream().collect(Collectors.toMap(CLUInterfaceEvent::getName, Function.identity()));
+        }
+
+        public Map<String, CLUInterfaceFeature> features() {
+            return features;
+        }
+
+        public Map<String, CLUInterfaceMethod> methods() {
+            return methods;
+        }
+
+        public Map<String, CLUInterfaceEvent> events() {
+            return events;
+        }
     }
 
     private enum Methods implements IMethod {
