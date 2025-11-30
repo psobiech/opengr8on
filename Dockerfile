@@ -46,7 +46,7 @@ WORKDIR /opt/build
 #COPY --from=app-build /opt/build/vclu/target/vclu.jar .
 
 RUN $JAVA_HOME/bin/jlink \
-         --add-modules java.base,java.net.http,java.xml,java.naming,java.management,jdk.zipfs,jdk.crypto.ec,jdk.httpserver,jdk.unsupported \
+         --add-modules java.base,java.net.http,java.xml,java.naming,java.management,java.instrument,jdk.zipfs,jdk.crypto.ec,jdk.httpserver,jdk.unsupported \
 #         --add-modules $(jdeps --ignore-missing-deps --print-module-deps vclu.jar),java.base,java.xml,java.naming,java.management,java.sql,java.instrument,jdk.zipfs \
          --strip-debug \
          --no-man-pages \
@@ -57,7 +57,7 @@ RUN $JAVA_HOME/bin/jlink \
 FROM eclipse-temurin:25 AS app-runtime
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests libcap2-bin util-linux && \
+    apt-get install -y --no-install-recommends --no-install-suggests libcap2-bin util-linux curl && \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf "$JAVA_HOME"
@@ -68,6 +68,10 @@ ARG USER_GID=$USER_UID
 
 RUN mkdir -p /opt/docker/runtime
 WORKDIR /opt/docker
+
+RUN curl -L -O https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.22.0/opentelemetry-javaagent.jar -o /opt/docker/opentelemetry-javaagent.jar \
+ && echo '53b34ae7a9ac9497ac16607fc6c74f10bb3cf818dc241789a067c47b0bdc2ea0 /opt/docker/opentelemetry-javaagent.jar' > /opt/docker/opentelemetry-javaagent.jar.sha256 \
+ && sha256sum --check /opt/docker/opentelemetry-javaagent.jar.sha256
 
 COPY entrypoint.sh .
 COPY --from=jre-build /opt/build/jre "$JAVA_HOME"

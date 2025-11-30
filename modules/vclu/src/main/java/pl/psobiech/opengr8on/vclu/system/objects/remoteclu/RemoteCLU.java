@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
+import io.opentelemetry.api.trace.Tracer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
@@ -37,7 +38,6 @@ import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
-import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
@@ -46,6 +46,7 @@ import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.TraceUtil;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
@@ -58,6 +59,8 @@ import java.util.function.Function;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
+
+    private static final Tracer TRACER = TraceUtil.tracer(RemoteCLU.class);
 
     public static final int INDEX = 1;
 
@@ -163,7 +166,8 @@ public class RemoteCLU extends VirtualObject {
                     } catch (Exception e) {
                         LOGGER.error("Error while looping on remote object: {} ({})", remoteCLUDevice.getName(), e.getMessage(), e);
                     }
-                }
+                },
+                "loop"
         );
     }
 
@@ -340,12 +344,13 @@ public class RemoteCLU extends VirtualObject {
     private LuaValue remoteExecute(SpecificObject object, String script) {
         return borrowClient(
                 client ->
-                        Util.timed(
-                                LOGGER, "%s:execute(%s) // %s".formatted(getName(), script, object.getName()), 64,
+                        TraceUtil.span(
+                                TRACER,
                                 () ->
                                         client.execute(script)
                                               .map(this::asLuaValue)
-                                              .orElse(LuaValue.NIL)
+                                              .orElse(LuaValue.NIL),
+                                virtualClu.getName(), getName(), object.getName(), "remoteExecute", script
                         )
         );
     }
@@ -353,12 +358,13 @@ public class RemoteCLU extends VirtualObject {
     private LuaValue remoteExecute(String script) {
         return borrowClient(
                 client ->
-                        Util.timed(
-                                LOGGER, "%s:execute(%s)".formatted(getName(), script), 64,
+                        TraceUtil.span(
+                                TRACER,
                                 () ->
                                         client.execute(script)
                                               .map(this::asLuaValue)
-                                              .orElse(LuaValue.NIL)
+                                              .orElse(LuaValue.NIL),
+                                virtualClu.getName(), getName(), "remoteExecute", script
                         )
         );
     }

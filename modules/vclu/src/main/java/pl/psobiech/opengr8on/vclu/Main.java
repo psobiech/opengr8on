@@ -18,6 +18,8 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CipherKey;
@@ -29,6 +31,7 @@ import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil;
 import pl.psobiech.opengr8on.util.IPv4AddressUtil.NetworkInterfaceDto;
 import pl.psobiech.opengr8on.util.ThreadUtil;
+import pl.psobiech.opengr8on.vclu.util.TraceUtil;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -40,11 +43,15 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static pl.psobiech.opengr8on.vclu.util.TraceUtil.tracer;
+
 /**
  * VCLU Entry Point
  */
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
+    public static final Tracer TRACER = tracer(Main.class);
 
     private Main() {
         // NOP
@@ -88,11 +95,15 @@ public class Main {
             ThreadUtil.getInstance().schedule(stopLatch::countDown, exitAfterSeconds, TimeUnit.SECONDS);
         }
 
+        final Span span = TraceUtil.span(TRACER, "server", "start");
         try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), cluDevice)) {
             server.start();
+            span.end();
 
             // sleep until interrupted
             stopLatch.await();
+        } finally {
+            span.end();
         }
     }
 

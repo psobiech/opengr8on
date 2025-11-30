@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import io.opentelemetry.api.trace.Tracer;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThreadFactory;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.TraceUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -60,6 +62,8 @@ import java.util.function.Supplier;
 
 public class Server implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
+
+    private static final Tracer TRACER = TraceUtil.tracer(Server.class);
 
     protected static final int BUFFER_SIZE = 2048;
 
@@ -255,14 +259,24 @@ public class Server implements Closeable {
         if (DiscoverCLUsCommand.requestMatches(buffer)) {
             final Optional<DiscoverCLUsCommand.Request> commandOptional = DiscoverCLUsCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onDiscoverCommand(uuid, request, commandOptional.get());
+                return TraceUtil.span(
+                        TRACER,
+                        () ->
+                                onDiscoverCommand(uuid, request, commandOptional.get()),
+                        "broadcastCommand", "onDiscoverCommand"
+                );
             }
         }
 
         if (SetIpCommand.requestMatches(buffer)) {
             final Optional<SetIpCommand.Request> commandOptional = SetIpCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onSetIpCommand(true, uuid, request, commandOptional.get());
+                return TraceUtil.span(
+                        TRACER,
+                        () ->
+                                onSetIpCommand(true, uuid, request, commandOptional.get()),
+                        "broadcastCommand", "onSetIpCommand"
+                );
             }
         }
 
@@ -300,28 +314,48 @@ public class Server implements Closeable {
         if (SetIpCommand.requestMatches(buffer)) {
             final Optional<SetIpCommand.Request> commandOptional = SetIpCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onSetIpCommand(false, uuid, request, commandOptional.get());
+                return TraceUtil.span(
+                        TRACER,
+                        () ->
+                                onSetIpCommand(false, uuid, request, commandOptional.get()),
+                        "command", "onSetIpCommand"
+                );
             }
         }
 
         if (SetKeyCommand.requestMatches(buffer)) {
             final Optional<SetKeyCommand.Request> commandOptional = SetKeyCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onSetKeyCommand(uuid, request, commandOptional.get());
+                return TraceUtil.span(
+                        TRACER,
+                        () ->
+                                onSetKeyCommand(uuid, request, commandOptional.get()),
+                        "command", "onSetKeyCommand"
+                );
             }
         }
 
         if (ResetCommand.requestMatches(buffer)) {
             final Optional<ResetCommand.Request> commandOptional = ResetCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onResetCommand(uuid, request, commandOptional.get());
+                return TraceUtil.span(
+                        TRACER,
+                        () ->
+                                onResetCommand(uuid, request, commandOptional.get()),
+                        "command", "onResetCommand"
+                );
             }
         }
 
         if (LuaScriptCommand.requestMatches(buffer)) {
             final Optional<LuaScriptCommand.Request> commandOptional = LuaScriptCommand.requestFromByteArray(buffer);
             if (commandOptional.isPresent()) {
-                return onLuaScriptCommand(uuid, request, commandOptional.get());
+                return TraceUtil.span(
+                        TRACER,
+                        () ->
+                                onLuaScriptCommand(uuid, request, commandOptional.get()),
+                        "command", "onLuaScriptCommand"
+                );
             }
         }
 
@@ -329,14 +363,24 @@ public class Server implements Closeable {
             if (StartTFTPdCommand.requestMatches(buffer)) {
                 final Optional<StartTFTPdCommand.Request> commandOptional = StartTFTPdCommand.requestFromByteArray(buffer);
                 if (commandOptional.isPresent()) {
-                    return onStartFTPdCommand(uuid, request, commandOptional.get());
+                    return TraceUtil.span(
+                            TRACER,
+                            () ->
+                                    onStartFTPdCommand(uuid, request, commandOptional.get()),
+                            "command", "onStartFTPdCommand"
+                    );
                 }
             }
 
             if (GenerateMeasurementsCommand.requestMatches(buffer)) {
                 final Optional<GenerateMeasurementsCommand.Request> commandOptional = GenerateMeasurementsCommand.requestFromByteArray(buffer);
                 if (commandOptional.isPresent()) {
-                    return onGenerateMeasurementsCommand(uuid, request, commandOptional.get());
+                    return TraceUtil.span(
+                            TRACER,
+                            () ->
+                                    onGenerateMeasurementsCommand(uuid, request, commandOptional.get()),
+                            "command", "onGenerateMeasurementsCommand"
+                    );
                 }
             }
 
@@ -501,7 +545,7 @@ public class Server implements Closeable {
 
             this.mainThread = LuaThreadFactory.create(rootDirectory, cluDevice, projectCipherKey, CLUFiles.EMERGNCY_LUA, true);
             this.mainThread.start();
-       }
+        }
 
         initialize();
     }

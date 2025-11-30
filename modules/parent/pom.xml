@@ -126,6 +126,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>1.56.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <dependency>
                 <groupId>org.junit</groupId>
@@ -273,6 +280,22 @@
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>5.18.0</version>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-api</artifactId>
+                <version>1.56.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-sdk</artifactId>
+                <version>1.56.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-exporter-otlp</artifactId>
+                <version>1.56.0</version>
             </dependency>
 
             <dependency>
