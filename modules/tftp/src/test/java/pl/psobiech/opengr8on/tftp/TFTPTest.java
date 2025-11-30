@@ -47,8 +47,6 @@ class TFTPTest {
 
     private static Path rootDirectory;
 
-    private static UDPSocket socket;
-
     private static TFTPServer server;
 
     private static Future<Void> serverFuture;
@@ -60,13 +58,11 @@ class TFTPTest {
         rootDirectory = FileUtil.temporaryDirectory();
         FileUtil.mkdir(rootDirectory);
 
-        socket = new UDPSocket(LOCALHOST, 0, false);
-        server = new TFTPServer(LOCALHOST, ServerMode.GET_AND_PUT, rootDirectory, socket);
+        server = new TFTPServer(LOCALHOST, 0, ServerMode.GET_AND_PUT, rootDirectory, (address, port) -> new UDPSocket(address, port, false));
 
         serverFuture = server.start();
-        server.awaitInitialized();
 
-        client = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), socket.getLocalPort());
+        client = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getPort());
     }
 
     @AfterAll

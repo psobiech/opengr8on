@@ -29,27 +29,25 @@ import pl.psobiech.opengr8on.tftp.packets.TFTPRequestPacket;
 import pl.psobiech.opengr8on.util.FileUtil;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.SocketUtil;
-import pl.psobiech.opengr8on.util.SocketUtil.UDPSocket;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 
 import java.io.Closeable;
-import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Enumeration;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TFTPServer implements Closeable {
-    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(1);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TFTPServer.class);
 
@@ -63,38 +61,29 @@ public class TFTPServer implements Closeable {
 
     private final Path serverDirectory;
 
-    private final TFTP serverTFTP;
+    private final int port;
+
+    private final CountDownLatch stopLatch = new CountDownLatch(1);
+
+    private final BiFunction<InetAddress, Integer, SocketUtil.UDPSocket> udpSocketSupplier;
+
+    private TFTP serverTFTP;
 
     private Future<Void> listener = null;
 
-    public TFTPServer(NetworkInterface networkInterface, Path serverDirectory, int port, ServerMode mode) {
-        this(getAddress(networkInterface), port, mode, serverDirectory);
-    }
-
     public TFTPServer(InetAddress localAddress, int port, ServerMode mode, Path serverDirectory) {
-        this(localAddress, mode, serverDirectory, SocketUtil.udpListener(localAddress, port));
+        this(localAddress, port, mode, serverDirectory, SocketUtil::udpListener);
     }
 
-    public TFTPServer(InetAddress localAddress, ServerMode mode, Path serverDirectory, UDPSocket socket) {
+    public TFTPServer(InetAddress localAddress, int port, ServerMode mode, Path serverDirectory, BiFunction<InetAddress, Integer, SocketUtil.UDPSocket> udpSocketSupplier) {
         this.localAddress = localAddress;
+        this.port = port;
+
+        this.udpSocketSupplier = udpSocketSupplier;
 
         this.mode = mode;
 
         this.serverDirectory = serverDirectory.toAbsolutePath().normalize();
-
-        this.serverTFTP = new TFTP(socket);
-    }
-
-    private static InetAddress getAddress(NetworkInterface networkInterface) {
-        final Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
-        while (addresses.hasMoreElements()) {
-            final InetAddress inetAddress = addresses.nextElement();
-            if (inetAddress instanceof Inet4Address) {
-                return inetAddress;
-            }
-        }
-
-        throw new IllegalArgumentException("No address found for interface: " + networkInterface.getName());
     }
 
     /**
@@ -127,7 +116,8 @@ public class TFTPServer implements Closeable {
             return listener;
         }
 
-        serverTFTP.open();
+        final SocketUtil.UDPSocket socket = udpSocketSupplier.apply(localAddress, port);
+        this.serverTFTP = new TFTP(socket);
 
         listener = executor.submit(() -> {
                                        LOGGER.debug("Starting TFTP Server on port " + getPort() + ". Server directory: " + serverDirectory + ". Server Mode is " + mode);
@@ -140,22 +130,23 @@ public class TFTPServer implements Closeable {
                                    }
         );
 
+        awaitInitialized();
+
         return listener;
     }
 
-    void awaitInitialized() throws InterruptedException {
-        synchronized (serverTFTP) {
-            serverTFTP.wait();
+    private void awaitInitialized() {
+        try {
+            stopLatch.await();
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
         }
     }
 
     private void listen() {
-        final int port = getPort();
-
-        try (serverTFTP) {
-            synchronized (serverTFTP) {
-                serverTFTP.notifyAll();
-            }
+        try {
+            serverTFTP.open();
+            stopLatch.countDown();
 
             do {
                 TFTPPacket incomingPacket = null;
@@ -182,13 +173,18 @@ public class TFTPServer implements Closeable {
                 }
             } while (!Thread.interrupted());
         } finally {
-            IOUtil.closeQuietly(serverTFTP);
+            LOGGER.debug("Stopped TFTP Server on port " + serverTFTP.getPort());
 
-            LOGGER.debug("Stopped TFTP Server on port " + port);
+            IOUtil.closeQuietly(serverTFTP);
+            serverTFTP = null;
         }
     }
 
     public int getPort() {
+        if (serverTFTP == null) {
+            return -1;
+        }
+
         return serverTFTP.getPort();
     }
 
@@ -268,6 +264,7 @@ public class TFTPServer implements Closeable {
         listener = null;
 
         IOUtil.closeQuietly(serverTFTP);
+        serverTFTP = null;
     }
 
     public enum ServerMode {

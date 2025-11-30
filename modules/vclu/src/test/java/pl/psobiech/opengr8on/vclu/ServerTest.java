@@ -75,21 +75,25 @@ class ServerTest extends BaseServerTest {
         );
     }
 
-    @Test
+    @RepeatedTest(4)
     void startTFTPdServer() throws Exception {
         execute(
                 (projectCipherKey, server, client) -> {
                     assertTFTPdDisabled(server);
 
-                    final Path rootDirectory = server.getRootDirectory();
-                    final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
-
                     final Optional<Boolean> response1Optional = client.startTFTPdServer();
                     assertTrue(response1Optional.isPresent());
                     assertTrue(response1Optional.get());
 
+                    assertNotEquals(-1, server.getTFTPdPort());
+                    assertNotEquals(0, server.getTFTPdPort());
+
+                    final Path rootDirectory = server.getRootDirectory();
+                    final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
                     try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
                         tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
+                    } finally {
+                        FileUtil.deleteQuietly(temporaryFile);
                     }
 
                     final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4000L));
@@ -107,13 +111,11 @@ class ServerTest extends BaseServerTest {
                 (projectCipherKey, server, client) -> {
                     assertTFTPdDisabled(server);
 
-                    final Path rootDirectory = server.getRootDirectory();
-                    final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
                     final int sessionId = Mocks.sessionId();
 
                     final Optional<GenerateMeasurementsCommand.Response> response1Optional = client.request(
                                                                                                            GenerateMeasurementsCommand.request(LOCALHOST, sessionId, "1345"),
-                                                                                                           Duration.ofMillis(4000L)
+                                                                                                           Duration.ofMillis(4_000L)
                                                                                                    )
                                                                                                    .flatMap(payload ->
                                                                                                                     GenerateMeasurementsCommand.responseFromByteArray(payload.buffer())
@@ -123,11 +125,16 @@ class ServerTest extends BaseServerTest {
                     assertEquals(sessionId, response1Optional.get().getSessionId());
                     assertEquals(GenerateMeasurementsCommand.RESPONSE_OK, response1Optional.get().getReturnValue());
 
+                    assertNotEquals(-1, server.getTFTPdPort());
+                    assertNotEquals(0, server.getTFTPdPort());
+
+                    final Path rootDirectory = server.getRootDirectory();
+                    final Path temporaryFile = FileUtil.temporaryFile(rootDirectory);
                     try (TFTPClient tftpClient = new TFTPClient(SocketUtil.udpRandomPort(LOCALHOST), server.getTFTPdPort())) {
                         tftpClient.download(LOCALHOST, TFTPTransferMode.OCTET, CLUFiles.MAIN_LUA.getLocation(), temporaryFile);
                     }
 
-                    final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4000L));
+                    final Optional<Boolean> response2Optional = client.reset(Duration.ofMillis(4_000L));
                     assertTrue(response2Optional.isPresent());
                     assertTrue(response2Optional.get());
 
