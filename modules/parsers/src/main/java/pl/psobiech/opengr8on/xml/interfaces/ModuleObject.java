@@ -35,4 +35,24 @@ public class ModuleObject {
 
     @JacksonXmlProperty(localName = "interface")
     private CLUInterface _interface;
+
+    public String get_class() {
+        return _class;
+    }
+
+    public String getCount() {
+        return count;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public CLUInterface getInterface() {
+        return _interface;
+    }
 }

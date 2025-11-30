@@ -9,6 +9,7 @@ import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttColorState;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU.SpecificObjectInterface;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
@@ -23,19 +24,17 @@ import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.Remote
 import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDevice {
-    private final SpecificObject object;
-
     private final Map<String, Feature> valueFeatures;
 
     public RemoteCLUDimmer(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
-            SpecificObject clu, SpecificObject object,
+            SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
             String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
         super(
                 virtualClu, remoteCLU,
-                clu, object,
+                clu, object, objectInterface,
                 discoveryTopic(discoveryPrefix, "light", uniqueId),
                 new MqttDiscoveryLight(
                         object.getName(),
@@ -50,8 +49,6 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
                         mqttDiscoveryDevice
                 )
         );
-
-        this.object = object;
 
         this.valueFeatures = object.getFeatures().stream()
                                    .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))

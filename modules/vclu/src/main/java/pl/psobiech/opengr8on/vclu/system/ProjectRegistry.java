@@ -21,6 +21,7 @@ package pl.psobiech.opengr8on.vclu.system;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.xml.omp.OmpReader;
+import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Module;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
@@ -35,6 +36,8 @@ public class ProjectRegistry {
 
     private final Map<Long, SpecificObject> referenceObjectMap;
 
+    private final Map<Long, Module> referenceModuleMap;
+
     private final Map<String, SpecificObject> cluMap;
 
     private final Map<String, Set<SpecificObject>> cluObjectsMap;
@@ -45,6 +48,7 @@ public class ProjectRegistry {
             this.referenceObjectMap = Collections.emptyMap();
             this.cluMap = Collections.emptyMap();
             this.cluObjectsMap = Collections.emptyMap();
+            this.referenceModuleMap = Collections.emptyMap();
 
             return;
         }
@@ -52,9 +56,17 @@ public class ProjectRegistry {
         this.referenceObjectMap = Collections.unmodifiableMap(OmpReader.readAllObjects(projectOmpPath));
         final var clus = new HashMap<String, SpecificObject>();
         final var cluObjects = new HashMap<String, Set<SpecificObject>>();
+        final var modules = new HashMap<Long, Module>();
         for (SpecificObject object : referenceObjectMap.values()) {
             if (object.getType() == SpecificObjectType.CLU) {
                 clus.put(object.getNameOnCLU(), object);
+            }
+
+            final Module module = object.getModule();
+            if (module != null) {
+                if (module.getId() != null) {
+                    modules.put(module.getId(), module);
+                }
             }
 
             SpecificObject clu = object.getClu();
@@ -79,6 +91,7 @@ public class ProjectRegistry {
 
         cluMap = Collections.unmodifiableMap(clus);
         cluObjectsMap = Collections.unmodifiableMap(cluObjectsUnmodifiable);
+        referenceModuleMap = Collections.unmodifiableMap(modules);
     }
 
     public boolean isEmpty() {
@@ -92,6 +105,16 @@ public class ProjectRegistry {
 
         return Optional.ofNullable(
                 referenceObjectMap.get(reference)
+        );
+    }
+
+    public Optional<Module> moduleByReference(Long reference) {
+        if (reference == null) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(
+                referenceModuleMap.get(reference)
         );
     }
 

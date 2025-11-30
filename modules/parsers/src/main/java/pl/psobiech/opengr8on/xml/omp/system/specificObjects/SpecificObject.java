@@ -37,7 +37,7 @@ public class SpecificObject {
 
     private final Clu clu;
 
-    private final List<JsonNode> module;
+    private final Module module;
 
     private final String classTypeId;
 
@@ -100,7 +100,7 @@ public class SpecificObject {
 
     private final Boolean encrypted;
 
-    public SpecificObject(Long id, Long reference, String name, String nameOnCLU, String type, String description, String ipAddress, List<JsonNode> labels, List<Feature> features, List<Event> events, Clu clu, List<JsonNode> module, String classTypeId, String sourceReceiverTypeID, String number, Boolean active, Boolean statisticState, Long tfBusOrder, List<JsonNode> definedFeaturesList, List<Feature> embeddedFeaturesList, List<Event> eventsList, List<IO> iosList, List<JsonNode> scripts, List<JsonNode> peripheryList, List<JsonNode> applicationsList, List<IODefinition> modulesList, JsonNode methodsList, JsonNode methods, Boolean visible, Boolean validConfigurationOnCLU, String firmwareVersion, String firmwareType, String hardwareVersion, String hardwareType, String serialNumber, String macAddress, String cipherKeyType, String iv, String privateKey, Boolean encrypted, Boolean removed, String objectClass) {
+    public SpecificObject(Long id, Long reference, String name, String nameOnCLU, String type, String description, String ipAddress, List<JsonNode> labels, List<Feature> features, List<Event> events, Clu clu, Module module, String classTypeId, String sourceReceiverTypeID, String number, Boolean active, Boolean statisticState, Long tfBusOrder, List<JsonNode> definedFeaturesList, List<Feature> embeddedFeaturesList, List<Event> eventsList, List<IO> iosList, List<JsonNode> scripts, List<JsonNode> peripheryList, List<JsonNode> applicationsList, List<IODefinition> modulesList, JsonNode methodsList, JsonNode methods, Boolean visible, Boolean validConfigurationOnCLU, String firmwareVersion, String firmwareType, String hardwareVersion, String hardwareType, String serialNumber, String macAddress, String cipherKeyType, String iv, String privateKey, Boolean encrypted, Boolean removed, String objectClass) {
         this.id = id;
         this.reference = reference;
         this.name = name;
@@ -234,7 +234,7 @@ public class SpecificObject {
         return clu;
     }
 
-    public List<JsonNode> getModule() {
+    public Module getModule() {
         return module;
     }
 

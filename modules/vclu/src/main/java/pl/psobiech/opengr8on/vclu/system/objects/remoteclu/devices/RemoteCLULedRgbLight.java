@@ -22,7 +22,9 @@ import pl.psobiech.opengr8on.vclu.mqtt.state.RgbwColor;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
-import pl.psobiech.opengr8on.xml.omp.system.specificObjects.Feature;
+import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU.SpecificObjectInterface;
+import pl.psobiech.opengr8on.xml.interfaces.CLUInterfaceFeature;
+import pl.psobiech.opengr8on.xml.interfaces.CLUInterfaceMethod;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.io.IOException;
@@ -30,8 +32,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import static pl.psobiech.opengr8on.vclu.system.objects.VirtualObject.IFeature;
 import static pl.psobiech.opengr8on.vclu.system.objects.VirtualObject.IMethod;
@@ -39,7 +39,6 @@ import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.Remote
 import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevice {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLULedRgbLight.class);
 
     public static final String DEFAULT_RGB_VALUE = "#000000";
@@ -52,13 +51,13 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     private final SpecificObject object;
 
+    private final SpecificObjectInterface objectInterface;
+
     private final String discoveryTopic;
 
     private final MqttDiscoveryLight discoveryMessage;
 
     private final Map<ColorEnum, MqttDiscoveryLight> keyChildDiscoveryMessages = new ConcurrentHashMap<>();
-
-    private final Map<String, Feature> valueFeatures;
 
     private final RefreshContext refreshContext;
 
@@ -66,13 +65,14 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     public RemoteCLULedRgbLight(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
-            SpecificObject clu, SpecificObject object,
+            SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
             String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
         this.object = object;
+        this.objectInterface = objectInterface;
 
         this.discoveryTopic = discoveryTopic(discoveryPrefix, "light", uniqueId);
         this.discoveryMessage = new MqttDiscoveryLight(
@@ -92,15 +92,10 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
         refreshContext.scheduleNextRefreshNow();
 
-        valueFeatures = object.getFeatures().stream()
-                              .collect(Collectors.toMap(Feature::getName, UnaryOperator.identity()));
-
         for (ColorEnum color : ColorEnum.values()) {
-            if (valueFeatures.containsKey(color.feature().featureName())) {
-                final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.feature().featureName());
+            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.feature().featureName());
 
-                keyChildDiscoveryMessages.put(color, discoveryMessage);
-            }
+            keyChildDiscoveryMessages.put(color, discoveryMessage);
         }
     }
 
@@ -359,15 +354,13 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private void writeCluColorValue(ColorEnum color, RemoteCLU remoteCLU, int colorValue) {
-        final long methodIndex = color.method().index();
-
-        remoteCLU.remoteMethod(object, methodIndex, colorValue, RAMP_TIME);
+        Optional.of(color.methodIndex(objectInterface.methods()))
+                .ifPresent(index -> remoteCLU.remoteMethod(object, index, colorValue, RAMP_TIME));
     }
 
     private void writeCluRGBValue(RemoteCLU remoteCLU, RGBColor color) {
-        final long methodIndex = ColorEnum.RGB.method().index();
-
-        remoteCLU.remoteMethod(object, methodIndex, color.getRGBAsHex(), RAMP_TIME);
+        Optional.of(ColorEnum.RGB.methodIndex(objectInterface.methods()))
+                .ifPresent(index -> remoteCLU.remoteMethod(object, index, color.getRGBAsHex(), RAMP_TIME));
     }
 
     @Override
@@ -383,13 +376,13 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private Optional<Integer> readCluColorValue(RemoteCLU remoteCLU, ColorEnum color) {
-        return Optional.of(color.featureIndex(valueFeatures))
+        return Optional.of(color.featureIndex(objectInterface.features()))
                        .flatMap(index -> remoteCLU.remoteGet(object, index))
                        .map(luaValue -> luaValue.optint(MqttRgbwState.OFF_VALUE));
     }
 
     private Optional<RGBColor> readCluRGBValue(RemoteCLU remoteCLU) {
-        return Optional.of(ColorEnum.RGB.featureIndex(valueFeatures))
+        return Optional.of(ColorEnum.RGB.featureIndex(objectInterface.features()))
                        .flatMap(index -> remoteCLU.remoteGet(object, index))
                        .map(luaValue -> luaValue.optjstring(DEFAULT_RGB_VALUE))
                        .flatMap(RGBColor::parse);
@@ -458,10 +451,16 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             return key;
         }
 
-        public int featureIndex(Map<String, Feature> features) {
+        public int featureIndex(Map<String, CLUInterfaceFeature> features) {
             return Optional.ofNullable(features.get(feature().featureName()))
-                           .map(Feature::getIndex)
+                           .map(CLUInterfaceFeature::getIndex)
                            .orElseGet(feature::index);
+        }
+
+        public int methodIndex(Map<String, CLUInterfaceMethod> methods) {
+            return Optional.ofNullable(methods.get(feature().featureName()))
+                           .map(CLUInterfaceMethod::getIndex)
+                           .orElseGet(method::index);
         }
 
         public Features feature() {
@@ -479,6 +478,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
         BLUE_VALUE("BlueValue", 5),
         WHITE_VALUE("WhiteValue", 15),
         RGB("RGB", 6),
+        RAMP_TIME("RampTime", 7),
         //
         ;
 
@@ -502,11 +502,12 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     }
 
     private enum Methods implements IMethod {
-        RED_VALUE("RedValue", 3),
-        GREEN_VALUE("GreenValue", 4),
-        BLUE_VALUE("BlueValue", 5),
-        WHITE_VALUE("WhiteValue", 12),
-        RGB("RGB", 6),
+        RED_VALUE("SetRedValue", 3),
+        GREEN_VALUE("SetGreenValue", 4),
+        BLUE_VALUE("SetBlueValue", 5),
+        WHITE_VALUE("SetWhiteValue", 12),
+        RGB("SetRGBvalue", 6),
+        RAMP_TIME("SetRampTime", 7),
         //
         ;
 
