@@ -98,7 +98,11 @@ public class Storage extends VirtualObject {
 
         final Map<String, Object> storedVariables;
         try {
-            storedVariables = ObjectMapperFactory.JSON.readValue(storagePath.toFile(), HashMap.class);
+            if (Files.size(storagePath) == 0) {
+                storedVariables = new HashMap<>();
+            } else {
+                storedVariables = ObjectMapperFactory.JSON.readValue(storagePath.toFile(), HashMap.class);
+            }
         } catch (IOException e) {
             throw new UnexpectedException(e);
         }
