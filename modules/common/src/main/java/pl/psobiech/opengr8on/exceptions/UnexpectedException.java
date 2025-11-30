@@ -35,6 +35,10 @@ public class UnexpectedException extends RuntimeException {
     }
 
     public static UnexpectedException wrap(Throwable throwable) {
+        if (throwable instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
+
         if (throwable instanceof UnexpectedException unexpectedException) {
             return unexpectedException;
         }

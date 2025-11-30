@@ -24,14 +24,12 @@ import pl.psobiech.opengr8on.xml.omp.OmpReader;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public class ProjectObjectRegistry implements Closeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectObjectRegistry.class);
+public class ProjectRegistry {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectRegistry.class);
 
     private static final String PROJECT_FILE = "project.omp";
 
@@ -41,7 +39,7 @@ public class ProjectObjectRegistry implements Closeable {
 
     private final Map<String, Set<SpecificObject>> cluObjectsMap;
 
-    public ProjectObjectRegistry(Path rootDirectory) {
+    public ProjectRegistry(Path rootDirectory) {
         final Path projectOmpPath = rootDirectory.getParent().resolve(PROJECT_FILE);
         if (!Files.exists(projectOmpPath)) {
             this.referenceObjectMap = Collections.emptyMap();
@@ -83,6 +81,10 @@ public class ProjectObjectRegistry implements Closeable {
         cluObjectsMap = Collections.unmodifiableMap(cluObjectsUnmodifiable);
     }
 
+    public boolean isEmpty() {
+        return referenceObjectMap.isEmpty();
+    }
+
     public Optional<SpecificObject> byReference(Long reference) {
         if (reference == null) {
             return Optional.empty();
@@ -116,11 +118,6 @@ public class ProjectObjectRegistry implements Closeable {
         }
 
         return Optional.empty();
-    }
-
-    @Override
-    public void close() throws IOException {
-        // NOP
     }
 
     public record ObjectId(String cluName, String objectName) {

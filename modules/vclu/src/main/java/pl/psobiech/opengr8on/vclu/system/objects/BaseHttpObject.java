@@ -43,15 +43,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public abstract class BaseHttpObject extends VirtualObject {
-    protected static final String METHOD_GET = "GET";
+    public static final String METHOD_GET = "GET";
 
-    protected static final String HEADER_CONTENT_TYPE = "Content-Type";
+    public static final String HEADER_CONTENT_TYPE = "Content-Type";
 
-    protected static final String HEADER_ACCEPT = "Accept";
+    public static final String HEADER_ACCEPT = "Accept";
 
     protected static final int CONNECT_TIMEOUT_MILLIS = 4000;
 
-    protected static final String USER_AGENT_HEADER = "User-Agent";
+    public static final String USER_AGENT_HEADER = "User-Agent";
 
     protected static final String VERSION_INFO = "openGr8ton/" + ServerVersion.get();
 

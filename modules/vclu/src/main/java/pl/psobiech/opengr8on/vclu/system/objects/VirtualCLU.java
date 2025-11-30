@@ -32,14 +32,15 @@ import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryOrigin;
-import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
-import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry.ObjectId;
+import pl.psobiech.opengr8on.vclu.system.ProjectRegistry;
+import pl.psobiech.opengr8on.vclu.system.ProjectRegistry.ObjectId;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaTwoArgFunction;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaVarArgFunction;
 import pl.psobiech.opengr8on.vclu.system.objects.clu.CLUTimeZone;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.io.Closeable;
@@ -75,13 +76,13 @@ public class VirtualCLU extends VirtualObject implements Closeable {
 
     private volatile ZonedDateTime currentDateTime = getCurrentDateTime();
 
-    private final ProjectObjectRegistry objectRegistry;
+    private final ProjectRegistry objectRegistry;
 
     private final MqttClient mqttClient = new MqttClient();
 
     private State state = State.STARTING;
 
-    public VirtualCLU(VirtualSystem virtualSystem, Path rootDirectory, String name, ProjectObjectRegistry objectRegistry) {
+    public VirtualCLU(VirtualSystem virtualSystem, Path rootDirectory, String name, ProjectRegistry objectRegistry, InterfaceRegistry interfaceRegistry) {
         super(
                 virtualSystem, name,
                 Features.class, Methods.class, Events.class

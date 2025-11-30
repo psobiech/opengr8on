@@ -78,7 +78,7 @@ public class HttpRequest extends BaseHttpObject {
         register(Methods.CLEAR, this::onClear);
     }
 
-    private static String[] asKeyValueArray(Map<String, String> headers) {
+    public static String[] asKeyValueArray(Map<String, String> headers) {
         int i = 0;
         final String[] headerArray = new String[headers.size() * 2];
         for (Entry<String, String> entry : headers.entrySet()) {
