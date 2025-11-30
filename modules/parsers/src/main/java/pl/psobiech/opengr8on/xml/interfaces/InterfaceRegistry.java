@@ -19,6 +19,7 @@
 package pl.psobiech.opengr8on.xml.interfaces;
 
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +34,13 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class InterfaceRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceRegistry.class);
+
+    public static final InterfaceRegistry EMPTY = new InterfaceRegistry();
 
     private static final String SEPARATOR = ":";
 
@@ -52,6 +57,85 @@ public class InterfaceRegistry {
     private final Map<String, CLUModule> modules;
 
     private final Map<String, Map<String, CLUObject>> objects;
+
+    public InterfaceRegistry(ZipFile zipFile) {
+        final ObjectReader cluDefinitionReader = ObjectMapperFactory.XML.readerFor(CLU.class);
+        final Map<String, CLU> clus = new TreeMap<>(String::compareTo);
+
+        final ObjectReader moduleDefinitionReader = ObjectMapperFactory.XML.readerFor(CLUModule.class);
+        final Map<String, CLUModule> modules = new TreeMap<>(String::compareTo);
+
+        final ObjectReader objectDefinitionReader = ObjectMapperFactory.XML.readerFor(CLUObject.class);
+        final Map<String, Map<String, CLUObject>> objects = new TreeMap<>(String::compareTo);
+
+        final var iterator = zipFile.entries().asIterator();
+        while (iterator.hasNext()) {
+            final ZipEntry entry = iterator.next();
+
+            final String fileName = FilenameUtils.getName(entry.getName());
+            if (fileName.startsWith("clu_")) {
+                try {
+                    final CLU clu;
+                    try (var inputStream = zipFile.getInputStream(entry)) {
+                        clu = cluDefinitionReader.readValue(inputStream);
+                    }
+
+                    final String cluKey = createCluKey(clu);
+                    LOGGER.trace("Loaded: " + cluKey);
+
+                    clus.put(cluKey, clu);
+                } catch (IOException e) {
+                    LOGGER.error("Error loading: {}", entry, e);
+                }
+            } else if (fileName.startsWith("module_")) {
+                try {
+                    final CLUModule module;
+                    try (var inputStream = zipFile.getInputStream(entry)) {
+                        module = moduleDefinitionReader.readValue(inputStream);
+                    }
+
+                    final String moduleKey = createModuleKey(module);
+                    LOGGER.trace("Loaded: " + moduleKey);
+
+                    modules.put(moduleKey, module);
+                } catch (IOException e) {
+                    LOGGER.error("Error loading: {}", entry, e);
+                }
+            } else if (fileName.startsWith("object_")) {
+                try {
+                    final CLUObject object;
+                    try (var inputStream = zipFile.getInputStream(entry)) {
+                        object = objectDefinitionReader.readValue(inputStream);
+                    }
+
+                    final String name = object.getName();
+                    final String version = createObjectVersionKey(object.getVersion());
+
+                    objects.computeIfAbsent(name, ignored -> new TreeMap<>(String::compareTo))
+                           .put(version, object);
+
+                    LOGGER.trace("Loaded: " + name + SEPARATOR + version);
+                } catch (IOException e) {
+                    LOGGER.error("Error loading: {}", entry, e);
+                }
+            }
+        }
+
+        int objectNumbers = 0;
+        final Set<String> objectKeys = new HashSet<>(objects.keySet());
+        for (String objectKey : objectKeys) {
+            final Map<String, CLUObject> objectVersions = objects.get(objectKey);
+            objectNumbers += objectVersions.size();
+
+            objects.put(objectKey, Collections.unmodifiableMap(objectVersions));
+        }
+
+        this.clus = Collections.unmodifiableMap(clus);
+        this.modules = Collections.unmodifiableMap(modules);
+        this.objects = Collections.unmodifiableMap(objects);
+
+        LOGGER.info("Loaded Interfaces: clus: {}, modules: {}, objects: {}", this.clus.size(), this.modules.size(), objectNumbers);
+    }
 
     public InterfaceRegistry(Path rootPath) {
         final List<Path> cluInterfaceFiles = new ArrayList<>();
@@ -140,7 +224,7 @@ public class InterfaceRegistry {
         this.modules = Collections.unmodifiableMap(modules);
         this.objects = Collections.unmodifiableMap(objects);
 
-        LOGGER.debug("Loaded Interfaces: clus: {}, modules: {}, objects: {}", this.clus.size(), this.modules.size(), objectNumbers);
+        LOGGER.info("Loaded Interfaces: clus: {}, modules: {}, objects: {}", this.clus.size(), this.modules.size(), objectNumbers);
     }
 
     private InterfaceRegistry() {

@@ -33,6 +33,7 @@ import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.Util;
 import pl.psobiech.opengr8on.vclu.Server;
+import pl.psobiech.opengr8on.vclu.interfaces.DeviceInterfaces;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.*;
@@ -40,6 +41,7 @@ import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.State;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.vclu.util.TraceUtil;
+import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
 
 import java.io.Closeable;
 import java.net.Inet4Address;
@@ -76,7 +78,9 @@ public class VirtualSystem implements Closeable {
 
     private final ClientRegistry clientRegistry;
 
-    private final ProjectObjectRegistry projectObjectRegistry;
+    private final ProjectRegistry projectRegistry;
+
+    private final InterfaceRegistry interfaceRegistry;
 
     private final VirtualCLU virtualClu;
 
@@ -90,9 +94,17 @@ public class VirtualSystem implements Closeable {
         this.cipherKey = cipherKey;
 
         this.clientRegistry = new ClientRegistry(localAddress, cipherKey);
-        this.projectObjectRegistry = new ProjectObjectRegistry(rootDirectory);
+        this.projectRegistry = new ProjectRegistry(rootDirectory);
+        if (!projectRegistry.isEmpty()) {
+            final Path parentDirectory = rootDirectory.getParent();
+            final Path deviceInterfacesPath = parentDirectory.resolve("device-interfaces.zip");
 
-        this.virtualClu = new VirtualCLU(this, rootDirectory, "VIRTUAL_CLU", projectObjectRegistry);
+            this.interfaceRegistry = DeviceInterfaces.refresh(deviceInterfacesPath);
+        } else {
+            this.interfaceRegistry = InterfaceRegistry.EMPTY;
+        }
+
+        this.virtualClu = new VirtualCLU(this, rootDirectory, "VIRTUAL_CLU", projectRegistry, interfaceRegistry);
     }
 
     public VirtualObject getObject(String name) {
@@ -111,8 +123,12 @@ public class VirtualSystem implements Closeable {
 
                 yield virtualClu;
             }
-            case RemoteCLU.INDEX ->
-                    new RemoteCLU(this, projectObjectRegistry, name, ipAddress, localAddress, cipherKey, port);
+            case RemoteCLU.INDEX -> new RemoteCLU(
+                    this,
+                    projectRegistry, interfaceRegistry,
+                    name,
+                    ipAddress, localAddress, cipherKey, port
+            );
             case Timer.INDEX -> new Timer(this, name);
             case Storage.INDEX -> new Storage(this, name, rootDirectory.getParent().resolve("storage"));
             case MqttTopic.INDEX -> new MqttTopic(this, name);

@@ -39,7 +39,7 @@ import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.system.ProjectObjectRegistry;
+import pl.psobiech.opengr8on.vclu.system.ProjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
@@ -47,6 +47,7 @@ import pl.psobiech.opengr8on.vclu.system.objects.VirtualObject;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
 import pl.psobiech.opengr8on.vclu.util.TraceUtil;
+import pl.psobiech.opengr8on.xml.interfaces.InterfaceRegistry;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObjectType;
 
@@ -77,9 +78,9 @@ public class RemoteCLU extends VirtualObject {
             SpecificObjectType.PANEL_BUTTON
     );
 
-    private final ProjectObjectRegistry objectRegistry;
+    private final ProjectRegistry objectRegistry;
 
-//    private final CLUClient client;
+    private final InterfaceRegistry interfaceRegistry;
 
     private final Globals localLuaContext;
 
@@ -91,13 +92,14 @@ public class RemoteCLU extends VirtualObject {
 
     private boolean mqttInitialized = false;
 
-    public RemoteCLU(VirtualSystem virtualSystem, ProjectObjectRegistry projectObjectRegistry, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
+    public RemoteCLU(VirtualSystem virtualSystem, ProjectRegistry projectRegistry, InterfaceRegistry interfaceRegistry, String name, Inet4Address address, Inet4Address localAddress, CipherKey cipherKey, int port) {
         super(
                 virtualSystem, name,
                 IFeature.EMPTY.class, Methods.class, IEvent.EMPTY.class
         );
 
-        this.objectRegistry = projectObjectRegistry;
+        this.objectRegistry = projectRegistry;
+        this.interfaceRegistry = interfaceRegistry;
 
         this.localLuaContext = new Globals();
         localLuaContext.compiler = LuaC.instance;
@@ -154,8 +156,19 @@ public class RemoteCLU extends VirtualObject {
                 final String discoveryPrefix = virtualClu.get(VirtualCLU.Features.MQTT_DISCOVERY_PREFIX).checkjstring();
                 if (discoveryPrefix != null) {
                     initMqttDiscovery(discoveryPrefix);
-
                     mqttInitialized = true;
+
+                    virtualSystem.forAllDevices(
+                            devices.values(),
+                            remoteCLUDevice -> {
+                                try {
+                                    remoteCLUDevice.setup();
+                                } catch (Exception e) {
+                                    LOGGER.error("Error while looping on remote object: {} ({})", remoteCLUDevice.getName(), e.getMessage(), e);
+                                }
+                            },
+                            "setup"
+                    );
                 }
             }
         }
@@ -287,8 +300,6 @@ public class RemoteCLU extends VirtualObject {
             }
 
             devices.put(object.getNameOnCLU(), sensor);
-
-            sensor.setup();
         }
     }
 
