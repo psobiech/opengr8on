@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.system;
 
+import io.opentelemetry.api.trace.Tracer;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 import org.slf4j.Logger;
@@ -31,12 +32,14 @@ import pl.psobiech.opengr8on.util.IOUtil;
 import pl.psobiech.opengr8on.util.RandomUtil;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.Util;
+import pl.psobiech.opengr8on.vclu.Server;
 import pl.psobiech.opengr8on.vclu.system.ClientRegistry.Subscription;
 import pl.psobiech.opengr8on.vclu.system.lua.LuaThread;
 import pl.psobiech.opengr8on.vclu.system.objects.*;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU.State;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.TraceUtil;
 
 import java.io.Closeable;
 import java.net.Inet4Address;
@@ -50,6 +53,8 @@ import java.util.function.Consumer;
 
 public class VirtualSystem implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
+
+    private static final Tracer TRACER = TraceUtil.tracer(Server.class);
 
     private static final long LOG_LOOP_TIME_NANOS = TimeUnit.MILLISECONDS.toNanos(512);
 
@@ -130,7 +135,7 @@ public class VirtualSystem implements Closeable {
     }
 
     public void setup() {
-        forAllDevices(objectsByName.values(), VirtualObject::setup);
+        forAllDevices(objectsByName.values(), VirtualObject::setup, "setup");
 
         final State state;
         if (luaThread.isEmergency()) {
@@ -144,17 +149,18 @@ public class VirtualSystem implements Closeable {
     }
 
     public LuaValue luaCall(String script) throws LuaError {
-        return Util.timed(
-                LOGGER, "luaCall(%s)".formatted(script), 24,
+        return TraceUtil.span(
+                TRACER,
                 () ->
-                        luaThread.luaCall(script)
+                        luaThread.luaCall(script),
+                getVirtualClu().getName(), "luaCall", script
         );
     }
 
     public void loop() {
         final long startTime = System.nanoTime();
 
-        forAllDevices(objectsByName.values(), VirtualObject::loop);
+        forAllDevices(objectsByName.values(), VirtualObject::loop, "loop");
 
         // best effort to run loop with fixed rate
         final long timeLeft = LOG_LOOP_TIME_NANOS - (System.nanoTime() - startTime);
@@ -220,13 +226,18 @@ public class VirtualSystem implements Closeable {
         ThreadUtil.closeQuietly(executor);
     }
 
-    public <VD extends VirtualDevice> void forAllDevices(Collection<VD> virtualObjects, Consumer<VD> runnable) {
+    public <VD extends VirtualDevice> void forAllDevices(Collection<VD> virtualObjects, Consumer<VD> runnable, String operationName) {
         final List<Future<?>> futures = new ArrayList<>(virtualObjects.size());
         for (VD object : virtualObjects) {
             futures.add(executor.submit(() -> {
                 final long objectStartTime = System.nanoTime();
                 try {
-                    runnable.accept(object);
+                    TraceUtil.span(
+                            TRACER,
+                            () ->
+                                    runnable.accept(object),
+                            getVirtualClu().getName(), object.getName(), operationName
+                    );
                 } catch (RejectedExecutionException e) {
                     LOGGER.trace(e.getMessage(), e);
                 } catch (Exception e) {
@@ -234,7 +245,7 @@ public class VirtualSystem implements Closeable {
                 } finally {
                     final long objectDeltaNanos = (System.nanoTime() - objectStartTime);
                     if (objectDeltaNanos > LOG_OBJECT_LOOP_TIME_NANOS) {
-                        LOGGER.info("Object {} loop time took {}ms", object.getName(), TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
+                        LOGGER.info("Object {} {} time took {}ms", object.getName(), operationName, TimeUnit.NANOSECONDS.toMillis(objectDeltaNanos));
                     }
                 }
             }));

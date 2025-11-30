@@ -1,5 +1,16 @@
 #!/bin/sh
 
+if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT}" ]; then
+  export JAVA_TOOL_OPTIONS="-javaagent:/opt/docker/opentelemetry-javaagent.jar"
+
+  export OTEL_SERVICE_NAME="openGrenton"
+  export OTEL_TRACES_EXPORTER="otlp"
+  export OTEL_METRICS_EXPORTER="none"
+  export OTEL_LOGS_EXPORTER="none"
+
+  #  export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+fi
+
 exec "setpriv" "--reuid" "ubuntu" "--regid" "ubuntu" "--clear-groups" "--ambient-caps" "-all,+net_bind_service,+net_broadcast" "--inh-caps" "-all,+net_bind_service,+net_broadcast" "--no-new-privs" \
    "$JAVA_HOME/bin/java" \
    "-XX:+DisableAttachMechanism" \

@@ -53,7 +53,7 @@ public abstract class BaseHttpObject extends VirtualObject {
 
     protected static final String USER_AGENT_HEADER = "User-Agent";
 
-    protected static final String VERSION_INFO = "OpenGr8ton/" + ServerVersion.get();
+    protected static final String VERSION_INFO = "openGr8ton/" + ServerVersion.get();
 
     protected static final String ROOT_NAME = "root";
 
