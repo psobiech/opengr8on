@@ -31,7 +31,6 @@ import java.net.*;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -42,14 +41,6 @@ public class SocketUtil {
      * Default timeout value
      */
     public static final int DEFAULT_TIMEOUT_MILLISECONDS = 4_000;
-
-    private static final ExecutorService PLATFORM_EXECUTOR;
-
-    static {
-        PLATFORM_EXECUTOR = ThreadUtil.daemonExecutor(SocketUtil.class);
-
-        ThreadUtil.addShutdownHook(() -> IOUtil.closeQuietly(PLATFORM_EXECUTOR));
-    }
 
     private SocketUtil() {
         // NOP

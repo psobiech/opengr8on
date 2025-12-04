@@ -19,6 +19,7 @@
 package pl.psobiech.opengr8on.vclu;
 
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +96,7 @@ public class Main {
             ThreadUtil.getInstance().schedule(stopLatch::countDown, exitAfterSeconds, TimeUnit.SECONDS);
         }
 
-        final Span span = TraceUtil.span(TRACER, "server", "start");
+        final Span span = TraceUtil.span(TRACER, SpanKind.INTERNAL, "server", "start");
         try (Server server = new Server(rootDirectory, new CipherKey(cluKeys.key(), cluKeys.iv()), cluDevice)) {
             server.start();
             span.end();

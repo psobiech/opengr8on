@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.util;
 
+import io.opentelemetry.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
@@ -173,7 +174,7 @@ public class ThreadUtil {
         final ScheduledThreadPoolExecutor scheduler = createScheduler(Integer.MAX_VALUE, virtualThreadFactory(name));
         scheduler.allowCoreThreadTimeOut(true);
 
-        return scheduler;
+        return Context.taskWrapping(scheduler);
     }
 
     /**
@@ -198,7 +199,7 @@ public class ThreadUtil {
         scheduler.allowCoreThreadTimeOut(false);
         scheduler.prestartAllCoreThreads();
 
-        return scheduler;
+        return Context.taskWrapping(scheduler);
     }
 
     private static ScheduledThreadPoolExecutor createScheduler(int poolSize, ThreadFactory threadFactory) {
@@ -216,7 +217,9 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Virtual Threads
      */
     public static ExecutorService virtualExecutor(String name) {
-        return Executors.newThreadPerTaskExecutor(virtualThreadFactory(name));
+        return Context.taskWrapping(
+                Executors.newThreadPerTaskExecutor(virtualThreadFactory(name))
+        );
     }
 
     /**
@@ -240,7 +243,9 @@ public class ThreadUtil {
      * @return named scheduled executor, working on Daemon Platform Threads
      */
     public static ExecutorService daemonExecutor(String name) {
-        return Executors.newCachedThreadPool(platformThreadFactory(name, true));
+        return Context.taskWrapping(
+                Executors.newCachedThreadPool(platformThreadFactory(name, true))
+        );
     }
 
     /**

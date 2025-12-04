@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.BasePooledObjectFactory;
@@ -160,6 +161,7 @@ public class RemoteCLU extends VirtualObject {
                     mqttInitialized = true;
 
                     virtualSystem.forAllDevices(
+                            this,
                             devices.values(),
                             remoteCLUDevice -> {
                                 try {
@@ -175,6 +177,7 @@ public class RemoteCLU extends VirtualObject {
         }
 
         virtualSystem.forAllDevices(
+                this,
                 devices.values(),
                 remoteCLUDevice -> {
                     try {
@@ -325,10 +328,6 @@ public class RemoteCLU extends VirtualObject {
         return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
     }
 
-    public Optional<LuaValue> remoteSet(SpecificObject object, long index, String param1) {
-        return remoteExecute(object, String.format("%s:set(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
-    }
-
     public Optional<LuaValue> remoteMethod(SpecificObject object, long index, int param1) {
         return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
     }
@@ -338,14 +337,6 @@ public class RemoteCLU extends VirtualObject {
     }
 
     public Optional<LuaValue> remoteMethod(SpecificObject object, long index, String param1, int param2) {
-        return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1), LuaUtil.stringify(param2)));
-    }
-
-    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, String param1) {
-        return remoteExecute(object, String.format("%s:execute(%d, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1)));
-    }
-
-    public Optional<LuaValue> remoteMethod(SpecificObject object, long index, String param1, String param2) {
         return remoteExecute(object, String.format("%s:execute(%d, %s, %s)", object.getNameOnCLU(), index, LuaUtil.stringify(param1), LuaUtil.stringify(param2)));
     }
 
@@ -365,6 +356,7 @@ public class RemoteCLU extends VirtualObject {
                                 () ->
                                         client.execute(script)
                                               .map(this::asLuaValue),
+                                SpanKind.CLIENT,
                                 virtualClu.getName(), getName(), object.getName(), "remoteExecute", script
                         )
         );
@@ -378,6 +370,7 @@ public class RemoteCLU extends VirtualObject {
                                 () ->
                                         client.execute(script)
                                               .map(this::asLuaValue),
+                                SpanKind.CLIENT,
                                 virtualClu.getName(), getName(), "remoteExecute", script
                         )
         );
@@ -425,9 +418,9 @@ public class RemoteCLU extends VirtualObject {
 
     @Override
     public void close() {
-        super.close();
-
         IOUtil.closeQuietly(clientPool);
+
+        super.close();
     }
 
     public static class SpecificObjectInterface {

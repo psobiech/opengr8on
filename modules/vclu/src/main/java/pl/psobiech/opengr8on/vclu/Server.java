@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu;
 
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
@@ -263,6 +264,7 @@ public class Server implements Closeable {
                         TRACER,
                         () ->
                                 onDiscoverCommand(uuid, request, commandOptional.get()),
+                        SpanKind.SERVER,
                         "broadcastCommand", "onDiscoverCommand"
                 );
             }
@@ -275,6 +277,7 @@ public class Server implements Closeable {
                         TRACER,
                         () ->
                                 onSetIpCommand(true, uuid, request, commandOptional.get()),
+                        SpanKind.SERVER,
                         "broadcastCommand", "onSetIpCommand"
                 );
             }
@@ -318,6 +321,7 @@ public class Server implements Closeable {
                         TRACER,
                         () ->
                                 onSetIpCommand(false, uuid, request, commandOptional.get()),
+                        SpanKind.SERVER,
                         "command", "onSetIpCommand"
                 );
             }
@@ -330,6 +334,7 @@ public class Server implements Closeable {
                         TRACER,
                         () ->
                                 onSetKeyCommand(uuid, request, commandOptional.get()),
+                        SpanKind.SERVER,
                         "command", "onSetKeyCommand"
                 );
             }
@@ -342,6 +347,7 @@ public class Server implements Closeable {
                         TRACER,
                         () ->
                                 onResetCommand(uuid, request, commandOptional.get()),
+                        SpanKind.SERVER,
                         "command", "onResetCommand"
                 );
             }
@@ -354,6 +360,7 @@ public class Server implements Closeable {
                         TRACER,
                         () ->
                                 onLuaScriptCommand(uuid, request, commandOptional.get()),
+                        SpanKind.SERVER,
                         "command", "onLuaScriptCommand"
                 );
             }
@@ -367,6 +374,7 @@ public class Server implements Closeable {
                             TRACER,
                             () ->
                                     onStartFTPdCommand(uuid, request, commandOptional.get()),
+                            SpanKind.SERVER,
                             "command", "onStartFTPdCommand"
                     );
                 }
@@ -379,6 +387,7 @@ public class Server implements Closeable {
                             TRACER,
                             () ->
                                     onGenerateMeasurementsCommand(uuid, request, commandOptional.get()),
+                            SpanKind.SERVER,
                             "command", "onGenerateMeasurementsCommand"
                     );
                 }

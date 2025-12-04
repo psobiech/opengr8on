@@ -18,6 +18,7 @@
 
 package pl.psobiech.opengr8on.vclu.system;
 
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
@@ -53,7 +54,8 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-public class VirtualSystem implements Closeable {
+public class VirtualSystem implements VirtualDevice, Closeable {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualSystem.class);
 
     private static final Tracer TRACER = TraceUtil.tracer(Server.class);
@@ -64,7 +66,9 @@ public class VirtualSystem implements Closeable {
 
     private static final String CLIENT_REPORT_PREFIX = "clientReport:";
 
-    private final ExecutorService executor = ThreadUtil.virtualExecutor("VSYSTEM");
+    private static final String NAME = "VSYSTEM";
+
+    private final ExecutorService executor = ThreadUtil.virtualExecutor(NAME);
 
     private final Inet4Address localAddress;
 
@@ -105,6 +109,11 @@ public class VirtualSystem implements Closeable {
         }
 
         this.virtualClu = new VirtualCLU(this, rootDirectory, "VIRTUAL_CLU", projectRegistry, interfaceRegistry);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     public VirtualObject getObject(String name) {
@@ -151,7 +160,7 @@ public class VirtualSystem implements Closeable {
     }
 
     public void setup() {
-        forAllDevices(objectsByName.values(), VirtualObject::setup, "setup");
+        forAllDevices(this, objectsByName.values(), VirtualObject::setup, "setup");
 
         final State state;
         if (luaThread.isEmergency()) {
@@ -169,6 +178,7 @@ public class VirtualSystem implements Closeable {
                 TRACER,
                 () ->
                         luaThread.luaCall(script),
+                SpanKind.INTERNAL,
                 getVirtualClu().getName(), "luaCall", script
         );
     }
@@ -176,7 +186,7 @@ public class VirtualSystem implements Closeable {
     public void loop() {
         final long startTime = System.nanoTime();
 
-        forAllDevices(objectsByName.values(), VirtualObject::loop, "loop");
+        forAllDevices(this, objectsByName.values(), VirtualObject::loop, "loop");
 
         // best effort to run loop with fixed rate
         final long timeLeft = LOG_LOOP_TIME_NANOS - (System.nanoTime() - startTime);
@@ -236,13 +246,13 @@ public class VirtualSystem implements Closeable {
 
     @Override
     public void close() {
-        IOUtil.closeQuietly(clientRegistry);
-        IOUtil.closeQuietly(objectsByName.values());
+        forAllDevices(this, objectsByName.values(), VirtualObject::close, "close");
 
+        IOUtil.closeQuietly(clientRegistry);
         ThreadUtil.closeQuietly(executor);
     }
 
-    public <VD extends VirtualDevice> void forAllDevices(Collection<VD> virtualObjects, Consumer<VD> runnable, String operationName) {
+    public <VD extends VirtualDevice> void forAllDevices(VirtualDevice rootObject, Collection<VD> virtualObjects, Consumer<VD> runnable, String operationName) {
         final List<Future<?>> futures = new ArrayList<>(virtualObjects.size());
         for (VD object : virtualObjects) {
             futures.add(executor.submit(() -> {
@@ -252,7 +262,8 @@ public class VirtualSystem implements Closeable {
                             TRACER,
                             () ->
                                     runnable.accept(object),
-                            getVirtualClu().getName(), object.getName(), operationName
+                            SpanKind.INTERNAL,
+                            getVirtualClu().getName(), rootObject.getName(), object.getName(), operationName
                     );
                 } catch (RejectedExecutionException e) {
                     LOGGER.trace(e.getMessage(), e);

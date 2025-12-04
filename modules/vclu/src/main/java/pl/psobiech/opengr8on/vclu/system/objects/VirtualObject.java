@@ -18,6 +18,8 @@
 
 package pl.psobiech.opengr8on.vclu.system.objects;
 
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
@@ -27,6 +29,7 @@ import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.*;
 import pl.psobiech.opengr8on.vclu.util.LuaUtil;
+import pl.psobiech.opengr8on.vclu.util.TraceUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +38,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class VirtualObject implements VirtualDevice {
+    protected final Tracer tracer;
+
     protected final VirtualSystem virtualSystem;
 
     protected String name;
@@ -76,6 +81,8 @@ public class VirtualObject implements VirtualDevice {
             Class<? extends Enum<? extends IMethod>> methodClass,
             Class<? extends Enum<? extends IEvent>> eventClass
     ) {
+        this.tracer = TraceUtil.tracer(name);
+
         this.virtualSystem = virtualSystem;
         this.name = name;
 
@@ -126,14 +133,16 @@ public class VirtualObject implements VirtualDevice {
 
     private void registerFeature(int index, BaseLuaFunction fn) {
         final BaseLuaFunction proxyFn = (a) -> {
-            final LuaValue returnValue = fn.invoke(a);
+            final String featureContext = "%s.get(%s)".formatted(getName(), featureName(index));
+
+            final LuaValue returnValue = TraceUtil.span(
+                    tracer,
+                    () -> fn.invoke(a),
+                    SpanKind.INTERNAL, featureContext
+            );
 
             LOGGER.debug(
-                    "{}.get({}) = {}",
-                    getName(),
-                    IFeature.byIndex(index, featureClass)
-                            .map(Enum::name)
-                            .orElseGet(() -> String.valueOf(index)),
+                    featureContext + " = {}",
                     LuaUtil.stringify(returnValue)
             );
 
@@ -196,13 +205,17 @@ public class VirtualObject implements VirtualDevice {
         LOGGER.debug(
                 "{}.set({}, {})",
                 getName(),
-                IFeature.byIndex(index, featureClass)
-                        .map(Enum::name)
-                        .orElseGet(() -> String.valueOf(index)),
+                featureName(index),
                 LuaUtil.stringify(luaValue)
         );
 
         featureValues.put(index, luaValue);
+    }
+
+    private String featureName(int index) {
+        return IFeature.byIndex(index, featureClass)
+                       .map(Enum::name)
+                       .orElseGet(() -> String.valueOf(index));
     }
 
     public void register(IMethod feature, LuaSupplier fn) {
@@ -222,7 +235,17 @@ public class VirtualObject implements VirtualDevice {
     }
 
     private void registerMethod(int index, BaseLuaFunction fn) {
-        methodFunctions.put(index, fn);
+        final String methodContext = "%s.execute(%s)".formatted(getName(), methodName(index));
+
+        methodFunctions.put(
+                index,
+                args ->
+                        TraceUtil.span(
+                                tracer,
+                                () -> fn.invoke(args),
+                                SpanKind.INTERNAL, methodContext
+                        )
+        );
     }
 
     public LuaValue execute(IMethod method, Varargs luaValue) {
@@ -235,9 +258,7 @@ public class VirtualObject implements VirtualDevice {
             LOGGER.warn(
                     "{}.execute({}, {}) -- NOT IMPLEMENTED",
                     getName(),
-                    IMethod.byIndex(index, methodClass)
-                           .map(Enum::name)
-                           .orElseGet(() -> String.valueOf(index)),
+                    methodName(index),
                     LuaUtil.stringifyRaw(args)
             );
 
@@ -247,13 +268,17 @@ public class VirtualObject implements VirtualDevice {
         LOGGER.trace(
                 "{}.execute({}, {})",
                 getName(),
-                IMethod.byIndex(index, methodClass)
-                       .map(Enum::name)
-                       .orElseGet(() -> String.valueOf(index)),
+                methodName(index),
                 LuaUtil.stringifyRaw(args)
         );
 
         return luaFunction.invoke(args);
+    }
+
+    private String methodName(int index) {
+        return IMethod.byIndex(index, methodClass)
+                      .map(Enum::name)
+                      .orElseGet(() -> String.valueOf(index));
     }
 
     public boolean triggerEvent(IEvent event) {

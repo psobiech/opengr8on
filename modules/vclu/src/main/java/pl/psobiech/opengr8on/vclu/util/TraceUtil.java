@@ -21,7 +21,10 @@ package pl.psobiech.opengr8on.vclu.util;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.ContextKey;
 
 import java.util.function.Supplier;
 
@@ -36,19 +39,19 @@ public class TraceUtil {
         // NOP
     }
 
-    public static void span(Class<?> clazz, Runnable runnable, String... name) {
+    public static void span(Class<?> clazz, Runnable runnable, SpanKind kind, String... name) {
         span(
-                tracer(clazz),
+                clazz,
                 () -> {
                     runnable.run();
 
                     return null;
                 },
-                name
+                kind, name
         );
     }
 
-    public static void span(Tracer tracer, Runnable runnable, String... name) {
+    public static void span(Tracer tracer, Runnable runnable, SpanKind kind, String... name) {
         span(
                 tracer,
                 () -> {
@@ -56,31 +59,41 @@ public class TraceUtil {
 
                     return null;
                 },
+                kind,
                 name
         );
     }
 
-    public static <T> T span(Class<?> clazz, Supplier<T> runnable, String... name) {
-        return span(tracer(clazz), runnable, name);
+    public static <T> T span(Class<?> clazz, Supplier<T> runnable, SpanKind kind, String... name) {
+        return span(tracer(clazz), runnable, kind, name);
     }
 
-    public static <T> T span(Tracer tracer, Supplier<T> runnable, String... name) {
-        final Span span = span(tracer, name);
+    public static <T> T span(Tracer tracer, Supplier<T> runnable, SpanKind kind, String... name) {
+        final Span span = span(tracer, kind, name);
         try {
-            return runnable.get();
+            return Context.current()
+                          .with(span)
+                          .with(ContextKey.named("name"), name)
+                          .wrapSupplier(runnable)
+                          .get();
         } finally {
             span.end();
         }
     }
 
-    public static Span span(Tracer tracer, String... name) {
+    public static Span span(Tracer tracer, SpanKind kind, String... name) {
         return tracer
                 .spanBuilder(String.join(".", name))
+                .setSpanKind(kind)
                 .startSpan();
     }
 
     public static Tracer tracer(Class<?> clazz) {
-        return telemetry.tracerBuilder(clazz.getName())
+        return tracer(clazz.getName());
+    }
+
+    public static Tracer tracer(String name) {
+        return telemetry.tracerBuilder(name)
                         .build();
     }
 }

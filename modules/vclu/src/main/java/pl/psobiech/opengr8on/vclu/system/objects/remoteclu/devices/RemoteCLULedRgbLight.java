@@ -7,11 +7,12 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psobiech.opengr8on.exceptions.UncheckedInterruptedException;
 import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
+import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
 import pl.psobiech.opengr8on.vclu.MqttClient;
-import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
@@ -29,9 +30,14 @@ import pl.psobiech.opengr8on.xml.omp.system.specificObjects.SpecificObject;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import static pl.psobiech.opengr8on.vclu.system.objects.VirtualObject.IFeature;
 import static pl.psobiech.opengr8on.vclu.system.objects.VirtualObject.IMethod;
@@ -44,6 +50,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     public static final String DEFAULT_RGB_VALUE = "#000000";
 
     private static final int RAMP_TIME = 420;
+
+    protected final ExecutorService executor;
 
     private final VirtualCLU virtualClu;
 
@@ -69,6 +77,8 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             String discoveryPrefix,
             String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
+        this.executor = ThreadUtil.virtualExecutor(uniqueId);
+
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
         this.object = object;
@@ -337,13 +347,30 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             whiteValue = MqttRgbwState.OFF_VALUE;
         }
 
-        writeCluRGBValue(remoteCLU, new RGBColor(redValue, greenValue, blueValue));
-        writeCluColorValue(ColorEnum.WHITE, remoteCLU, whiteValue);
+        if (
+                Stream.of(
+                              executor.submit(() -> writeCluRGBValue(remoteCLU, new RGBColor(redValue, greenValue, blueValue))),
+                              executor.submit(() -> writeCluColorValue(ColorEnum.WHITE, remoteCLU, whiteValue))
+                      )
+                      .map(booleanFuture -> {
+                          try {
+                              return booleanFuture.get();
+                          } catch (InterruptedException e) {
+                              throw new UncheckedInterruptedException(e);
+                          } catch (ExecutionException e) {
+                              return null;
+                          }
+                      })
+                      .filter(Objects::nonNull)
+                      .allMatch(value -> value)
+        ) {
+            return Optional.of(
+                    new MqttRgbwState(redValue, greenValue, blueValue, whiteValue)
+                            .asJson()
+            );
+        }
 
-        return Optional.of(
-                new MqttRgbwState(redValue, greenValue, blueValue, whiteValue)
-                        .asJson()
-        );
+        return Optional.empty();
     }
 
     private static boolean isStateOn(JsonNode stateNode) {
@@ -353,26 +380,45 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                         .isPresent();
     }
 
-    private void writeCluColorValue(ColorEnum color, RemoteCLU remoteCLU, int colorValue) {
-        Optional.of(color.methodIndex(objectInterface.methods()))
-                .ifPresent(index -> remoteCLU.remoteMethod(object, index, colorValue, RAMP_TIME));
+    private boolean writeCluColorValue(ColorEnum color, RemoteCLU remoteCLU, int colorValue) {
+        return Optional.of(color.methodIndex(objectInterface.methods()))
+                       .flatMap(index -> remoteCLU.remoteMethod(object, index, colorValue, RAMP_TIME))
+                       .isPresent();
     }
 
-    private void writeCluRGBValue(RemoteCLU remoteCLU, RGBColor color) {
-        Optional.of(ColorEnum.RGB.methodIndex(objectInterface.methods()))
-                .ifPresent(index -> remoteCLU.remoteMethod(object, index, color.getRGBAsHex(), RAMP_TIME));
+    private boolean writeCluRGBValue(RemoteCLU remoteCLU, RGBColor color) {
+        return Optional.of(ColorEnum.RGB.methodIndex(objectInterface.methods()))
+                       .flatMap(index -> remoteCLU.remoteMethod(object, index, color.getRGBAsHex(), RAMP_TIME))
+                       .isPresent();
     }
 
     @Override
     public Optional<JsonNode> readValue(RemoteCLU remoteCLU) {
-        return readCluRGBValue(remoteCLU)
-                .map(color -> {
-                    final int white = readCluColorValue(remoteCLU, ColorEnum.WHITE)
-                            .orElse(MqttRgbwState.OFF_VALUE);
+        final Future<Optional<RGBColor>> rgbColorFuture = executor.submit(() -> readCluRGBValue(remoteCLU));
+        final Future<Optional<Integer>> whiteColorFuture = executor.submit(() -> readCluColorValue(remoteCLU, ColorEnum.WHITE));
 
-                    return new MqttRgbwState(color.red(), color.green(), color.blue(), white);
-                })
-                .map(MqttJson::asJson);
+        final Optional<RGBColor> rgbOptional;
+        final Optional<Integer> whiteOptional;
+        try {
+            rgbOptional = rgbColorFuture.get();
+            whiteOptional = whiteColorFuture.get();
+        } catch (InterruptedException e) {
+            throw new UncheckedInterruptedException(e);
+        } catch (ExecutionException e) {
+            LOGGER.error("Could not read RGBW state for {}", discoveryMessage.getUniqueId(), e.getCause());
+
+            return Optional.empty();
+        }
+
+        if (rgbOptional.isEmpty() || whiteOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        final RGBColor rgb = rgbOptional.get();
+        final Integer white = whiteOptional.get();
+
+        return Optional.of(new MqttRgbwState(rgb.red(), rgb.green(), rgb.blue(), white))
+                       .map(MqttRgbwState::asJson);
     }
 
     private Optional<Integer> readCluColorValue(RemoteCLU remoteCLU, ColorEnum color) {
