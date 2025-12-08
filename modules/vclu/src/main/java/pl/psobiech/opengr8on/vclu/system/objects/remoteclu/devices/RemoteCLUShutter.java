@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ToStringUtil;
-import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryShutter;
@@ -75,7 +74,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 object.getName(),
                 uniqueId,
                 rootTopic(clu, object),
-                null, "~/set", "~/state",
+                "~/set", "~/state",
                 "~/position/state", "~/position/set",
                 "shutter",
                 "%",
@@ -198,18 +197,16 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
             virtualClu.getMqttClient()
                       .publish(
                               positionStateTopic,
-                              MqttClient.parsePayload(
-                                      new MqttPosition(
-                                              position
-                                      )
-                                              .asJson()
+                              new MqttPosition(
+                                      position
                               )
+                                      .asJson()
                       );
 
             virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
-                              MqttClient.parsePayload(shutterState.name())
+                              shutterState.name()
                       );
 
             return stateNode;

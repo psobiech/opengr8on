@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.util.ToStringUtil;
-import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.system.RefreshContext;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
@@ -89,15 +88,6 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
         lastState = pushState(lastState);
     }
 
-    private void sendDiscoveryMessage() {
-        virtualClu.getMqttClient()
-                  .tryPublish(
-                          discoveryTopic,
-                          discoveryMessage,
-                          true
-                  );
-    }
-
     private void subscribeSetStateMessages() {
         final String setStateTopic = discoveryMessage.getSetStateTopic();
         if (setStateTopic == null) {
@@ -112,6 +102,15 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
                               lastState = pushState(lastState, writeValue(remoteCLU, bytes).orElse(null));
                           }
+                  );
+    }
+
+    private void sendDiscoveryMessage() {
+        virtualClu.getMqttClient()
+                  .tryPublish(
+                          discoveryTopic,
+                          discoveryMessage,
+                          true
                   );
     }
 
@@ -136,7 +135,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
             virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
-                              MqttClient.parsePayload(stateNode)
+                              stateNode
                       );
 
             return stateNode;

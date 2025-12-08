@@ -40,7 +40,7 @@ public class RemoteCLUDimmer extends BasicRemoteCLUSensor implements RemoteCLUDe
                         object.getName(),
                         uniqueId,
                         rootTopic(clu, object),
-                        null, "~/set", "~/state",
+                        "~/set", "~/state",
                         null,
                         null,
                         "json",

@@ -19,6 +19,7 @@
 package pl.psobiech.opengr8on.vclu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.hivemq.client.mqtt.*;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.lifecycle.MqttClientAutoReconnect;
@@ -60,8 +61,10 @@ import java.util.function.Consumer;
 
 import static pl.psobiech.opengr8on.util.ThreadUtil.await;
 import static pl.psobiech.opengr8on.util.ThreadUtil.awaitQuietly;
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.availabilityTopic;
 
 public class MqttClient implements Closeable {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttClient.class);
 
     private static final String SCHEME_TCP = "tcp";
@@ -69,6 +72,10 @@ public class MqttClient implements Closeable {
     private static final int CONNECTION_TIMEOUT_SECONDS = 4;
 
     private static final int KEEP_ALIVE_INTERVAL_SECONDS = 10;
+
+    public static final String OFFLINE = "offline";
+
+    public static final String ONLINE = "online";
 
     // the mqtt client requires at least 4 threads (also, it does not support virtual threads)
     private final ScheduledExecutorService executor = ThreadUtil.virtualScheduler("MQTT");
@@ -97,6 +104,15 @@ public class MqttClient implements Closeable {
                                     .simpleAuth(simpleAuth)
                                     .cleanStart(false)
                                     .keepAlive(KEEP_ALIVE_INTERVAL_SECONDS)
+                                    .willPublish(
+                                            Mqtt5Publish.builder()
+                                                        .topic(availabilityTopic())
+                                                        .payload(formatPayload(OFFLINE))
+                                                        .retain(true)
+                                                        .asWill()
+                                                        .delayInterval(KEEP_ALIVE_INTERVAL_SECONDS)
+                                                        .build()
+                                    )
                                     .build()
                 )
         );
@@ -111,6 +127,16 @@ public class MqttClient implements Closeable {
                 MqttGlobalPublishFilter.REMAINING,
                 mqtt5Publish -> LOGGER.warn("Unhandled MQTT message: {}", mqtt5Publish),
                 true
+        );
+
+        await(
+                mqttClient.publish(
+                        Mqtt5Publish.builder()
+                                    .topic(availabilityTopic())
+                                    .payload(formatPayload(ONLINE))
+                                    .retain(true)
+                                    .build()
+                )
         );
     }
 
@@ -271,7 +297,7 @@ public class MqttClient implements Closeable {
     public void tryPublish(String topic, Object payloadObject, boolean retain) {
         final byte[] payload;
         try {
-            payload = parsePayload(payloadObject);
+            payload = formatPayload(payloadObject);
         } catch (RuntimeException e) {
             LOGGER.error("Could not publish message to topic {}", topic, e);
 
@@ -285,7 +311,7 @@ public class MqttClient implements Closeable {
         }
     }
 
-    public static byte[] parsePayload(Object payloadObject) {
+    private static byte[] formatPayload(Object payloadObject) {
         try {
             if (payloadObject instanceof String objectAsString) {
                 return objectAsString.getBytes(StandardCharsets.UTF_8);
@@ -299,6 +325,14 @@ public class MqttClient implements Closeable {
         } catch (JsonProcessingException e) {
             throw new UnexpectedException(e);
         }
+    }
+
+    public void publish(String topic, String payload) {
+        publish(topic, formatPayload(payload), false);
+    }
+
+    public void publish(String topic, JsonNode payload) {
+        publish(topic, formatPayload(payload), false);
     }
 
     public void publish(String topic, byte[] payload) {

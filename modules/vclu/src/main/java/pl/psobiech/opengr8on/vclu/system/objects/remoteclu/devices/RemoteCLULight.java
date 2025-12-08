@@ -40,7 +40,7 @@ public class RemoteCLULight extends BasicRemoteCLUSensor implements RemoteCLUDev
                         object.getName(),
                         uniqueId,
                         rootTopic(clu, object),
-                        null, "~/set", "~/state",
+                        "~/set", "~/state",
                         null,
                         null,
                         "json",

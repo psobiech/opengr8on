@@ -54,7 +54,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 object.getName(),
                 uniqueId,
                 rootTopic(clu, object),
-                null, null, "~/state",
+                null, "~/state",
                 "button",
                 null,
                 "json",
