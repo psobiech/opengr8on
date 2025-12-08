@@ -32,7 +32,7 @@ public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements 
                         object.getName(),
                         uniqueId,
                         rootTopic(clu, object),
-                        null, null, "~/state",
+                        null, "~/state",
                         "temperature",
                         object.getFeatures().stream()
                               .filter(feature1 -> feature1.getName().equalsIgnoreCase("Value"))

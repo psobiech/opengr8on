@@ -31,7 +31,7 @@ public class RemoteCLULuminositySensor extends BasicRemoteCLUSensor implements R
                         object.getName(),
                         uniqueId,
                         rootTopic(clu, object),
-                        null, null, "~/state",
+                        null, "~/state",
                         null,
                         "%",
                         null,

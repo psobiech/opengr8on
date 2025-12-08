@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.availabilityTopic;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MqttDiscovery extends MqttJson {
     private final String name;
@@ -16,8 +18,9 @@ public class MqttDiscovery extends MqttJson {
     private final String rootTopic;
 
     @JsonProperty("availability_topic")
-    private final String availabilityTopic;
+    private final String availabilityTopic = availabilityTopic();
 
+    @SuppressWarnings("unused")
     @JsonProperty("availability_mode")
     private final String availabilityMode = "latest";
 
@@ -47,7 +50,7 @@ public class MqttDiscovery extends MqttJson {
 
     public MqttDiscovery(
             String name, String uniqueId,
-            String rootTopic, String availabilityTopic, String setStateTopic, String stateTopic,
+            String rootTopic, String setStateTopic, String stateTopic,
             String deviceClass, String unitOfMeasurement,
             String schema, String valueTemplate,
             MqttDiscoveryDevice device, MqttDiscoveryOrigin origin
@@ -56,7 +59,6 @@ public class MqttDiscovery extends MqttJson {
         this.uniqueId = uniqueId;
 
         this.rootTopic = rootTopic;
-        this.availabilityTopic = StringUtils.stripToNull(availabilityTopic);
         this.setStateTopic = StringUtils.stripToNull(setStateTopic);
         this.stateTopic = StringUtils.stripToNull(stateTopic);
 
@@ -92,6 +94,10 @@ public class MqttDiscovery extends MqttJson {
 
     public String getAvailabilityTopic() {
         return getAbsoluteTopic(getRootTopic(), availabilityTopic);
+    }
+
+    public String getAvailabilityMode() {
+        return availabilityMode;
     }
 
     public String getSetStateTopic() {

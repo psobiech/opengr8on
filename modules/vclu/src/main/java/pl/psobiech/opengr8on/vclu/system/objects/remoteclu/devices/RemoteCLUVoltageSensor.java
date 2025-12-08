@@ -29,7 +29,7 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
                         object.getName(),
                         uniqueId,
                         RemoteCLUDevice.rootTopic(clu, object),
-                        null, null, "~/state",
+                        null, "~/state",
                         "voltage",
                         object.getFeatures().stream()
                               .filter(feature1 -> feature1.getName().equalsIgnoreCase("value"))

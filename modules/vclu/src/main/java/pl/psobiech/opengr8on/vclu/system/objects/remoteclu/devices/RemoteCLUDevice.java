@@ -24,7 +24,11 @@ public interface RemoteCLUDevice extends VirtualDevice {
     }
 
     static String rootTopic(SpecificObject clu, SpecificObject object) {
-        return "%s/%s/%s".formatted("opengr8ton", clu.getNameOnCLU(), object.getNameOnCLU());
+        return "%s/clu/%s/object/%s".formatted("opengr8ton", clu.getNameOnCLU(), object.getNameOnCLU());
+    }
+
+    static String availabilityTopic() {
+        return "%s/%s".formatted("opengr8ton", "available");
     }
 
     @Override

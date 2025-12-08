@@ -305,7 +305,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
                 name,
                 uniqueId,
                 rootTopic,
-                null, "~/set", "~/state",
+                "~/set", "~/state",
                 deviceClass,
                 unit,
                 null,

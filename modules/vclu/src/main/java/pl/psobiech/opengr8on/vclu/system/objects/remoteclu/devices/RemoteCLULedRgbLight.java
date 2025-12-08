@@ -12,7 +12,6 @@ import pl.psobiech.opengr8on.util.HexUtil;
 import pl.psobiech.opengr8on.util.ObjectMapperFactory;
 import pl.psobiech.opengr8on.util.ThreadUtil;
 import pl.psobiech.opengr8on.util.ToStringUtil;
-import pl.psobiech.opengr8on.vclu.MqttClient;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryLight;
 import pl.psobiech.opengr8on.vclu.mqtt.state.MqttBrightnessState;
@@ -89,7 +88,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 object.getName(),
                 uniqueId,
                 rootTopic(clu, object),
-                null, "~/set", "~/state",
+                "~/set", "~/state",
                 null,
                 null,
                 "json",
@@ -116,7 +115,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 "%s_%s".formatted(object.getName(), valueName),
                 colourUniqueId,
                 "%s/%s/%s".formatted(discoveryPrefix, "light", colourUniqueId),
-                null, "~/set", "~/state",
+                "~/set", "~/state",
                 null,
                 null,
                 "json",
@@ -219,7 +218,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             virtualClu.getMqttClient()
                       .publish(
                               stateTopic,
-                              MqttClient.parsePayload(stateNode)
+                              stateNode
                       );
 
             for (Map.Entry<ColorEnum, MqttDiscoveryLight> entry : keyChildDiscoveryMessages.entrySet()) {
@@ -241,7 +240,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 virtualClu.getMqttClient()
                           .publish(
                                   discoveryMessage.getStateTopic(),
-                                  MqttClient.parsePayload(childStateNode)
+                                  childStateNode
                           );
             }
 

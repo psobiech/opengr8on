@@ -12,14 +12,14 @@ public class MqttDiscoveryLight extends MqttDiscovery {
 
     public MqttDiscoveryLight(
             String name, String uniqueId,
-            String rootTopic, String availabilityTopic, String setStateTopic, String stateTopic,
+            String rootTopic, String setStateTopic, String stateTopic,
             String deviceClass, String unitOfMeasurement,
             String schema, String valueTemplate, Set<String> supportedColorModes,
             MqttDiscoveryDevice device
     ) {
         super(
                 name, uniqueId,
-                rootTopic, availabilityTopic, setStateTopic, stateTopic,
+                rootTopic, setStateTopic, stateTopic,
                 deviceClass, unitOfMeasurement,
                 schema, valueTemplate,
                 device, MqttDiscoveryOrigin.INSTANCE
