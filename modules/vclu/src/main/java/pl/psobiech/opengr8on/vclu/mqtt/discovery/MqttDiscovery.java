@@ -1,5 +1,6 @@
 package pl.psobiech.opengr8on.vclu.mqtt.discovery;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +49,19 @@ public class MqttDiscovery extends MqttJson {
     @JsonProperty("origin")
     private final MqttDiscoveryOrigin origin;
 
+    public MqttDiscovery(MqttDiscoveryDevice discoveryDevice) {
+        this(
+                null, null,
+                null, null, null,
+                null, null,
+                null,
+                null,
+                discoveryDevice,
+                MqttDiscoveryOrigin.INSTANCE
+        );
+    }
+
+    @JsonCreator
     public MqttDiscovery(
             String name, String uniqueId,
             String rootTopic, String setStateTopic, String stateTopic,

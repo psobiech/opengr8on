@@ -2,8 +2,10 @@ package pl.psobiech.opengr8on.vclu.system;
 
 import pl.psobiech.opengr8on.util.RandomUtil;
 
+import java.util.concurrent.TimeUnit;
+
 public class RefreshContext {
-    private final static long REFRESH_NEVER = Long.MAX_VALUE;
+    private static final int RARE_MILLIS = (int) TimeUnit.HOURS.toMillis(6);
 
     private static final int RANDOMIZATION_MILLIS = 30_000;
 
@@ -17,7 +19,7 @@ public class RefreshContext {
         this.polling = polling;
         this.scheduledFunction = scheduledFunction;
 
-        scheduleNextRefreshRandomized();
+        scheduleNextRefreshNow();
     }
 
     public void runIfScheduled() {
@@ -26,7 +28,7 @@ public class RefreshContext {
             if (polling) {
                 scheduleNextRefreshRandomized();
             } else {
-                disableRefresh();
+                scheduleNextRefreshRarely();
             }
 
             scheduledFunction.run();
@@ -39,8 +41,10 @@ public class RefreshContext {
         return nextRefreshAfter < now;
     }
 
-    public void disableRefresh() {
-        nextRefreshAfter = REFRESH_NEVER;
+    public void scheduleNextRefreshRarely() {
+        final long now = System.currentTimeMillis();
+
+        nextRefreshAfter = getNextRefreshAtRandomized(nextRefreshAfter, now, RARE_MILLIS, RANDOMIZATION_MILLIS);
     }
 
     public void scheduleNextRefreshNow() {

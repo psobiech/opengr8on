@@ -137,7 +137,6 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             final MqttDiscoveryLight childLight = entry.getValue();
 
             subscribeSetStateMessages(color, childLight);
-
             sendDiscoveryMessage(childLight);
         }
 
