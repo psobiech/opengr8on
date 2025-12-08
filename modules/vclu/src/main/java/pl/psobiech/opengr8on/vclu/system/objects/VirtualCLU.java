@@ -47,7 +47,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -361,7 +360,7 @@ public class VirtualCLU extends VirtualObject implements Closeable {
         mqttClient
                 .publish(
                         rootTopic + "/state",
-                        state.getBytes(StandardCharsets.UTF_8)
+                        state
                 );
 
         return LuaValue.NIL;

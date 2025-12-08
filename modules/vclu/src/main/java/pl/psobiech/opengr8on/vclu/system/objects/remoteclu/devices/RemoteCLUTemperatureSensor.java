@@ -22,7 +22,8 @@ public class RemoteCLUTemperatureSensor extends BasicRemoteCLUSensor implements 
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
-            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
+            String uniqueId,
+            MqttDiscoveryDevice mqttDiscoveryDevice
     ) {
         super(
                 virtualClu, remoteCLU,

@@ -335,8 +335,12 @@ public class MqttClient implements Closeable {
         publish(topic, formatPayload(payload), false);
     }
 
+    public void publish(String topic, Object payload, boolean retain) {
+        publish(topic, formatPayload(payload), retain);
+    }
+
     public void publish(String topic, byte[] payload) {
-        publish(topic, payload, false);
+        publish(topic, formatPayload(payload), false);
     }
 
     public void publish(String topic, byte[] payload, boolean retained) {
