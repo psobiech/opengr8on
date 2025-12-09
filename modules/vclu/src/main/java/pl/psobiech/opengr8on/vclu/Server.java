@@ -438,6 +438,8 @@ public class Server implements Closeable {
     private Optional<Response> onSetKeyCommand(UUID uuid, Request request, SetKeyCommand.Request command) {
         logCommand(uuid, request, command);
 
+        final CipherKey oldCipherKey = projectCipherKey;
+
         // final byte[] encrypted = request.getEncrypted(); // Real CLU sends only dummy data
         final byte[] key = command.getKey();
         final byte[] iv = command.getIV();
@@ -450,7 +452,7 @@ public class Server implements Closeable {
 
         return Optional.of(
                 new Response(
-                        projectCipherKey,
+                        oldCipherKey,
                         SetKeyCommand.response()
                 )
         );

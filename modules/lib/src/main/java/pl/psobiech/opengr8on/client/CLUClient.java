@@ -120,7 +120,6 @@ public class CLUClient extends Client implements Closeable {
         final byte[] randomBytes = RandomUtil.bytes(Command.RANDOM_BYTES);
 
         return request(
-                newCipherKey,
                 SetKeyCommand.request(
                         newCipherKey.encrypt(randomBytes), newCipherKey.getSecretKey(), newCipherKey.getIV()
                 ),
