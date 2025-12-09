@@ -42,7 +42,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
-            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
+            String uniqueId, MqttDiscoveryDevice discoveryDevice
     ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
@@ -51,7 +51,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
         this.discoveryTopic = discoveryTopic(discoveryPrefix, "event", uniqueId);
         this.discoveryMessage = new MqttDiscoveryButton(
-                object.getName(),
+                null,
                 uniqueId,
                 rootTopic(clu, object),
                 null, "~/state",
@@ -60,7 +60,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 "json",
                 null,
                 Set.of("press"),
-                mqttDiscoveryDevice
+                discoveryDevice
         );
 
         final Set<String> asyncHandlersInstalled = asyncHandlersInstalled(discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
@@ -77,7 +77,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     @Override
     public String getName() {
-        return discoveryMessage.getName();
+        return object.getName();
     }
 
     @Override

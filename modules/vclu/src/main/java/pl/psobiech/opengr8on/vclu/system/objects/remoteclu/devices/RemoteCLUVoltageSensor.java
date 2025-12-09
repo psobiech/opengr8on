@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.DoubleNode;
 import org.luaj.vm2.LuaValue;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
-import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumericFloat;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumberFloat;
 import pl.psobiech.opengr8on.vclu.system.objects.VirtualCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU;
 import pl.psobiech.opengr8on.vclu.system.objects.remoteclu.RemoteCLU.SpecificObjectInterface;
@@ -19,14 +19,14 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
-            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
+            String uniqueId, MqttDiscoveryDevice discoveryDevice
     ) {
         super(
                 virtualClu, remoteCLU,
                 clu, object,
                 objectInterface, RemoteCLUDevice.discoveryTopic(discoveryPrefix, "sensor", uniqueId),
-                new MqttDiscoveryNumericFloat(
-                        object.getName(),
+                new MqttDiscoveryNumberFloat(
+                        null,
                         uniqueId,
                         RemoteCLUDevice.rootTopic(clu, object),
                         null, "~/state",
@@ -36,9 +36,8 @@ public class RemoteCLUVoltageSensor extends BasicRemoteCLUSensor implements Remo
                               .findAny()
                               .map(Feature::getUnit)
                               .orElse("V"),
-                        null,
                         null, null,
-                        mqttDiscoveryDevice
+                        discoveryDevice
                 ),
                 false
         );

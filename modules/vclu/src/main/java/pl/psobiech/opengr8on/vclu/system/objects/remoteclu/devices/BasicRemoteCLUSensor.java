@@ -64,7 +64,7 @@ public abstract class BasicRemoteCLUSensor implements RemoteCLUDevice, RemoteCLU
 
     @Override
     public String getName() {
-        return discoveryMessage.getName();
+        return object.getName();
     }
 
     @Override

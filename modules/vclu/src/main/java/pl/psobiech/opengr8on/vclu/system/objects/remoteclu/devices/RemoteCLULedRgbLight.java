@@ -56,11 +56,13 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
 
     private final RemoteCLU remoteCLU;
 
+    private final SpecificObject clu;
+
     private final SpecificObject object;
 
     private final SpecificObjectInterface objectInterface;
 
-    private final String discoveryTopic;
+    private final String discoveryPrefix;
 
     private final MqttDiscoveryLight discoveryMessage;
 
@@ -74,18 +76,19 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
-            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
+            String uniqueId, MqttDiscoveryDevice discoveryDevice
     ) {
         this.executor = ThreadUtil.virtualExecutor(uniqueId);
 
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
+        this.clu = clu;
         this.object = object;
         this.objectInterface = objectInterface;
 
-        this.discoveryTopic = discoveryTopic(discoveryPrefix, "light", uniqueId);
+        this.discoveryPrefix = discoveryPrefix;
         this.discoveryMessage = new MqttDiscoveryLight(
-                object.getName(),
+                null,
                 uniqueId,
                 rootTopic(clu, object),
                 "~/set", "~/state",
@@ -94,40 +97,45 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
                 "json",
                 null,
                 Set.of(ColorMode.RGBW.key()),
-                mqttDiscoveryDevice
+                discoveryDevice
         );
 
-        final boolean hasAsyncHandlers = !asyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
-        this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
-        refreshContext.scheduleNextRefreshNow();
-
         for (ColorEnum color : ColorEnum.values()) {
-            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(clu, object, discoveryPrefix, mqttDiscoveryDevice, color.feature().featureName());
+            if (color.key == null) {
+                continue;
+            }
+
+            final MqttDiscoveryLight discoveryMessage = childLightDeviceDiscoveryMessage(discoveryDevice, color.feature().featureName());
 
             keyChildDiscoveryMessages.put(color, discoveryMessage);
         }
+
+        final boolean hasAsyncHandlers = !asyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
+        this.refreshContext = new RefreshContext(!hasAsyncHandlers, this::refresh);
+
+        refreshContext.scheduleNextRefreshNow();
     }
 
-    private static MqttDiscoveryLight childLightDeviceDiscoveryMessage(SpecificObject clu, SpecificObject object, String discoveryPrefix, MqttDiscoveryDevice cluDevice, String valueName) {
-        final String colourUniqueId = "%s_%s_%s".formatted(clu.getNameOnCLU(), object.getNameOnCLU(), valueName);
+    private MqttDiscoveryLight childLightDeviceDiscoveryMessage(MqttDiscoveryDevice discoveryDevice, String valueName) {
+        final String colourUniqueId = discoveryMessage.getUniqueId() + "_" + valueName;
 
         return new MqttDiscoveryLight(
-                "%s_%s".formatted(object.getName(), valueName),
+                valueName,
                 colourUniqueId,
-                "%s/%s/%s".formatted(discoveryPrefix, "light", colourUniqueId),
+                rootTopic(clu, object) + "/" + valueName,
                 "~/set", "~/state",
                 null,
                 null,
                 "json",
                 null,
                 Set.of(ColorMode.BRIGHTNESS.key()),
-                cluDevice
+                discoveryDevice
         );
     }
 
     @Override
     public String getName() {
-        return discoveryMessage.getName();
+        return object.getName();
     }
 
     @Override
@@ -161,7 +169,7 @@ public class RemoteCLULedRgbLight implements RemoteCLUDevice, RemoteCLUAsyncDevi
     private void sendDiscoveryMessage(MqttDiscoveryLight discoveryMessage) {
         virtualClu.getMqttClient()
                   .tryPublish(
-                          discoveryTopic,
+                          discoveryTopic(discoveryPrefix, "light", discoveryMessage.getUniqueId()),
                           discoveryMessage,
                           true
                   );

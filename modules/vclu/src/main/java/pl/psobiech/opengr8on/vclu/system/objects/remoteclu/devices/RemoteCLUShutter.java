@@ -62,7 +62,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
             String discoveryPrefix,
-            String uniqueId, MqttDiscoveryDevice mqttDiscoveryDevice
+            String uniqueId, MqttDiscoveryDevice discoveryDevice
     ) {
         this.virtualClu = virtualClu;
         this.remoteCLU = remoteCLU;
@@ -71,7 +71,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
         this.discoveryTopic = discoveryTopic(discoveryPrefix, "cover", uniqueId);
         this.discoveryMessage = new MqttDiscoveryShutter(
-                object.getName(),
+                null,
                 uniqueId,
                 rootTopic(clu, object),
                 "~/set", "~/state",
@@ -81,7 +81,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 null,
                 null,
                 "{ \"position\": {{ position }} }",
-                mqttDiscoveryDevice
+                discoveryDevice
         );
 
         final boolean hasAsyncHandlers = !asyncHandlersInstalled(LOGGER, discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object).isEmpty();
@@ -91,7 +91,7 @@ public class RemoteCLUShutter implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     @Override
     public String getName() {
-        return discoveryMessage.getName();
+        return object.getName();
     }
 
     @Override

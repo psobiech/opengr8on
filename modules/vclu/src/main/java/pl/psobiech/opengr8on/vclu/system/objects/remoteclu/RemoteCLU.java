@@ -38,8 +38,8 @@ import pl.psobiech.opengr8on.client.CLUClient;
 import pl.psobiech.opengr8on.client.CipherKey;
 import pl.psobiech.opengr8on.exceptions.UnexpectedException;
 import pl.psobiech.opengr8on.util.IOUtil;
-import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscovery;
 import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryDevice;
+import pl.psobiech.opengr8on.vclu.mqtt.discovery.MqttDiscoveryNumberInteger;
 import pl.psobiech.opengr8on.vclu.system.ProjectRegistry;
 import pl.psobiech.opengr8on.vclu.system.VirtualSystem;
 import pl.psobiech.opengr8on.vclu.system.lua.fn.LuaOneArgFunction;
@@ -61,6 +61,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.rootTopic;
 
 public class RemoteCLU extends VirtualObject {
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoteCLU.class);
@@ -194,19 +196,29 @@ public class RemoteCLU extends VirtualObject {
     private void initMqttDiscovery(String discoveryPrefix) {
         final VirtualCLU virtualClu = virtualSystem.getVirtualClu();
 
-        final SpecificObject clu = objectRegistry.cluByName(name);
-        if (clu == null) {
-            LOGGER.warn("Could not find CLU with name {}", name);
+        final String remoteCluName = getName();
+        final SpecificObject rootClu = objectRegistry.cluByName(remoteCluName);
+        if (rootClu == null) {
+            LOGGER.warn("Could not find CLU with name {}", remoteCluName);
 
             return;
         }
 
-        final MqttDiscoveryDevice cluDevice = new MqttDiscoveryDevice(clu);
+        final MqttDiscoveryDevice cluDevice = new MqttDiscoveryDevice(rootClu);
 
+        final String rootDeviceUptimeUniqueId = rootClu.getNameOnCLU() + "_" + "Uptime";
         virtualClu.getMqttClient()
                   .publish(
-                          "%s/device/%s/config".formatted(discoveryPrefix, cluDevice.getIdentifier()),
-                          new MqttDiscovery(cluDevice),
+                          "%s/sensor/%s/config".formatted(discoveryPrefix, rootDeviceUptimeUniqueId),
+                          new MqttDiscoveryNumberInteger(
+                                  "Uptime",
+                                  rootDeviceUptimeUniqueId,
+                                  rootTopic(rootClu, "Uptime"),
+                                  null, "~/state",
+                                  "duration", "s",
+                                  0L, null,
+                                  cluDevice
+                          ),
                           true
                   );
 
@@ -216,16 +228,18 @@ public class RemoteCLU extends VirtualObject {
                 continue;
             }
 
-            if (Boolean.FALSE.equals(object.getVisible())) {
-                continue;
+            SpecificObject clu = object.getClu();
+            if (clu != null && clu.getReference() != null) {
+                clu = objectRegistry.byReference(clu.getReference())
+                                    .orElse(rootClu);
+            } else if (clu == null) {
+                clu = rootClu;
             }
-
-            final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
 
             final RemoteCLUDevice sensor;
             final SpecificObjectType objectType = object.getType();
             if (!ENABLED_OBJECT_TYPES.contains(objectType)) {
-                LOGGER.info("Ignoring object {} of type {} on {}", object.getNameOnCLU(), objectType, name);
+                LOGGER.info("Ignoring object {} of type {} on {}", object.getNameOnCLU(), objectType, remoteCluName);
 
                 continue;
             }
@@ -239,80 +253,60 @@ public class RemoteCLU extends VirtualObject {
             final MqttDiscoveryDevice discoveryDevice;
             if (module != null) {
                 discoveryDevice = new MqttDiscoveryDevice(object, module, clu);
-
             } else {
                 discoveryDevice = new MqttDiscoveryDevice(object, clu);
             }
 
-            final SpecificObjectInterface objectInterface = Optional.ofNullable(module)
-                                                                    .flatMap(module1 -> interfaceRegistry.getModule(module1.getModuleClass(), module1.getModuleTypeFirmware(), module1.getModuleVersion()))
-                                                                    .map(CLUModule::getFirmware)
-                                                                    .map(ModuleFirmware::getObject)
-                                                                    .stream()
-                                                                    .flatMap(Collection::stream)
-                                                                    .filter(moduleObject -> moduleObject.get_class().equals(object.getClassTypeId()))
-                                                                    .filter(moduleObject -> moduleObject.getName().equals(object.getTypeAsString()))
-                                                                    .map(ModuleObject::getInterface)
-                                                                    .findAny()
-                                                                    .map(SpecificObjectInterface::new)
-                                                                    .orElse(SpecificObjectInterface.EMPTY);
-
+            final String uniqueId = clu.getNameOnCLU() + "_" + object.getNameOnCLU();
+            final SpecificObjectInterface objectInterface = findObjectInterface(object, module);
             switch (objectType) {
                 case PANEL_TEMPERATURE -> sensor = new RemoteCLUTemperatureSensor(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case PANEL_LUMINOSITY -> sensor = new RemoteCLULuminositySensor(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case POWER_SUPPLY_VOLTAGE -> sensor = new RemoteCLUVoltageSensor(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case ROLLER_SHUTTER -> sensor = new RemoteCLUShutter(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case DOUT -> sensor = new RemoteCLULight(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case DIMM -> sensor = new RemoteCLUDimmer(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case LED_RGB -> sensor = new RemoteCLULedRgbLight(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case BUTTON, PANEL_BUTTON -> sensor = new RemoteCLUButton(
                         virtualClu, this,
                         clu, object, objectInterface,
                         discoveryPrefix,
-                        uniqueId,
-                        discoveryDevice
+                        uniqueId, discoveryDevice
                 );
                 case UNSUPPORTED -> {
                     LOGGER.warn("Unsupported object {} on {}", object.getNameOnCLU(), name);
@@ -328,6 +322,21 @@ public class RemoteCLU extends VirtualObject {
 
             devices.put(object.getNameOnCLU(), sensor);
         }
+    }
+
+    private SpecificObjectInterface findObjectInterface(SpecificObject object, Module nullableModule) {
+        return Optional.ofNullable(nullableModule)
+                       .flatMap(module -> interfaceRegistry.getModule(module.getModuleClass(), module.getModuleTypeFirmware(), module.getModuleVersion()))
+                       .map(CLUModule::getFirmware)
+                       .map(ModuleFirmware::getObject)
+                       .stream()
+                       .flatMap(Collection::stream)
+                       .filter(moduleObject -> moduleObject.get_class().equals(object.getClassTypeId()))
+                       .filter(moduleObject -> moduleObject.getName().equals(object.getTypeAsString()))
+                       .map(ModuleObject::getInterface)
+                       .findAny()
+                       .map(SpecificObjectInterface::new)
+                       .orElse(SpecificObjectInterface.EMPTY);
     }
 
     public void mqttOnValueChange(String nameOnCLU, LuaValue arg2) {
