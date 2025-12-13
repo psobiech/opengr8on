@@ -39,18 +39,6 @@ public class TraceUtil {
         // NOP
     }
 
-    public static void span(Class<?> clazz, Runnable runnable, SpanKind kind, String... name) {
-        span(
-                clazz,
-                () -> {
-                    runnable.run();
-
-                    return null;
-                },
-                kind, name
-        );
-    }
-
     public static void span(Tracer tracer, Runnable runnable, SpanKind kind, String... name) {
         span(
                 tracer,
@@ -62,10 +50,6 @@ public class TraceUtil {
                 kind,
                 name
         );
-    }
-
-    public static <T> T span(Class<?> clazz, Supplier<T> runnable, SpanKind kind, String... name) {
-        return span(tracer(clazz), runnable, kind, name);
     }
 
     public static <T> T span(Tracer tracer, Supplier<T> runnable, SpanKind kind, String... name) {

@@ -66,36 +66,6 @@ public class TlsUtil {
         // NOP
     }
 
-    public static SSLSocketFactory createSocketFactory(Path caCertificatePath, Path clientCertificatePath, Path clientKeyPath) {
-        try {
-            final KeyStore caKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            caKeyStore.load(null, null);
-            caKeyStore.setCertificateEntry("certificate", readCertificate(caCertificatePath));
-
-            final KeyStore clientKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            clientKeyStore.load(null, null);
-            if (Files.exists(clientCertificatePath) && Files.exists(clientKeyPath)) {
-                final X509Certificate clientCertificate = readCertificate(clientCertificatePath);
-                clientKeyStore.setCertificateEntry("certificate", clientCertificate);
-                clientKeyStore.setKeyEntry("key", readPrivateKey(clientKeyPath), null, new java.security.cert.Certificate[]{clientCertificate});
-            }
-
-            final KeyManagerFactory clientKeyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            clientKeyManagerFactory.init(clientKeyStore, null);
-
-            final TrustManagerFactory caTrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            caTrustManagerFactory.init(caKeyStore);
-
-            final SSLContext tlsContext = SSLContext.getInstance("TLSv1.2");
-            tlsContext.init(clientKeyManagerFactory.getKeyManagers(), caTrustManagerFactory.getTrustManagers(), RandomUtil.RANDOM);
-
-            return tlsContext.getSocketFactory();
-        } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException |
-                 UnrecoverableKeyException | KeyManagementException e) {
-            throw new UnexpectedException(e);
-        }
-    }
-
     public static X509Certificate readCertificate(Path path) {
         try (InputStream inputStream = new ByteArrayInputStream(readPem(path))) {
             return (X509Certificate) CERTIFICATE_FACTORY.generateCertificate(inputStream);

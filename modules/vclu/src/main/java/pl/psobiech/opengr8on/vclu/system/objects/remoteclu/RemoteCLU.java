@@ -20,18 +20,12 @@ package pl.psobiech.opengr8on.vclu.system.objects.remoteclu;
 
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LoadState;
-import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.compiler.LuaC;
-import org.luaj.vm2.luajc.LuaJC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psobiech.opengr8on.client.CLUClient;
@@ -87,8 +81,6 @@ public class RemoteCLU extends VirtualObject {
 
     private final InterfaceRegistry interfaceRegistry;
 
-    private final Globals localLuaContext;
-
     private final VirtualCLU virtualClu;
 
     private final GenericObjectPool<CLUClient> clientPool;
@@ -105,11 +97,6 @@ public class RemoteCLU extends VirtualObject {
 
         this.objectRegistry = projectRegistry;
         this.interfaceRegistry = interfaceRegistry;
-
-        this.localLuaContext = new Globals();
-        localLuaContext.compiler = LuaC.instance;
-        localLuaContext.loader = LuaJC.instance;
-        localLuaContext.undumper = LoadState.instance;
 
         final GenericObjectPoolConfig<CLUClient> clientPoolConfiguration = new GenericObjectPoolConfig<>();
         clientPoolConfiguration.setMinIdle(1);
@@ -421,29 +408,7 @@ public class RemoteCLU extends VirtualObject {
     }
 
     private LuaValue asLuaValue(String returnValue) {
-        returnValue = StringUtils.stripToNull(returnValue);
-        if (returnValue == null) {
-            return null;
-        }
-
-        if (returnValue.startsWith("{")) {
-            try {
-                return localLuaContext.load("return %s".formatted(returnValue))
-                                      .call();
-            } catch (Exception e) {
-                // Might not have been a proper LUA table
-                // TODO: implement a more robust check
-
-                LOGGER.error(e.getMessage(), e);
-            }
-        }
-
-        final LuaString luaString = LuaValue.valueOf(returnValue);
-        if (luaString.isnumber()) {
-            return luaString.checknumber();
-        }
-
-        return luaString;
+        return LuaUtil.parse(returnValue);
     }
 
     @Override

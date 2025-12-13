@@ -240,7 +240,7 @@ public class VirtualSystem implements VirtualDevice, Closeable {
             final int index = subscription.index();
             final LuaValue value = object.get(index);
 
-            return LuaUtil.stringifyRaw(value, "nil");
+            return LuaUtil.stringifyRaw(value);
         });
     }
 
