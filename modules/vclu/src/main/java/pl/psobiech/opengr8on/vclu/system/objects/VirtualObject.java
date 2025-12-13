@@ -259,7 +259,7 @@ public class VirtualObject implements VirtualDevice {
                     "{}.execute({}, {}) -- NOT IMPLEMENTED",
                     getName(),
                     methodName(index),
-                    LuaUtil.stringifyRaw(args)
+                    LuaUtil.stringifyArgs(args)
             );
 
             return LuaValue.NIL;
@@ -269,7 +269,7 @@ public class VirtualObject implements VirtualDevice {
                 "{}.execute({}, {})",
                 getName(),
                 methodName(index),
-                LuaUtil.stringifyRaw(args)
+                LuaUtil.stringifyArgs(args)
         );
 
         return luaFunction.invoke(args);

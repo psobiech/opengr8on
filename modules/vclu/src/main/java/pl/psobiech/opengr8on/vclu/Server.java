@@ -617,7 +617,7 @@ public class Server implements Closeable {
                         LuaScriptCommand.response(
                                 cluDevice.getAddress(),
                                 command.getSessionId(),
-                                LuaUtil.stringifyRaw(luaValue, "nil")
+                                LuaUtil.stringifyRaw(luaValue)
                         )
                 )
         );

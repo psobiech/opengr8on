@@ -163,7 +163,7 @@ public class HttpRequest extends BaseHttpObject {
             headers.put(HEADER_CONTENT_TYPE, requestContentType);
         }
 
-        headers.putAll(LuaUtil.tableStringString(get(Features.REQUEST_HEADERS)));
+        headers.putAll(LuaUtil.asStringMap(get(Features.REQUEST_HEADERS)));
 
         set(Features.REQUEST_HEADERS, LuaUtil.fromObject(headers));
 

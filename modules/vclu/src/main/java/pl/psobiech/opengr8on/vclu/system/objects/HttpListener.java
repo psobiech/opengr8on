@@ -133,7 +133,7 @@ public class HttpListener extends BaseHttpObject {
             final Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             headers.put(HEADER_CONTENT_TYPE, responseType.contentType());
             headers.put(HEADER_SERVER, VERSION_INFO);
-            headers.putAll(LuaUtil.tableStringString(get(Features.RESPONSE_HEADERS)));
+            headers.putAll(LuaUtil.asStringMap(get(Features.RESPONSE_HEADERS)));
 
             final Headers responseHeaders = currentExchange.getResponseHeaders();
             for (Entry<String, String> entry : headers.entrySet()) {

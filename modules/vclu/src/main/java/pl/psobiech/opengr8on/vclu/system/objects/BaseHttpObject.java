@@ -197,7 +197,7 @@ public abstract class BaseHttpObject extends VirtualObject {
                 case JSON -> ObjectMapperFactory.JSON.writeValueAsString(LuaUtil.asObject(requestBodyValue));
                 case XML ->
                         ObjectMapperFactory.XML.writer().withRootName(ROOT_NAME).writeValueAsString(LuaUtil.asObject(requestBodyValue));
-                case FORM_DATA -> urlEncode(LuaUtil.tableStringString(requestBodyValue));
+                case FORM_DATA -> urlEncode(LuaUtil.asStringMap(requestBodyValue));
                 default -> requestBodyValue.checkjstring();
             };
         } catch (JsonProcessingException e) {
@@ -212,7 +212,7 @@ public abstract class BaseHttpObject extends VirtualObject {
 
         final String queryString;
         if (queryParams.istable()) {
-            queryString = urlEncode(LuaUtil.tableStringString(queryParams));
+            queryString = urlEncode(LuaUtil.asStringMap(queryParams));
         } else {
             // assume its already url encoded
             queryString = queryParams.checkjstring();
