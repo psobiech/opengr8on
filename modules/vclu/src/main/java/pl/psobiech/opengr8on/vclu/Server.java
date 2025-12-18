@@ -380,6 +380,19 @@ public class Server implements Closeable {
                 }
             }
 
+            if (StopTFTPdCommand.requestMatches(buffer)) {
+                final Optional<StopTFTPdCommand.Request> commandOptional = StopTFTPdCommand.requestFromByteArray(buffer);
+                if (commandOptional.isPresent()) {
+                    return TraceUtil.span(
+                            TRACER,
+                            () ->
+                                    onStopFTPdCommand(uuid, request, commandOptional.get()),
+                            SpanKind.SERVER,
+                            "command", "StopTFTPdCommand"
+                    );
+                }
+            }
+
             if (GenerateMeasurementsCommand.requestMatches(buffer)) {
                 final Optional<GenerateMeasurementsCommand.Request> commandOptional = GenerateMeasurementsCommand.requestFromByteArray(buffer);
                 if (commandOptional.isPresent()) {
@@ -638,6 +651,19 @@ public class Server implements Closeable {
                 new Response(
                         request.cipherKey(),
                         StartTFTPdCommand.response()
+                )
+        );
+    }
+
+    private Optional<Response> onStopFTPdCommand(UUID uuid, Request request, StopTFTPdCommand.Request command) {
+        logCommand(uuid, request, command);
+
+        tftpServer.stop();
+
+        return Optional.of(
+                new Response(
+                        request.cipherKey(),
+                        StopTFTPdCommand.response()
                 )
         );
     }

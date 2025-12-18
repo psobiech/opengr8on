@@ -218,8 +218,9 @@ public class CLUClient extends Client implements Closeable {
      * @return always returns true, because CLUs do not seem to support this command
      */
     public Optional<Boolean> stopTFTPdServer() {
-        // not implemented? req_stop_ftp/req_tftp_stop don't work
-        return Optional.of(true);
+        return request(StopTFTPdCommand.request(), DEFAULT_TIMEOUT_DURATION)
+                .flatMap(payload -> StopTFTPdCommand.responseFromByteArray(payload.buffer()))
+                .map(response -> true);
     }
 
     /**
