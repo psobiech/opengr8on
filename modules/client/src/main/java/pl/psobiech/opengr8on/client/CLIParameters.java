@@ -97,15 +97,13 @@ public class CLIParameters {
     }
 
     static NetworkInterfaceDto getNetworkInterface(CommandLine commandLine) {
-        final Optional<String> addressOrNetworkInterfaceOptional = Optional.ofNullable(commandLine.getOptionValue(NETWORK_INTERFACE_OPTION));
-        if (addressOrNetworkInterfaceOptional.isPresent()) {
-            final String networkInterfaceNameOrIpAddress = addressOrNetworkInterfaceOptional.get();
-
-            return IPv4AddressUtil.getLocalIPv4NetworkInterfaceByNameOrAddress(networkInterfaceNameOrIpAddress)
-                                  .orElseThrow(() -> new UnexpectedException("Could not find network interface / address: " + networkInterfaceNameOrIpAddress));
-        }
-
-        throw new UnexpectedException("Provide address / network interface name (eg. -i 192.168.1.100)");
+        return Optional.ofNullable(commandLine.getOptionValue(NETWORK_INTERFACE_OPTION))
+                       .flatMap(IPv4AddressUtil::getLocalIPv4NetworkInterfaceByNameOrAddress)
+                       .or(() ->
+                                   IPv4AddressUtil.getLocalIPv4NetworkInterfaces().stream()
+                                                  .findFirst()
+                       )
+                       .orElseThrow(() -> new UnexpectedException("Provide address / network interface name (eg. -i 192.168.1.100)"));
     }
 
     static Inet4Address getRemoteIPAddress(CommandLine commandLine) {

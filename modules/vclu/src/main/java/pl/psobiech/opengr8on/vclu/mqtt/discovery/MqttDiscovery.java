@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import pl.psobiech.opengr8on.vclu.mqtt.MqttJson;
 
 import static pl.psobiech.opengr8on.vclu.system.objects.remoteclu.devices.RemoteCLUDevice.availabilityTopic;
+import static pl.psobiech.opengr8on.vclu.util.MqttUtil.absoluteTopic;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MqttDiscovery extends MqttJson {
@@ -94,20 +95,12 @@ public class MqttDiscovery extends MqttJson {
         return uniqueId;
     }
 
-    public static String getAbsoluteTopic(String rootTopic, String topic) {
-        if (rootTopic != null && topic != null && topic.startsWith("~/")) {
-            return rootTopic + topic.substring(1);
-        }
-
-        return topic;
-    }
-
     public String getRootTopic() {
         return rootTopic;
     }
 
     public String getAvailabilityTopic() {
-        return getAbsoluteTopic(getRootTopic(), availabilityTopic);
+        return absoluteTopic(getRootTopic(), availabilityTopic);
     }
 
     public String getAvailabilityMode() {
@@ -115,11 +108,11 @@ public class MqttDiscovery extends MqttJson {
     }
 
     public String getSetStateTopic() {
-        return getAbsoluteTopic(getRootTopic(), setStateTopic);
+        return absoluteTopic(getRootTopic(), setStateTopic);
     }
 
     public String getStateTopic() {
-        return getAbsoluteTopic(getRootTopic(), stateTopic);
+        return absoluteTopic(getRootTopic(), stateTopic);
     }
 
     public String getDeviceClass() {

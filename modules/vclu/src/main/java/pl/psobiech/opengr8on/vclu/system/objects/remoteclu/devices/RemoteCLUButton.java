@@ -38,6 +38,8 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
 
     private final boolean hasOnClickAsyncEventInstalled;
 
+    private final String uniqueId;
+
     public RemoteCLUButton(
             VirtualCLU virtualClu, RemoteCLU remoteCLU,
             SpecificObject clu, SpecificObject object, SpecificObjectInterface objectInterface,
@@ -48,6 +50,8 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
         this.remoteCLU = remoteCLU;
         this.object = object;
         this.objectInterface = objectInterface;
+
+        this.uniqueId = uniqueId;
 
         this.discoveryTopic = discoveryTopic(discoveryPrefix, "event", uniqueId);
         this.discoveryMessage = new MqttDiscoveryButton(
@@ -63,15 +67,15 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                 discoveryDevice
         );
 
-        final Set<String> asyncHandlersInstalled = asyncHandlersInstalled(discoveryMessage.getUniqueId(), virtualClu.getCluObject(), clu, object);
+        final Set<String> asyncHandlersInstalled = asyncHandlersInstalled(uniqueId, virtualClu.getCluObject(), clu, object);
         this.hasOnClickAsyncEventInstalled = asyncHandlersInstalled.contains("OnClick");
         if (hasOnClickAsyncEventInstalled && LOGGER.isTraceEnabled()) {
-            LOGGER.trace("OnClick handler is installed for {} ({}), button events will skip reading CLU value", discoveryMessage.getUniqueId(), object.getName());
+            LOGGER.trace("OnClick handler is installed for {} ({}), button events will skip reading CLU value", uniqueId, object.getName());
         }
 
         final boolean hasAsyncHandlers = !asyncHandlersInstalled.isEmpty();
         if (!hasAsyncHandlers) {
-            LOGGER.warn("No async handlers are installed for {} ({}), button events WILL NOT WORK", discoveryMessage.getUniqueId(), object.getName());
+            LOGGER.warn("No async handlers are installed for {} ({}), button events WILL NOT WORK", uniqueId, object.getName());
         }
     }
 
@@ -94,7 +98,7 @@ public class RemoteCLUButton implements RemoteCLUDevice, RemoteCLUAsyncDevice {
                               true
                       );
         } catch (JsonProcessingException | RuntimeException e) {
-            LOGGER.error("Could not publish discovery message for {}", discoveryMessage.getUniqueId(), e);
+            LOGGER.error("Could not publish discovery message for {}", uniqueId, e);
         }
     }
 

@@ -3,6 +3,8 @@ package pl.psobiech.opengr8on.vclu.mqtt.discovery;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static pl.psobiech.opengr8on.vclu.util.MqttUtil.absoluteTopic;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MqttDiscoveryShutter extends MqttDiscovery {
     @JsonProperty("position_topic")
@@ -51,11 +53,11 @@ public class MqttDiscoveryShutter extends MqttDiscovery {
     }
 
     public String getPositionStateTopic() {
-        return getAbsoluteTopic(getRootTopic(), positionStateTopic);
+        return absoluteTopic(getRootTopic(), positionStateTopic);
     }
 
     public String getSetPositionTopic() {
-        return getAbsoluteTopic(getRootTopic(), setPositionTopic);
+        return absoluteTopic(getRootTopic(), setPositionTopic);
     }
 
     public String getSetPositionTemplate() {

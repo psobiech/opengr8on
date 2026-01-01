@@ -56,13 +56,11 @@ public class Main {
             0x0L, "00000000".getBytes()
     );
 
-    private static final Inet4Address MIN_IP = IPv4AddressUtil.parseIPv4("10.72.144.1");
-
     private Main() {
         // NOP
     }
 
-    public static void main(String[] args) throws Exception {
+    static void main(String[] args) throws Exception {
         final CommandLine commandLine = new DefaultParser().parse(CLIParameters.OPTIONS, args);
         if (commandLine.hasOption(CLIParameters.HELP_OPTION)) {
             new HelpFormatter()
@@ -107,6 +105,8 @@ public class Main {
             final CLUDevice device = fetchDevice(networkInterface, ipAddress, projectCipherKey, interfaceRegistry);
             try (CLUClient client = new CLUClient(networkInterface.getAddress(), device, projectCipherKey)) {
                 client.startTFTPdServer().get();
+
+                client.stopTFTPdServer().get();
             }
         } else if (commandLine.hasOption(CLIParameters.EXECUTE_OPTION)) {
             final String command = commandLine.getOptionValue(CLIParameters.EXECUTE_OPTION);
