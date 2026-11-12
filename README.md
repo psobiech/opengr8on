@@ -4,7 +4,9 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/{username}/{repo}/{branch}/badge.svg)](https://snyk.io/test/github/psobiech/opengr8on/develop)
 [![AGPLv3 License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 
-**Nowy projekt / New project:** [opengr8on-node](https://github.com/psobiech/opengr8on-node) — przepisanie w Node.js z pełną dokumentacją protokołu UDP i TFBUS, biblioteką kliencką, narzędziami diagnostycznymi magistrali TFBUS oraz wirtualnym CLU / rewrite in Node.js with full UDP and TFBUS protocol documentation, client library, TFBUS diagnostic tools, and virtual CLU
+**Sprzętowa CLU / Hardware CLU:** [opengr8on-clu-esp32](https://github.com/psobiech/opengr8on-clu-esp32) — fizyczne CLU Grentona na ESP32-S3, sprzętowy następca tego wirtualnego CLU w Javie
+
+**Konfiguracja CLU z kodu / Code-first projects:** [opengr8on-vscode](https://github.com/psobiech/opengr8on-vscode) — rozszerzenie VS Code: projekt jako YAML + Lua z wersjonowaniem za pomocą git'a, generowanie `OM.LUA` / `USER.LUA` i wysyłanie do CLU, import `.omp`, podgląd urządzeń i wartości na żywo; alternatywa dla Object Managera
 
 ---
 
